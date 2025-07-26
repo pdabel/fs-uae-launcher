@@ -27,4 +27,5 @@ Lib
 *.pyo
 /setup.py
 *.swp
-venv/
+venv
+__pycache__/
