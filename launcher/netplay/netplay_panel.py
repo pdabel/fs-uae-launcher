@@ -32,6 +32,7 @@ class NetplayPanel(fsui.Panel):
 
 
         hori_layout = fsui.HorizontalLayout()
+        button_layout = fsui.HorizontalLayout()
         self.layout.add(hori_layout, fill=True, expand=True)
         
 
