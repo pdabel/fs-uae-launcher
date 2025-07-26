@@ -23,7 +23,8 @@ jobs:
         run: |
           brew install dos2unix
 
-      - uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
 
@@ -107,36 +108,8 @@ jobs:
         run: |
           fsbuild/archive
 
-      - name: Build DMG
-        if: hashFiles('fsbuild/build-dmg') != '' && env.SIGNING_ENABLED != null
-        run: |
-          fsbuild/build-dmg
-
-      - name: Unlock keychain again
-        if: env.SIGNING_ENABLED != null
-        env:
-          KEYCHAIN_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-          SIGNING_CERTIFICATE_P12_DATA: ${{ secrets.MACOS_CERTIFICATE_P12_DATA }}
-          SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-        run: |
-          echo $SIGNING_CERTIFICATE_P12_DATA | base64 --decode > certificate.p12
-          security unlock-keychain -p $KEYCHAIN_PASSWORD build.keychain
-
-      - name: Sign DMG
-        if: hashFiles('fsbuild/sign-dmg') != '' && env.SIGNING_ENABLED != null
-        run: |
-          fsbuild/sign-dmg
-
-      - name: Notarize DMG
-        if: hashFiles('fsbuild/notarize-dmg') != '' && env.SIGNING_ENABLED != null
-        env:
-          NOTARIZATION_PASSWORD: ${{ secrets.MACOS_NOTARIZATION_PASSWORD }}
-          NOTARIZATION_PROVIDER: ${{ secrets.MACOS_NOTARIZATION_PROVIDER }}
-          NOTARIZATION_USERNAME: ${{ secrets.MACOS_NOTARIZATION_USERNAME }}
-        run: |
-          fsbuild/notarize-dmg
-
-      - uses: actions/upload-artifact@v2
+      - name: Upload builds to artifact storage
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: macOS_x86-64
           path: fsbuild/_dist/*
