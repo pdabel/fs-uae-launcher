@@ -133,6 +133,11 @@ class Channel:
             self.ops.clear()
             self.voices.clear()
             self.message("* you joined {0} ".format(self.name), IRCColor.JOIN)
+            if "-game" in self.name:
+                self.message(
+                    f"Run the following to host the game:\n/hostgame {self.irc.client.host}:25101 2",
+                    IRCColor.INFO
+                )
             self.irc.set_active_channel_name(self.name)
             IRCBroadcaster.broadcast("joined", {"channel": self.name})
         else:
