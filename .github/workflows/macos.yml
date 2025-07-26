@@ -7,7 +7,7 @@ on:
   
 jobs:
   macOS_x86-64:
-    runs-on: macos-11
+    runs-on: macos-13
 
     steps:
       - name: Install brew packages
