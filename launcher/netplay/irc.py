@@ -9,7 +9,7 @@ from .irc_broadcaster import IRCBroadcaster
 from .irc_color import IRCColor
 from ..launcher_settings import LauncherSettings
 
-LOBBY_CHANNEL = "#Lobby2.8"
+LOBBY_CHANNEL = "#FS-UAE-Lobby"
 
 
 # noinspection PyUnusedLocal
