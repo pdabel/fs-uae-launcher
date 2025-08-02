@@ -54,6 +54,20 @@ class NetplayPanel(fsui.Panel):
             self.text_area, fill=True, expand=True, margin=10, margin_left=0
         )
 
+        input_row = fsui.HorizontalLayout()
+        self.layout.add(input_row, fill=True, margin=10, margin_top=0)
+
+        input_row.add(fsui.Label(self, gettext("Port (default: 25101)")), margin_right=5)
+        self.port_field = fsui.TextField(self)
+        self.port_field.set_text("25101")
+        input_row.add(self.port_field, fill=False, margin_right=15)
+
+        input_row.add(fsui.Label(self, gettext("Number of Players")), margin_right=5)
+        self.player_count_field = fsui.TextField(self)
+        self.player_count_field.set_text("2")
+        input_row.add(self.player_count_field, fill=False)
+
+        self.layout.add(fsui.Label(self, gettext("Netplay Server Commands")), margin=10, margin_top=10)
         self.input_field = fsui.TextField(self)
         self.input_field.activated.connect(self.on_input)
         self.layout.add(self.input_field, fill=True, margin=10, margin_top=0)
@@ -61,8 +75,8 @@ class NetplayPanel(fsui.Panel):
         self.netplay = Netplay()
         IRCBroadcaster.add_listener(self)
         start_channel_button = StartChannelButton(self, self.netplay.irc)
-        button_layout.add(start_channel_button, fill=True, margin_left=10)
-        host_game_button = HostGameButton(self, self.netplay)
+        button_layout.add(start_channel_button, fill=True, margin_left=0)
+        host_game_button = HostGameButton(self, self.netplay, self)
         button_layout.add(host_game_button, fill=True, margin_left=10)
         self.active_channel = LOBBY_CHANNEL
 
@@ -151,11 +165,15 @@ class StartChannelButton(fsui.Button):
         self.irc.handle_command(f"/join #sensible-game")
 
 class HostGameButton(fsui.Button):
-    def __init__(self, parent, netplay):
+    def __init__(self, parent, netplay, panel):
         super().__init__(parent, gettext("Host Game"))
         self.netplay = netplay
+        self.panel = panel
         self.set_tooltip(gettext("Host a game on the IRC channel."))
-        
+
     def on_activated(self):
-        self.netplay.handle_command(f"/hostgame {self.netplay.irc.client.host}:25101 2")
-        #TODO: Create a text input dialog to get the port and player count
+        port = self.panel.port_field.get_text().strip() or "25101"
+        player_count = self.panel.player_count_field.get_text().strip() or "2"
+        self.netplay.handle_command(
+            f"/hostgame {self.netplay.irc.client.host}:{port} {player_count}"
+        )
