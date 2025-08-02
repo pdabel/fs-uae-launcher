@@ -35,25 +35,10 @@ class NetplayPanel(fsui.Panel):
         gettext("Connect")
         gettext("Disconnect")
 
-        # self.nick_label = fsui.Label(self, _("Nick:"))
-        # hori_layout.add(self.nick_label,
-        #         margin=10, margin_top=0, margin_bottom=0)
-        #
-        # self.nick_field = fsui.TextField(self, Settings.get("irc_nick"))
-        # self.nick_field.set_min_width(130)
-        # hori_layout.add(self.nick_field, margin_right=10)
-        # #self.nick_field.on_changed = self.on_nick_change
-        #
-        # self.connect_button = fsui.Button(self, _("Connect"))
-        # hori_layout.add(self.connect_button, margin_right=10)
-        # #self.connect_button.activated.connect(self.on_connect_button)
-        #
-        # self.disconnect_button = fsui.Button(self, _("Disconnect"))
-        # hori_layout.add(self.disconnect_button, margin_right=10)
-        # #self.disconnect_button.activated.connect(self.on_disconnect_button)
-
         hori_layout = fsui.HorizontalLayout()
+        button_layout = fsui.HorizontalLayout()
         self.layout.add(hori_layout, fill=True, expand=True)
+        
 
         ver_layout = fsui.VerticalLayout()
         hori_layout.add(ver_layout, fill=True)
@@ -72,13 +57,16 @@ class NetplayPanel(fsui.Panel):
         self.input_field = fsui.TextField(self)
         self.input_field.activated.connect(self.on_input)
         self.layout.add(self.input_field, fill=True, margin=10, margin_top=0)
-
+        self.layout.add(button_layout, margin=10)
+        self.netplay = Netplay()
+        IRCBroadcaster.add_listener(self)
+        start_channel_button = StartChannelButton(self, self.netplay.irc)
+        button_layout.add(start_channel_button, fill=True, margin_left=10)
+        host_game_button = HostGameButton(self, self.netplay)
+        button_layout.add(host_game_button, fill=True, margin_left=10)
         self.active_channel = LOBBY_CHANNEL
 
         self.input_field.focus()
-
-        self.netplay = Netplay()
-        IRCBroadcaster.add_listener(self)
 
     def on_destroy(self):
         print("NetplayPanel.on_destroy")
@@ -152,3 +140,22 @@ class NetplayPanel(fsui.Panel):
                     args["message"], color=args["color"]
                 )
             self.window.alert()
+
+class StartChannelButton(fsui.Button):
+    def __init__(self, parent, irc):
+        super().__init__(parent, gettext("Start Game Channel"))
+        self.irc = irc
+
+    def on_activated(self):
+        #     #TODO: DIAGLOG BOX FOR INPUT
+        self.irc.handle_command(f"/join #sensible-game")
+
+class HostGameButton(fsui.Button):
+    def __init__(self, parent, netplay):
+        super().__init__(parent, gettext("Host Game"))
+        self.netplay = netplay
+        self.set_tooltip(gettext("Host a game on the IRC channel."))
+        
+    def on_activated(self):
+        self.netplay.handle_command(f"/hostgame {self.netplay.irc.client.host}:25101 2")
+        #TODO: Create a text input dialog to get the port and player count
