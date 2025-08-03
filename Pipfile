@@ -20,6 +20,7 @@ pillow = "*"
 pyopengl = "*"
 pyqt5 = "*"
 pywin32-ctypes = "*"
+importlib-metadata = {version = "*", sys_platform = "== 'darwin'"}
 requests = "*"
 sentry-sdk = "*"
 typing-extensions = "*"
