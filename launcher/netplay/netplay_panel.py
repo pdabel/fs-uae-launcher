@@ -88,10 +88,10 @@ class NetplayPanel(fsui.Panel):
         button_layout.add(start_channel_button, fill=True, margin_left=0)
         host_game_button = HostGameButton(self, self.netplay, self, self.netplay.irc)
         button_layout.add(host_game_button, fill=True, margin_left=10)
-        host_game_button = SendConfig(self, self.netplay, self.netplay.irc)
-        button_layout.add(host_game_button, fill=True, margin_left=10)
-        host_game_button = Ready(self, self.netplay, self.netplay.irc)
-        button_layout.add(host_game_button, fill=True, margin_left=10)
+        send_config_button = SendConfig(self, self.netplay, self.netplay.irc)
+        button_layout.add(send_config_button, fill=True, margin_left=10)
+        ready_button = Ready(self, self.netplay, self.netplay.irc)
+        button_layout.add(ready_button, fill=True, margin_left=10)
         self.active_channel = LOBBY_CHANNEL
 
         self.input_field.focus()
