@@ -92,6 +92,8 @@ class NetplayPanel(fsui.Panel):
         button_layout.add(send_config_button, fill=True, margin_left=10)
         ready_button = Ready(self, self.netplay, self.netplay.irc)
         button_layout.add(ready_button, fill=True, margin_left=10)
+        reset_button = Reset(self, self.netplay, self.netplay.irc)
+        button_layout.add(reset_button, fill=True, margin_left=10)
         self.active_channel = LOBBY_CHANNEL
 
         self.input_field.focus()
@@ -255,7 +257,20 @@ class Ready(fsui.Button):
         self.irc.handle_command(f"/me Ran the following command:")
         self.irc.handle_command(f"/me {command}")
         self.netplay.handle_command(f"{command}")
-        
+
+class Reset(fsui.Button):
+    def __init__(self, parent, netplay, irc):
+        super().__init__(parent, gettext("Reset"))
+        self.irc = irc
+        self.netplay = netplay
+
+    def on_activated(self):
+        command = f"/reset"
+        # Broadcast the command as a message in the IRC channel
+        self.irc.handle_command(f"/me Ran the following command:")
+        self.irc.handle_command(f"/me {command}")
+        self.netplay.handle_command(f"{command}")
+
 class InfoButton(IconButton):
     def __init__(self, parent):
         super().__init__(parent, "info.png")

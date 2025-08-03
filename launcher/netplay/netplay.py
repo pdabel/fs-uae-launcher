@@ -314,6 +314,13 @@ class Netplay:
         if LauncherConfig.get("__netplay_ready") == "1":
             self.game_info("status set to ready")
 
+    def command_reset(self, args):
+        if len(args) != 0:
+            self.irc.warning("syntax: /reset")
+            return
+        self.reset_netplay_config()
+        self.connection_tester = None
+
     # noinspection SpellCheckingInspection
     def command_notready(self, args):
         if len(args) != 0:
