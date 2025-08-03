@@ -201,7 +201,7 @@ class SimpleTextInputDialog(fsui.Dialog):
 
 class StartChannelButton(fsui.Button):
     def __init__(self, parent, irc):
-        super().__init__(parent, gettext("Start Game Channel"))
+        super().__init__(parent, gettext("Join Game Channel"))
         self.irc = irc
 
     def on_activated(self):
