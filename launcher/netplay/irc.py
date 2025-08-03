@@ -56,6 +56,9 @@ class IRC:
             IRCBroadcaster.broadcast("channel_list", {"added": name})
             return self.channels[name]
 
+    def get_active_channel(self):
+        return self.active_channel_name
+
     def active_channel(self):
         return self.channel(self.active_channel_name)
 

@@ -517,10 +517,11 @@ class Netplay:
 
         from ..server.ServerWindow import ServerWindow
 
-        window = ServerWindow(None, server)
-        window.show()
-
         game_id = str(uuid.uuid4())
+        channel_name = self.irc.get_active_channel()
+        window = ServerWindow(None, server, game_id, port, channel_name)
+        window.show()
+        
         LauncherConfig.set_multiple(
             [
                 ("__netplay_game", game_id),
