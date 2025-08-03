@@ -609,6 +609,8 @@ class Netplay:
                 my_config_hash = self.get_config_hash()
                 if my_config_hash != config_hash:
                     channel.privmsg("not the same config hash")
+                    channel.privmsg(f"op hash: {my_config_hash}")
+                    channel.privmsg(f"received hash: {config_hash}")
                     return
                 if LauncherConfig.get("__netplay_ready") != "1":
                     channel.privmsg(

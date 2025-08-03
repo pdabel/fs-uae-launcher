@@ -7,6 +7,7 @@ from launcher.ui.skin import Skin
 from launcher.ui.InfoDialog import InfoDialog
 from launcher.ui.IconButton import IconButton
 import os
+from PyQt5.QtWidgets import QApplication
 
 
 class NetplayPanel(fsui.Panel):
@@ -87,6 +88,10 @@ class NetplayPanel(fsui.Panel):
         button_layout.add(start_channel_button, fill=True, margin_left=0)
         host_game_button = HostGameButton(self, self.netplay, self, self.netplay.irc)
         button_layout.add(host_game_button, fill=True, margin_left=10)
+        send_config_button = SendConfig(self, self.netplay, self.netplay.irc)
+        button_layout.add(send_config_button, fill=True, margin_left=10)
+        ready_button = Ready(self, self.netplay, self.netplay.irc)
+        button_layout.add(ready_button, fill=True, margin_left=10)
         self.active_channel = LOBBY_CHANNEL
 
         self.input_field.focus()
@@ -196,7 +201,7 @@ class SimpleTextInputDialog(fsui.Dialog):
 
 class StartChannelButton(fsui.Button):
     def __init__(self, parent, irc):
-        super().__init__(parent, gettext("Start Game Channel"))
+        super().__init__(parent, gettext("Join Game Channel"))
         self.irc = irc
 
     def on_activated(self):
@@ -225,13 +230,46 @@ class HostGameButton(fsui.Button):
         self.netplay.handle_command(
             f"/hostgame {self.netplay.irc.client.host}:{port} {player_count}"
         )
+class SendConfig(fsui.Button):
+    def __init__(self, parent, netplay, irc):
+        super().__init__(parent, gettext("Send Config"))
+        self.irc = irc
+        self.netplay = netplay
+
+    def on_activated(self):
+        command = f"/sendconfig"
+        # Broadcast the command as a message in the IRC channel
+        self.irc.handle_command(f"/me Ran the following command:")
+        self.irc.handle_command(f"/me {command}")
+        self.netplay.handle_command(f"{command}")
+
+class Ready(fsui.Button):
+    def __init__(self, parent, netplay, irc):
+        super().__init__(parent, gettext("Ready"))
+        self.irc = irc
+        self.netplay = netplay
+
+    def on_activated(self):
+        command = f"/ready"
+        # Broadcast the command as a message in the IRC channel
+        self.irc.handle_command(f"/me Ran the following command:")
+        self.irc.handle_command(f"/me {command}")
+        self.netplay.handle_command(f"{command}")
+        
 class InfoButton(IconButton):
     def __init__(self, parent):
         super().__init__(parent, "info.png")
         self.set_tooltip(gettext("Show instructions for Netplay"))
         self.parent = parent
-        #self.set_min_size((32, 32))
         self.set_size((32, 32))
 
     def on_activated(self):
-        InfoDialog(self.parent).show()
+        # Check if an InfoDialog is already open by window title
+        for widget in QApplication.topLevelWidgets():
+            if widget.windowTitle() == "Netplay Info":
+                widget.raise_()
+                widget.activateWindow()
+                return
+        # If not open, create and show it
+        info_dialog = InfoDialog(self.parent)
+        info_dialog.show()

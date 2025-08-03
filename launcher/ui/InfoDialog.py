@@ -37,11 +37,14 @@ class InfoDialog(fsui.Window):
 info_message = """\n
 How to Use Netplay:
 
-1. Join or create a game channel using the 'Start Game Channel' button.
+1. Join or create a game channel using the 'Join Game Channel' button.
 2. Enter the port and number of players if you are hosting.
 3. Use the 'Host Game' button to start hosting.
-4. Use the command box below to enter manual IRC or netplay commands if needed.
-5. To join a game, select the channel and follow the host's instructions.
+4. Use the 'Ready' button to indicate you are ready to play.
+5. Use the 'Send Config' button to send your configuration to other players (optional).
+6. Once all players are ready, you can start the game in FS-UAE.
+
+If required, you can use the netplay command box to enter manual IRC or netplay commands.
 
 You can also use IRC commands directly in the command box as follows:
 (Replace text within <> as appropriate)
