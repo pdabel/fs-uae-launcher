@@ -4,6 +4,9 @@ from launcher.netplay.irc import LOBBY_CHANNEL
 from launcher.netplay.irc_broadcaster import IRCBroadcaster
 from launcher.netplay.netplay import Netplay
 from launcher.ui.skin import Skin
+from launcher.ui.InfoDialog import InfoDialog
+from launcher.ui.IconButton import IconButton
+import os
 
 
 class NetplayPanel(fsui.Panel):
@@ -35,25 +38,10 @@ class NetplayPanel(fsui.Panel):
         gettext("Connect")
         gettext("Disconnect")
 
-        # self.nick_label = fsui.Label(self, _("Nick:"))
-        # hori_layout.add(self.nick_label,
-        #         margin=10, margin_top=0, margin_bottom=0)
-        #
-        # self.nick_field = fsui.TextField(self, Settings.get("irc_nick"))
-        # self.nick_field.set_min_width(130)
-        # hori_layout.add(self.nick_field, margin_right=10)
-        # #self.nick_field.on_changed = self.on_nick_change
-        #
-        # self.connect_button = fsui.Button(self, _("Connect"))
-        # hori_layout.add(self.connect_button, margin_right=10)
-        # #self.connect_button.activated.connect(self.on_connect_button)
-        #
-        # self.disconnect_button = fsui.Button(self, _("Disconnect"))
-        # hori_layout.add(self.disconnect_button, margin_right=10)
-        # #self.disconnect_button.activated.connect(self.on_disconnect_button)
-
         hori_layout = fsui.HorizontalLayout()
+        button_layout = fsui.HorizontalLayout()
         self.layout.add(hori_layout, fill=True, expand=True)
+        
 
         ver_layout = fsui.VerticalLayout()
         hori_layout.add(ver_layout, fill=True)
@@ -69,16 +57,39 @@ class NetplayPanel(fsui.Panel):
             self.text_area, fill=True, expand=True, margin=10, margin_left=0
         )
 
+        input_row = fsui.HorizontalLayout()
+        self.layout.add(input_row, fill=True, margin=10, margin_top=0)
+
+        input_row.add(fsui.Label(self, gettext("Port (default: 25101)")), margin_right=5)
+        self.port_field = fsui.TextField(self)
+        self.port_field.set_text("25101")
+        self.port_field.set_min_width(75)
+        input_row.add(self.port_field, fill=False, margin_right=15)
+
+        input_row.add(fsui.Label(self, gettext("Number of Players")), margin_right=5)
+        self.player_count_field = fsui.TextField(self)
+        self.player_count_field.set_text("2")
+        input_row.add(self.player_count_field, fill=False)
+
+        input_row.add_spacer(0, expand=True)  # Add a spacer to push the info button to the far right
+
+        info_button = InfoButton(self)
+        input_row.add(info_button, margin_left=10)
+
+        self.layout.add(fsui.Label(self, gettext("Netplay Server Commands")), margin=10, margin_top=10)
         self.input_field = fsui.TextField(self)
         self.input_field.activated.connect(self.on_input)
         self.layout.add(self.input_field, fill=True, margin=10, margin_top=0)
-
+        self.layout.add(button_layout, margin=10)
+        self.netplay = Netplay()
+        IRCBroadcaster.add_listener(self)
+        start_channel_button = StartChannelButton(self, self.netplay.irc)
+        button_layout.add(start_channel_button, fill=True, margin_left=0)
+        host_game_button = HostGameButton(self, self.netplay, self, self.netplay.irc)
+        button_layout.add(host_game_button, fill=True, margin_left=10)
         self.active_channel = LOBBY_CHANNEL
 
         self.input_field.focus()
-
-        self.netplay = Netplay()
-        IRCBroadcaster.add_listener(self)
 
     def on_destroy(self):
         print("NetplayPanel.on_destroy")
@@ -152,3 +163,75 @@ class NetplayPanel(fsui.Panel):
                     args["message"], color=args["color"]
                 )
             self.window.alert()
+
+class SimpleTextInputDialog(fsui.Dialog):
+    def __init__(self, parent, title, label_text):
+        super().__init__(parent, title)
+        self.layout = fsui.VerticalLayout()
+        self.label = fsui.Label(self, label_text)
+        self.layout.add(self.label, margin=10)
+        self.text_field = fsui.TextField(self)
+        self.layout.add(self.text_field, fill=True, margin=10)
+        button_row = fsui.HorizontalLayout()
+        self.ok_button = fsui.Button(self, gettext("OK"))
+        self.ok_button.activated.connect(self.on_ok)
+        button_row.add(self.ok_button, fill=True, margin_right=10)
+        self.cancel_button = fsui.Button(self, gettext("Cancel"))
+        self.cancel_button.activated.connect(self.reject)
+        button_row.add(self.cancel_button, fill=True)
+        self.layout.add(button_row, margin=10)
+        self.text_field.activated.connect(self.on_ok)
+        self.result_text = None
+
+    def on_ok(self):
+        self.result_text = self.text_field.get_text()
+        self.accept()
+
+    @staticmethod
+    def get_text(parent, title, label_text):
+        dialog = SimpleTextInputDialog(parent, title, label_text)
+        if dialog.exec_():
+            return dialog.result_text
+        return None
+
+class StartChannelButton(fsui.Button):
+    def __init__(self, parent, irc):
+        super().__init__(parent, gettext("Start Game Channel"))
+        self.irc = irc
+
+    def on_activated(self):
+        game_name = SimpleTextInputDialog.get_text(self, gettext("Enter Game Name"), gettext("Game Name:"))
+        if game_name:
+            game_name = game_name.replace(" ", "-").lower()
+            # Broadcast the command as a message in the IRC channel
+            self.irc.handle_command(f"/me Ran the following command:")
+            self.irc.handle_command(f"/me /join #{game_name}-game")
+            self.irc.handle_command(f"/join #{game_name}-game")
+
+class HostGameButton(fsui.Button):
+    def __init__(self, parent, netplay, panel,irc):
+        super().__init__(parent, gettext("Host Game"))
+        self.netplay = netplay
+        self.panel = panel
+        self.irc = irc
+        self.set_tooltip(gettext("Host a game on the IRC channel."))
+
+    def on_activated(self):
+        port = self.panel.port_field.get_text().strip() or "25101"
+        player_count = self.panel.player_count_field.get_text().strip() or "2"
+        # Broadcast the command as a message in the IRC channel
+        self.irc.handle_command(f"/me Ran the following command:")
+        self.irc.handle_command(f"/me /hostgame {self.netplay.irc.client.host}:{port} {player_count}")
+        self.netplay.handle_command(
+            f"/hostgame {self.netplay.irc.client.host}:{port} {player_count}"
+        )
+class InfoButton(IconButton):
+    def __init__(self, parent):
+        super().__init__(parent, "info.png")
+        self.set_tooltip(gettext("Show instructions for Netplay"))
+        self.parent = parent
+        #self.set_min_size((32, 32))
+        self.set_size((32, 32))
+
+    def on_activated(self):
+        InfoDialog(self.parent).show()
