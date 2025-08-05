@@ -26,18 +26,6 @@ class NetplayPanel(fsui.Panel):
 
             hori_layout.add_spacer(0, expand=True)
 
-        # label = fsui.Label(self, "Netplay is currently disabled in the "
-        #                          "development versions.")
-        # self.layout.add(label, margin=10)
-        # label = fsui.Label(self, "Please use the stable FS-UAE series for "
-        #                          "netplay in the meantime.")
-        # self.layout.add(label, margin=10)
-        # return
-
-        # TODO
-        gettext("Nick:")
-        gettext("Connect")
-        gettext("Disconnect")
 
         hori_layout = fsui.HorizontalLayout()
         button_layout = fsui.HorizontalLayout()
@@ -84,19 +72,24 @@ class NetplayPanel(fsui.Panel):
         self.layout.add(button_layout, margin=10)
         self.netplay = Netplay()
         IRCBroadcaster.add_listener(self)
-        start_channel_button = StartChannelButton(self, self.netplay.irc)
-        button_layout.add(start_channel_button, fill=True, margin_left=0)
-        host_game_button = HostGameButton(self, self.netplay, self, self.netplay.irc)
-        button_layout.add(host_game_button, fill=True, margin_left=10)
-        send_config_button = SendConfig(self, self.netplay, self.netplay.irc)
-        button_layout.add(send_config_button, fill=True, margin_left=10)
-        ready_button = Ready(self, self.netplay, self.netplay.irc)
-        button_layout.add(ready_button, fill=True, margin_left=10)
-        reset_button = Reset(self, self.netplay, self.netplay.irc)
-        button_layout.add(reset_button, fill=True, margin_left=10)
-        self.active_channel = LOBBY_CHANNEL
+        self.join_channel_button = JoinChannelButton(self, self.netplay.irc)
+        button_layout.add(self.join_channel_button, fill=True, margin_left=0)
+
+        self.host_game_button = HostGameButton(self, self.netplay, self, self.netplay.irc)
+        button_layout.add(self.host_game_button, fill=True, margin_left=10)
+
+        self.send_config_button = SendConfig(self, self.netplay, self.netplay.irc)
+        button_layout.add(self.send_config_button, fill=True, margin_left=10)
+
+        self.ready_button = Ready(self, self.netplay, self.netplay.irc)
+        button_layout.add(self.ready_button, fill=True, margin_left=10)
+
+        self.reset_button = Reset(self, self.netplay, self.netplay.irc)
+        button_layout.add(self.reset_button, fill=True, margin_left=10)
+        self.active_channel = LOBBY_CHANNEL 
 
         self.input_field.focus()
+        
 
     def on_destroy(self):
         print("NetplayPanel.on_destroy")
@@ -134,9 +127,9 @@ class NetplayPanel(fsui.Panel):
 
     def set_active_channel(self, channel):
         if channel == self.active_channel:
+            self.update_action_buttons_visibility()
             return
         self.text_area.set_text("")
-        # self.text_area.append_text(IRC.channel(channel).get_text())
         ch = self.netplay.irc.channel(channel)
         for i, line in enumerate(ch.lines):
             self.text_area.append_text(line, ch.colors[i])
@@ -145,6 +138,8 @@ class NetplayPanel(fsui.Panel):
         for i in range(self.channel_list.get_item_count()):
             if self.channel_list.get_item(i) == channel:
                 self.channel_list.set_index(i)
+        self.update_action_buttons_visibility()
+        
 
     def update_channel_list(self):
         items = sorted(self.netplay.irc.channels.keys())
@@ -155,6 +150,21 @@ class NetplayPanel(fsui.Panel):
     def update_nick_list(self):
         items = self.netplay.irc.channel(self.active_channel).get_nick_list()
         self.nick_list.set_items(items)
+
+    def update_action_buttons_visibility(self):
+        in_game_channel = self.active_channel and self.active_channel.endswith('-game')
+        print(f"Active channel: {self.active_channel}, In game channel: {in_game_channel}")
+        # Show action buttons only in a game channel
+        for btn in [self.host_game_button, self.send_config_button, self.ready_button, self.reset_button]:
+            if in_game_channel:
+                btn.show()
+            else:
+                btn.hide()
+        # Show join button only when NOT in a game channel
+        if in_game_channel:
+            self.join_channel_button.hide()
+        else:
+            self.join_channel_button.show()
 
     def on_irc(self, key, args):
         if key == "active_channel":
@@ -201,7 +211,7 @@ class SimpleTextInputDialog(fsui.Dialog):
             return dialog.result_text
         return None
 
-class StartChannelButton(fsui.Button):
+class JoinChannelButton(fsui.Button):
     def __init__(self, parent, irc):
         super().__init__(parent, gettext("Join Game Channel"))
         self.irc = irc
@@ -216,7 +226,7 @@ class StartChannelButton(fsui.Button):
             self.irc.handle_command(f"/join #{game_name}-game")
 
 class HostGameButton(fsui.Button):
-    def __init__(self, parent, netplay, panel,irc):
+    def __init__(self, parent, netplay, panel, irc):
         super().__init__(parent, gettext("Host Game"))
         self.netplay = netplay
         self.panel = panel
@@ -226,12 +236,12 @@ class HostGameButton(fsui.Button):
     def on_activated(self):
         port = self.panel.port_field.get_text().strip() or "25101"
         player_count = self.panel.player_count_field.get_text().strip() or "2"
+        command = f"/hostgame {self.netplay.irc.client.host}:{port} {player_count}"
         # Broadcast the command as a message in the IRC channel
         self.irc.handle_command(f"/me Ran the following command:")
-        self.irc.handle_command(f"/me /hostgame {self.netplay.irc.client.host}:{port} {player_count}")
-        self.netplay.handle_command(
-            f"/hostgame {self.netplay.irc.client.host}:{port} {player_count}"
-        )
+        self.irc.handle_command(f"/me {command}")
+        self.netplay.handle_command(command)
+
 class SendConfig(fsui.Button):
     def __init__(self, parent, netplay, irc):
         super().__init__(parent, gettext("Send Config"))
@@ -239,11 +249,10 @@ class SendConfig(fsui.Button):
         self.netplay = netplay
 
     def on_activated(self):
-        command = f"/sendconfig"
-        # Broadcast the command as a message in the IRC channel
+        command = "/sendconfig"
         self.irc.handle_command(f"/me Ran the following command:")
         self.irc.handle_command(f"/me {command}")
-        self.netplay.handle_command(f"{command}")
+        self.netplay.handle_command(command)
 
 class Ready(fsui.Button):
     def __init__(self, parent, netplay, irc):
@@ -252,11 +261,10 @@ class Ready(fsui.Button):
         self.netplay = netplay
 
     def on_activated(self):
-        command = f"/ready"
-        # Broadcast the command as a message in the IRC channel
+        command = "/ready"
         self.irc.handle_command(f"/me Ran the following command:")
         self.irc.handle_command(f"/me {command}")
-        self.netplay.handle_command(f"{command}")
+        self.netplay.handle_command(command)
 
 class Reset(fsui.Button):
     def __init__(self, parent, netplay, irc):
@@ -265,11 +273,10 @@ class Reset(fsui.Button):
         self.netplay = netplay
 
     def on_activated(self):
-        command = f"/reset"
-        # Broadcast the command as a message in the IRC channel
+        command = "/reset"
         self.irc.handle_command(f"/me Ran the following command:")
         self.irc.handle_command(f"/me {command}")
-        self.netplay.handle_command(f"{command}")
+        self.netplay.handle_command(command)
 
 class InfoButton(IconButton):
     def __init__(self, parent):
