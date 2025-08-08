@@ -219,9 +219,9 @@ class JoinChannelButton(fsui.Button):
         if game_name:
             game_name = game_name.replace(" ", "-").lower()
             # Broadcast the command as a message in the IRC channel
-            IRCBroadcaster.broadcast(f"/me Ran the following command:")
-            IRCBroadcaster.broadcast(f"/me /join #{game_name}-game")
-            IRCBroadcaster.broadcast(f"/join #{game_name}-game")
+            self.irc.handle_command(f"/me Ran the following command:")
+            self.irc.handle_command(f"/me /join #{game_name}-game")
+            self.irc.handle_command(f"/join #{game_name}-game")
 
 class HostGameButton(fsui.Button):
     def __init__(self, parent, netplay, panel, irc):
@@ -236,8 +236,8 @@ class HostGameButton(fsui.Button):
         player_count = self.panel.player_count_field.get_text().strip() or "2"
         command = f"/hostgame {self.netplay.irc.client.host}:{port} {player_count}"
         # Broadcast the command as a message in the IRC channel
-        IRCBroadcaster.broadcast(f"/me Ran the following command:")
-        IRCBroadcaster.broadcast(f"/me {command}")
+        self.irc.handle_command(f"/me Ran the following command:")
+        self.irc.handle_command(f"/me {command}")
         self.netplay.handle_command(command)
 
 class SendConfig(fsui.Button):
@@ -248,8 +248,8 @@ class SendConfig(fsui.Button):
 
     def on_activated(self):
         command = "/sendconfig"
-        IRCBroadcaster.broadcast(f"/me Ran the following command:")
-        IRCBroadcaster.broadcast(f"/me {command}")
+        self.irc.handle_command(f"/me Ran the following command:")
+        self.irc.handle_command(f"/me {command}")
         self.netplay.handle_command(command)
 
 class Ready(fsui.Button):
@@ -260,8 +260,8 @@ class Ready(fsui.Button):
 
     def on_activated(self):
         command = "/ready"
-        IRCBroadcaster.broadcast(f"/me Ran the following command:")
-        IRCBroadcaster.broadcast(f"/me {command}")
+        self.irc.handle_command(f"/me Ran the following command:")
+        self.irc.handle_command(f"/me {command}")
         self.netplay.handle_command(command)
 
 class Reset(fsui.Button):
@@ -272,8 +272,8 @@ class Reset(fsui.Button):
 
     def on_activated(self):
         command = "/reset"
-        IRCBroadcaster.broadcast(f"/me Ran the following command:")
-        IRCBroadcaster.broadcast(f"/me {command}")
+        self.irc.handle_command(f"/me Ran the following command:")
+        self.irc.handle_command(f"/me {command}")
         self.netplay.handle_command(command)
 
 class InfoButton(IconButton):
