@@ -388,6 +388,8 @@ class Netplay:
             value = LauncherConfig.get(key)
             message = "__config {0} {1}".format(key, value)
             channel.privmsg(message)
+        # Send end-of-config message
+        channel.privmsg("__endconfig")
 
     def require_game_channel(self, channel):
         if not self.irc.running:
@@ -687,6 +689,9 @@ class Netplay:
         elif command == "__ackverify":
             args = arg.split(" ", 1)
             self.print_verify_response(nick, args[0], " ".join(args[1:]))
+        elif command == "__endconfig":
+            # All config received, confirm or trigger any logic you need
+            channel.message("All configuration settings received from operator.")
         else:
             channel.warning("unknown command received: {0}".format(command))
 
