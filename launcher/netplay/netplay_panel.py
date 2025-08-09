@@ -298,31 +298,8 @@ class StartGameButton(fsui.Button):
 
     def on_activated(self):
         self.irc.handle_command(f"/me attempts to start the game.")
-        start_sequence = self.netplay.start_sequence
-        local_hash = self.netplay.get_config_hash()
-
-        # # Output the config hash of each player
-        # for nick, player in self.netplay.players.items():
-        #     hash_value = player.get("config_hash")
-        #     self.irc.handle_command(f"/me {nick} config hash: {hash_value}")
-
-        # # Validate config hashes for all players
-        # mismatched = [
-        #     nick for nick, player in self.netplay.players.items()
-        #     if player.get("config_hash") != local_hash
-        # ]
-        # if mismatched:
-        #     self.irc.handle_command(f"/me All users must have matching config before starting.")
-        #     self.irc.handle_command(f"/me Mismatched players: {', '.join(mismatched)}")
-        #     self.netplay.message(gettext("All users must have matching config before starting."))
-        #     return
-
-        message = f"__start {start_sequence} {local_hash}"
-        # Send the start command to the IRC channel
-        self.irc.handle_command(f"/msg {self.netplay.game_channel} {message}")
-        # Process the start command locally
-        nick = self.netplay.irc.my_nick
-        self.netplay.handle_game_instruction(nick, message)
+        from launcher.launcherapp import LauncherApp 
+        LauncherApp.start_game()
 
 class InfoButton(IconButton):
     def __init__(self, parent):
