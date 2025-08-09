@@ -57,9 +57,8 @@ class NetplayPanel(fsui.Panel):
         self.player_count_field = fsui.TextField(self)
         self.player_count_field.set_text("2")
         input_row.add(self.player_count_field, fill=False)
-
-        input_row.add_spacer(0, expand=True)  # Add a spacer to push the info button to the far right
-
+        # Add a spacer to push the info button to the far right
+        input_row.add_spacer(0, expand=True)  
         info_button = InfoButton(self)
         input_row.add(info_button, margin_left=10)
 
@@ -67,25 +66,38 @@ class NetplayPanel(fsui.Panel):
         self.input_field = fsui.TextField(self)
         self.input_field.activated.connect(self.on_input)
         self.layout.add(self.input_field, fill=True, margin=10, margin_top=0)
-        self.layout.add(button_layout, margin=10)
+        self.layout.add(button_layout, fill=True, margin=10)
         self.netplay = Netplay()
         IRCBroadcaster.add_listener(self)
+        # Create buttons for various actions
+        # Join Channel button to join a game channel (shown in all channels)
         self.join_channel_button = JoinChannelButton(self, self.netplay.irc)
         button_layout.add(self.join_channel_button, fill=True, margin_left=0)
-
+ 
+         # Add a spacer before the Start Game button and store a reference
+        self.action_spacer_pre = button_layout.add_spacer(0, expand=True)
+ 
+        # Host Game button to host a game on the IRC channel (only shown in game channels)
         self.host_game_button = HostGameButton(self, self.netplay, self, self.netplay.irc)
         button_layout.add(self.host_game_button, fill=True, margin_left=10)
-
+        # Send Config button to send the current config to other players (only shown in game channels)
         self.send_config_button = SendConfig(self, self.netplay, self.netplay.irc)
         button_layout.add(self.send_config_button, fill=True, margin_left=10)
-
+        # Ready button to indicate player is ready (only shown in game channels)
         self.ready_button = Ready(self, self.netplay, self.netplay.irc)
         button_layout.add(self.ready_button, fill=True, margin_left=10)
-
+        # Reset button to reset config (only shown in game channels)
         self.reset_button = Reset(self, self.netplay, self.netplay.irc)
         button_layout.add(self.reset_button, fill=True, margin_left=10)
-        self.active_channel = LOBBY_CHANNEL 
 
+        # Add a spacer before the Start Game button and store a reference
+        self.action_spacer_post = button_layout.add_spacer(0, expand=True)
+
+        # Start Game button (only shown in game channels)
+        self.start_button = StartGameButton(self, self.netplay, self.netplay.irc)
+        button_layout.add(self.start_button, fill=True, margin_left=10)
+        # This command is used to set the initial active channel and hide the action buttons
+        self.active_channel = LOBBY_CHANNEL 
         self.input_field.focus()
         
 
@@ -153,7 +165,7 @@ class NetplayPanel(fsui.Panel):
         in_game_channel = self.active_channel and self.active_channel.endswith('-game')
         print(f"Active channel: {self.active_channel}, In game channel: {in_game_channel}")
         # Show action buttons only in a game channel
-        for btn in [self.host_game_button, self.send_config_button, self.ready_button, self.reset_button]:
+        for btn in [self.host_game_button, self.send_config_button, self.ready_button, self.reset_button, self.start_button]:
             if in_game_channel:
                 btn.show()
             else:
@@ -277,6 +289,40 @@ class Reset(fsui.Button):
         self.irc.handle_command(f"/me ran the following command:")
         self.irc.handle_command(f"/me {command}")
         self.netplay.handle_command(command)
+
+class StartGameButton(fsui.Button):
+    def __init__(self, parent, netplay, irc):
+        super().__init__(parent, "Start Game")
+        self.irc = irc
+        self.netplay = netplay
+
+    def on_activated(self):
+        self.irc.handle_command(f"/me attempts to start the game.")
+        start_sequence = self.netplay.start_sequence
+        local_hash = self.netplay.get_config_hash()
+
+        # # Output the config hash of each player
+        # for nick, player in self.netplay.players.items():
+        #     hash_value = player.get("config_hash")
+        #     self.irc.handle_command(f"/me {nick} config hash: {hash_value}")
+
+        # # Validate config hashes for all players
+        # mismatched = [
+        #     nick for nick, player in self.netplay.players.items()
+        #     if player.get("config_hash") != local_hash
+        # ]
+        # if mismatched:
+        #     self.irc.handle_command(f"/me All users must have matching config before starting.")
+        #     self.irc.handle_command(f"/me Mismatched players: {', '.join(mismatched)}")
+        #     self.netplay.message(gettext("All users must have matching config before starting."))
+        #     return
+
+        message = f"__start {start_sequence} {local_hash}"
+        # Send the start command to the IRC channel
+        self.irc.handle_command(f"/msg {self.netplay.game_channel} {message}")
+        # Process the start command locally
+        nick = self.netplay.irc.my_nick
+        self.netplay.handle_game_instruction(nick, message)
 
 class InfoButton(IconButton):
     def __init__(self, parent):
