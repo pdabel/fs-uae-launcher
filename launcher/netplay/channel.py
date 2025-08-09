@@ -145,7 +145,7 @@ class Channel:
                 self.ops.clear()
                 self.voices.clear()
                 self.message(
-                    f"You created the channel {self.name} and are the operator.",
+                    f"You joined the game channel - {self.name}.",
                     IRCColor.JOIN
                 )
                 self.irc.set_active_channel_name(self.name)
