@@ -376,7 +376,7 @@ class Netplay:
         if len(args) != 0:
             self.irc.warning("syntax: /sendconfig")
             return
-        self.game_info("sending config")
+        self.irc.handle_command(f"/me is sending configuration settings.")
         self.send_config()
 
     def send_config(self):
