@@ -100,6 +100,8 @@ class NetplayPanel(fsui.Panel):
         if not self.netplay.is_connected():
             self.netplay.connect()
         self.input_field.focus()
+        # lobby_channel = "#FS-UAE-Lobby"
+        # self.set_active_channel(lobby_channel)
 
     def on_select_channel(self, index):
         # index = self.channel_list.get_index()
@@ -167,6 +169,11 @@ class NetplayPanel(fsui.Panel):
     def on_irc(self, key, args):
         if key == "active_channel":
             self.set_active_channel(args["channel"])
+        elif key == "join":
+            # Hide buttons if joining the lobby
+            if args["channel"] == LOBBY_CHANNEL:
+                self.set_active_channel(LOBBY_CHANNEL)
+                self.update_action_buttons_visibility()
         elif key == "nick_list":
             if args["channel"] == self.active_channel:
                 self.update_nick_list()
