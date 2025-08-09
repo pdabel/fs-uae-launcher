@@ -250,18 +250,11 @@ class Netplay:
             if args["channel"] == self.game_channel:
                 # initialize new player
                 self.player(args["nick"])
-                # Announce the Op to the channel
-                op_nick = None
-                channel_obj = self.irc.channel(self.game_channel)
-                for nick in channel_obj.ops:
-                    op_nick = nick
-                    break
-                if op_nick:
-                    self.irc.handle_command(f"/msg {self.game_channel} Operator for this channel is: {op_nick}")
-                # Send config if new player and you are op
+                #if args["nick"] == self.irc.my_nick and self.is_op():
                 if args["nick"] != self.irc.my_nick:
                     if self.is_op():
                         # Broadcast to all users
+                        self.irc.handle_command(f"/me is the Operator for this game channel.")
                         self.irc.handle_command(f"/me is sending configuration settings to {args['nick']}.")
                         self.send_config()
         elif key == "part":
