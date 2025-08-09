@@ -250,7 +250,8 @@ class Netplay:
             if args["channel"] == self.game_channel:
                 # initialize new player
                 self.player(args["nick"])
-                #if args["nick"] == self.irc.my_nick and self.is_op():
+                if args["nick"] == self.irc.my_nick and self.is_op():
+                    self.irc.message(f"You are the Operator for this game channel.")
                 if args["nick"] != self.irc.my_nick:
                     if self.is_op():
                         # Broadcast to all users
