@@ -389,9 +389,9 @@ class Netplay:
             message = "__config {0} {1}".format(key, value)
             channel.privmsg(message)
         # Send end-of-config protocol message
+        self.irc.handle_command(f"/me has sent all configuration settings.")
         channel.privmsg("__endconfig")
         # Broadcast to all users that config has been sent
-        self.irc.handle_command(f"/me has sent all configuration settings.")
 
     def require_game_channel(self, channel):
         if not self.irc.running:
