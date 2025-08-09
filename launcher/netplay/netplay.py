@@ -391,7 +391,7 @@ class Netplay:
         # Send end-of-config protocol message
         channel.privmsg("__endconfig")
         # Broadcast to all users that config has been sent
-        channel.message(f"{self.irc.my_nick} has sent all configuration settings.")
+        self.irc.handle_command(f"/me has sent all configuration settings.")
 
     def require_game_channel(self, channel):
         if not self.irc.running:
@@ -693,7 +693,7 @@ class Netplay:
             self.print_verify_response(nick, args[0], " ".join(args[1:]))
         elif command == "__endconfig":
             # All config received, confirm or trigger any logic you need
-            channel.message(f"All configuration settings received from {nick}.")
+            self.irc.handle_command(f"/me has received all configuration settings from {nick}")
         else:
             channel.warning("unknown command received: {0}".format(command))
 
