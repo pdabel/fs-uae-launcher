@@ -177,8 +177,8 @@ class NetplayPanel(fsui.Panel):
         if key == "active_channel":
             self.set_active_channel(args["channel"])
         elif key == "join":
-            # Hide buttons if joining the lobby
-            if args["channel"] == LOBBY_CHANNEL:
+            # Only switch to lobby if the local user joined
+            if args["channel"] == LOBBY_CHANNEL and args["nick"] == self.netplay.irc.my_nick:
                 self.set_active_channel(LOBBY_CHANNEL)
                 self.update_action_buttons_visibility()
         elif key == "nick_list":
