@@ -138,7 +138,7 @@ class Channel:
                 )
             else:
                 # Broadcast to lobby that user has joined
-                self.irc.handle_command(f"/me has joined the lobby.")
+                self.irc.handle_command(f"/me {nick} has joined the lobby.")
             self.add_nick(nick)
         else:
             if self.irc.me(nick):
