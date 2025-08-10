@@ -4,6 +4,7 @@ from urllib.parse import parse_qs
 import uuid
 
 import requests
+from PyQt5.QtWidgets import QApplication
 
 from fsgs.amiga.amiga import Amiga
 from fsgs.context import fsgs
@@ -319,6 +320,11 @@ class Netplay:
         if len(args) != 0:
             self.irc.warning("syntax: /reset")
             return
+        # Get info before resetting config
+        game_id = LauncherConfig.get("__netplay_game")
+        port = LauncherConfig.get("__netplay_port")
+        channel = self.game_channel
+        close_server_window(game_id, port, channel)
         self.reset_netplay_config()
         self.connection_tester = None
 
@@ -829,3 +835,11 @@ class Netplay:
         file_config[
             "x_hard_drive_{0}_sha1".format(i)
         ] = "hard_drive_{0}".format(i)
+
+def close_server_window(game_id, port, channel):
+    title = f"FS-UAE Net Play Server - Game ID: {game_id}, Port: {port}, Channel: {channel}"
+    for widget in QApplication.topLevelWidgets():
+        if widget.windowTitle() == title:
+            widget.close()
+            return True
+    return False
