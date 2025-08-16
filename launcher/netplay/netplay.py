@@ -508,6 +508,11 @@ class Netplay:
                     game_id, game_password, game_addresses, game_port
                 )
             )
+            print("game_id:", game_id)
+            print("password:", game_password)
+            print("players:", players)
+            print("port:", game_port)
+            print("addresses:", game_addresses)
 
     def is_port_free(self, port):
         """Check if the given port is free on localhost."""
@@ -742,6 +747,25 @@ class Netplay:
         elif command == "__endconfig":
             # All config received, confirm or trigger any logic you need
             self.irc.handle_command(f"/me has received all configuration settings from {nick}")
+        elif command == "__server":
+            args = arg.split(" ")
+            if len(args) >= 5:
+                game_id, password, players, port, addresses = args[:5]
+                LauncherConfig.set_multiple(
+                    [
+                        ("__netplay_game", game_id),
+                        ("__netplay_password", password),
+                        ("__netplay_players", str(players)),
+                        ("__netplay_port", str(port)),
+                        ("__netplay_host", ""),
+                        ("__netplay_addresses", addresses),
+                    ]
+                )
+                channel.info(
+                    f"updated server info: id={game_id} port={port} addresses={addresses}"
+                )
+            else:
+                channel.warning("Malformed __server message received.")
         else:
             channel.warning("unknown command received: {0}".format(command))
 
