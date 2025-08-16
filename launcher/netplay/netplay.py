@@ -508,8 +508,7 @@ class Netplay:
                 )
             )
 
-    @staticmethod
-    def is_port_free(port):
+    def is_port_free(self, port):
         """Check if the given port is free on localhost."""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
@@ -876,6 +875,26 @@ class Netplay:
         file_config[
             "x_hard_drive_{0}_sha1".format(i)
         ] = "hard_drive_{0}".format(i)
+
+    def is_our_server_running(self, port):
+        # Implement logic to check if the running server is your own (e.g., by PID, window title, or IPC)
+        return False
+
+    def is_config_matching(self, port):
+        # Implement logic to compare current config with the running server's config
+        return False
+
+    def renew_server_config(self, port):
+        # Implement logic to send a signal or command to the running server to reload/renew config
+        pass
+
+    def stop_server(self, port):
+        # Implement logic to stop the running server
+        pass
+
+    def start_new_server(self, port, args):
+        # Implement logic to start a new server
+        pass
 
 def close_server_window(game_id, port, channel):
     title = f"FS-UAE Net Play Server - Game ID: {game_id}, Port: {port}, Channel: {channel}"
