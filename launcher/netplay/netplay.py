@@ -745,11 +745,12 @@ class Netplay:
             args = arg.split(" ", 1)
             self.print_verify_response(nick, args[0], " ".join(args[1:]))
         elif command == "__endconfig":
-            # All config received, confirm or trigger any logic you need
             self.irc.handle_command(f"/me has received all configuration settings from {nick}")
-            # Re-announce server now that config is synced
             self.reannounce_server()
-            # Attempt to connect to the game server after config is synced
+            # Set host for client to connect to
+            host = LauncherConfig.get("__netplay_addresses")
+            if host:
+                LauncherConfig.set("__netplay_host", host)
             if self.connection_tester:
                 self.connection_tester.connect_to_server()
         elif command == "__server":
