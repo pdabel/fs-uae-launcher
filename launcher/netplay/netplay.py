@@ -387,6 +387,7 @@ class Netplay:
             return
         self.irc.handle_command(f"/me is sending configuration settings.")
         self.send_config()
+        self.reannounce_server()
 
     def send_config(self):
         if not self.game_channel:
@@ -895,6 +896,38 @@ class Netplay:
     def start_new_server(self, port, args):
         # Implement logic to start a new server
         pass
+
+    def reannounce_server(self):
+        # Check if server info is present in config
+        game_id = LauncherConfig.get("__netplay_game")
+        password = LauncherConfig.get("__netplay_password")
+        players = LauncherConfig.get("__netplay_players")
+        port = LauncherConfig.get("__netplay_port")
+        addresses = LauncherConfig.get("__netplay_addresses")
+        channel = self.irc.channel(self.game_channel)
+
+        if all([game_id, port, players, addresses]):
+            # Re-broadcast server info to all clients
+            channel.info(
+                f"re-announcing game id: {game_id} password: {password} "
+                f"server: {addresses} port: {port}"
+            )
+            # Optionally, re-set config keys for clients
+            LauncherConfig.set_multiple(
+                [
+                    ("__netplay_game", game_id),
+                    ("__netplay_password", password),
+                    ("__netplay_players", str(players)),
+                    ("__netplay_port", str(port)),
+                    ("__netplay_host", ""),
+                    ("__netplay_addresses", addresses),
+                ]
+            )
+            # Optionally, send as a protocol message for automation
+            msg = f"__server {game_id} {password} {players} {port} {addresses}"
+            channel.privmsg(msg)
+        else:
+            channel.warning("No running server to re-announce.")
 
 def close_server_window(game_id, port, channel):
     title = f"FS-UAE Net Play Server - Game ID: {game_id}, Port: {port}, Channel: {channel}"
