@@ -387,7 +387,6 @@ class Netplay:
             return
         self.irc.handle_command(f"/me is sending configuration settings.")
         self.send_config()
-        self.reannounce_server()
 
     def send_config(self):
         if not self.game_channel:
@@ -508,13 +507,9 @@ class Netplay:
                     game_id, game_password, game_addresses, game_port
                 )
             )
-            print("game_id:", game_id)
-            print("password:", game_password)
-            print("players:", players)
-            print("port:", game_port)
-            print("addresses:", game_addresses)
 
-    def is_port_free(self, port):
+    @staticmethod
+    def is_port_free(port):
         """Check if the given port is free on localhost."""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
@@ -745,33 +740,8 @@ class Netplay:
             args = arg.split(" ", 1)
             self.print_verify_response(nick, args[0], " ".join(args[1:]))
         elif command == "__endconfig":
+            # All config received, confirm or trigger any logic you need
             self.irc.handle_command(f"/me has received all configuration settings from {nick}")
-            self.reannounce_server()
-            # Set host for client to connect to
-            host = LauncherConfig.get("__netplay_addresses")
-            if host:
-                LauncherConfig.set("__netplay_host", host)
-            if self.connection_tester:
-                self.connection_tester.connect_to_server()
-        elif command == "__server":
-            args = arg.split(" ")
-            if len(args) >= 5:
-                game_id, password, players, port, addresses = args[:5]
-                LauncherConfig.set_multiple(
-                    [
-                        ("__netplay_game", game_id),
-                        ("__netplay_password", password),
-                        ("__netplay_players", str(players)),
-                        ("__netplay_port", str(port)),
-                        ("__netplay_host", ""),
-                        ("__netplay_addresses", addresses),
-                    ]
-                )
-                channel.info(
-                    f"updated server info: id={game_id} port={port} addresses={addresses}"
-                )
-            else:
-                channel.warning("Malformed __server message received.")
         else:
             channel.warning("unknown command received: {0}".format(command))
 
@@ -906,89 +876,6 @@ class Netplay:
         file_config[
             "x_hard_drive_{0}_sha1".format(i)
         ] = "hard_drive_{0}".format(i)
-
-    def is_our_server_running(self, port):
-        # Implement logic to check if the running server is your own (e.g., by PID, window title, or IPC)
-        return False
-
-    def is_config_matching(self, port):
-        # Implement logic to compare current config with the running server's config
-        return False
-
-    def renew_server_config(self, port):
-        # Implement logic to send a signal or command to the running server to reload/renew config
-        pass
-
-    def stop_server(self, port):
-        # Implement logic to stop the running server
-        pass
-
-    def start_new_server(self, port, args):
-        # Implement logic to start a new server
-        pass
-
-    def reannounce_server(self):
-        # Check if server info is present in config
-        game_id = LauncherConfig.get("__netplay_game")
-        password = LauncherConfig.get("__netplay_password")
-        players = LauncherConfig.get("__netplay_players")
-        port = LauncherConfig.get("__netplay_port")
-        addresses = LauncherConfig.get("__netplay_addresses")
-        channel = self.irc.channel(self.game_channel)
-
-        if all([game_id, port, players, addresses]):
-            # Re-broadcast server info to all clients
-            channel.info(
-                f"re-announcing game id: {game_id} password: {password} "
-                f"server: {addresses} port: {port}"
-            )
-            # Optionally, re-set config keys for clients
-            LauncherConfig.set_multiple(
-                [
-                    ("__netplay_game", game_id),
-                    ("__netplay_password", password),
-                    ("__netplay_players", str(players)),
-                    ("__netplay_port", str(port)),
-                    ("__netplay_host", ""),
-                    ("__netplay_addresses", addresses),
-                ]
-            )
-            # Optionally, send as a protocol message for automation
-            msg = f"__server {game_id} {password} {players} {port} {addresses}"
-            channel.privmsg(msg)
-            # Force re-setup of connection tester or other stateful objects
-            if self.connection_tester:
-                self.connection_tester = ConnectionTester()
-        else:
-            channel.warning("No running server to re-announce.")
-
-    def ensure_server_matches_config(self):
-        # Get current config values
-        game_id = LauncherConfig.get("__netplay_game")
-        port = LauncherConfig.get("__netplay_port")
-        channel = self.game_channel
-
-        # Check if a server window is open (i.e., server running)
-        server_running = False
-        for widget in QApplication.topLevelWidgets():
-            if widget.windowTitle() == f"FS-UAE Net Play Server - Game ID: {game_id}, Port: {port}, Channel: {channel}":
-                server_running = True
-                break
-
-        # Optionally, check if config matches (implement is_config_matching)
-        config_matches = self.is_config_matching(port)
-
-        if server_running:
-            if config_matches:
-                # Optionally, just re-announce
-                self.reannounce_server()
-            else:
-                # Close the old server and start a new one
-                close_server_window(game_id, port, channel)
-                self.command_hostgame([f"{self.irc.client.host}:{port}", LauncherConfig.get("__netplay_players")])
-        else:
-            # No server running, start a new one
-            self.command_hostgame([f"{self.irc.client.host}:{port}", LauncherConfig.get("__netplay_players")])
 
 def close_server_window(game_id, port, channel):
     title = f"FS-UAE Net Play Server - Game ID: {game_id}, Port: {port}, Channel: {channel}"
