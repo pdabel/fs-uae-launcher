@@ -8,6 +8,11 @@ from launcher.ui.InfoDialog import InfoDialog
 from launcher.ui.IconButton import IconButton
 from PyQt5.QtWidgets import QApplication
 
+def close_windows_by_title(window_title):
+    for widget in QApplication.topLevelWidgets():
+        if widget.windowTitle().startswith(window_title):
+            widget.close()
+
 class NetplayPanel(fsui.Panel):
     def __init__(self, parent, header=True):
         fsui.Panel.__init__(self, parent)
@@ -99,12 +104,13 @@ class NetplayPanel(fsui.Panel):
         # This command is used to set the initial active channel and hide the action buttons
         self.active_channel = LOBBY_CHANNEL 
         self.input_field.focus()
-        
 
     def on_destroy(self):
         print("NetplayPanel.on_destroy")
         IRCBroadcaster.remove_listener(self)
         self.netplay.disconnect()
+        close_windows_by_title("FS-UAE Netplay Server - Game ID:")
+        close_windows_by_title("Netplay Info")
 
     def on_show(self):
         # FIXME: currently disabled
@@ -191,7 +197,6 @@ class NetplayPanel(fsui.Panel):
                 self.text_area.append_text(
                     args["message"], color=args["color"]
                 )
-            self.window.alert()
 
 class SimpleTextInputDialog(fsui.Dialog):
     def __init__(self, parent, title, label_text):
