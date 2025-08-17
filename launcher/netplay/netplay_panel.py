@@ -202,6 +202,8 @@ class SimpleTextInputDialog(fsui.Dialog):
         self.label = fsui.Label(self, label_text)
         self.layout.add(self.label, margin=10)
         self.text_field = fsui.TextField(self)
+        self.text_field.set_text("this")
+        self.text_field.select_all()
         self.layout.add(self.text_field, fill=True, margin=10)
         button_row = fsui.HorizontalLayout()
         self.ok_button = fsui.Button(self, gettext("OK"))
