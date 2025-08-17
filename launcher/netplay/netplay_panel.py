@@ -14,6 +14,7 @@ class NetplayPanel(fsui.Panel):
     def __init__(self, parent, header=True):
         fsui.Panel.__init__(self, parent)
         Skin.set_background_color(self)
+        self.active_channel = LOBBY_CHANNEL
         self.layout = fsui.VerticalLayout()
 
         if header:
@@ -99,7 +100,6 @@ class NetplayPanel(fsui.Panel):
         self.start_button = StartGameButton(self, self.netplay, self.netplay.irc)
         button_layout.add(self.start_button, fill=True, margin_left=10)
         # This command is used to set the initial active channel and hide the action buttons
-        self.active_channel = LOBBY_CHANNEL 
         self.input_field.focus()
         
 
