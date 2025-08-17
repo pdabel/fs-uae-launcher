@@ -50,13 +50,15 @@ class NetplayPanel(fsui.Panel):
         input_row = fsui.HorizontalLayout()
         self.layout.add(input_row, fill=True, margin=10, margin_top=0)
 
-        input_row.add(fsui.Label(self, gettext("Port (default: 25101)")), margin_right=5)
+        self.port_label = fsui.Label(self, gettext("Port (default: 25101)"))
+        input_row.add(self.port_label, margin_right=5)
         self.port_field = fsui.TextField(self)
         self.port_field.set_text("25101")
         self.port_field.set_min_width(75)
         input_row.add(self.port_field, fill=False, margin_right=15)
 
-        input_row.add(fsui.Label(self, gettext("Number of Players")), margin_right=5)
+        self.player_count_label = fsui.Label(self, gettext("Number of Players"))
+        input_row.add(self.player_count_label, margin_right=5)
         self.player_count_field = fsui.TextField(self)
         self.player_count_field.set_text("2")
         input_row.add(self.player_count_field, fill=False)
@@ -168,13 +170,28 @@ class NetplayPanel(fsui.Panel):
         print(f"Active channel: {self.active_channel}, In game channel: {in_game_channel}")
         # Show action buttons only in a game channel
         button_list = [self.ready_button, self.reset_button]
+        field_list = []
+        label_list = []
         if self.netplay.is_op():
             button_list = [self.host_game_button, self.send_config_button, self.ready_button, self.reset_button, self.start_button]
+            field_list = [self.player_count_field, self.port_field]
+            label_list = [self.player_count_label, self.port_label]
         for btn in button_list:
-            if in_game_channel and self.netplay.is_op():
+            if in_game_channel:
                 btn.show()
             else:
                 btn.hide()
+        for field in field_list:
+            if in_game_channel:
+                field.show()
+            else:
+                field.hide()
+        for label in label_list:
+            if in_game_channel:
+                label.show()
+            else:
+                label.hide()
+
         # Always show the join channel button
         self.join_channel_button.show()
 
