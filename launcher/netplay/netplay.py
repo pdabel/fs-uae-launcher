@@ -878,7 +878,7 @@ class Netplay:
         ] = "hard_drive_{0}".format(i)
 
 def close_server_window(game_id, port, channel):
-    title = f"FS-UAE Net Play Server - Game ID: {game_id}, Port: {port}, Channel: {channel}"
+    title = f"FS-UAE Netplay Server - Game ID: {game_id}, Port: {port}, Channel: {channel}"
     for widget in QApplication.topLevelWidgets():
         if widget.windowTitle() == title:
             widget.close()
