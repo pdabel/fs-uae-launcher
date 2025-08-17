@@ -167,8 +167,11 @@ class NetplayPanel(fsui.Panel):
         in_game_channel = self.active_channel and self.active_channel.endswith('-game')
         print(f"Active channel: {self.active_channel}, In game channel: {in_game_channel}")
         # Show action buttons only in a game channel
-        for btn in [self.host_game_button, self.send_config_button, self.ready_button, self.reset_button, self.start_button]:
-            if in_game_channel:
+        button_list = [self.ready_button, self.reset_button]
+        if self.netplay.is_op():
+            button_list = [self.host_game_button, self.send_config_button, self.ready_button, self.reset_button, self.start_button]
+        for btn in button_list:
+            if in_game_channel and self.netplay.is_op():
                 btn.show()
             else:
                 btn.hide()
