@@ -5,7 +5,7 @@ from launcher.i18n import gettext
 
 class ServerWindow(fsui.Window):
     def __init__(self, parent, server, game_id, port, channel):
-        fsui.Window.__init__(self, parent, f"FS-UAE Net Play Server - Game ID: {game_id}, Port: {port}, Channel: {channel}")
+        fsui.Window.__init__(self, parent, f"FS-UAE Netplay Server - Game ID: {game_id}, Port: {port}, Channel: {channel}")
         self.layout = fsui.VerticalLayout()
         self.layout.padding_top = 50
         self.layout.padding_bottom = 50
