@@ -8,6 +8,8 @@ from launcher.ui.InfoDialog import InfoDialog
 from launcher.ui.IconButton import IconButton
 from PyQt5.QtWidgets import QApplication
 
+CONST_NETPLAY_PORT = 25101
+
 class NetplayPanel(fsui.Panel):
     def __init__(self, parent, header=True):
         fsui.Panel.__init__(self, parent)
@@ -246,7 +248,7 @@ class HostGameButton(fsui.Button):
         self.set_tooltip(gettext("Host a game on the IRC channel."))
 
     def on_activated(self):
-        port = self.panel.port_field.get_text().strip() or "25101"
+        port = self.panel.port_field.get_text().strip() or str(CONST_NETPLAY_PORT)
         player_count = self.panel.player_count_field.get_text().strip() or "2"
         command = f"/hostgame {self.netplay.irc.client.host}:{port} {player_count}"
         # Broadcast the command as a message in the IRC channel
