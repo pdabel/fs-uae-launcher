@@ -49,33 +49,15 @@ class NetplayPanel(fsui.Panel):
             self.text_area, fill=True, expand=True, margin=10, margin_left=0
         )
 
-        input_row = fsui.HorizontalLayout()
-        self.layout.add(input_row, fill=True, margin=10, margin_top=0)
+        self._build_game_inputs()
+        self._manual_command_input()
 
-        input_row.add(fsui.Label(self, gettext("Port (default: 25101)")), margin_right=5)
-        self.port_field = fsui.TextField(self)
-        self.port_field.set_text("25101")
-        self.port_field.set_min_width(75)
-        input_row.add(self.port_field, fill=False, margin_right=15)
-
-        input_row.add(fsui.Label(self, gettext("Number of Players")), margin_right=5)
-        self.player_count_field = fsui.TextField(self)
-        self.player_count_field.set_text("2")
-        input_row.add(self.player_count_field, fill=False)
-        # Add a spacer to push the info button to the far right
-        input_row.add_spacer(0, expand=True)  
-        info_button = InfoButton(self)
-        input_row.add(info_button, margin_left=10)
-
-        self.layout.add(fsui.Label(self, gettext("Netplay Server Commands")), margin=10, margin_top=10)
-        self.input_field = fsui.TextField(self)
-        self.input_field.activated.connect(self.on_input)
-        self.layout.add(self.input_field, fill=True, margin=10, margin_top=0)
-        self.layout.add(button_layout, fill=True, margin=10)
+        
         self.netplay = Netplay()
         IRCBroadcaster.add_listener(self)
         # Create buttons for various actions
         # Join Channel button to join a game channel (shown in all channels)
+        self.layout.add(button_layout, fill=True, margin=10)
         self.join_channel_button = JoinChannelButton(self, self.netplay.irc)
         button_layout.add(self.join_channel_button, fill=True, margin_left=0)
  
@@ -104,6 +86,33 @@ class NetplayPanel(fsui.Panel):
         # This command is used to set the initial active channel and hide the action buttons
         self.active_channel = LOBBY_CHANNEL 
         self.input_field.focus()
+
+    def _manual_command_input(self):
+        self.layout.add(fsui.Label(self, gettext("Netplay Server Commands")), margin=10, margin_top=10)
+        self.input_field = fsui.TextField(self)
+        self.input_field.activated.connect(self.on_input)
+        self.layout.add(self.input_field, fill=True, margin=10, margin_top=0)
+
+    def _build_game_inputs(self):
+        input_row = fsui.HorizontalLayout()
+        self.layout.add(input_row, fill=True, margin=10, margin_top=0)
+
+        self.port_label = fsui.Label(self, gettext("Port (default: 25101)"))
+        input_row.add(self.port_label, margin_right=5)
+        self.port_field = fsui.TextField(self)
+        self.port_field.set_text("25101")
+        self.port_field.set_min_width(75)
+        input_row.add(self.port_field, fill=False, margin_right=15)
+
+        self.player_count_label = fsui.Label(self, gettext("Number of Players"))
+        input_row.add(self.player_count_label, margin_right=5)
+        self.player_count_field = fsui.TextField(self)
+        self.player_count_field.set_text("2")
+        input_row.add(self.player_count_field, fill=False)
+        # Add a spacer to push the info button to the far right
+        input_row.add_spacer(0, expand=True)  
+        info_button = InfoButton(self)
+        input_row.add(info_button, margin_left=10)
 
     def on_destroy(self):
         print("NetplayPanel.on_destroy")
@@ -170,29 +179,19 @@ class NetplayPanel(fsui.Panel):
     def update_action_buttons_visibility(self):
         # Use the actual game channel from Netplay for operator check
         in_game_channel = self.active_channel and self.active_channel.endswith('-game')
-        is_op = self.netplay.irc.channel(self.active_channel).is_op(self.netplay.irc.my_nick)
-        # Always show the join channel button
-        self.join_channel_button.show()
 
-        if in_game_channel:
-            if is_op:
-                # Show all action buttons except Ready
-                for btn in [self.host_game_button, self.send_config_button, self.reset_button, self.start_button]:
-                    btn.show()
-                # Hide Ready button for ops as starting the game handles readiness     
-                self.ready_button.hide()
-                return
-            else:
-                # Always show Ready in game channel
-                self.ready_button.show()
-                # Hide all other action buttons for non-ops
-                for btn in [self.host_game_button, self.send_config_button, self.reset_button, self.start_button]:
-                    btn.hide()
-                return
-        # Hide all action buttons by default
-        for btn in [self.host_game_button, self.send_config_button, self.reset_button, self.start_button, self.ready_button]:
-            btn.hide()
-
+        show_list = []
+        hide_list = [self.host_game_button, self.send_config_button, self.reset_button, self.start_button, self.player_count_field, self.port_field, self.player_count_label, self.port_label, self.ready_button]
+        if in_game_channel and self.netplay.is_op():
+            show_list = [self.host_game_button, self.send_config_button, self.reset_button, self.start_button, self.player_count_field, self.port_field, self.player_count_label, self.port_label]
+            hide_list = [self.ready_button]
+        elif in_game_channel and not self.netplay.is_op():
+            show_list = [self.ready_button]
+            hide_list = [self.host_game_button, self.send_config_button, self.reset_button, self.start_button, self.player_count_field, self.port_field, self.player_count_label, self.port_label]
+        for item in show_list:
+            item.show()
+        for item in hide_list:
+            item.hide()
 
 
     def on_irc(self, key, args):
@@ -223,6 +222,8 @@ class SimpleTextInputDialog(fsui.Dialog):
         self.label = fsui.Label(self, label_text)
         self.layout.add(self.label, margin=10)
         self.text_field = fsui.TextField(self)
+        self.text_field.set_text("new")
+        self.text_field.select_all()
         self.layout.add(self.text_field, fill=True, margin=10)
         button_row = fsui.HorizontalLayout()
         self.ok_button = fsui.Button(self, gettext("OK"))
