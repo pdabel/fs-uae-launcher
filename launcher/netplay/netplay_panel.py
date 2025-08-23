@@ -152,7 +152,6 @@ class NetplayPanel(fsui.Panel):
 
     def set_active_channel(self, channel):
         if channel == self.active_channel:
-            #self.update_action_buttons_visibility()
             return
         self.text_area.set_text("")
         ch = self.netplay.irc.channel(channel)
