@@ -180,13 +180,41 @@ class NetplayPanel(fsui.Panel):
         in_game_channel = self.active_channel and self.active_channel.endswith('-game')
 
         show_list = []
-        hide_list = [self.host_game_button, self.send_config_button, self.reset_button, self.start_button, self.player_count_field, self.port_field, self.player_count_label, self.port_label, self.ready_button]
+        hide_list = [
+            self.host_game_button,
+            self.send_config_button,
+            self.reset_button,
+            self.start_button,
+            self.player_count_field,
+            self.port_field,
+            self.player_count_label,
+            self.port_label,
+            self.ready_button
+        ]
         if in_game_channel and self.netplay.is_op():
-            show_list = [self.host_game_button, self.send_config_button, self.reset_button, self.start_button, self.player_count_field, self.port_field, self.player_count_label, self.port_label]
+            show_list = [
+                self.host_game_button,
+                self.send_config_button,
+                self.reset_button,
+                self.start_button,
+                self.player_count_field,
+                self.port_field,
+                self.player_count_label,
+                self.port_label
+            ]
             hide_list = [self.ready_button]
         elif in_game_channel and not self.netplay.is_op():
             show_list = [self.ready_button]
-            hide_list = [self.host_game_button, self.send_config_button, self.reset_button, self.start_button, self.player_count_field, self.port_field, self.player_count_label, self.port_label]
+            hide_list = [
+                self.host_game_button,
+                self.send_config_button,
+                self.reset_button,
+                self.start_button,
+                self.player_count_field,
+                self.port_field,
+                self.player_count_label,
+                self.port_label
+            ]
         for item in show_list:
             item.show()
         for item in hide_list:
