@@ -81,26 +81,26 @@ class NetplayPanel(fsui.Panel):
  
          # Add a spacer before the Start Game button and store a reference
         self.action_spacer_pre = button_layout.add_spacer(0, expand=True)
- 
+
         # Host Game button to host a game on the IRC channel (only shown in game channels)
         self.host_game_button = HostGameButton(self, self.netplay, self, self.netplay.irc)
         button_layout.add(self.host_game_button, fill=True, margin_left=10)
         # Send Config button to send the current config to other players (only shown in game channels)
         self.send_config_button = SendConfig(self, self.netplay, self.netplay.irc)
         button_layout.add(self.send_config_button, fill=True, margin_left=10)
-        # Ready button to indicate player is ready (only shown in game channels)
-        self.ready_button = Ready(self, self.netplay, self.netplay.irc)
-        button_layout.add(self.ready_button, fill=True, margin_left=10)
         # Reset button to reset config (only shown in game channels)
         self.reset_button = Reset(self, self.netplay, self.netplay.irc)
         button_layout.add(self.reset_button, fill=True, margin_left=10)
+        # Start Game button (only shown in game channels)
+        self.start_button = StartGameButton(self, self.netplay, self.netplay.irc)
+        button_layout.add(self.start_button, fill=True, margin_left=10)
 
         # Add a spacer before the Start Game button and store a reference
         self.action_spacer_post = button_layout.add_spacer(0, expand=True)
 
-        # Start Game button (only shown in game channels)
-        self.start_button = StartGameButton(self, self.netplay, self.netplay.irc)
-        button_layout.add(self.start_button, fill=True, margin_left=10)
+        # Ready button to indicate player is ready (only shown in game channels)
+        self.ready_button = Ready(self, self.netplay, self.netplay.irc)
+        button_layout.add(self.ready_button, fill=True, margin_left=10)
         # This command is used to set the initial active channel and hide the action buttons
         self.active_channel = LOBBY_CHANNEL 
         self.input_field.focus()
@@ -143,7 +143,7 @@ class NetplayPanel(fsui.Panel):
 
     def set_active_channel(self, channel):
         if channel == self.active_channel:
-            self.update_action_buttons_visibility()
+            #self.update_action_buttons_visibility()
             return
         self.text_area.set_text("")
         ch = self.netplay.irc.channel(channel)
@@ -168,16 +168,32 @@ class NetplayPanel(fsui.Panel):
         self.nick_list.set_items(items)
 
     def update_action_buttons_visibility(self):
+        # Use the actual game channel from Netplay for operator check
         in_game_channel = self.active_channel and self.active_channel.endswith('-game')
-        print(f"Active channel: {self.active_channel}, In game channel: {in_game_channel}")
-        # Show action buttons only in a game channel
-        for btn in [self.host_game_button, self.send_config_button, self.ready_button, self.reset_button, self.start_button]:
-            if in_game_channel:
-                btn.show()
-            else:
-                btn.hide()
+        is_op = self.netplay.irc.channel(self.active_channel).is_op(self.netplay.irc.my_nick)
         # Always show the join channel button
         self.join_channel_button.show()
+
+        if in_game_channel:
+            if is_op:
+                # Show all action buttons except Ready
+                for btn in [self.host_game_button, self.send_config_button, self.reset_button, self.start_button]:
+                    btn.show()
+                # Hide Ready button for ops as starting the game handles readiness     
+                self.ready_button.hide()
+                return
+            else:
+                # Always show Ready in game channel
+                self.ready_button.show()
+                # Hide all other action buttons for non-ops
+                for btn in [self.host_game_button, self.send_config_button, self.reset_button, self.start_button]:
+                    btn.hide()
+                return
+        # Hide all action buttons by default
+        for btn in [self.host_game_button, self.send_config_button, self.reset_button, self.start_button, self.ready_button]:
+            btn.hide()
+
+
 
     def on_irc(self, key, args):
         if key == "active_channel":
@@ -186,10 +202,11 @@ class NetplayPanel(fsui.Panel):
             # Only switch to lobby if the local user joined
             if args["channel"] == LOBBY_CHANNEL and args["nick"] == self.netplay.irc.my_nick:
                 self.set_active_channel(LOBBY_CHANNEL)
-                self.update_action_buttons_visibility()
         elif key == "nick_list":
             if args["channel"] == self.active_channel:
                 self.update_nick_list()
+                # Update visibility when nick list changes (e.g., ops)
+                self.update_action_buttons_visibility()
         elif key == "channel_list":
             self.update_channel_list()
         elif key == "message":
@@ -197,6 +214,7 @@ class NetplayPanel(fsui.Panel):
                 self.text_area.append_text(
                     args["message"], color=args["color"]
                 )
+
 
 class SimpleTextInputDialog(fsui.Dialog):
     def __init__(self, parent, title, label_text):
