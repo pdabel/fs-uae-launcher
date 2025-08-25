@@ -176,11 +176,11 @@ class NetplayPanel(fsui.Panel):
         self.nick_list.set_items(items)
 
     def update_action_buttons_visibility(self):
-        # Use the actual game channel from Netplay for operator check
         in_game_channel = self.active_channel and self.active_channel.endswith('-game')
+        is_op = self.netplay.is_op()
 
-        show_list = []
-        hide_list = [
+        # Master list of all action buttons
+        all_buttons = [
             self.host_game_button,
             self.send_config_button,
             self.reset_button,
@@ -189,36 +189,23 @@ class NetplayPanel(fsui.Panel):
             self.port_field,
             self.player_count_label,
             self.port_label,
-            self.ready_button
+            self.ready_button,
         ]
-        if in_game_channel and self.netplay.is_op():
-            show_list = [
-                self.host_game_button,
-                self.send_config_button,
-                self.reset_button,
-                self.start_button,
-                self.player_count_field,
-                self.port_field,
-                self.player_count_label,
-                self.port_label
-            ]
-            hide_list = [self.ready_button]
-        elif in_game_channel and not self.netplay.is_op():
-            show_list = [self.ready_button]
-            hide_list = [
-                self.host_game_button,
-                self.send_config_button,
-                self.reset_button,
-                self.start_button,
-                self.player_count_field,
-                self.port_field,
-                self.player_count_label,
-                self.port_label
-            ]
-        for item in show_list:
-            item.show()
-        for item in hide_list:
-            item.hide()
+
+        # Determine which buttons should be shown
+        if in_game_channel and is_op:
+            show_list = set(all_buttons) - {self.ready_button}
+        elif in_game_channel and not is_op:
+            show_list = {self.ready_button}
+        else:
+            show_list = set()
+
+        # Show/hide buttons accordingly
+        for btn in all_buttons:
+            if btn in show_list:
+                btn.show()
+            else:
+                btn.hide()
 
 
     def on_irc(self, key, args):
