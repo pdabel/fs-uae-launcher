@@ -385,10 +385,12 @@ class InfoButton(IconButton):
         info_dialog = InfoDialog(self.parent)
         info_dialog.show()
 
-class ConfigButton(fsui.Button):
+class ConfigButton(IconButton):
     def __init__(self, parent):
-        super().__init__(parent, "Sync Config")
+        super().__init__(parent, "32/settings.png")  # Corrected path
+        self.set_tooltip(gettext("Sync Config Settings"))
         self.parent = parent
+        self.set_size((32, 32))
 
     def on_activated(self):
         # Check if a Sync Config dialog is already open by window title
@@ -398,47 +400,148 @@ class ConfigButton(fsui.Button):
                 widget.activateWindow()
                 return
         # If not open, create and show it
-        dlg = AmigaDrivesConfigDialog(self.parent)
+        dlg = SyncConfigDialog(self.parent)
         dlg.show()
 
-class AmigaDrivesConfigDialog(fsui.Window):
+SYNC_CONFIG_PATH = os.path.expanduser("~/.netplay_sync_config.ini")
+
+class SyncConfigDialog(fsui.Window):
     def __init__(self, parent):
         super().__init__(parent, "Sync Config", minimizable=False, maximizable=False)
         layout = fsui.VerticalLayout()
         layout.set_padding(20)
 
         self.fields = {}
-        settings = [
-            ("Max Floppy Drives", "4"),
-            ("Max Floppy Images", "20"),
-            ("Max CDROM Drives", "4"),
-            ("Max CDROM Images", "20"),
-            ("Max Hard Drives", "4"),
-        ]
-        LABEL_WIDTH = 160 
+        self.defaults = {
+            "Max Floppy Drives": str(Amiga.MAX_FLOPPY_DRIVES),
+            "Max Floppy Images": str(Amiga.MAX_FLOPPY_IMAGES),
+            "Max CDROM Drives": str(Amiga.MAX_CDROM_DRIVES),
+            "Max CDROM Images": str(Amiga.MAX_CDROM_IMAGES),
+            "Max Hard Drives": str(Amiga.MAX_HARD_DRIVES),
+        }
+        self.fast_values = {
+            "Max Floppy Drives": "4",
+            "Max Floppy Images": "4",
+            "Max CDROM Drives": "0",
+            "Max CDROM Images": "0",
+            "Max Hard Drives": "0",
+        }
+        LABEL_WIDTH = 160
 
-        for label, default in settings:
+        # Load saved config if it exists
+        self.config = configparser.ConfigParser()
+        self.config.read(SYNC_CONFIG_PATH)
+        saved = self.config["sync"] if "sync" in self.config else {}
+
+        for label, default in self.defaults.items():
             row = fsui.HorizontalLayout()
             label_widget = fsui.Label(self, label)
             label_widget.set_min_width(LABEL_WIDTH)
-            row.add(label_widget, expand=True, margin_right=10)  
+            row.add(label_widget, expand=True, margin_right=10)
             field = fsui.TextField(self)
-            field.set_text(default)
+            # Use saved value if present, else default
+            field.set_text(saved.get(label, default))
             field.set_min_width(40)
-            row.add(field, fill=False, expand=False)
+            field.setReadOnly(True)
             self.fields[label] = field
+            row.add(field, fill=False, expand=False)
             layout.add(row, margin_bottom=5)
 
         layout.add_spacer(0, expand=True)
 
+        # Stack option buttons vertically
+        mode_col = fsui.VerticalLayout()
+        self.default_button = fsui.Button(self, "Default")
+        self.fast_button = fsui.Button(self, "Fast")
+        self.custom_button = fsui.Button(self, "Custom")
+        mode_col.add(self.default_button, fill=True, margin_bottom=5)
+        mode_col.add(self.fast_button, fill=True, margin_bottom=5)
+        mode_col.add(self.custom_button, fill=True)
+        layout.add(mode_col, fill=True, margin_bottom=10)
+
+        self.default_button.on_activated = self.on_default
+        self.fast_button.on_activated = self.on_fast
+        self.custom_button.on_activated = self.on_custom
+
+        # OK (left) and Cancel (right) row
         button_row = fsui.HorizontalLayout()
         self.ok_button = fsui.Button(self, "OK")
+        self.cancel_button = fsui.Button(self, "Cancel")
         button_row.add(self.ok_button, fill=False)
-        layout.add(button_row)
+        button_row.add_spacer(0, expand=True)
+        button_row.add(self.cancel_button, fill=False)
+        layout.add(button_row, fill=True)
+
         self.ok_button.on_activated = self.on_ok
+        self.cancel_button.on_activated = self.close
 
         self.layout = layout
-        self.set_size((260, 420))
+        self.set_size((260, 360))
+
+        self.selected_mode = saved.get("mode", "default")
+
+        # Simulate clicking the correct button (this sets fields and highlights)
+        if self.selected_mode == "fast":
+            self.fast_button.on_activated()
+        elif self.selected_mode == "custom":
+            self.custom_button.on_activated()
+        else:
+            self.default_button.on_activated()
+
+    def set_fields(self, values=None, read_only=True, numbers_only=False):
+        # If values is None, keep current field values
+        for label, field in self.fields.items():
+            if values is not None:
+                field.set_text(values[label])
+            field.setReadOnly(read_only)
+            if numbers_only:
+                field.setValidator(QIntValidator())
+            else:
+                field.setValidator(None)
 
     def on_ok(self):
+        # Save current settings to sync_config.ini
+        self.config["sync"] = {label: field.get_text() for label, field in self.fields.items()}
+        self.config["sync"]["mode"] = self.selected_mode
+        with open(SYNC_CONFIG_PATH, "w") as f:
+            self.config.write(f)
         self.close()
+
+    def on_default(self):
+        self.set_fields(self.defaults, read_only=True, numbers_only=False)
+        self.selected_mode = "default"
+        self.highlight_mode_button("default")
+
+    def on_fast(self):
+        self.set_fields(self.fast_values, read_only=True, numbers_only=False)
+        self.selected_mode = "fast"
+        self.highlight_mode_button("fast")
+
+    def on_custom(self):
+        # Get saved values from config file, or current field values if not present
+        saved = self.config["sync"] if "sync" in self.config else {}
+        saved_values = {label: saved.get(label, self.fields[label].get_text()) for label in self.defaults}
+
+        # If saved values do not match default or fast, use them
+        if not (self._values_match(saved_values, self.defaults) or self._values_match(saved_values, self.fast_values)):
+            self.set_fields(saved_values, read_only=False, numbers_only=True)
+        else:
+            # Otherwise, keep current values editable
+            self.set_fields(values=None, read_only=False, numbers_only=True)
+
+        self.selected_mode = "custom"
+        self.highlight_mode_button("custom")
+
+    def highlight_mode_button(self, selected):
+        for mode, btn in [
+            ("default", self.default_button),
+            ("fast", self.fast_button),
+            ("custom", self.custom_button),
+        ]:
+            current_font = btn.font()
+            font_obj = Font(current_font.font)
+            font_obj.font.setBold(mode == selected)
+            btn.set_font(font_obj)
+
+    def _values_match(self, a, b):
+        return all(str(a[k]) == str(b[k]) for k in a)
