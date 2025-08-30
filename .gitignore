@@ -26,3 +26,14 @@ fontconfig
 fs-uae-launcher_*
 fs-uae-launcher-*
 Lib
+/Makefile
+*.mo
+*.pot
+/.pybuild/
+*.pyc
+/pyinstaller/
+*.pyo
+/setup.py
+*.swp
+venv
+__pycache__/
