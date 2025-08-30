@@ -88,7 +88,11 @@ class NetplayPanel(fsui.Panel):
         self.player_count_field.setValidator(self.player_count_validator)  # Set validator.
         input_row.add(self.player_count_field, fill=False)
         # Add a spacer to push the info button to the far right
-        input_row.add_spacer(0, expand=True)  
+        input_row.add_spacer(0, expand=True)
+
+        self.config_button = ConfigButton(self)
+        input_row.add(self.config_button, margin_left=10)
+
         info_button = InfoButton(self)
         input_row.add(info_button, margin_left=10)
 
@@ -193,10 +197,11 @@ class NetplayPanel(fsui.Panel):
             self.reset_button,
             self.start_button,
             self.player_count_field,
-            self.port_field,
             self.player_count_label,
+            self.port_field,            
             self.port_label,
             self.ready_button,
+            self.config_button
         ]
 
         # Determine which buttons should be shown
@@ -379,3 +384,61 @@ class InfoButton(IconButton):
         # If not open, create and show it
         info_dialog = InfoDialog(self.parent)
         info_dialog.show()
+
+class ConfigButton(fsui.Button):
+    def __init__(self, parent):
+        super().__init__(parent, "Sync Config")
+        self.parent = parent
+
+    def on_activated(self):
+        # Check if a Sync Config dialog is already open by window title
+        for widget in QApplication.topLevelWidgets():
+            if widget.windowTitle() == "Sync Config":
+                widget.raise_()
+                widget.activateWindow()
+                return
+        # If not open, create and show it
+        dlg = AmigaDrivesConfigDialog(self.parent)
+        dlg.show()
+
+class AmigaDrivesConfigDialog(fsui.Window):
+    def __init__(self, parent):
+        super().__init__(parent, "Sync Config", minimizable=False, maximizable=False)
+        layout = fsui.VerticalLayout()
+        layout.set_padding(20)
+
+        self.fields = {}
+        settings = [
+            ("Max Floppy Drives", "4"),
+            ("Max Floppy Images", "20"),
+            ("Max CDROM Drives", "4"),
+            ("Max CDROM Images", "20"),
+            ("Max Hard Drives", "4"),
+        ]
+        LABEL_WIDTH = 160 
+
+        for label, default in settings:
+            row = fsui.HorizontalLayout()
+            label_widget = fsui.Label(self, label)
+            label_widget.set_min_width(LABEL_WIDTH)
+            row.add(label_widget, expand=True, margin_right=10)  
+            field = fsui.TextField(self)
+            field.set_text(default)
+            field.set_min_width(40)
+            row.add(field, fill=False, expand=False)
+            self.fields[label] = field
+            layout.add(row, margin_bottom=5)
+
+        layout.add_spacer(0, expand=True)
+
+        button_row = fsui.HorizontalLayout()
+        self.ok_button = fsui.Button(self, "OK")
+        button_row.add(self.ok_button, fill=False)
+        layout.add(button_row)
+        self.ok_button.on_activated = self.on_ok
+
+        self.layout = layout
+        self.set_size((260, 420))
+
+    def on_ok(self):
+        self.close()
