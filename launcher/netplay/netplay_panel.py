@@ -208,7 +208,7 @@ class NetplayPanel(fsui.Panel):
         if in_game_channel and is_op:
             show_list = set(all_buttons) - {self.ready_button}
         elif in_game_channel and not is_op:
-            show_list = {self.ready_button}
+            show_list = {self.ready_button, self.config_button}
         else:
             show_list = set()
 
