@@ -402,9 +402,6 @@ class ConfigButton(IconButton):
         # If not open, create and show it
         dlg = SyncConfigDialog(self.parent)
         dlg.show()
-
-SYNC_CONFIG_PATH = os.path.expanduser("~/.netplay_sync_config.ini")
-
 class SyncConfigDialog(fsui.Window):
     def __init__(self, parent):
         super().__init__(parent, "Sync Config", minimizable=False, maximizable=False)
@@ -505,6 +502,8 @@ class SyncConfigDialog(fsui.Window):
         self.config["sync"]["mode"] = self.selected_mode
         with open(SYNC_CONFIG_PATH, "w") as f:
             self.config.write(f)
+        sync_settings.update()
+        LauncherConfig.refresh_keys() 
         self.close()
 
     def on_default(self):
