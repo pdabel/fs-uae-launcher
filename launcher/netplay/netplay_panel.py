@@ -6,7 +6,7 @@ from launcher.netplay.netplay import Netplay
 from launcher.ui.skin import Skin
 from launcher.ui.InfoDialog import InfoDialog
 from launcher.ui.IconButton import IconButton
-from fsui.qt import QApplication
+from fsui.qt import QApplication, QValidator, QIntValidator, QInputDialog, QLineEdit
 
 def close_windows_by_title(window_title):
     for widget in QApplication.topLevelWidgets():
@@ -31,7 +31,6 @@ class NetplayPanel(fsui.Panel):
 
 
         hori_layout = fsui.HorizontalLayout()
-        button_layout = fsui.HorizontalLayout()
         self.layout.add(hori_layout, fill=True, expand=True)
         
 
@@ -49,14 +48,50 @@ class NetplayPanel(fsui.Panel):
             self.text_area, fill=True, expand=True, margin=10, margin_left=0
         )
 
-        self._build_game_inputs()
-        self._manual_command_input()
-
-        
         self.netplay = Netplay()
         IRCBroadcaster.add_listener(self)
-        # Create buttons for various actions
-        # Join Channel button to join a game channel (shown in all channels)
+
+        self._build_netplay_game_inputs()
+        self._manual_command_input()
+        self._build_netplay_buttons()
+
+        # This command is used to set the initial active channel and hide the action buttons
+        self.active_channel = LOBBY_CHANNEL 
+        self.input_field.focus()
+
+    def _manual_command_input(self):
+        self.layout.add(fsui.Label(self, gettext("Netplay Server Commands")), margin=10, margin_top=10)
+        self.input_field = fsui.TextField(self)
+        self.input_field.activated.connect(self.on_input)
+        self.layout.add(self.input_field, fill=True, margin=10, margin_top=0)
+
+    def _build_netplay_game_inputs(self):
+        input_row = fsui.HorizontalLayout()
+        self.layout.add(input_row, fill=True, margin=10, margin_top=0)
+
+        self.port_label = fsui.Label(self, gettext("Port (default: 25101)"))
+        input_row.add(self.port_label, margin_right=5)
+        self.port_field = fsui.TextField(self)
+        self.port_field.set_text("25101")
+        self.netplay_port_validator = QIntValidator(bottom=25100, top=25500)
+        self.port_field.setValidator(self.netplay_port_validator)  # Set validator.
+        self.port_field.set_min_width(75)
+        input_row.add(self.port_field, fill=False, margin_right=15)
+
+        self.player_count_label = fsui.Label(self, gettext("Number of Players"))
+        input_row.add(self.player_count_label, margin_right=5)
+        self.player_count_field = fsui.TextField(self)
+        self.player_count_field.set_text("2")
+        self.player_count_validator = QIntValidator(bottom=2, top=6)
+        self.player_count_field.setValidator(self.player_count_validator)  # Set validator.
+        input_row.add(self.player_count_field, fill=False)
+        # Add a spacer to push the info button to the far right
+        input_row.add_spacer(0, expand=True)  
+        info_button = InfoButton(self)
+        input_row.add(info_button, margin_left=10)
+
+    def _build_netplay_buttons(self):
+        button_layout = fsui.HorizontalLayout()
         self.layout.add(button_layout, fill=True, margin=10)
         self.join_channel_button = JoinChannelButton(self, self.netplay.irc)
         button_layout.add(self.join_channel_button, fill=True, margin_left=0)
@@ -83,36 +118,6 @@ class NetplayPanel(fsui.Panel):
         # Ready button to indicate player is ready (only shown in game channels)
         self.ready_button = Ready(self, self.netplay, self.netplay.irc)
         button_layout.add(self.ready_button, fill=True, margin_left=10)
-        # This command is used to set the initial active channel and hide the action buttons
-        self.active_channel = LOBBY_CHANNEL 
-        self.input_field.focus()
-
-    def _manual_command_input(self):
-        self.layout.add(fsui.Label(self, gettext("Netplay Server Commands")), margin=10, margin_top=10)
-        self.input_field = fsui.TextField(self)
-        self.input_field.activated.connect(self.on_input)
-        self.layout.add(self.input_field, fill=True, margin=10, margin_top=0)
-
-    def _build_game_inputs(self):
-        input_row = fsui.HorizontalLayout()
-        self.layout.add(input_row, fill=True, margin=10, margin_top=0)
-
-        self.port_label = fsui.Label(self, gettext("Port (default: 25101)"))
-        input_row.add(self.port_label, margin_right=5)
-        self.port_field = fsui.TextField(self)
-        self.port_field.set_text("25101")
-        self.port_field.set_min_width(75)
-        input_row.add(self.port_field, fill=False, margin_right=15)
-
-        self.player_count_label = fsui.Label(self, gettext("Number of Players"))
-        input_row.add(self.player_count_label, margin_right=5)
-        self.player_count_field = fsui.TextField(self)
-        self.player_count_field.set_text("2")
-        input_row.add(self.player_count_field, fill=False)
-        # Add a spacer to push the info button to the far right
-        input_row.add_spacer(0, expand=True)  
-        info_button = InfoButton(self)
-        input_row.add(info_button, margin_left=10)
 
     def on_destroy(self):
         print("NetplayPanel.on_destroy")
@@ -227,48 +232,16 @@ class NetplayPanel(fsui.Panel):
                 self.text_area.append_text(
                     args["message"], color=args["color"]
                 )
-
-
-class SimpleTextInputDialog(fsui.Dialog):
-    def __init__(self, parent, title, label_text):
-        super().__init__(parent, title)
-        self.layout = fsui.VerticalLayout()
-        self.label = fsui.Label(self, label_text)
-        self.layout.add(self.label, margin=10)
-        self.text_field = fsui.TextField(self)
-        self.text_field.set_text("new")
-        self.text_field.select_all()
-        self.layout.add(self.text_field, fill=True, margin=10)
-        button_row = fsui.HorizontalLayout()
-        self.ok_button = fsui.Button(self, gettext("OK"))
-        self.ok_button.activated.connect(self.on_ok)
-        button_row.add(self.ok_button, fill=True, margin_right=10)
-        self.cancel_button = fsui.Button(self, gettext("Cancel"))
-        self.cancel_button.activated.connect(self.reject)
-        button_row.add(self.cancel_button, fill=True)
-        self.layout.add(button_row, margin=10)
-        self.text_field.activated.connect(self.on_ok)
-        self.result_text = None
-
-    def on_ok(self):
-        self.result_text = self.text_field.get_text()
-        self.accept()
-
-    @staticmethod
-    def get_text(parent, title, label_text):
-        dialog = SimpleTextInputDialog(parent, title, label_text)
-        if dialog.exec_():
-            return dialog.result_text
-        return None
-
 class JoinChannelButton(fsui.Button):
     def __init__(self, parent, irc):
         super().__init__(parent, gettext("Join Game Channel"))
         self.irc = irc
 
     def on_activated(self):
-        game_name = SimpleTextInputDialog.get_text(self, gettext("Enter Game Name"), gettext("Game Name:"))
-        if game_name:
+        game_name, ok = QInputDialog.getText(None, "Enter Game Name",
+                                "Game Name:", QLineEdit.EchoMode.Normal,
+                                "new")
+        if ok and game_name:
             game_name = game_name.replace(" ", "-").lower()
             # Broadcast the command as a message in the IRC channel
             self.irc.handle_command(f"/me ran the following command:")
@@ -284,8 +257,24 @@ class HostGameButton(fsui.Button):
         self.set_tooltip(gettext("Host a game on the IRC channel."))
 
     def on_activated(self):
-        port = self.panel.port_field.get_text().strip() or "25101"
-        player_count = self.panel.player_count_field.get_text().strip() or "2"
+        port = self.panel.port_field.get_text().strip()
+        p_result, *_ = self.panel.netplay_port_validator.validate(port, 0)
+        if p_result != QValidator.State.Acceptable:
+            self.irc.warning(
+                f"netplay port must have a value between "
+                f"{self.panel.netplay_port_validator.bottom()}-"
+                f"{self.panel.netplay_port_validator.top()}, got {port}"
+            )
+            return
+        player_count = self.panel.player_count_field.get_text().strip()
+        pc_result, *_ = self.panel.player_count_validator.validate(player_count, 0)
+        if pc_result != QValidator.State.Acceptable:
+            self.irc.warning(
+                f"player count must have a value between "
+                f"{self.panel.player_count_validator.bottom()}-"
+                f"{self.panel.player_count_validator.top()}, got {player_count}"
+            )
+            return
         command = f"/hostgame {self.netplay.irc.client.host}:{port} {player_count}"
         # Broadcast the command as a message in the IRC channel
         self.irc.handle_command(f"/me ran the following command:")
