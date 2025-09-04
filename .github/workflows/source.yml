@@ -53,3 +53,4 @@ jobs:
         with:
           name: Source
           path: fsbuild/_dist/*
+        if: github.event_name != 'pull_request'

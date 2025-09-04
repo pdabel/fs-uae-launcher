@@ -68,3 +68,4 @@ jobs:
         with:
           name: macOS_x86-64
           path: fsbuild/_dist/*
+        if: github.event_name != 'pull_request'

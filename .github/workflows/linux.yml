@@ -104,3 +104,4 @@ jobs:
         with:
           name: Linux_x86-64
           path: fsbuild/_dist/*
+        if: github.event_name != 'pull_request'
