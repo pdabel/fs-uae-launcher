@@ -3,6 +3,13 @@ on:
   workflow_call:
   workflow_dispatch:
 
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
 jobs:
   Linux_x86-64:
     runs-on: ubuntu-24.04

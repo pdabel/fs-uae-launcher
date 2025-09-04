@@ -2,7 +2,14 @@ name: macOS
 on:
   workflow_call:
   workflow_dispatch:
-  
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
 jobs:
   macOS_x86-64:
     runs-on: macos-13
