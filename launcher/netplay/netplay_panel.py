@@ -435,11 +435,20 @@ class SyncConfigDialog(fsui.Window):
             label_widget = fsui.Label(self, label)
             label_widget.set_min_width(LABEL_WIDTH)
             row.add(label_widget, expand=True, margin_right=10)
-            field = fsui.TextField(self)
-            # Use saved value if present, else default
-            field.set_text(saved.get(label, default))
+
+            field = fsui.ComboBox(self)
+            field.setEditable(False)  # Only allow selection, no manual entry
+            allowed_values = [str(i) for i in range(0, 21)]
+            field.set_items(allowed_values)
+            # Set current value if present, else default
+            current_value = saved.get(label, default)
+            index = field.findText(current_value)
+            if index != -1:
+                field.setCurrentIndex(index)
+            else:
+                field.setCurrentIndex(0)  # fallback to first item
             field.set_min_width(40)
-            field.setReadOnly(True)
+            field.setEnabled(False)  # Initially read-only
             self.fields[label] = field
             row.add(field, fill=False, expand=False)
             layout.add(row, margin_bottom=5)
@@ -486,19 +495,17 @@ class SyncConfigDialog(fsui.Window):
             self.default_button.on_activated()
 
     def set_fields(self, values=None, read_only=True, numbers_only=False):
-        # If values is None, keep current field values
         for label, field in self.fields.items():
             if values is not None:
-                field.set_text(values[label])
-            field.setReadOnly(read_only)
-            if numbers_only:
-                field.setValidator(QIntValidator())
-            else:
-                field.setValidator(None)
+                value = values[label]
+                index = field.findText(value)
+                if index != -1:
+                    field.setCurrentIndex(index)
+            field.setEnabled(not read_only)
 
     def on_ok(self):
         # Save current settings to sync_config.ini
-        self.config["sync"] = {label: field.get_text() for label, field in self.fields.items()}
+        self.config["sync"] = {label: field.currentText() for label, field in self.fields.items()}
         self.config["sync"]["mode"] = self.selected_mode
         with open(SYNC_CONFIG_PATH, "w") as f:
             self.config.write(f)
@@ -519,7 +526,7 @@ class SyncConfigDialog(fsui.Window):
     def on_custom(self):
         # Get saved values from config file, or current field values if not present
         saved = self.config["sync"] if "sync" in self.config else {}
-        saved_values = {label: saved.get(label, self.fields[label].get_text()) for label in self.defaults}
+        saved_values = {label: saved.get(label, self.fields[label].currentText()) for label in self.defaults}
 
         # If saved values do not match default or fast, use them
         if not (self._values_match(saved_values, self.defaults) or self._values_match(saved_values, self.fast_values)):
