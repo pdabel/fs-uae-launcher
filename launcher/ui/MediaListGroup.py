@@ -4,7 +4,6 @@ import fsui
 from fsbc.paths import Paths
 from fsgs.checksumtool import ChecksumTool
 from fsgs.FSGSDirectories import FSGSDirectories
-from fsgs.amiga.amiga import Amiga
 from fsgs.context import fsgs
 from launcher.cd_manager import CDManager
 from launcher.floppy_manager import FloppyManager

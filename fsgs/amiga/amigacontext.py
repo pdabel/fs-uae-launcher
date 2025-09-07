@@ -5,7 +5,6 @@ from fsgs.archive import Archive
 from fsgs.BaseContext import BaseContext
 from fsgs.checksumtool import ChecksumTool
 from fsgs.FSGSDirectories import FSGSDirectories
-#from fsgs.amiga.amiga import Amiga
 from launcher.sync_settings import sync_settings
 
 class AmigaContext(BaseContext):

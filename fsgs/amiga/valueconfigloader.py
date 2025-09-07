@@ -3,7 +3,6 @@ from fsgs.context import fsgs
 import os
 import json
 from fsbc.paths import Paths
-#from fsgs.amiga.amiga import Amiga
 from fsgs.filedatabase import FileDatabase
 from fsgs.network import openretro_url_prefix
 from fsgs.option import Option
