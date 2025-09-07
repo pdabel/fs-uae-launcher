@@ -75,10 +75,81 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  release-variables:
+    if: ${{ inputs.type == 'release' }}
+    name: Set variables
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.vars.outputs.version }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          ref: ${{ inputs.source_branch }}
+
+      - name: Extract variables
+        id: vars
+        run: |
+          tag=${{ inputs.tag }}
+          echo "version=${tag#v*}" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
+
+  build-linux:
+    if: ${{ inputs.type == 'release' }}
+    name: Build Linux
+    needs: [release-variables]
+    uses: ./.github/workflows/linux.yml
+    with:
+      version: ${{ needs.release-variables.outputs.version }}
+    permissions:
+      contents: read
+    secrets: inherit
+
+  build-macos-x86:
+    if: ${{ inputs.type == 'release' }}
+    name: Build MacOS x86
+    needs: [release-variables]
+    uses: ./.github/workflows/macos.yml
+    with:
+      version: ${{ needs.release-variables.outputs.version }}
+    permissions:
+      contents: read
+    secrets: inherit
+
+  build-container:
+    if: ${{ inputs.type == 'release' }}
+    name: Build Container image
+    needs: [release-variables]
+    uses: ./.github/workflows/container.yml
+    with:
+      version: ${{ needs.release-variables.outputs.version }}
+    permissions:
+      contents: read
+      packages: write # for docker/build-push-action to push to GHCR
+    secrets: inherit
+
+  build-source:
+    if: ${{ inputs.type == 'release' }}
+    name: Build Source bundle
+    needs: [release-variables]
+    uses: ./.github/workflows/source.yml
+    with:
+      version: ${{ needs.release-variables.outputs.version }}
+    permissions:
+      contents: read
+    secrets: inherit
+
   tag:
     if: ${{ inputs.type == 'release' }}
     name: Create Tag on release branch
     runs-on: ubuntu-24.04
+    needs:
+      - build-source
+      - build-container
+      - build-linux
+      - build-macos-x86
     permissions:
       contents: write
     steps:
@@ -114,7 +185,13 @@ jobs:
     if: ${{ inputs.type == 'release' }}
     name: Publish release to GitHub
     runs-on: ubuntu-24.04
-    needs: [tag]
+    needs:
+      - release-variables
+      - tag
+      - build-source
+      - build-container
+      - build-linux
+      - build-macos-x86
     permissions:
       contents: write # to modify the release
       issues: write # to close milestone
@@ -124,12 +201,27 @@ jobs:
         with:
           ref: ${{ inputs.release_branch }}
 
-      - name: Fetch Cached Tarball Artifacts
-        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+      - name: Fetch Source Artifact
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
-          key: nginx-ingress-release-${{ needs.variables.outputs.go_code_md5 }}
-          path: ${{ github.workspace }}/tarballs
-          fail-on-cache-miss: true
+          name: Source-${{ needs.release-variables.outputs.version }}
+          path: tarballs
+
+      - name: Fetch Linux Artifact
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: Linux_x86-64-${{ needs.release-variables.outputs.version }}
+          path: tarballs
+
+      - name: Fetch MacOS x86 Artifact
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: macOS_x86-64-${{ needs.release-variables.outputs.version }}
+          path: tarballs
+
+      - name: List tarballs
+        run: |
+          find ./tarballs -type f
 
       - name: Upload Release Assets
         env:
@@ -140,7 +232,7 @@ jobs:
             gh release upload --clobber ${{ inputs.tag }} \
               $(find ./tarballs -type f)
           else
-            echo "Skipping adding binaries to Github Release, DRY_RUN"
+            echo "Skipping adding artifact to Github Release, DRY_RUN"
           fi
 
       - name: Close Release Milestone
