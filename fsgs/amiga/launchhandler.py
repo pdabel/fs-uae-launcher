@@ -34,6 +34,7 @@ from fsgs.knownfiles import (
 from fsgs.network import is_http_url
 from fsgs.option import Option
 from fsgs.res import gettext
+from launcher.sync_settings import sync_settings
 
 
 class LaunchHandler(object):
@@ -365,13 +366,13 @@ class LaunchHandler(object):
         # self.on_progress(gettext("Preparing floppy images..."))
 
         floppies = []
-        for i in range(Amiga.MAX_FLOPPY_DRIVES):
+        for i in range(sync_settings.MAX_FLOPPY_DRIVES):
             key = "floppy_drive_{0}".format(i)
             if self.config.get(key, ""):
                 floppies.append(self.config[key])
             self.prepare_floppy(key)
 
-        for i in range(Amiga.MAX_FLOPPY_IMAGES):
+        for i in range(sync_settings.MAX_FLOPPY_IMAGES):
             key = "floppy_image_{0}".format(i)
             if self.config.get(key, ""):
                 break
@@ -381,7 +382,7 @@ class LaunchHandler(object):
                 self.config["floppy_image_{0}".format(j)] = floppy
 
         max_image = -1
-        for i in range(Amiga.MAX_FLOPPY_IMAGES):
+        for i in range(sync_settings.MAX_FLOPPY_IMAGES):
             key = "floppy_image_{0}".format(i)
             self.prepare_floppy(key)
             if self.config.get(key, ""):
@@ -433,7 +434,7 @@ class LaunchHandler(object):
                     # noinspection PyTypeChecker
                     f.write(cue_sheet["data"].encode("UTF-8"))
 
-            for i in range(Amiga.MAX_CDROM_DRIVES):
+            for i in range(sync_settings.MAX_CDROM_DRIVES):
                 key = "cdrom_drive_{0}".format(i)
                 value = self.config.get(key, "")
                 if value:
@@ -441,7 +442,7 @@ class LaunchHandler(object):
                         self.temp_dir, os.path.basename(value)
                     )
 
-            for i in range(Amiga.MAX_CDROM_IMAGES):
+            for i in range(sync_settings.MAX_CDROM_IMAGES):
                 key = "cdrom_image_{0}".format(i)
                 value = self.config.get(key, "")
                 if value:
@@ -450,12 +451,12 @@ class LaunchHandler(object):
                     )
 
         cdroms = []
-        for i in range(Amiga.MAX_CDROM_DRIVES):
+        for i in range(sync_settings.MAX_CDROM_DRIVES):
             key = "cdrom_drive_{0}".format(i)
             if self.config.get(key, ""):
                 cdroms.append(self.config[key])
 
-        for i in range(Amiga.MAX_CDROM_IMAGES):
+        for i in range(sync_settings.MAX_CDROM_IMAGES):
             key = "cdrom_image_{0}".format(i)
             if self.config.get(key, ""):
                 break

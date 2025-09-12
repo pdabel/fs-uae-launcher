@@ -2,7 +2,6 @@ import os
 
 import fsui
 from fsbc.paths import Paths
-from fsgs.amiga.amiga import Amiga
 from fsgs.checksumtool import ChecksumTool
 from fsgs.context import fsgs
 from fsgs.FSGSDirectories import FSGSDirectories
@@ -19,6 +18,7 @@ from launcher.ui.behaviors.platformbehavior import (
 from launcher.ui.IconButton import IconButton
 from launcher.ui.LauncherFilePicker import LauncherFilePicker
 
+from launcher.sync_settings import sync_settings
 
 class MediaListGroup(fsui.Group):
     def __init__(self, parent, cd_mode):
@@ -121,9 +121,9 @@ class MediaListGroup(fsui.Group):
     def create_list(self):
         items = []
         if self.cd_mode:
-            max_items = Amiga.MAX_CDROM_IMAGES
+            max_items = sync_settings.MAX_CDROM_IMAGES
         else:
-            max_items = Amiga.MAX_FLOPPY_IMAGES
+            max_items = sync_settings.MAX_FLOPPY_IMAGES
         for i in range(max_items):
             path = LauncherConfig.get(self.file_key.format(i))
             sha1 = LauncherConfig.get(self.sha1_key.format(i))
@@ -199,9 +199,9 @@ class MediaListGroup(fsui.Group):
 
     def set_new_config(self, items):
         if self.cd_mode:
-            max_items = Amiga.MAX_CDROM_IMAGES
+            max_items = sync_settings.MAX_CDROM_IMAGES
         else:
-            max_items = Amiga.MAX_FLOPPY_IMAGES
+            max_items = sync_settings.MAX_FLOPPY_IMAGES
         set_list = []
         for i in range(max(max_items, len(items))):
             if i >= max_items:
