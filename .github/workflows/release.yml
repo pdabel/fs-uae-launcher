@@ -163,7 +163,7 @@ jobs:
           git config --global user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
           git config --global user.name "${GITHUB_ACTOR}"
           branch="${{ inputs.release_branch }}"
-          tag="v${{ inputs.tag }}"
+          tag="${{ inputs.tag }}"
           if ! git rev-parse --verify refs/tags/${tag}; then
             echo "Adding tag ${tag}."
             git tag -a ${tag} -m "Version ${tag#v*}"
