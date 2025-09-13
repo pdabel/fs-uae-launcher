@@ -529,14 +529,9 @@ def versionMain() -> None:
     # For date/time formatting
     locale.setlocale(locale.LC_TIME, "C")
 
-    # auto_revision = "--auto" in sys.argv
-    auto_revision = True
+    auto_revision = "--auto" in sys.argv
     increment_revision = "--next" in sys.argv
-    # include_commit = "--commit" in sys.argv
-    include_commit = True
-    # if "--auto-next" in sys.argv:
-    #     auto_revision = True
-    #     increment_revision = True
+    include_commit = "--commit" in sys.argv
     version = calculateVersion(
         auto_revision=auto_revision,
         increment_revision=increment_revision,
