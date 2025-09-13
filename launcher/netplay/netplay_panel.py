@@ -8,12 +8,11 @@ from launcher.ui.InfoDialog import InfoDialog
 from launcher.ui.IconButton import IconButton
 from PyQt5.QtWidgets import QApplication
 from fsgs.amiga.amiga import Amiga
-import configparser
 from fsui.qt.DrawingContext import Font
-from launcher.sync_settings import SYNC_CONFIG_PATH
-from launcher.sync_settings import sync_settings
 from launcher.launcher_config import LauncherConfig
 from PyQt5 import QtGui
+from fsbc.settings import Settings
+from launcher.sync_settings import sync_settings
 
 def close_windows_by_title(window_title):
     for widget in QApplication.topLevelWidgets():
@@ -431,9 +430,8 @@ class SyncConfigDialog(fsui.Window):
         LABEL_WIDTH = 160
 
         # Load saved config if it exists
-        self.config = configparser.ConfigParser()
-        self.config.read(SYNC_CONFIG_PATH)
-        saved = self.config["sync"] if "sync" in self.config else {}
+        saved = {label: Settings.instance().get(label.lower().replace(" ", "_"), default) for label, default in self.defaults.items()}
+        saved["mode"] = Settings.instance().get("mode", "default")
 
         for label, default in self.defaults.items():
             row = fsui.HorizontalLayout()
@@ -509,13 +507,12 @@ class SyncConfigDialog(fsui.Window):
             field.setEnabled(not read_only)
 
     def on_ok(self):
-        # Save current settings to sync_config.ini
-        self.config["sync"] = {label: field.currentText() for label, field in self.fields.items()}
-        self.config["sync"]["mode"] = self.selected_mode
-        with open(SYNC_CONFIG_PATH, "w") as f:
-            self.config.write(f)
+        for label, field in self.fields.items():
+            Settings.instance().set(label.lower().replace(" ", "_"), field.currentText())
+        Settings.instance().set("mode", self.selected_mode)
+        Settings.instance().save()
         sync_settings.update()
-        LauncherConfig.refresh_keys() 
+        LauncherConfig.refresh_keys()
         self.close()
 
     def on_default(self):
@@ -530,8 +527,7 @@ class SyncConfigDialog(fsui.Window):
 
     def on_custom(self):
         # Get saved values from config file, or current field values if not present
-        saved = self.config["sync"] if "sync" in self.config else {}
-        saved_values = {label: saved.get(label, self.fields[label].currentText()) for label in self.defaults}
+        saved_values = {label: Settings.instance().get(label.lower().replace(" ", "_"), self.fields[label].currentText()) for label in self.defaults}
 
         # If saved values do not match default or fast, use them
         if not (self._values_match(saved_values, self.defaults) or self._values_match(saved_values, self.fast_values)):
