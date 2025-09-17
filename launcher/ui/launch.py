@@ -7,12 +7,8 @@ from launcher.i18n import gettext
 from launcher.launcher_config import LauncherConfig
 from launcher.launcher_settings import LauncherSettings
 from launcher.option import Option
-from launcher.settings.fullscreenmodebutton import FullscreenModeButton
-from launcher.settings.monitorbutton import MonitorButton
 from launcher.settings.override_warning import OverrideWarning
-from launcher.settings.videosynccheckbox import VideoSyncCheckBox
 from launcher.ui.behaviors.settingsbehavior import SettingsBehavior
-from launcher.netplay.netplay import close_server_window, Netplay
 
 
 class LaunchGroup(fsui.Group):
@@ -263,8 +259,6 @@ class LaunchDialog(fsui.Window):
     def __closed(self):
         LauncherConfig.set("__running", "")
         self.cancel()
-        # Use cached netplay info
-        close_server_window(self.netplay_game_id, self.netplay_port, self.netplay_channel)
         return False
 
     def on_progress(self, progress):
