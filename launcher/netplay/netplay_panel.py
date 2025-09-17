@@ -18,11 +18,6 @@ def close_windows_by_title(window_title):
         if widget.windowTitle().startswith(window_title):
             widget.close()
 
-def close_windows_by_title(window_title):
-    for widget in QApplication.topLevelWidgets():
-        if widget.windowTitle().startswith(window_title):
-            widget.close()
-
 class NetplayPanel(fsui.Panel):
     def __init__(self, parent, header=True):
         fsui.Panel.__init__(self, parent)
@@ -58,7 +53,7 @@ class NetplayPanel(fsui.Panel):
             self.text_area, fill=True, expand=True, margin=10, margin_left=0
         )
 
-        self.netplay = Netplay()
+        self.netplay = Netplay(parent=self)
         IRCBroadcaster.add_listener(self)
 
         self._build_netplay_game_inputs()
@@ -137,8 +132,6 @@ class NetplayPanel(fsui.Panel):
         print("NetplayPanel.on_destroy")
         IRCBroadcaster.remove_listener(self)
         self.netplay.disconnect()
-        close_windows_by_title("FS-UAE Netplay Server - Game ID:")
-        close_windows_by_title("Netplay Info")
 
     def on_show(self):
         # FIXME: currently disabled
