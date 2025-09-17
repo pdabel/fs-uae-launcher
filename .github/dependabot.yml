@@ -1,0 +1,34 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+    groups:
+      actions:
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: docker
+    directory: /build
+    schedule:
+      interval: daily
+    groups:
+      docker-images:
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      python:
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
