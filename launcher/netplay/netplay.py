@@ -36,13 +36,14 @@ class Netplay:
             random.shuffle(cls.host_ports)
         return cls.host_ports.pop()
 
-    def __init__(self):
+    def __init__(self, parent=None):
         self.enabled = False
         self.game_channel = ""
         self.connection_tester = None
         self.start_sequence = ""
         self.players = {}
         self.irc = IRC()
+        self.parent = parent
 
         LauncherConfig.add_listener(self)
         IRCBroadcaster.add_listener(self)
@@ -560,7 +561,7 @@ class Netplay:
             from ..server.ServerWindow import ServerWindow
             game_id = str(uuid.uuid4())
             channel_name = self.irc.get_active_channel()
-            window = ServerWindow(None, server, game_id, port, channel_name)
+            window = ServerWindow(self.parent, server, game_id, port, channel_name)
             window.show()
             LauncherConfig.set_multiple(
                 [

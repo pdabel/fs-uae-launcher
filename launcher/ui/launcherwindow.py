@@ -826,4 +826,4 @@ class LauncherWindow(WindowWithTabs):
 
     def on_net_play(self):
         print("on_net_play")
-        NetplayDialog.open()
+        NetplayDialog.open(self)
