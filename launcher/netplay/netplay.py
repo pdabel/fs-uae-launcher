@@ -573,19 +573,19 @@ class Netplay:
                 ]
             )
             self._hostgame_channel.info(
-                "started game id: {0} password: {1} "
-                "server: {2} port: {3}".format(game_id, self._hostgame_password, self._hostgame_addresses, port)
+                f"started game id: {game_id} password: {self._hostgame_password} "
+                f"server: {self._hostgame_addresses} port: {port}"
             )
             return
 
         if attempt < max_retries:
-            self._hostgame_channel.info(
+            self._hostgame_channel.privmsg(
                 f"Port {port} is busy. Waiting {backoff} seconds before retry {attempt}/{max_retries}..."
             )
             self._hostgame_attempt += 1
             QTimer.singleShot(backoff * 1000, self._hostgame_retry)
         else:
-            self._hostgame_channel.warning(
+            self._hostgame_channel.privmsg(
                 f"ERROR: Port {port} is still in use after {max_retries} attempts. Please choose another port or close the running server."
             )
 
