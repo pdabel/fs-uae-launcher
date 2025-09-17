@@ -12,7 +12,7 @@ import fsboot
 from fsbc.signal import Signal
 from fsbc.util import Version
 from launcher.version import VERSION
-
+from fsgs.amiga.amiga import Amiga
 
 class Settings(object):
     _instance = None
@@ -93,6 +93,26 @@ class Settings(object):
             extra = " " + extra
         if self.verbose:
             print("[SETTINGS] Set {} = {}{}".format(key, value, extra))
+
+    @property
+    def max_floppy_drives(self):
+        return int(self.get("max_floppy_drives", Amiga.MAX_FLOPPY_DRIVES))
+
+    @property
+    def max_floppy_images(self):
+        return int(self.get("max_floppy_images", Amiga.MAX_FLOPPY_IMAGES))
+
+    @property
+    def max_cdrom_drives(self):
+        return int(self.get("max_cdrom_drives", Amiga.MAX_CDROM_DRIVES))
+
+    @property
+    def max_cdrom_images(self):
+        return int(self.get("max_cdrom_images", Amiga.MAX_CDROM_IMAGES))
+
+    @property
+    def max_hard_drives(self):
+        return int(self.get("max_hard_drives", Amiga.MAX_HARD_DRIVES))
 
 
 class SettingsProvider:
