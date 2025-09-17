@@ -5,7 +5,6 @@ import uuid
 import socket
 
 import requests
-from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
 
 from fsgs.amiga.amiga import Amiga
@@ -36,13 +35,14 @@ class Netplay:
             random.shuffle(cls.host_ports)
         return cls.host_ports.pop()
 
-    def __init__(self):
+    def __init__(self, parent=None):
         self.enabled = False
         self.game_channel = ""
         self.connection_tester = None
         self.start_sequence = ""
         self.players = {}
         self.irc = IRC()
+        self.parent = parent
 
         LauncherConfig.add_listener(self)
         IRCBroadcaster.add_listener(self)
@@ -323,10 +323,9 @@ class Netplay:
             self.irc.warning("syntax: /reset")
             return
         # Get info before resetting config
-        game_id = LauncherConfig.get("__netplay_game")
-        port = LauncherConfig.get("__netplay_port")
-        channel = self.game_channel
-        close_server_window(game_id, port, channel)
+        if self.game_window:
+            self.game_window.close()
+            self.game_window = None
         self.reset_netplay_config()
         self.connection_tester = None
 
@@ -560,8 +559,8 @@ class Netplay:
             from ..server.ServerWindow import ServerWindow
             game_id = str(uuid.uuid4())
             channel_name = self.irc.get_active_channel()
-            window = ServerWindow(None, server, game_id, port, channel_name)
-            window.show()
+            self.game_window = ServerWindow(self.parent, server, game_id, port, channel_name)
+            self.game_window.show()
             LauncherConfig.set_multiple(
                 [
                     ("__netplay_game", game_id),
@@ -876,11 +875,3 @@ class Netplay:
         file_config[
             "x_hard_drive_{0}_sha1".format(i)
         ] = "hard_drive_{0}".format(i)
-
-def close_server_window(game_id, port, channel):
-    title = f"FS-UAE Netplay Server - Game ID: {game_id}, Port: {port}, Channel: {channel}"
-    for widget in QApplication.topLevelWidgets():
-        if widget.windowTitle() == title:
-            widget.close()
-            return True
-    return False
