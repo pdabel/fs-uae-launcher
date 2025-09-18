@@ -1,3 +1,5 @@
+from fsui.qt import QPalette
+
 class IRCColor:
     JOIN = (64, 164, 64)
     POS_MODE = (64, 164, 64)
@@ -10,7 +12,8 @@ class IRCColor:
 
     INFO = (64, 128, 255)
 
-    MESSAGE = (0, 0, 0)
+    pt = QPalette().color(QPalette.ColorRole.Text)
+    MESSAGE = (pt.red(), pt.green(), pt.blue())
     MY_MESSAGE = (164, 164, 164)
 
     TOPIC = (192, 128, 0)
