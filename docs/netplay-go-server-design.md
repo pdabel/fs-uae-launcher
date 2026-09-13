@@ -4,7 +4,7 @@ Design proposal for replacing the Python netplay game server in `launcher/server
 
 | | |
 |---|---|
-| **Status** | Draft for discussion |
+| **Status** | In progress — `internal/fsnp` codec + golden tests built (rollout step 4); rest still design |
 | **Date** | 2026-09-13 |
 | **Protocol** | FSNP v1, byte-compatible |
 | **Scope** | server + launcher spawn path; one small fix to the emulator client, reconnect later |
@@ -183,7 +183,7 @@ A real two-player capture (loopback, two `fs-uae v3.1.66` instances against `gam
 - **Correcting an early misreading on my part:** a narrow first look made `MEM_CHECK` appear to be a suspicious constant. It isn't — both instances report an honestly zero checksum for the first 16 frames (RAM genuinely unwritten during early boot), then diverge into normal-looking varying values that still match exactly between the two clients frame-for-frame.
 - **Client bug C1 doesn't reproduce here, as predicted.** Every one of the ~20,000 client→server payloads is exactly 4 bytes (the client never batches sends); every server→client payload is a multiple of 4 bytes even when coalesced up to 28 bytes (7 words) in one segment. No word is ever split across a TCP segment on loopback, so this capture can't exercise C1 — that still needs a real, imperfect network, not a local one.
 
-The application-layer bytes behind these findings are committed at [docs/netplay-fixtures/](netplay-fixtures/) for reuse as golden test data — see that directory's README for what's in each file.
+The application-layer bytes behind these findings are committed at [fsnp-server/internal/fsnp/testdata/](../fsnp-server/internal/fsnp/testdata/) for reuse as golden test data — see [docs/netplay-fixtures/README.md](netplay-fixtures/README.md) for what's in each file and why they live in the Go module rather than here.
 
 ## What breaks
 
@@ -251,7 +251,7 @@ Addresses W1, W3, W4, W5, W6, W7.
 
 **Fixtures don't need a captured session to get started — they're generated straight from the existing source.** `create_game_password`, `create_ext_message` and `int_to_bytes` in `game.py` are pure functions; a small script imports `game.py` and runs them over a matrix of inputs (empty/ASCII/non-ASCII passwords, every player/tag/command combination) to produce exact golden vectors — e.g. `create_game_password("secret")` → `bd2ec2ea`, checked directly against a running interpreter, not assumed. The handshake byte layout is likewise fixed-offset construction with no runtime branching (`fs_emu_netplay_connect`, `netplay.c` lines 726–765), so it's transcribed by reading, not captured. This is more thorough than a single pcap for edge cases (wrong password, oversized text, every extended command) a happy-path two-player session would never produce on its own.
 
-A real capture (see [Verified against a captured session](#what-the-c-client-actually-does) above) is complementary, not a substitute. The application-layer bytes from it — both handshakes, both directions of both connections, ~6,164 frames of RND/MEM_CHECK pairs with known-correct cross-client attribution and zero mismatches — are extracted and committed at [docs/netplay-fixtures/](netplay-fixtures/) (the raw pcap itself isn't; it's 30× larger and mostly TCP/IP framing and unrelated traffic). `docs/netplay-fixtures/extract_fixtures.py` regenerates the same files from any similarly-captured session. These move into `internal/fsnp/testdata/` alongside the source-derived vectors once that module exists, so the codec is verified against both a hand-built matrix and one real session end to end.
+A real capture (see [Verified against a captured session](#what-the-c-client-actually-does) above) is complementary, not a substitute. The application-layer bytes from it — both handshakes, both directions of both connections, ~6,164 frames of RND/MEM_CHECK pairs with known-correct cross-client attribution and zero mismatches — are extracted and committed at [fsnp-server/internal/fsnp/testdata/](../fsnp-server/internal/fsnp/testdata/), the only copy (the raw pcap itself isn't committed anywhere; it's 30× larger and mostly TCP/IP framing and unrelated traffic). [docs/netplay-fixtures/](netplay-fixtures/) holds the human-readable manifest, README, and the `extract_fixtures.py` script that regenerates the testdata files from any similarly-captured session — not a second copy of the bytes. The codec is verified against both a hand-built matrix and one real session end to end.
 
 ### Writer discipline the client depends on
 
@@ -418,17 +418,20 @@ What moves and what changes outside `fsnp-server/`:
 ## Go package layout
 
 ```
-cmd/fsnp-server/main.go      flags, env, signal handling, readiness line
-internal/fsnp/               constants, Message codec, PasswordHash, handshake
-internal/fsnp/golden_test.go byte fixtures captured from the Python server
-internal/game/game.go        Game state machine (lifecycle from created, not from first conn), tick loop, drift stall, sync check
-internal/game/conn.go        reader/writer goroutines, resume ring
-internal/game/game_test.go   net.Pipe() clients, fake clock, -race
-internal/lobby/              phase two: HTTP /game/create, game registry, port pool
-                             phase four: config document, ready/missing per slot, long-poll GET, start gate
+cmd/fsnp-server/main.go             flags, env, signal handling, readiness line       — not yet built
+internal/fsnp/message.go            Message codec, constants, error codes            ✓ built
+internal/fsnp/password.go           PasswordHash                                     ✓ built
+internal/fsnp/handshake.go          Handshake struct, parse/encode, PING probe       ✓ built
+internal/fsnp/*_test.go             golden tests against internal/fsnp/testdata/      ✓ built, 8 tests, 92.2% coverage
+internal/fsnp/testdata/             canonical fixture bytes (see docs/netplay-fixtures/) ✓ built
+internal/game/game.go               Game state machine (lifecycle from created, not from first conn), tick loop, drift stall, sync check — not yet built
+internal/game/conn.go               reader/writer goroutines, resume ring            — not yet built
+internal/game/game_test.go          net.Pipe() clients, fake clock, -race            — not yet built
+internal/lobby/                     phase two: HTTP /game/create, game registry, port pool
+                                     phase four: config document, ready/missing per slot, long-poll GET, start gate
 ```
 
-Tests are the part Python never had: `net.Pipe()` gives in-memory clients, a fake clock drives the ticker, and a small Go "fake emulator" that replays a recorded session becomes the compatibility check that runs in CI.
+`internal/fsnp` is real code as of this doc revision, in `fsnp-server/` at the repo root per [Repository layout](#repository-layout) — `go build ./...`, `go vet ./...`, and `gofmt -l .` all clean, `go test ./... -race` passes. Its tests are the part Python never had: `TestSyncCheckInvariant` and `TestTagBroadcastAsymmetry` turn the captured-session findings above into regressions that fail if a future change breaks them, not just prose someone has to remember. The remaining plan holds: `net.Pipe()` gives in-memory clients for `internal/game`, a fake clock drives the ticker, and a small Go "fake emulator" that replays a recorded session becomes the compatibility check that runs in CI.
 
 ## Rollout
 
@@ -436,8 +439,8 @@ The order matters — the golden fixtures gate everything after them.
 
 1. **Pin the command table (W0).** Decide whether fs-uae master's renumbering becomes protocol v2 (bump `FS_EMU_NETPLAY_PROTOCOL_VERSION`, since nothing on the wire distinguishes it today) or is reverted to match `v3.1.66`. Either way, record the table in this doc as the spec before any Go is written.
 2. **Fix client bug C1.** One-line change in `receive_thread`; it makes every server, Python or Go, more robust over the internet.
-3. **Generate golden fixtures.** Run `game.py`'s `create_game_password`/`create_ext_message`/`int_to_bytes` over a matrix of inputs; transcribe the handshake layout from `fs_emu_netplay_connect`. The captured-session fixtures are already committed at [docs/netplay-fixtures/](netplay-fixtures/) — both are in hand, no new live session needed at this stage.
-4. **Build `internal/fsnp` against the fixtures.** Codec, password hash and handshake parse round-trip the generated bytes; server→client command numbers are asserted against `netplay.c`, not `game.py`.
+3. **Generate golden fixtures.** Run `game.py`'s `create_game_password`/`create_ext_message`/`int_to_bytes` over a matrix of inputs; transcribe the handshake layout from `fs_emu_netplay_connect`. The captured-session fixtures are already committed at [fsnp-server/internal/fsnp/testdata/](../fsnp-server/internal/fsnp/testdata/) — both are in hand, no new live session needed at this stage.
+4. **Build `internal/fsnp` against the fixtures — done.** Codec, password hash and handshake parse round-trip the generated and captured bytes; `v3.1.66` command numbers are hardcoded per the pinned table above. 8 tests, 92.2% coverage, `-race` clean. Code lives in `fsnp-server/internal/fsnp/`.
 5. **Build the single-game server.** Game goroutine, readers/writers, ticker, sync check, clean per-player loss. Feature-match the Python server, including the drift stall, the 100-word auto-flush, and the check-before-ack attribution.
 6. **Play a real session with FS-UAE.** No launcher UI, no IRC channel needed — two `fs-uae` processes on one machine, pointed at a standalone server via `--netplay_server=127.0.0.1 --netplay_port= --netplay_password= --netplay_tag=`, same as any other fs-uae option. Booting to Workbench is enough content; a few real keypresses exercise the input-event broadcast. Let it idle a few minutes to cycle through the 10-frame ping and 100-frame status broadcasts, then kill one process and confirm the other gets a clean `ERROR_GAME_STOPPED` and the server exits on its own. This setup won't reproduce realistic latency (loopback RTT is near zero) or force client bug C1 to trigger (needs a `recv()` that actually splits a 4-byte word, rare on loopback) — treat both as accepted gaps for a local run, not blockers; `tc netem` / Network Link Conditioner can approximate latency later if wanted.
 7. **Swap the launcher spawn path.** Bundle the binary, replace `Server.start()`, read the readiness line, wire clean shutdown.

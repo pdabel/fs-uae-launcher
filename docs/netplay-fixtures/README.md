@@ -1,10 +1,23 @@
 # Netplay protocol fixtures
 
-Real bytes from a captured two-player FSNP session, extracted for use as golden
-test data when building `internal/fsnp` per [../netplay-go-server-design.md](../netplay-go-server-design.md).
-The source pcap (loopback capture, ~7 MB, ~95k packets including unrelated
-traffic) is not committed here; these files are the application-layer payload
-only, extracted with `extract_fixtures.py`.
+Documentation and metadata for a captured two-player FSNP session used as
+golden test data for `internal/fsnp`, per
+[../netplay-go-server-design.md](../netplay-go-server-design.md).
+
+**The actual fixture bytes live at
+[`fsnp-server/internal/fsnp/testdata/`](../../fsnp-server/internal/fsnp/testdata/),
+not here.** That's the only copy — Go's `testdata/` convention means the
+build tooling ignores it, tests find it via a relative path from the test
+file, and the Go module stays self-contained if `fsnp-server/` is ever split
+into its own repository (see "Repository layout" in the design doc). This
+directory used to hold a second copy of the same `.bin` files; that was
+unnecessary duplication with nothing keeping the two in sync, so it was
+removed — see [manifest.json](../../fsnp-server/internal/fsnp/testdata/manifest.json)
+for what's in the canonical copy without needing to check out the Go module.
+
+The source pcap itself (loopback capture, ~7 MB, ~95k packets including
+unrelated traffic) is not committed anywhere; the testdata files are the
+application-layer payload only, extracted with `extract_fixtures.py`.
 
 ## Capture context
 
@@ -13,10 +26,10 @@ only, extracted with `extract_fixtures.py`.
 - ~6,168 frames (~2 minutes at 20 ms/frame). No `ERROR` messages — the session
   ran to a clean end with no desync.
 - Full details, invariants, and how these files were used are in
-  [manifest.json](manifest.json) and in the "Verified against a captured
+  [manifest.json](../../fsnp-server/internal/fsnp/testdata/manifest.json) and in the "Verified against a captured
   session" section of the design doc.
 
-## Files
+## Files in `fsnp-server/internal/fsnp/testdata/`
 
 | File | Contents |
 |------|----------|
@@ -28,11 +41,13 @@ only, extracted with `extract_fixtures.py`.
 ## Regenerating from a new pcap
 
 ```
-python3 extract_fixtures.py /path/to/capture.pcap ./out
+python3 extract_fixtures.py /path/to/capture.pcap ../../fsnp-server/internal/fsnp/testdata
 ```
 
 Requires a loopback (`DLT_NULL`) capture of a two-client TCP session on the
 netplay port — no external dependencies (no `dpkt`/`scapy`), stdlib only.
+Writing straight into `fsnp-server/internal/fsnp/testdata/` keeps there being
+exactly one copy of every file it produces, `manifest.json` included.
 
 ## What these are good for
 
