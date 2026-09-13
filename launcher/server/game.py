@@ -55,6 +55,9 @@ def byte(v):
 
 SERVER_PROTOCOL_VERSION = 1
 MAX_PLAYERS = 6
+# Largest single sendall() the server will make to a client. See
+# Client.__send_data.
+MAX_SEND_CHUNK = 1400
 max_drift = 25
 num_clients = 2
 port = 25100
@@ -177,7 +180,17 @@ class Client:
         #     #print("queueing ping")
         #     #traceback.print_stack()
         #     self.temp_c += 1
-        self.socket.sendall(data)
+        # Cap each sendall() at a size comfortably under a typical MTU.
+        # Mitigates (does not fix) a bug in the C client's receive_thread
+        # (fs-uae libfsemu/src/emu/netplay.c): if a single recv() call
+        # returns a partial 4-byte word, the client mishandles it and
+        # disconnects. A single large sendall() is more likely to get
+        # fragmented across TCP segments than several small ones, so
+        # keeping writes small reduces (without eliminating) the chance
+        # of triggering it. See docs/netplay-go-server-design.md, client
+        # bug C1.
+        for i in range(0, len(data), MAX_SEND_CHUNK):
+            self.socket.sendall(data[i:i + MAX_SEND_CHUNK])
 
     def queue_message(self, message):
         with self.lock:
