@@ -406,6 +406,59 @@ func TestPingProbe(t *testing.T) {
 	}
 }
 
+// TestNoPasswordGame is the regression test for a real failure: a server
+// started with no password computed sha1("FSNP") as the expected hash, while
+// a client with no netplay_password configured sends four zero bytes
+// (netplay.c:71/:210, conf.c:88) — so every player was rejected with
+// ERROR_WRONG_PASSWORD. The launcher's Host Game button never supplies a
+// password, so this was every hosted game.
+func TestNoPasswordGame(t *testing.T) {
+	clock := newFakeClock()
+	g, err := New(Config{
+		Players:      2,
+		PasswordHash: fsnp.ExpectedPasswordHash(""),
+		Clock:        clock,
+		Logger:       slog.New(slog.NewTextHandler(io.Discard, nil)),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go g.Run(ctx)
+	defer func() {
+		cancel()
+		<-g.Done()
+	}()
+	h := &harness{t: t, g: g, clock: clock, cancel: cancel, runErr: make(chan error, 1)}
+
+	hs := handshake("P1")
+	hs.PasswordHash = 0 // what a client with no password sends
+	c := h.join(hs)
+	c.expectExt(fsnp.CmdSessionKey)
+	if n := int(c.expectExt(fsnp.CmdPlayers).Data() >> 8); n != 0 {
+		t.Fatalf("joined as player %d, want 0", n)
+	}
+
+	// A client that *does* send a hash is still refused by a no-password game.
+	withPassword := handshake("P2")
+	withPassword.PasswordHash = fsnp.PasswordHash("secret")
+	c2 := h.join(withPassword)
+	c2.expectError(fsnp.ErrWrongPassword)
+	c2.expectClosed()
+}
+
+// TestPasswordGameRejectsPasswordlessClient is the other direction: a game
+// with a password must refuse a client that sends none.
+func TestPasswordGameRejectsPasswordlessClient(t *testing.T) {
+	h := newHarness(t, 2, 0)
+	hs := handshake("P1")
+	hs.PasswordHash = 0
+	c := h.join(hs)
+	c.expectError(fsnp.ErrWrongPassword)
+	c.expectClosed()
+}
+
 func TestHandshakeRejections(t *testing.T) {
 	cases := []struct {
 		name string

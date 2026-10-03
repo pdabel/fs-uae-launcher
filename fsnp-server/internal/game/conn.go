@@ -86,7 +86,17 @@ func (g *Game) HandleConn(nc net.Conn) {
 	binary.BigEndian.PutUint32(want[:], g.cfg.PasswordHash)
 	binary.BigEndian.PutUint32(got[:], hs.PasswordHash)
 	if subtle.ConstantTimeCompare(want[:], got[:]) != 1 {
-		log.Warn("wrong password")
+		// A client with no password configured sends 0, so "client sent 0,
+		// server expected a hash" means the game has a password this player
+		// does not, and the reverse means the server was started without
+		// the password the players are using. Both hashes are 32-bit
+		// truncations already sent in the clear on the wire, so logging
+		// them costs nothing and settles which way round it is.
+		log.Warn("wrong password",
+			"expected", fmt.Sprintf("%08x", g.cfg.PasswordHash),
+			"received", fmt.Sprintf("%08x", hs.PasswordHash),
+			"server_password_set", g.cfg.PasswordHash != 0,
+			"client_sent_password", hs.PasswordHash != 0)
 		c.writeErrorAndClose(fsnp.ErrWrongPassword)
 		return
 	}

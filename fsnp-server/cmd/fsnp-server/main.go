@@ -64,7 +64,7 @@ func run() int {
 
 	g, err := game.New(game.Config{
 		Players:       *players,
-		PasswordHash:  fsnp.PasswordHash(*password),
+		PasswordHash:  fsnp.ExpectedPasswordHash(*password),
 		LaunchTimeout: time.Duration(*launchTimeout) * time.Second,
 		Logger:        log,
 		LogInput:      *logInput,
@@ -81,7 +81,8 @@ func run() int {
 	}
 	actualPort := ln.Addr().(*net.TCPAddr).Port
 	log.Info("listening", "host", *host, "port", actualPort, "players", *players,
-		"network", listenNetwork(*host), "log_input", *logInput)
+		"network", listenNetwork(*host), "log_input", *logInput,
+		"password_set", *password != "")
 	if *logFile != "" {
 		log.Info("logging to file", "path", *logFile)
 	}

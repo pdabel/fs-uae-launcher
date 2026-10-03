@@ -74,7 +74,7 @@ TCP with `TCP_NODELAY`. The first four bytes are either `PING` (server replies `
 | Bytes | Field | Notes |
 |------:|-------|-------|
 | 1 | protocol version | must equal `1`, else `ERROR_PROTOCOL_MISMATCH` |
-| 4 | password hash | `sha1("FSNP" + ascii_only(password))[:4]`, big-endian. Non-ASCII characters are silently dropped. |
+| 4 | password hash | `sha1("FSNP" + ascii_only(password))[:4]`, big-endian. Non-ASCII characters are silently dropped. **Four zero bytes when no password is configured** — see below. |
 | 8 | emulator version | player 0 sets the reference; others must match or get `ERROR_EMULATOR_MISMATCH` |
 | 3 | session key | 24-bit; server assigns on first join, checked on rejoin |
 | 1 | player | `0xFF` = new player, else slot to resume |
@@ -82,6 +82,10 @@ TCP with `TCP_NODELAY`. The first four bytes are either `PING` (server replies `
 | 4 | resume-from-packet | outbound sequence to replay from; today always rejected if > 0 |
 
 The server then queues `SESSION_KEY`, `PLAYERS` (`player << 8 | num_players`), and one `PLAYER_TAG_n` per connected player, and flushes.
+
+**No password is not the hash of the empty password.** `g_fs_emu_netplay_password` is zero-initialised and the SHA-1 is computed only when the `netplay_password` option is set (`netplay.c:71` and `:210`), and `fs_config_get_const_string` treats an empty value as unset (`conf.c:88`) — so a client with no password configured, or an empty one, sends **four zero bytes**, never a digest. `game.py` matched this by accident of structure: `game_password = 0` was the default and only a `--password=` argument replaced it. A Go server that hashes its configured password unconditionally expects `sha1("FSNP")` and rejects every real client with `ERROR_WRONG_PASSWORD`; `fsnp.ExpectedPasswordHash` exists for exactly this reason and returns 0 for an empty password. `sha1("FSNP")` is still reachable and still produced by hashing — an all-non-ASCII password filters down to no bytes on both sides — so the special case is the empty string alone, not "a password that hashes to nothing".
+
+This was found in the field, not by reading: the launcher's Host Game button builds `/hostgame <host>:<port> <players>` with no password (`netplay_panel.py`), so every game hosted that way was rejected with `ERROR_WRONG_PASSWORD` — and because `fs_emu_netplay_on_disconnect` warns and then continues in offline mode (`netplay.c:270`, its own `FIXME`), both emulators ran *separate local games* that looked like netplay with no input ever relayed. Checked against `game.py` side by side afterwards, both started exactly as `Server.start()` does with no `--password` and both clients sending four zero bytes: Python joined both players and relayed both input events, and the Go server now does the same. The offline-mode fallback itself is unchanged pre-existing client behaviour, reachable against either server on any handshake rejection or mid-game disconnect; it only became visible because the server was rejecting everyone.
 
 ### Message words
 
@@ -303,6 +307,8 @@ One thing found while building it: `game.py` doesn't actually do what the paragr
 `log/slog` with `game`, `player` and `frame` fields on every line; a one-line JSON readiness event on stdout (below); an optional `/metrics` exposing frame, per-player lag, ping average and stall count — the same numbers `__print_status` dumps every 200 frames today. *(W8)*
 
 **`--log-file` is not optional in practice.** Logs go to stderr, which the launcher inherits — but `fsbc/logging.py` replaces `sys.stdout`/`sys.stderr` with `NullOutput` in frozen builds, and a packaged launcher started without a console has no usable stderr for the child to inherit at the OS level either. So `Server.start()` always passes `--log-file=<logs_dir>/fsnp-server.log.txt` (appended, next to the launcher's own logs); without it, server output in a packaged build is simply gone. `LOG_FILE` works as an env var too, for the Docker image.
+
+**Password diagnostics.** A rejected handshake logs both the expected and received hash plus `server_password_set`/`client_sent_password`, because the two failure directions have opposite causes: a client sending 0 against a server expecting a hash means the game has a password that player doesn't, and the reverse means the server was started without the password the players are using. The hashes are 32-bit truncations already sent in the clear on the wire ([Hardening](#hardening)), so logging them discloses nothing new.
 
 **Input-event logging.** `--log-input` (on by default) logs every relayed input event: sender slot and tag, server frame, the raw 24-bit event, and the `action`/`state` it decodes to — an input event is `state << 16 | action` (`fs_emu_queue_input_event`, `libfsemu/src/emu/input.c`), where `action` identifies which Amiga port the input targets and comes from each emulator's *own* input configuration. Two players pressing "the same" button therefore send *different* actions when mapped to different ports, and the *same* action when both are mapped to one — which is the thing to check first when input appears not to reach the other player. The periodic status line also carries `inputs_in`/`inputs_out` per player, so a player who is sending nothing at all (client-side problem) is distinguishable at a glance from one whose events are relayed but ignored.
 
