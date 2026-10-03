@@ -915,3 +915,36 @@ func TestReplayCapturedSession(t *testing.T) {
 	}
 	t.Logf("replayed %d frames, verified through tag %d", n, s.Verified)
 }
+
+// TestInputCountersTrackBothDirections checks the counters the status line
+// reports: inputsIn counts what a player sent, inputsOut what was relayed to
+// it. A real session where one player's inputs_in stays at zero is a
+// client-side problem, so these numbers need to be trustworthy.
+func TestInputCountersTrackBothDirections(t *testing.T) {
+	h, c1, c2 := startTwo(t)
+	// P1 sends two events, P2 sends one. Every event goes to both players,
+	// the sender included, so each should see 3 relayed to it.
+	c1.send(fsnp.NewInputMessage(0x010042))
+	c1.send(fsnp.NewInputMessage(0x000042))
+	c2.send(fsnp.NewInputMessage(0x010043))
+	h.tick()
+	for _, c := range []*client{c1, c2} {
+		for _, want := range []uint32{0x010042, 0x000042, 0x010043} {
+			m := c.next()
+			if !m.IsInput() || m.InputEvent() != want {
+				t.Fatalf("got %08x, want input %06x", uint32(m), want)
+			}
+		}
+		c.expectFrame(2)
+	}
+	s := h.g.Stats()
+	for _, p := range s.Players {
+		wantIn := map[int]uint64{0: 2, 1: 1}[p.Slot]
+		if p.InputsIn != wantIn {
+			t.Errorf("player %d inputs_in = %d, want %d", p.Slot, p.InputsIn, wantIn)
+		}
+		if p.InputsOut != 3 {
+			t.Errorf("player %d inputs_out = %d, want 3", p.Slot, p.InputsOut)
+		}
+	}
+}

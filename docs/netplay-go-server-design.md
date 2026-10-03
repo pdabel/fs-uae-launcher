@@ -302,6 +302,10 @@ One thing found while building it: `game.py` doesn't actually do what the paragr
 
 `log/slog` with `game`, `player` and `frame` fields on every line; a one-line JSON readiness event on stdout (below); an optional `/metrics` exposing frame, per-player lag, ping average and stall count — the same numbers `__print_status` dumps every 200 frames today. *(W8)*
 
+**`--log-file` is not optional in practice.** Logs go to stderr, which the launcher inherits — but `fsbc/logging.py` replaces `sys.stdout`/`sys.stderr` with `NullOutput` in frozen builds, and a packaged launcher started without a console has no usable stderr for the child to inherit at the OS level either. So `Server.start()` always passes `--log-file=<logs_dir>/fsnp-server.log.txt` (appended, next to the launcher's own logs); without it, server output in a packaged build is simply gone. `LOG_FILE` works as an env var too, for the Docker image.
+
+**Input-event logging.** `--log-input` (on by default) logs every relayed input event: sender slot and tag, server frame, the raw 24-bit event, and the `action`/`state` it decodes to — an input event is `state << 16 | action` (`fs_emu_queue_input_event`, `libfsemu/src/emu/input.c`), where `action` identifies which Amiga port the input targets and comes from each emulator's *own* input configuration. Two players pressing "the same" button therefore send *different* actions when mapped to different ports, and the *same* action when both are mapped to one — which is the thing to check first when input appears not to reach the other player. The periodic status line also carries `inputs_in`/`inputs_out` per player, so a player who is sending nothing at all (client-side problem) is distinguishable at a glance from one whose events are relayed but ignored.
+
 ## Launcher integration
 
 The Python side changes in one place: `launcher/server/Server.py`. It stops re-executing the launcher and instead runs a bundled binary with the same flag names, so `netplay.py` and `ServerWindow.py` are untouched.

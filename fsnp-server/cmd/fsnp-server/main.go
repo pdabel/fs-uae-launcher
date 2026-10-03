@@ -36,6 +36,8 @@ func run() int {
 		password      = flag.String("password", envOr("PASSWORD", ""), "game password")
 		launchTimeout = flag.Int("launch-timeout", envInt("LAUNCH_TIMEOUT", 0), "seconds to wait from startup for all players to join; 0 = forever")
 		exitOnStdin   = flag.Bool("exit-on-stdin-close", false, "stop the game and exit when stdin reaches EOF (for a supervising launcher)")
+		logFile       = flag.String("log-file", envOr("LOG_FILE", ""), "also append the log to this file")
+		logInput      = flag.Bool("log-input", true, "log every relayed input event (sender, action, state, recipients)")
 		verbose       = flag.Bool("verbose", false, "debug logging")
 	)
 	flag.Parse()
@@ -44,13 +46,28 @@ func run() int {
 	if *verbose {
 		level = slog.LevelDebug
 	}
-	log := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
+	// Logs go to stderr so the launcher's inherited stderr picks them up and
+	// stdout carries only the readiness line. --log-file adds a copy on disk,
+	// which is what to reach for when a session needs to be reported on
+	// afterwards rather than watched live.
+	var out io.Writer = os.Stderr
+	if *logFile != "" {
+		f, err := os.OpenFile(*logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "could not open log file: %v\n", err)
+			return 1
+		}
+		defer f.Close()
+		out = io.MultiWriter(os.Stderr, f)
+	}
+	log := slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{Level: level}))
 
 	g, err := game.New(game.Config{
 		Players:       *players,
 		PasswordHash:  fsnp.PasswordHash(*password),
 		LaunchTimeout: time.Duration(*launchTimeout) * time.Second,
 		Logger:        log,
+		LogInput:      *logInput,
 	})
 	if err != nil {
 		log.Error("invalid configuration", "err", err)
@@ -63,7 +80,11 @@ func run() int {
 		return 1
 	}
 	actualPort := ln.Addr().(*net.TCPAddr).Port
-	log.Info("listening", "host", *host, "port", actualPort, "players", *players)
+	log.Info("listening", "host", *host, "port", actualPort, "players", *players,
+		"network", listenNetwork(*host), "log_input", *logInput)
+	if *logFile != "" {
+		log.Info("logging to file", "path", *logFile)
+	}
 
 	// Readiness line: the launcher reads stdout until it sees this.
 	ready, _ := json.Marshal(map[string]any{"event": "listening", "port": actualPort})

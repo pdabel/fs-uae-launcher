@@ -54,6 +54,7 @@ type Config struct {
 	MaxDrift      uint32        // 0 = DefaultMaxDrift
 	Clock         Clock         // nil = RealClock
 	Logger        *slog.Logger  // nil = slog.Default()
+	LogInput      bool          // log every relayed input event
 }
 
 // Errors returned by Run.
@@ -194,11 +195,13 @@ type Stats struct {
 
 // PlayerStats is one player's slice of Stats.
 type PlayerStats struct {
-	Slot    int
-	Tag     string
-	Frame   uint32
-	Lag     time.Duration
-	PingAvg time.Duration
+	Slot      int
+	Tag       string
+	Frame     uint32
+	Lag       time.Duration
+	PingAvg   time.Duration
+	InputsIn  uint64
+	InputsOut uint64
 }
 
 // Stats asks the game goroutine for a snapshot.
@@ -282,6 +285,13 @@ type player struct {
 
 	pending      []byte
 	pendingCount int
+
+	// inputsIn counts input events received from this player, and
+	// inputsOut counts those relayed to it. Both appear on the periodic
+	// status line: a player whose inputsIn never grows is not sending any
+	// input, which is a client-side problem, not a relay one.
+	inputsIn  uint64
+	inputsOut uint64
 }
 
 // tagString is the player's tag without the NUL padding a short tag carries
@@ -507,9 +517,29 @@ func (g *Game) onInput(p *player, ev uint32) {
 		g.log.Warn("game not started, ignoring input event", append(p.logAttrs(), "event", fmt.Sprintf("%06x", ev))...)
 		return
 	}
+	p.inputsIn++
 	// Broadcast to everyone, the sender included — the emulator relies on
 	// seeing its own events echoed.
 	g.broadcast(fsnp.NewInputMessage(ev))
+	to := make([]int, 0, len(g.players))
+	for _, q := range g.livePlayers() {
+		q.inputsOut++
+		to = append(to, q.slot)
+	}
+	if g.cfg.LogInput {
+		// An input event is `state << 16 | action` (fs_emu_queue_input_event
+		// in libfsemu/src/emu/input.c). The action identifies which Amiga
+		// port/control the input is for and comes from each emulator's own
+		// input configuration, so two players pressing "the same" button
+		// send *different* actions when they are mapped to different ports
+		// — and the same action if they are both mapped to the same one.
+		g.log.Info("input relayed", append(p.logAttrs(),
+			"frame", g.frame,
+			"event", fmt.Sprintf("%06x", ev),
+			"action", ev&0xFFFF,
+			"state", (ev>>16)&0xFF,
+			"to", to)...)
+	}
 }
 
 func (g *Game) onPong(p *player) {
@@ -591,7 +621,8 @@ func (g *Game) tick() {
 	if g.frame%200 == 0 {
 		for _, p := range g.livePlayers() {
 			g.log.Info("status", append(p.logAttrs(),
-				"frame", p.frame, "ping_ms", p.pingAvg().Milliseconds(), "lag_ms", p.lag.Milliseconds())...)
+				"frame", p.frame, "ping_ms", p.pingAvg().Milliseconds(), "lag_ms", p.lag.Milliseconds(),
+				"inputs_in", p.inputsIn, "inputs_out", p.inputsOut)...)
 		}
 	}
 	g.checkGame()
@@ -722,11 +753,13 @@ func (g *Game) snapshot() Stats {
 	}
 	for _, p := range g.livePlayers() {
 		s.Players = append(s.Players, PlayerStats{
-			Slot:    p.slot,
-			Tag:     p.tagString(),
-			Frame:   p.frame,
-			Lag:     p.lag,
-			PingAvg: p.pingAvg(),
+			Slot:      p.slot,
+			Tag:       p.tagString(),
+			Frame:     p.frame,
+			Lag:       p.lag,
+			PingAvg:   p.pingAvg(),
+			InputsIn:  p.inputsIn,
+			InputsOut: p.inputsOut,
 		})
 	}
 	return s

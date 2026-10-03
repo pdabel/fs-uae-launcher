@@ -24,9 +24,27 @@ READY_TIMEOUT = 10.0
 # stop, before killing it.
 STOP_TIMEOUT = 2.0
 
+# Log file the server appends to, in the launcher's usual logs directory.
+# This is not just a convenience: fsbc.logging replaces sys.stdout/stderr
+# with NullOutput in frozen builds, and a packaged launcher started without
+# a console has no usable stderr for the child to inherit, so the log file
+# is the only place server output reliably ends up.
+LOG_NAME = "fsnp-server.log.txt"
+
 
 class ServerError(Exception):
     """The netplay server could not be found, started, or did not come up."""
+
+
+def log_file_path():
+    """Path the server should append its log to, or None if unavailable."""
+    try:
+        from fsgs.FSGSDirectories import FSGSDirectories
+
+        return path.join(FSGSDirectories.get_logs_dir(), LOG_NAME)
+    except Exception:
+        traceback.print_exc()
+        return None
 
 
 def find_server_executable():
@@ -82,6 +100,10 @@ class Server:
         ]
         if self.password:
             args.append("--password={0}".format(self.password))
+        log_file = log_file_path()
+        if log_file:
+            args.append("--log-file={0}".format(log_file))
+            print("Netplay server log:", log_file)
         print("Starting netplay server, args =", args)
         # The server logs to stderr, which is inherited so its output shows
         # up alongside the launcher's own. Only the readiness line goes to
