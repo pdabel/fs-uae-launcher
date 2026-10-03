@@ -1,0 +1,3 @@
+# Binary produced by `go build -o fsnp-server ./cmd/fsnp-server`, which is
+# where launcher/server/Server.py looks for it in development mode.
+/fsnp-server

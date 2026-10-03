@@ -57,7 +57,7 @@ func run() int {
 		return 1
 	}
 
-	ln, err := net.Listen("tcp", net.JoinHostPort(*host, strconv.Itoa(*port)))
+	ln, err := net.Listen(listenNetwork(*host), net.JoinHostPort(*host, strconv.Itoa(*port)))
 	if err != nil {
 		log.Error("listen failed", "err", err)
 		return 1
@@ -109,6 +109,27 @@ func run() int {
 		log.Error("game failed", "err", err)
 		return 1
 	}
+}
+
+// listenNetwork picks the network for net.Listen based on the host.
+//
+// For the IPv4 wildcard — the default, and what game.py's socket.socket()
+// always used — this must be "tcp4" rather than "tcp". Go resolves
+// "0.0.0.0:port" to a *dual-stack IPv6* socket, and on macOS/BSD binding
+// [::]:port does not conflict with an existing IPv4 listener on the same
+// port: both binds succeed, incoming IPv4 connections go to the IPv4
+// socket, and this server would report itself listening while receiving
+// nothing. Asking for "tcp4" makes a port conflict the bind error it should
+// be, so the launcher finds out at spawn time instead of announcing a game
+// nobody can reach.
+func listenNetwork(host string) string {
+	if host == "0.0.0.0" {
+		return "tcp4"
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.To4() == nil {
+		return "tcp6"
+	}
+	return "tcp"
 }
 
 func envOr(key, def string) string {

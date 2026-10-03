@@ -14,7 +14,7 @@ from .irc import IRC
 from .irc_broadcaster import IRCBroadcaster
 from .irc_color import IRCColor
 from ..launcher_config import LauncherConfig
-from ..server.Server import Server
+from ..server.Server import Server, ServerError
 from launcher.sync_settings import sync_settings
 
 class Netplay:
@@ -555,7 +555,17 @@ class Netplay:
         if self.is_port_free(port):
             # Proceed with hosting the game
             server = Server(port, self._hostgame_players, self._hostgame_password)
-            server.start()
+            try:
+                server.start()
+            except ServerError as e:
+                # The server is not listening, so there is nothing to
+                # announce and no window to open. Retrying would not help:
+                # the port was free, so this is a missing binary or a
+                # server that failed to come up.
+                self._hostgame_channel.privmsg(
+                    f"ERROR: could not start the netplay server: {e}"
+                )
+                return
             from ..server.ServerWindow import ServerWindow
             game_id = str(uuid.uuid4())
             channel_name = self.irc.get_active_channel()
