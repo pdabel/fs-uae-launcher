@@ -3,11 +3,11 @@ name: CI
 on:
   push:
     branches: # Publish build artifacts to storage
-      - stable
+      - main
       - release-*
   pull_request: # validate build succeeds
     branches:
-      - stable
+      - main
       - release-*
   workflow_dispatch:
 
