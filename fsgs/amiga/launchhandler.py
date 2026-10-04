@@ -230,7 +230,8 @@ class LaunchHandler(object):
                     )
                 )
 
-            dest = os.path.join(self.temp_dir, os.path.basename(src))
+            # compute destination filename after resolving src
+            # (don't use basename too early since src may be adjusted)
 
             def lookup_rom_from_src(src):
                 parts = src.split(":", 1)
@@ -289,6 +290,45 @@ class LaunchHandler(object):
                             "file: {name}".format(name=repr(org_src))
                         )
                     )
+            # Determine dest from final src. If basename is empty (src
+            # is a directory), try to pick a sensible file inside it.
+            dest_name = os.path.basename(src)
+            if not dest_name:
+                if os.path.isdir(src):
+                    try:
+                        entries = [e for e in os.listdir(src) if not e.startswith('.')]
+                    except Exception:
+                        entries = []
+                    files = [e for e in entries if os.path.isfile(os.path.join(src, e))]
+                    if len(files) == 1:
+                        dest_name = files[0]
+                    else:
+                        preferred_exts = ['.rom', '.adf', '.hd', '.iso', '.cue', '.zip', '.lha', '.7z', '.rp9']
+                        for ext in preferred_exts:
+                            for f_name in files:
+                                if f_name.lower().endswith(ext):
+                                    dest_name = f_name
+                                    break
+                            if dest_name:
+                                break
+                    if not dest_name:
+                        try:
+                            entries_preview = os.listdir(src)[:20]
+                        except Exception:
+                            entries_preview = []
+                        raise TaskFailure(
+                            gettext(
+                                "Cannot determine file name inside directory: {0}. Contents (up to 20): {1}".format(
+                                    src, repr(entries_preview)
+                                )
+                            )
+                        )
+                else:
+                    # fallback filename
+                    dest_name = config_key + ".rom"
+
+            dest = os.path.join(self.temp_dir, dest_name)
+
             with open(dest, "wb") as f:
                 if stream:
                     print("[ROM] From stream => {}".format(dest))

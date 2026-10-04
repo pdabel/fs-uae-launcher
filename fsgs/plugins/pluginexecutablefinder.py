@@ -16,6 +16,7 @@ known_executables = {
     "fs-fuse": "FS-Fuse",
     "fs-uae": "FS-UAE",
     "fs-uae-device-helper": "FS-UAE",
+    "fsnp-server": "FS-UAE-Netplay-Server",
     "fuse": "Fuse",
     "hatari": "Hatari",
     "mame": "MAME",

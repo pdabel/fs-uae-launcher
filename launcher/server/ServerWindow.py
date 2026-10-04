@@ -27,6 +27,6 @@ class ServerWindow(fsui.Window):
     def on_close(self):
         print("ServerWindow.on_close")
         try:
-            self.server.kill()
+            self.server.stop()
         except Exception:
             traceback.print_exc()

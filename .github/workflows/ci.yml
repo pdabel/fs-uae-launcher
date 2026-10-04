@@ -51,3 +51,10 @@ jobs:
     permissions:
       contents: read
     secrets: inherit
+
+  check-netplay-server:
+    name: Check Netplay Server
+    uses: ./.github/workflows/netplay-server.yml
+    permissions:
+      contents: read
+    secrets: inherit
