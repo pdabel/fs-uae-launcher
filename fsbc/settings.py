@@ -6,7 +6,7 @@ import traceback
 from configparser import ConfigParser, NoSectionError
 
 # noinspection PyUnresolvedReferences
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 import fsboot
 from fsbc.signal import Signal
@@ -23,7 +23,7 @@ class Settings(object):
             cls._instance = Settings()
         return cls._instance
 
-    def __init__(self, app=None, path: str = None) -> None:
+    def __init__(self, app=None, path: Optional[str] = None) -> None:
         self.app = app
         self.path = path
         self.values = {}  # type: Dict[str, str]
@@ -76,7 +76,11 @@ class Settings(object):
         self._loaded = True
         # print("[SETTINGS] Loaded, path is", self.path)
 
-    def save(self, extra: Dict[str, str] = None) -> None:
+    def unload(self) -> None:
+        self.values.clear()
+        self._loaded = False
+
+    def save(self, extra: Optional[Dict[str, str]] = None) -> None:
         if self.verbose:
             print("[SETTINGS] Save", self)
         self._provider.save(self, extra)
@@ -250,7 +254,7 @@ def save() -> None:
 
 
 def unload() -> None:
-    raise NotImplementedError("settings.unload")
+    Settings.instance().unload()
 
 
 def set_path(path: str) -> None:

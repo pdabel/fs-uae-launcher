@@ -1,0 +1,79 @@
+{
+  "connections": [
+    {
+      "index": 1,
+      "client_port": 61057,
+      "server_port": 25100,
+      "tag": "P1",
+      "player_byte": 255,
+      "emulator_version": {
+        "name": "FSUAE",
+        "major": 3,
+        "minor": 1,
+        "revision": 66
+      },
+      "resume_from_packet": 0,
+      "client_to_server_bytes": 80692,
+      "server_to_client_bytes": 33112,
+      "max_frame": 6163,
+      "zero_mem_check_frames": [
+        -1,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "index": 2,
+      "client_port": 61058,
+      "server_port": 25100,
+      "tag": "P2",
+      "player_byte": 255,
+      "emulator_version": {
+        "name": "FSUAE",
+        "major": 3,
+        "minor": 1,
+        "revision": 66
+      },
+      "resume_from_packet": 0,
+      "client_to_server_bytes": 77188,
+      "server_to_client_bytes": 33116,
+      "max_frame": 6167,
+      "zero_mem_check_frames": [
+        -1,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    }
+  ],
+  "cross_client_check": {
+    "common_frames": 6164,
+    "mem_check_mismatches": 0,
+    "rnd_check_mismatches": 0
+  }
+}

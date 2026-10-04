@@ -22,14 +22,8 @@ def find_app(app):
         from launcher.apps.fs_uae_arcade import app_main
     elif app in ["workspace"]:
         from launcher.apps.workspace import app_main
-    elif app == "fs-uae-netplay-server":
-        from launcher.apps.fs_uae_netplay_server import app_main
     elif app == "fs-game-center":
         from launcher.apps.fs_game_center import app_main
-    elif app in ["dump-game-database", "game-database-dumper"]:
-        from fsgs.gamedb.game_database_dumper import game_database_dumper_main
-
-        app_main = game_database_dumper_main
     elif app in ["fsgs", "fs-game-runner"]:
         from launcher.apps.fsgs import app_main
     elif app == "list-plugins":
@@ -58,9 +52,6 @@ def find_app(app):
 def main():
     app_name = ""
     # Check deprecated/legacy app options.
-    if "--server" in sys.argv:
-        sys.argv.remove("--server")
-        app_name = "fs-uae-netplay-server"
     if "--arcade" in sys.argv:
         sys.argv.remove("--arcade")
         app_name = "fs-uae-arcade"

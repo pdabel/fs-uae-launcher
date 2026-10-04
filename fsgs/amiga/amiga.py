@@ -1,3 +1,5 @@
+from typing import Any, Dict, List
+
 from fsgs.amiga.roms import *
 
 
@@ -11,7 +13,7 @@ class Amiga(object):
     MAX_CDROM_IMAGES = 20
     MAX_HARD_DRIVES = 4
 
-    models = [
+    models: List[Dict[str, Any]] = [
         {
             "id": "A1000",
             "title": "A1000",

@@ -3,31 +3,27 @@ import zipfile
 import tempfile
 
 # noinspection PyUnresolvedReferences
-from typing import BinaryIO, Dict
+from typing import IO, Dict, Optional
 
 
-_archive = None  # type: zipfile.ZipFile
-_archive_initialized = False
+_archive = None  # type: Optional[zipfile.ZipFile]
 _temp = {}  # type: Dict[str, str]
 
 
 def app_name() -> str:
-    pass
+    raise NotImplementedError()
 
 
 def archive() -> zipfile.ZipFile:
-    global _archive, _archive_initialized
-    if _archive_initialized:
-        return _archive
-    archive_name = app_name() + ".dat"
-    _archive = zipfile.ZipFile(archive_name, "r")
+    global _archive
+    if _archive is None:
+        _archive = zipfile.ZipFile(app_name() + ".dat", "r")
     return _archive
 
 
 def reset() -> None:
-    global _archive, _archive_initialized
+    global _archive
     _archive = None
-    _archive_initialized = False
 
 
 def path_no_extract(name: str) -> str:
@@ -44,8 +40,8 @@ def path(name: str) -> str:
     except LookupError:
         s = stream(name)
         fd, p = tempfile.mkstemp(suffix=name)
-        with fd:
-            fd.write(s.read())
+        with open(fd, "wb") as f:
+            f.write(s.read())
         _temp[name] = p
         return p
 
@@ -54,7 +50,7 @@ def path(name: str) -> str:
     # return p
 
 
-# def stream(name: str, mode: str="rb") -> BinaryIO:
-def stream(name: str) -> BinaryIO:
+# def stream(name: str, mode: str="rb") -> IO[bytes]:
+def stream(name: str) -> IO[bytes]:
     # archive().read()
     return archive().open(name)

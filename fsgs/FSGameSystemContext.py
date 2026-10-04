@@ -36,6 +36,28 @@ class FileContext(BaseContext):
         # FIXME: check_sha1 should check with PluginManager directly?
         database = FileDatabase.instance()
         result = database.find_file(sha1=sha1)["path"]
+        # If the DB/cache returned a directory (e.g. an extracted temp
+        # folder), try to resolve a sensible file inside it. If we can
+        # determine a single candidate, return that file path instead.
+        if result and not result.startswith("locker://") and os.path.isdir(result):
+            try:
+                entries = [e for e in os.listdir(result) if not e.startswith('.')]
+            except Exception:
+                entries = []
+            files = [e for e in entries if os.path.isfile(os.path.join(result, e))]
+            if len(files) == 1:
+                return os.path.join(result, files[0])
+            # Prefer common Amiga/image/archive extensions if multiple files
+            preferred_exts = [
+                '.rom', '.adf', '.hd', '.iso', '.cue', '.zip', '.lha', '.7z', '.rp9'
+            ]
+            for ext in preferred_exts:
+                for f in files:
+                    if f.lower().endswith(ext):
+                        return os.path.join(result, f)
+            # No clear candidate found; treat as not found so callers can
+            # fall back to download or report a missing file.
+            result = None
         if not result:
             path = Downloader.get_cache_path(sha1)
             if os.path.exists(path):
@@ -184,6 +206,9 @@ class FileContext(BaseContext):
             os.remove(dst)
 
         if isinstance(ifs, str):
+            # If the resolved path is a directory, treat as not found
+            if os.path.isdir(ifs):
+                raise NotFoundError("Expected file but found directory: {0}".format(ifs))
             # we got a direct path
             try:
                 os.link(ifs, dst)
@@ -235,7 +260,6 @@ class FSGameSystemContext(object):
         self._config = None
         self._settings = None
         self._signal = None
-        self._netplay = None
         self._game = None
         self._plugins = None
         # self._variant = None
@@ -292,14 +316,6 @@ class FSGameSystemContext(object):
             self._signal = SignalContext(self)
             # self._signal = Signal()
         return self._signal
-
-    @property
-    def netplay(self):
-        if self._netplay is None:
-            from .netplay.NetplayContext import NetplayContext
-
-            self._netplay = NetplayContext(self)
-        return self._netplay
 
     def database(self):
         return Database.instance()
