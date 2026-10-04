@@ -2,7 +2,6 @@ from fsgs.ogd.client import OGDClient
 import fsui
 from fsbc.application import app
 
-# from workspace.shell import SimpleApplication
 from launcher.res import gettext
 from launcher.ui.widgets import CloseButton
 from workspace.ui.theme import WorkspaceTheme

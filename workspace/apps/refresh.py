@@ -2,7 +2,6 @@ from fsgs.ogd.refresh import DatabaseRefreshTask
 import fsui
 from fsui.extra.iconheader import IconHeader
 
-# from workspace.shell import SimpleApplication
 from launcher.res import gettext
 from launcher.ui.widgets import CloseButton
 from workspace.ui.theme import WorkspaceTheme

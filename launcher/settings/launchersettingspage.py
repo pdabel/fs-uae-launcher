@@ -1,7 +1,6 @@
 import fsgs
 from launcher.settings.maintenance_settings_page import DefragmentDatabasesTask
 
-import fsboot
 import fsui
 from fsui.extra.taskdialog import TaskDialog
 from launcher.option import Option
@@ -15,13 +14,8 @@ class LauncherSettingsPage(SettingsPage):
         icon = fsui.Icon("fs-uae-launcher", "pkg:launcher")
         self.add_header(icon, "{} Launcher".format(fsgs.product))
 
-        if fsboot.get("fws") == "1":
-            # We omit the appearance settings, since they have no effect
-            # when running under the workspace environment.
-            pass
-        else:
-            self.add_option(Option.LAUNCHER_THEME)
-            self.add_option(Option.LAUNCHER_FONT_SIZE)
+        self.add_option(Option.LAUNCHER_THEME)
+        self.add_option(Option.LAUNCHER_FONT_SIZE)
 
         self.add_option(Option.LAUNCHER_CLOSE_BUTTONS)
 

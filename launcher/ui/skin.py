@@ -4,7 +4,6 @@ from fsbc.util import memoize
 from .Constants import Constants
 from ..option import Option
 from ..launcher_settings import LauncherSettings
-import fsboot
 
 try:
     import workspace
@@ -134,10 +133,7 @@ class Skin(object):
     @classmethod
     def fws(cls):
         if cls._fws is None:
-            if fsboot.get("fws") == "1":
-                cls._fws = True
-            else:
-                cls._fws = LauncherSettings.get(Option.LAUNCHER_THEME) == "fws"
+            cls._fws = LauncherSettings.get(Option.LAUNCHER_THEME) == "fws"
             if workspace is None:
                 cls._fws = None
         return cls._fws

@@ -4,7 +4,6 @@ from fsbc.application import app
 from launcher.ui.widgets import CloseButton
 from workspace.apps.refresh import RefreshWindow
 
-# from workspace.shell import SimpleApplication
 from launcher.res import gettext
 from workspace.ui.theme import WorkspaceTheme
 

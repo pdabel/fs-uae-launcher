@@ -11,7 +11,6 @@ from fsui.qt.qt import init_qt, QEvent
 
 # noinspection PyProtectedMember
 from fsui.qt.helpers import QParent
-import fsboot
 
 windows = set()
 _use_fws = False
@@ -288,10 +287,7 @@ class Window(QObject):
         self._window = weakref.ref(self)
 
         if native is None:
-            if fsboot.get("fws") == "1":
-                native = False
-            else:
-                native = not _use_fws
+            native = not _use_fws
         if native:
             self._real_window = RealWindow(
                 QParent(parent, True),

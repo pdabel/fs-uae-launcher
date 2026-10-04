@@ -6,7 +6,6 @@ from fsbc.resources import Resources
 import fsui
 from fsgs.FSGSDirectories import FSGSDirectories
 
-# from workspace.shell import SimpleApplication
 from launcher.res import gettext
 from fsui.extra.iconheader import IconHeader
 from workspace.ui.theme import WorkspaceTheme

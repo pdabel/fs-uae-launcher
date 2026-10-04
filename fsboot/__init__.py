@@ -54,9 +54,6 @@ def setup_logging() -> None:
     root.addHandler(ch)
 
 
-if "--workspace" in sys.argv:
-    # Hack
-    set("fws", "1")
 if "--logging" in sys.argv:
     setup_logging()
     sys.argv.remove("--logging")

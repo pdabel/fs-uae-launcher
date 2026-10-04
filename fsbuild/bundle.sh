@@ -50,8 +50,6 @@ cp -a share/locale/* "$PLUGIN_DIR/Locale/"
 fi
 
 echo "Copying data files..."
-mkdir -p "$PLUGIN_DATADIR/arcade"
-cp -a ./arcade/res "$PLUGIN_DATADIR/arcade/"
 mkdir -p "$PLUGIN_DATADIR/launcher"
 cp -a ./launcher/res "$PLUGIN_DATADIR/launcher/"
 mkdir -p "$PLUGIN_DATADIR/fsgs"

@@ -7,7 +7,6 @@ import warnings
 from collections import defaultdict
 
 import fsboot
-from fsbc.application import Application
 from fsbc.resources import Resources
 from fsbc.settings import Settings
 from fsbc.system import System
@@ -189,10 +188,6 @@ class GameDriver:
         self._model_name = name
 
     def use_fullscreen(self):
-        # FIXME: not a very nice hack to hard-code application name here...
-        if Application.instance():
-            if Application.instance().name == "fs-uae-arcade":
-                return True
         if Settings.instance()["fullscreen"] == "0":
             return False
         return True

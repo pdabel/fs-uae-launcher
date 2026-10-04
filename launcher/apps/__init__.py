@@ -16,8 +16,6 @@ except ImportError:
 def find_app(app):
     if app in ["launcher", "fs-uae-launcher"]:
         from launcher.apps.fs_uae_launcher import app_main
-    elif app in ["workspace"]:
-        from launcher.apps.workspace import app_main
     elif app == "list-plugins":
         from launcher.apps.listplugins import app_main
     elif app == "list-dirs":
