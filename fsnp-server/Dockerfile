@@ -8,7 +8,7 @@
 
 # Cross-compile from the build platform instead of emulating the target under
 # QEMU — the Go toolchain does this natively, and the result is static.
-FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS build
 
 ARG TARGETOS
 ARG TARGETARCH
