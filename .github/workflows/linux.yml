@@ -85,6 +85,10 @@ jobs:
         run: |
           pipenv sync --dev
 
+      - name: Run Python tests
+        run: |
+          pipenv run pytest fsbc fstd fspy
+
       - name: Set base version
         run: |
           echo "BASEVERSION_FS=${{ inputs.version }}" > BASEVERSION.FS
