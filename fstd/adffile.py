@@ -4,7 +4,7 @@ import os
 import sys
 import hashlib
 from io import BytesIO
-from typing import List, Dict, Undefined, Union, IO
+from typing import List, Dict, Union, IO
 
 
 B_SIZE = 512
@@ -72,11 +72,11 @@ class Block(object):
 
 class FileInfo(object):
     def __init__(self) -> None:
-        self.block_list = List[int]()
+        self.block_list = []  # type: List[int]
         self.header_block = -1
         self.name = ""
         self.path = ""
-        self.comment = Undefined(str)
+        self.comment = ""
         self.time = ""
         self.mode = 0
         self.size = 0
@@ -99,18 +99,18 @@ class ADFFile(object):
         assert isinstance(data, bytes)
         # print(len(data))
         assert len(data) == B_SIZE * B_COUNT
-        self.blocks = List[Block]()
+        self.blocks = []  # type: List[Block]
         for i in range(0, B_SIZE * B_COUNT, B_SIZE):
             self.blocks.append(Block(data[i : i + B_SIZE]))
         assert len(self.blocks) == B_COUNT
-        self.block_usage = [List[str]() for _ in range(B_COUNT)]
+        self.block_usage = [[] for _ in range(B_COUNT)]  # type: List[List[str]]
         self.dos = False
         self.ofs = False
         self.ffs = False
-        self.warnings = List[str]()
-        self.file_map = Dict[str, FileInfo]()
+        self.warnings = []  # type: List[str]
+        self.file_map = {}  # type: Dict[str, FileInfo]
         self.root_block_number = 880
-        self.bitmap_pages = List[int]()
+        self.bitmap_pages = []  # type: List[int]
         self._parse()
 
     def root_block(self) -> Block:
@@ -313,7 +313,7 @@ class ADFFile(object):
 
         first_data = b.ulong(16)
         next_data = first_data
-        file_blocks_1 = List[int]()
+        file_blocks_1 = []  # type: List[int]
         ofs_accum_size = 0
         k = 0
 
@@ -349,7 +349,7 @@ class ADFFile(object):
             next_data = data_b.ulong(16)
             k += 1
 
-        file_blocks_2 = List[int]()
+        file_blocks_2 = []  # type: List[int]
         extension = block_number
         k = 0
         while extension:
@@ -412,7 +412,7 @@ class ADFFile(object):
         for i, bn in enumerate(file_blocks_2):
             self.block_usage[bn].append(
                 "data block #{0} for file {1}".format(
-                    i + 1, file_info.path, bn
+                    i + 1, file_info.path
                 )
             )
 
@@ -456,7 +456,7 @@ class ADFFile(object):
         self._parse_directory_content(file_info.path, block_number)
 
     def namelist(self) -> List[str]:
-        names = List[str]()
+        names = []  # type: List[str]
         keys = sorted(self.file_map.keys())
         for key in keys:
             names.append(self.file_map[key].path)
@@ -476,7 +476,7 @@ class ADFFile(object):
         print(repr(name))
         file_info = self.file_map[name]
         bytes_left = file_info.size
-        data = List[bytes]()
+        data = []  # type: List[bytes]
         for block_number in file_info.block_list:
             if self.ffs:
                 start_index = 0

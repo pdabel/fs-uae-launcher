@@ -1,13 +1,14 @@
 import sys
 import platform
 import webbrowser
+from typing import Callable, Optional
 
 
 def default_url_open_function(url: str):
     webbrowser.open(url)
 
 
-_url_open_function = default_url_open_function
+_url_open_function = default_url_open_function  # type: Optional[Callable[[str], None]]
 
 
 def open_url_in_browser(url: str) -> None:
