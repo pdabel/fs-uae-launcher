@@ -191,7 +191,9 @@ class SaveHandler(object):
 
         # Use a temporary state dir, for now, to avoid problems with
         # floppy overlays etc interfering with net play.
-        if self.fsgc.netplay.enabled:
+        from launcher.netplay.netplay import Netplay
+
+        if Netplay.current():
             # It is possible to manually specify the state dir.
             config_name = self.fsgc.config.get("__netplay_state_dir_name")
             if not config_name:

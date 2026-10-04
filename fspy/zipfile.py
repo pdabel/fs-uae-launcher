@@ -14,15 +14,12 @@ import sys
 import zipfile
 import zlib
 
-try:
-    from typing import List
-except ImportError:
-    from fstd.typing import List
+from typing import List
 
 
 class ZipFile(zipfile.ZipFile):
     def __init__(self, path: str, mode: str = "r") -> None:
-        zipfile.ZipFile.__init__(self, path, mode)
+        zipfile.ZipFile.__init__(self, path, mode)  # type: ignore[call-overload]
 
     def getinfo(self, name: str) -> zipfile.ZipInfo:
         try:

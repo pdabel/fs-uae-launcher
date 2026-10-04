@@ -2,7 +2,6 @@ import fstd.adffile
 import os
 import hashlib
 import fstd.mypy
-from nose.tools import *
 
 
 def get_transplant_adf() -> fstd.adffile.ADFFile:
@@ -24,20 +23,20 @@ def test_namelist():
         "s/",
         "s/startup-sequence",
     ]
-    assert_equal(sorted(adf.namelist()), expected_names)
+    assert sorted(adf.namelist()) == expected_names
 
 
 def test_read_startup_sequence():
     adf = get_transplant_adf()
     data = adf.read("s/startup-sequence")
-    assert_equal(data, b"loader\n")
+    assert data == b"loader\n"
 
 
 def test_read_mainpart():
     adf = get_transplant_adf()
     data = adf.read("mainpart")
     data_sha1 = hashlib.sha1(data).hexdigest()
-    assert_equal(data_sha1, "ef467af52c8a886a6bca6ceb7f263fb8cbee2d59")
+    assert data_sha1 == "ef467af52c8a886a6bca6ceb7f263fb8cbee2d59"
 
 
 def test_mypy():
