@@ -22,7 +22,7 @@ on:
         description: 'Source branch to use for release branch'
         required: false
         type: string
-        default: 'stable'
+        default: 'main'
       dry_run:
         description: 'DRY RUN'
         type: boolean
