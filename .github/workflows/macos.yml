@@ -41,6 +41,14 @@ jobs:
         with:
           python-version: 3.12
 
+      # The macOS runner images do not have Go on PATH (Ubuntu ones do),
+      # and fsbuild/build.sh needs it to build fsnp-server.
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: fsnp-server/go.mod
+          cache: false
+
       - name: Install pip and pipenv
         run: |
           python -m pip install pipenv pyinstaller
