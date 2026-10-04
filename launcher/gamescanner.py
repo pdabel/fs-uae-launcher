@@ -4,7 +4,6 @@ import time
 from binascii import hexlify
 from functools import lru_cache
 
-from fsgs import openretro, OPENRETRO_DEFAULT_DATABASES
 from fsgs.FSGSDirectories import FSGSDirectories
 from fsgs.filedatabase import FileDatabase
 from fsgs.GameDatabase import IncompleteGameException
@@ -36,10 +35,6 @@ class GameDatabaseIterator:
             if LauncherSettings.get(platform_option) != "0":
                 return True
             return False
-        if openretro and platform_option in OPENRETRO_DEFAULT_DATABASES:
-            if LauncherSettings.get(platform_option) == "0":
-                return False
-            return True
         return False
 
     def game_databases(self, custom=True):
@@ -49,56 +44,6 @@ class GameDatabaseIterator:
             yield "CD32", self.fsgc.game_database("CD32")
         if self._check_platform(Option.CDTV_DATABASE):
             yield "CDTV", self.fsgc.game_database("CDTV")
-        if self._check_platform(Option.A2600_DATABASE):
-            yield "A2600", self.fsgc.game_database("A2600")
-        if self._check_platform(Option.A5200_DATABASE):
-            yield "A5200", self.fsgc.game_database("A5200")
-        if self._check_platform(Option.A7800_DATABASE):
-            yield "A7800", self.fsgc.game_database("A7800")
-        if self._check_platform(Option.ARCADE_DATABASE):
-            yield "Arcade", self.fsgc.game_database("Arcade")
-        if self._check_platform(Option.ATARI_DATABASE):
-            yield "Atari", self.fsgc.game_database("Atari")
-        if self._check_platform(Option.C64_DATABASE):
-            yield "C64", self.fsgc.game_database("C64")
-        if self._check_platform(Option.CPC_DATABASE):
-            yield "CPC", self.fsgc.game_database("CPC")
-        if self._check_platform(Option.DOS_DATABASE):
-            yield "DOS", self.fsgc.game_database("DOS")
-        if self._check_platform(Option.GB_DATABASE):
-            yield "GB", self.fsgc.game_database("GB")
-        if self._check_platform(Option.GBA_DATABASE):
-            yield "GBA", self.fsgc.game_database("GBA")
-        if self._check_platform(Option.GBC_DATABASE):
-            yield "GBC", self.fsgc.game_database("GBC")
-        if self._check_platform(Option.MSX_DATABASE):
-            yield "MSX", self.fsgc.game_database("MSX")
-        if self._check_platform(Option.N64_DATABASE):
-            yield "N64", self.fsgc.game_database("N64")
-        if self._check_platform(Option.NDS_DATABASE):
-            yield "NDS", self.fsgc.game_database("NDS")
-        if self._check_platform(Option.NEOGEO_DATABASE):
-            yield "NEOGEO", self.fsgc.game_database("NEOGEO")
-        if self._check_platform(Option.NES_DATABASE):
-            yield "NES", self.fsgc.game_database("NES")
-        if self._check_platform(Option.NGC_DATABASE):
-            yield "NGC", self.fsgc.game_database("NGC")
-        if self._check_platform(Option.PSX_DATABASE):
-            yield "PSX", self.fsgc.game_database("PSX")
-        if self._check_platform(Option.SGG_DATABASE):
-            yield "SGG", self.fsgc.game_database("SGG")
-        if self._check_platform(Option.SMD_DATABASE):
-            yield "SMD", self.fsgc.game_database("SMD")
-        if self._check_platform(Option.SMS_DATABASE):
-            yield "SMS", self.fsgc.game_database("SMS")
-        if self._check_platform(Option.SNES_DATABASE):
-            yield "SNES", self.fsgc.game_database("SNES")
-        if self._check_platform(Option.TG16_DATABASE):
-            yield "TG16", self.fsgc.game_database("TG16")
-        if self._check_platform(Option.TGCD_DATABASE):
-            yield "TGCD", self.fsgc.game_database("TGCD")
-        if self._check_platform(Option.ZXS_DATABASE):
-            yield "ZXS", self.fsgc.game_database("ZXS")
         if custom:
             for name in self.custom_database_names():
                 yield name, self.fsgc.game_database(name)

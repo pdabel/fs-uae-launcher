@@ -7,14 +7,10 @@ from launcher.launcher_signal import LauncherSignal
 from launcher.option import Option
 from launcher.settings.advanced_settings_page import AdvancedSettingsPage
 from launcher.settings.advanced_video_settings import AdvancedVideoSettingsPage
-from launcher.settings.arcade_settings_page import ArcadeSettingsPage
 from launcher.settings.audio_settings_page import AudioSettingsPage
 from launcher.settings.directories_settings_page import DirectoriesSettingsPage
 from launcher.settings.fs_uae_settings_page import FSUAESettingsPage
 from launcher.settings.gamedatabasesettingspage import GameDatabaseSettingsPage
-from launcher.settings.gameplatformssettingspage import (
-    GamePlatformsSettingsPage,
-)
 from launcher.settings.joystick_settings_page import JoystickSettingsPage
 from launcher.settings.keyboard_settings_page import KeyboardSettingsPage
 from launcher.settings.language_settings_page import LanguageSettingsPage
@@ -133,12 +129,6 @@ class SettingsDialog(PagedDialog):
             GameDatabaseSettingsPage,
             fsui.Icon("database-settings", "pkg:workspace"),
         )
-        if fsgs.openretro or settings.get(Option.PLATFORMS_FEATURE) == "1":
-            self.add_page(
-                gettext("Game Platforms"),
-                GamePlatformsSettingsPage,
-                fsui.Icon("database-settings", "pkg:workspace"),
-            )
         # self.add_page(gettext("Custom Settings"), CustomSettingsPage)
         if LauncherSettings.get(Option.NETPLAY_FEATURE) != "0":
             self.add_page(
@@ -155,12 +145,6 @@ class SettingsDialog(PagedDialog):
         # self.add_page(
         #     gettext("Maintenance"), MaintenanceSettingsPage,
         #     fsui.Icon("maintenance", "pkg:workspace"))
-        self.add_page(
-            "{} Arcade".format(fsgs.product),
-            ArcadeSettingsPage,
-            fsui.Icon("fs-uae-arcade", "pkg:launcher"),
-            bold=True,
-        )
 
         # Old texts
         # gettext("Video Synchronization")

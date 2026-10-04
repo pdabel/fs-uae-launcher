@@ -1,12 +1,7 @@
 import fsui
-from fsbc import settings
 from fsbc.util import unused
-from fsgs import openretro
 from fsgs.amiga.amiga import Amiga
-from fsgs.context import fsgs
-from fsgs.platform import PLATFORM_IDS
 from launcher.option import Option
-from fsgs.platforms import PLATFORM_ZXS
 from launcher.cd_manager import CDManager
 from launcher.floppy_manager import FloppyManager
 from launcher.i18n import gettext
@@ -16,11 +11,9 @@ from launcher.ui.behaviors.amigaenablebehavior import AmigaEnableBehavior
 from launcher.ui.behaviors.configbehavior import ConfigBehavior
 from launcher.ui.behaviors.platformbehavior import (
     AMIGA_PLATFORMS,
-    PlatformShowBehavior,
     AmigaShowBehavior,
 )
 from launcher.ui.config.ConfigCheckBox import ConfigCheckBox
-from launcher.ui.options import ConfigWidgetFactory
 
 
 class ModelGroup(fsui.Group):
@@ -62,20 +55,8 @@ class ModelGroup(fsui.Group):
         self.model_title_layout = fsui.HorizontalLayout()
         self.layout.add(self.model_title_layout, fill=True)
 
-        if openretro or settings.get(Option.PLATFORMS_FEATURE) == "1":
-            heading_label = fsui.HeadingLabel(
-                self, gettext("Platform & Model")
-            )
-            self.model_title_layout.add(heading_label, margin=10)
-            # platform_group = ConfigWidgetFactory(
-            #     check=False, label=False).create(self, Option.PLATFORM)
-            # self.model_title_layout.add(platform_group, margin_left=20)
-            # Adding label to get the vertical spacing correct.
-            # heading_label = fsui.HeadingLabel(self, "")
-            # self.model_title_layout.add(heading_label, margin=10)
-        else:
-            heading_label = fsui.HeadingLabel(self, gettext("Amiga Model"))
-            self.model_title_layout.add(heading_label, margin=10)
+        heading_label = fsui.HeadingLabel(self, gettext("Amiga Model"))
+        self.model_title_layout.add(heading_label, margin=10)
 
         self.model_title_layout.add_spacer(0, expand=True)
         self.model_title_layout.add(
@@ -96,16 +77,6 @@ class ModelGroup(fsui.Group):
         # seems to be set too large due to something in the model layout.
         self.model_layout.get_min_width = dummy_min_width
         self.layout.add(self.model_layout, fill=True)
-
-        if openretro or settings.get(Option.PLATFORMS_FEATURE) == "1":
-            platform_group = ConfigWidgetFactory(
-                check=False, label=False
-            ).create(self, Option.PLATFORM)
-            self.model_layout.add(platform_group, margin=10)
-            pass
-
-        self.other_model_choice = ModelChoice(self)
-        self.model_layout.add(self.other_model_choice, expand=True, margin=10)
 
         self.model_layout.add(self.model_choice, expand=False, margin=10)
         AmigaShowBehavior(self.model_choice)
@@ -231,58 +202,3 @@ class ModelGroup(fsui.Group):
             index = 1 - int(value)
         self.accuracy_choice.set_index(index)
 
-
-class ModelChoice(fsui.Choice):
-    def __init__(self, parent):
-        self._choice_values = []
-        self._choice_labels = []
-        super().__init__(parent, self._choice_labels)
-        self._platform = ""
-        self._model_key = ""
-        fsgs.signal.connect("config", self.on_config)
-        self.on_config(Option.PLATFORM, fsgs.config.get(Option.PLATFORM))
-        self.changed.connect(self.__changed)
-        self.set_min_width(100)
-
-    def on_destroy(self):
-        fsgs.signal.disconnect("config", self.on_config)
-
-    def __changed(self):
-        fsgs.config.set(self._model_key, self._choice_values[self.get_index()])
-
-    def on_config(self, key, value):
-        if key == Option.PLATFORM:
-            self._platform = value
-            self._model_key = value + "_model"
-            self.update_options()
-            self.update_index(fsgs.config.get(self._model_key))
-            self.update_enabled()
-        elif key == self._model_key:
-            self.update_index(value)
-
-    def update_enabled(self):
-        self.set_visible(self._platform not in AMIGA_PLATFORMS)
-        self.set_enabled(self._choice_labels != ["N/A"])
-
-    def update_index(self, value):
-        try:
-            index = self._choice_values.index(value)
-        except ValueError:
-            index = 0
-        with self.changed.inhibit:
-            self.set_index(index)
-
-    def update_options(self):
-        try:
-            option = Option.get(self._model_key)
-        except KeyError:
-            self._choice_values = ["0"]
-            self._choice_labels = ["N/A"]
-        else:
-            choices = option["values"]
-            self._choice_values = [x[0] for x in choices]
-            self._choice_labels = [x[1] for x in choices]
-        with self.changed.inhibit:
-            self.clear()
-            for label in self._choice_labels:
-                self.add_item(label)

@@ -1,6 +1,3 @@
-from fsbc import settings
-from fsgs import openretro
-from fsgs.option import Option
 from launcher.i18n import gettext
 from launcher.launcher_config import LauncherConfig
 from launcher.launcher_settings import LauncherSettings
@@ -17,10 +14,6 @@ class NewButton(IconButton):
 
     @staticmethod
     def new_config():
-        if openretro or settings.get(Option.PLATFORMS_FEATURE):
-            platform_id = LauncherConfig.get(Option.PLATFORM)
-        else:
-            platform_id = None
-        LauncherConfig.load_default_config(platform=platform_id)
+        LauncherConfig.load_default_config()
         # Settings.set("config_changed", "1")
         LauncherSettings.set("parent_uuid", "")

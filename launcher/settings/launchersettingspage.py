@@ -1,5 +1,4 @@
 import fsgs
-from fsgs import openretro
 from launcher.settings.maintenance_settings_page import DefragmentDatabasesTask
 
 import fsboot
@@ -25,14 +24,6 @@ class LauncherSettingsPage(SettingsPage):
             self.add_option(Option.LAUNCHER_FONT_SIZE)
 
         self.add_option(Option.LAUNCHER_CLOSE_BUTTONS)
-
-        self.add_section(gettext("Experimental Features"))
-        # Netplay feature is now enabled by default
-        # self.add_option(Option.NETPLAY_FEATURE)
-        if not openretro:
-            self.add_option(Option.PLATFORMS_FEATURE)
-        # self.add_option(Option.LAUNCHER_CONFIG_FEATURE)
-        # self.add_option(Option.LAUNCHER_SETUP_WIZARD_FEATURE)
 
         self.add_section(gettext("Maintenance"))
         label = fsui.MultiLineLabel(

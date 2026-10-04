@@ -1,7 +1,6 @@
 import sys
 
 import fsui
-from fsgs.platform import Platform
 from launcher.option import Option
 from fsgs.context import fsgs
 from launcher.devicemanager import DeviceManager
@@ -306,11 +305,6 @@ class InputPortTypeChoice(fsui.Choice):
     def on_config(self, key, value):
         if key == Option.PLATFORM:
             self.port = self.port_gui_index + 1
-            if value == Platform.C64:
-                if self.port_gui_index == 0:
-                    self.port = 2
-                elif self.port_gui_index == 1:
-                    self.port = 1
             self._platform = value
             self._config_key = "{}_port_{}_type".format(value, self.port)
             self.update_options()
@@ -418,11 +412,6 @@ class InputPortDeviceChoice(fsui.ComboBox):
     def on_config(self, key, value):
         if key == "platform":
             self.port = self.port_gui_index + 1
-            if value == Platform.C64:
-                if self.port_gui_index == 0:
-                    self.port = 2
-                elif self.port_gui_index == 1:
-                    self.port = 1
             self._platform = value
             self.update_enabled()
             self.device_option_key = "{}_port_{}".format(

@@ -93,34 +93,8 @@ class Platform(PlatformHandler):
 
 
 from fsgs.platforms.amiga import AmigaPlatformHandler
-from fsgs.platforms.amstrad_cpc import AmstradCPCPlatformHandler
-from fsgs.platforms.arcade.arcadeplatform import ArcadePlatformHandler
-from fsgs.platforms.atari_2600 import Atari2600PlatformHandler
-from fsgs.platforms.atari5200 import Atari5200PlatformHandler
-from fsgs.platforms.atari7800 import Atari7800PlatformHandler
-from fsgs.platforms.atari.atariplatform import AtariSTPlatformHandler
 from fsgs.platforms.cd32 import CD32PlatformHandler
 from fsgs.platforms.cdtv import CDTVPlatformHandler
-from fsgs.platforms.commodore64 import Commodore64Platform
-from fsgs.platforms.dos.dosplatform import DOSPlatformHandler
-from fsgs.platforms.gameboy import GameBoyPlatform
-from fsgs.platforms.gameboyadvance import GameBoyAdvancePlatform
-from fsgs.platforms.gameboycolor import GameBoyColorPlatform
-from fsgs.platforms.gamegear import GameGearPlatform
-from fsgs.platforms.lynx import LynxPlatformHandler
-from fsgs.platforms.mastersystem import MasterSystemPlatform
-from fsgs.platforms.megadrive import MegaDrivePlatform
-from fsgs.platforms.msx import MsxPlatformHandler
-from fsgs.platforms.nintendo64 import Nintendo64Platform
-from fsgs.platforms.nintendods import NintendoDSPlatform
-from fsgs.platforms.neogeo import NeoGeoPlatform
-from fsgs.platforms.gamecube import GameCubePlatform
-from fsgs.platforms.nintendo import NintendoPlatform
-from fsgs.platforms.playstation import PlayStationPlatform
-from fsgs.platforms.supernintendo import SuperNintendoPlatformHandler
-from fsgs.platforms.turbografx16 import TurboGrafx16Platform
-from fsgs.platforms.turbografxcd import TurboGrafxCDPlatform
-from fsgs.platforms.zxs import SpectrumPlatformHandler
 
 
 class UnsupportedPlatform(PlatformHandler):
@@ -129,34 +103,8 @@ class UnsupportedPlatform(PlatformHandler):
 
 platforms = {
     Platform.AMIGA: AmigaPlatformHandler,
-    Platform.ARCADE: ArcadePlatformHandler,
-    Platform.A2600: Atari2600PlatformHandler,
-    Platform.A5200: Atari5200PlatformHandler,
-    Platform.A7800: Atari7800PlatformHandler,
-    Platform.ATARI: AtariSTPlatformHandler,
-    Platform.C64: Commodore64Platform,
     Platform.CD32: CD32PlatformHandler,
     Platform.CDTV: CDTVPlatformHandler,
-    Platform.CPC: AmstradCPCPlatformHandler,
-    Platform.DOS: DOSPlatformHandler,
-    Platform.GB: GameBoyPlatform,
-    Platform.GBA: GameBoyAdvancePlatform,
-    Platform.GBC: GameBoyColorPlatform,
-    Platform.LYNX: LynxPlatformHandler,
-    Platform.MSX: MsxPlatformHandler,
-    Platform.N64: Nintendo64Platform,
-    Platform.NDS: NintendoDSPlatform,
-    Platform.NEOGEO: NeoGeoPlatform,
-    Platform.NES: NintendoPlatform,
-    Platform.NGC: GameCubePlatform,
-    Platform.SNES: SuperNintendoPlatformHandler,
-    Platform.PSX: PlayStationPlatform,
-    Platform.SGG: GameGearPlatform,
-    Platform.SMD: MegaDrivePlatform,
-    Platform.SMS: MasterSystemPlatform,
-    Platform.TG16: TurboGrafx16Platform,
-    Platform.TGCD: TurboGrafxCDPlatform,
-    Platform.ZXS: SpectrumPlatformHandler,
 }
 PLATFORM_IDS = platforms.keys()
 

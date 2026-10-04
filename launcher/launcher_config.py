@@ -10,7 +10,6 @@ from fsgs.FSGSDirectories import FSGSDirectories
 from fsgs.amiga.amiga import Amiga
 from fsgs.amiga.valueconfigloader import ValueConfigLoader
 from fsgs.context import fsgs
-from fsgs.platform import PlatformHandler
 from launcher.option import Option
 from .launcher_settings import LauncherSettings
 from .sync_settings import sync_settings
@@ -579,10 +578,7 @@ class LauncherConfig(object):
             cls.load(config)
             values["__config_name"] = config.get("__config_name")
         else:
-            print("Warning: Non-Amiga game loaded")
-            platform_handler = PlatformHandler.create(platform_id)
-            loader = platform_handler.get_loader(fsgs)
-            fsgs.config.load(loader.load_values(values))
+            raise Exception("Unsupported platform: {}".format(platform_id))
         cls.post_load_values(values)
 
     @classmethod
