@@ -18,26 +18,3 @@
 from fsgs.option import Option
 
 product = "FS-UAE"
-openretro = False
-
-OPENRETRO_DEFAULT_DATABASES = [
-    Option.ARCADE_DATABASE,
-    Option.A7800_DATABASE,
-    Option.ATARI_DATABASE,
-    Option.C64_DATABASE,
-    Option.CPC_DATABASE,
-    Option.DOS_DATABASE,
-    Option.GB_DATABASE,
-    Option.GBA_DATABASE,
-    Option.GBC_DATABASE,
-    Option.NEOGEO_DATABASE,
-    Option.NES_DATABASE,
-    Option.PSX_DATABASE,
-    Option.SGG_DATABASE,
-    Option.SMD_DATABASE,
-    Option.SMS_DATABASE,
-    Option.SNES_DATABASE,
-    Option.TG16_DATABASE,
-    Option.TGCD_DATABASE,
-    Option.ZXS_DATABASE,
-]

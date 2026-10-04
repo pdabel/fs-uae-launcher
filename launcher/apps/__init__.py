@@ -2,8 +2,6 @@
 import sys
 
 import launcher.version
-from fsgs import OPENRETRO_DEFAULT_DATABASES, openretro
-from launcher.option import Option
 
 try:
     import typing
@@ -18,32 +16,12 @@ except ImportError:
 def find_app(app):
     if app in ["launcher", "fs-uae-launcher"]:
         from launcher.apps.fs_uae_launcher import app_main
-    elif app in ["arcade", "fs-uae-arcade"]:
-        from launcher.apps.fs_uae_arcade import app_main
     elif app in ["workspace"]:
         from launcher.apps.workspace import app_main
-    elif app == "fs-game-center":
-        from launcher.apps.fs_game_center import app_main
-    elif app in ["fsgs", "fs-game-runner"]:
-        from launcher.apps.fsgs import app_main
     elif app == "list-plugins":
         from launcher.apps.listplugins import app_main
     elif app == "list-dirs":
         from launcher.apps.listdirs import app_main
-
-    elif app in ["dosbox", "dosbox-fs"]:
-        from launcher.apps.dosbox_fs import app_main
-    elif app in ["mame", "mame-fs"]:
-        from launcher.apps.mame_fs import app_main
-    elif app in ["mednafen", "mednafen-fs"]:
-        from launcher.apps.mednafen_fs import app_main
-    elif app in ["libretro-nestopia"]:
-        from launcher.apps.libretro_nestopia import app_main
-
-    elif app in ["uade", "uade-fs"]:
-        from launcher.apps.uade_fs import app_main
-    elif app in ["x64sc", "x64sc-fs"]:
-        from launcher.apps.x64sc_fs import app_main
     else:
         return None
     return app_main
@@ -52,14 +30,6 @@ def find_app(app):
 def main():
     app_name = ""
     # Check deprecated/legacy app options.
-    if "--arcade" in sys.argv:
-        sys.argv.remove("--arcade")
-        app_name = "fs-uae-arcade"
-    if "--fs-uae-arcade" in sys.argv:
-        sys.argv.remove("--fs-uae-arcade")
-        app_name = "fs-uae-arcade"
-    if sys.argv[0].endswith("fs-game-center"):
-        app_name = "fs-game-center"
     if len(sys.argv) > 1:
         if sys.argv[1] == "xdftool":
             app_name = "xdftool"
@@ -72,15 +42,6 @@ def main():
         if arg.startswith("--app="):
             app_name = arg[6:]
             sys.argv.remove(arg)
-
-    import fsgs
-
-    if "--openretro" in sys.argv:
-        sys.argv.remove("--openretro")
-        fsgs.product = "OpenRetro"
-        fsgs.openretro = True
-        for option_name in OPENRETRO_DEFAULT_DATABASES:
-            Option.get(option_name)["default"] = "1"
 
     # Check for (fake) version override
     for arg in sys.argv:
@@ -109,11 +70,6 @@ def main():
     if app_main is None and not app_name:
         app_name = "fs-uae-launcher"
         app_main = find_app(app_name)
-    # if openretro:
-    #     if app_name == "fs-uae-launcher":
-    #         app_name = "openretro-launcher"
-    #     elif app_name == "fs-uae-arcade":
-    #         app_name = "openretro-arcade"
 
     import socket
 

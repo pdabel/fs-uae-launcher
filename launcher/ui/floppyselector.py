@@ -4,7 +4,6 @@ import fsui
 from fsbc.paths import Paths
 from fsgs.context import fsgs
 from fsgs.option import Option
-from fsgs.platforms import PLATFORM_ATARI
 from launcher.cd_manager import CDManager
 from launcher.floppy_manager import FloppyManager
 from launcher.i18n import gettext
@@ -98,13 +97,7 @@ class FloppySelector(fsui.Panel):
             else:
                 self.text_field.enable(self.config_value_implicit != "-1")
         else:
-            if (
-                self.__platform == PLATFORM_ATARI
-                and self.mode == self.FLOPPY_MODE
-            ):
-                self.text_field.enable(self.drive < 2)
-            else:
-                self.text_field.enable(self.drive == 0)
+            self.text_field.enable(self.drive == 0)
 
     def update_config_key(self):
         if self.mode == self.CD_MODE:

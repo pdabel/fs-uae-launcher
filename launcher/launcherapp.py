@@ -2,7 +2,6 @@ import hashlib
 import os
 import sys
 import traceback
-import warnings
 from collections import defaultdict
 from configparser import ConfigParser
 
@@ -19,8 +18,7 @@ from fsgs.amiga.amiga import Amiga
 from fsgs.application import ApplicationMixin
 from fsgs.context import fsgs
 from fsgs.download import Downloader
-from fsgs.input.enumeratehelper import EnumerateHelper
-from fsgs.platform import PlatformHandler, PLATFORM_IDS
+from fsgs.platform import PLATFORM_IDS
 from fsgs.util.archiveutil import ArchiveUtil
 from launcher.i18n import gettext
 from launcher.launcher_config import LauncherConfig
@@ -395,32 +393,9 @@ class LauncherApp(ApplicationMixin, fsui.Application):
         if platform_id in AMIGA_PLATFORMS:
             cls.start_local_game_amiga()
         else:
-            cls.start_local_game_other()
-
-    @classmethod
-    def start_local_game_other(cls):
-        if True:
-            platform_id = LauncherConfig.get(Option.PLATFORM).lower()
-            platform_handler = PlatformHandler.create(platform_id)
-        else:
-            database_name = LauncherConfig.get("__database")
-            variant_uuid = LauncherConfig.get("variant_uuid")
-            assert variant_uuid
-            fsgs.game.set_from_variant_uuid(database_name, variant_uuid)
-            platform_handler = PlatformHandler.create(fsgs.game.platform.id)
-
-        runner = platform_handler.get_runner(fsgs)
-        task = RunnerTask(runner)
-        from .ui.launcherwindow import LauncherWindow
-
-        dialog = LaunchDialog(
-            LauncherWindow.current(), gettext("Launching Game"), task
-        )
-        dialog.show()
-        LauncherConfig.set("__running", "1")
-        task.start()
-        # dialog.show_modal()
-        # dialog.close()
+            fsui.show_error(
+                "Unsupported platform: {}".format(platform_id or "(none)")
+            )
 
     @classmethod
     def start_local_game_amiga(cls):
@@ -613,29 +588,3 @@ class AmigaLaunchTask(Task):
     def run(self):
         self.launch_handler.run_sequence()
 
-
-class RunnerTask(Task):
-    def __init__(self, driver):
-        Task.__init__(self, "RunnerTask")
-        self.driver = driver
-
-    @property
-    def runner(self):
-        warnings.warn("Deprecated", DeprecationWarning)
-        return self.driver
-
-    def __del__(self):
-        print("RunnerTask.__del__")
-
-    def run(self):
-        device_helper = EnumerateHelper()
-        device_helper.default_port_selection(
-            self.driver.ports, self.driver.options
-        )
-
-        self.driver.prepare()
-        self.driver.install()
-        self.set_progress("__run__")
-        self.driver.run()
-        self.driver.wait()
-        self.driver.finish()

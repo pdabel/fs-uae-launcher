@@ -1,4 +1,3 @@
-from fsgs import openretro
 from fsgs.Database import Database
 from fsgs.platform import PlatformHandler
 from fsgs.util.gamenameutil import GameNameUtil
@@ -96,7 +95,7 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
         else:
             sep = " \u00b7 "
             name = name.replace("\n", " \u00b7 ")
-        if platform == "Amiga" and not openretro:
+        if platform == "Amiga":
             platform = ""
         elif platform:
             platform = sep + PlatformHandler.get_platform_name(platform)

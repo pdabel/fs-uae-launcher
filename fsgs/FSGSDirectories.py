@@ -11,7 +11,6 @@ from fsbc.settings import Settings
 from fsbc.system import windows, macosx
 from fsbc.user import get_common_documents_dir
 from fsbc.user import get_documents_dir
-from fsgs import openretro
 
 
 class FSGSDirectories(object):
@@ -65,10 +64,7 @@ class FSGSDirectories(object):
     def get_configurations_dir(cls):
         path = cls.portable_dir("configurations_dir")
         if not path:
-            if openretro:
-                path = os.path.join(cls.get_data_dir(), "Configs")
-            else:
-                path = os.path.join(cls.get_base_dir(), "Configurations")
+            path = os.path.join(cls.get_base_dir(), "Configurations")
         if not os.path.exists(path):
             os.makedirs(path)
         path = Paths.get_real_case(path)
@@ -79,10 +75,7 @@ class FSGSDirectories(object):
     def get_controllers_dir(cls):
         path = cls.portable_dir("controllers_dir")
         if not path:
-            if openretro:
-                path = os.path.join(cls.get_data_dir(), "Devs", "Joysticks")
-            else:
-                path = os.path.join(cls.get_base_dir(), "Controllers")
+            path = os.path.join(cls.get_base_dir(), "Controllers")
         if not os.path.exists(path):
             os.makedirs(path)
         path = Paths.get_real_case(path)
@@ -93,10 +86,7 @@ class FSGSDirectories(object):
     def get_kickstarts_dir(cls):
         path = cls.portable_dir("kickstarts_dir")
         if not path:
-            if openretro:
-                path = os.path.join(cls.media_dir(), "ROMs")
-            else:
-                path = os.path.join(cls.get_base_dir(), "Kickstarts")
+            path = os.path.join(cls.get_base_dir(), "Kickstarts")
         if not os.path.exists(path):
             os.makedirs(path)
         path = Paths.get_real_case(path)
@@ -125,10 +115,7 @@ class FSGSDirectories(object):
     def get_floppies_dir(cls):
         path = cls.portable_dir("floppies_dir")
         if not path:
-            if openretro:
-                path = os.path.join(cls.media_dir(), "Floppies")
-            else:
-                path = os.path.join(cls.get_base_dir(), "Floppies")
+            path = os.path.join(cls.get_base_dir(), "Floppies")
         if not os.path.exists(path):
             os.makedirs(path)
         path = Paths.get_real_case(path)
@@ -139,10 +126,7 @@ class FSGSDirectories(object):
     def get_hard_drives_dir(cls):
         path = cls.portable_dir("hard_drives_dir")
         if not path:
-            if openretro:
-                path = os.path.join(cls.media_dir(), "HardDrives")
-            else:
-                path = os.path.join(cls.get_base_dir(), "Hard Drives")
+            path = os.path.join(cls.get_base_dir(), "Hard Drives")
         if not os.path.exists(path):
             os.makedirs(path)
         path = Paths.get_real_case(path)
@@ -153,10 +137,7 @@ class FSGSDirectories(object):
     def get_cdroms_dir(cls):
         path = cls.portable_dir("cdroms_dir")
         if not path:
-            if openretro:
-                path = os.path.join(cls.media_dir(), "CD-ROMs")
-            else:
-                path = os.path.join(cls.get_base_dir(), "CD-ROMs")
+            path = os.path.join(cls.get_base_dir(), "CD-ROMs")
         if not os.path.exists(path):
             os.makedirs(path)
         path = Paths.get_real_case(path)
@@ -202,17 +183,6 @@ class FSGSDirectories(object):
 
     @classmethod
     @lru_cache()
-    def media_dir(cls):
-        path = cls.portable_dir("media_dir")
-        if not path:
-            path = os.path.join(cls.get_base_dir(), "Media")
-        if not os.path.exists(path):
-            os.makedirs(path)
-        path = Paths.get_real_case(path)
-        return path
-
-    @classmethod
-    @lru_cache()
     def images_dir_for_sha1(cls, sha1):
         path = os.path.join(cls.images_dir(), sha1[:2])
         # if not os.path.exists(path):
@@ -229,10 +199,7 @@ class FSGSDirectories(object):
     def get_titles_dir(cls):
         path = cls.portable_dir("titles_dir")
         if not path:
-            if openretro:
-                path = os.path.join(cls.get_data_dir(), "Titles")
-            else:
-                path = os.path.join(cls.get_base_dir(), "Titles")
+            path = os.path.join(cls.get_base_dir(), "Titles")
         return path
 
     @classmethod
@@ -251,10 +218,7 @@ class FSGSDirectories(object):
     def get_save_states_dir(cls):
         path = cls.portable_dir("save_states_dir")
         if not path:
-            if openretro:
-                path = os.path.join(cls.get_data_dir(), "Saves")
-            else:
-                path = os.path.join(cls.get_base_dir(), "Save States")
+            path = os.path.join(cls.get_base_dir(), "Save States")
         if not os.path.exists(path):
             os.makedirs(path)
         path = Paths.get_real_case(path)
@@ -277,10 +241,7 @@ class FSGSDirectories(object):
     def get_screenshots_dir(cls):
         path = cls.portable_dir("screenshots_dir")
         if not path:
-            if openretro:
-                path = os.path.join(cls.get_data_dir(), "Screenshots")
-            else:
-                path = os.path.join(cls.get_base_dir(), "Screenshots")
+            path = os.path.join(cls.get_base_dir(), "Screenshots")
         return path
 
     @classmethod
@@ -295,10 +256,7 @@ class FSGSDirectories(object):
     def get_covers_dir(cls):
         path = cls.portable_dir("covers_dir")
         if not path:
-            if openretro:
-                path = os.path.join(cls.get_data_dir(), "Covers")
-            else:
-                path = os.path.join(cls.get_base_dir(), "Covers")
+            path = os.path.join(cls.get_base_dir(), "Covers")
         return path
 
     @classmethod
@@ -306,10 +264,7 @@ class FSGSDirectories(object):
     def get_themes_dir(cls):
         path = cls.portable_dir("themes_dir")
         if not path:
-            if openretro:
-                path = os.path.join(cls.get_data_dir(), "Themes")
-            else:
-                path = os.path.join(cls.get_base_dir(), "Themes")
+            path = os.path.join(cls.get_base_dir(), "Themes")
         if not os.path.exists(path):
             os.makedirs(path)
         return path

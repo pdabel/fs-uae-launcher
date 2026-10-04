@@ -57,9 +57,6 @@ def setup_logging() -> None:
 if "--workspace" in sys.argv:
     # Hack
     set("fws", "1")
-if "--openretro" in sys.argv:
-    # Hack
-    set("openretro", "1")
 if "--logging" in sys.argv:
     setup_logging()
     sys.argv.remove("--logging")
@@ -267,10 +264,7 @@ def app_config_dir(app: str) -> str:
 
 @lru_cache()
 def custom_path(name: str) -> Optional[str]:
-    if get("openretro") == "1":
-        app_names = ["openretro"]
-    else:
-        app_names = ["fs-uae-launcher", "fs-uae"]
+    app_names = ["fs-uae-launcher", "fs-uae"]
     for app_name in app_names:
         key_path = os.path.join(app_config_dir(app_name), name)
         logger.debug("Checking %s", repr(key_path))
@@ -308,19 +302,11 @@ def _getBaseDirectoryBeforeNormalization() -> str:
     if path:
         return path
 
-    if get("openretro") == "1":
-        logger.debug("Checking OPENRETRO_BASE_DIR")
-        path = os.environ.get("OPENRETRO_BASE_DIR", "")
-        if path:
-            logger.debug("Using base_dir via OPENRETRO_BASE_DIR: %r", path)
-            return path
-
-    else:
-        logger.debug("Checking FS_UAE_BASE_DIR")
-        path = os.environ.get("FS_UAE_BASE_DIR", "")
-        if path:
-            logger.debug("Using base_dir via FS_UAE_BASE_DIR: %r", path)
-            return path
+    logger.debug("Checking FS_UAE_BASE_DIR")
+    path = os.environ.get("FS_UAE_BASE_DIR", "")
+    if path:
+        logger.debug("Using base_dir via FS_UAE_BASE_DIR: %r", path)
+        return path
 
     path = custom_path("base-dir")
     if path:
@@ -330,8 +316,6 @@ def _getBaseDirectoryBeforeNormalization() -> str:
     if get("base_dir_name"):
         # path = os.path.join(documents_dir(True), get("base_dir_name"))
         path = os.path.join(home_dir(), get("base_dir_name"))
-    elif get("openretro") == "1":
-        path = os.path.join(home_dir(), "OpenRetro")
     else:
         # Check new ~/FS-UAE directory first
         path = os.path.join(home_dir(), "FS-UAE")
