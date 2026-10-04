@@ -24,10 +24,6 @@ def find_app(app):
         from launcher.apps.workspace import app_main
     elif app == "fs-game-center":
         from launcher.apps.fs_game_center import app_main
-    elif app in ["dump-game-database", "game-database-dumper"]:
-        from fsgs.gamedb.game_database_dumper import game_database_dumper_main
-
-        app_main = game_database_dumper_main
     elif app in ["fsgs", "fs-game-runner"]:
         from launcher.apps.fsgs import app_main
     elif app == "list-plugins":

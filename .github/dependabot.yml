@@ -12,11 +12,22 @@ updates:
           - "patch"
 
   - package-ecosystem: docker
-    directory: /build
+    directory: /fsnp-server
     schedule:
       interval: daily
     groups:
       docker-images:
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: gomod
+    directory: /fsnp-server
+    schedule:
+      interval: weekly
+    groups:
+      go:
         update-types:
           - "major"
           - "minor"
