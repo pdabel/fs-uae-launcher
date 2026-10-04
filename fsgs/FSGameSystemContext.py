@@ -260,7 +260,6 @@ class FSGameSystemContext(object):
         self._config = None
         self._settings = None
         self._signal = None
-        self._netplay = None
         self._game = None
         self._plugins = None
         # self._variant = None
@@ -317,14 +316,6 @@ class FSGameSystemContext(object):
             self._signal = SignalContext(self)
             # self._signal = Signal()
         return self._signal
-
-    @property
-    def netplay(self):
-        if self._netplay is None:
-            from .netplay.NetplayContext import NetplayContext
-
-            self._netplay = NetplayContext(self)
-        return self._netplay
 
     def database(self):
         return Database.instance()
