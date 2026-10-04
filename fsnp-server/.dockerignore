@@ -1,0 +1,11 @@
+# Binary built for development mode (see launcher/server/Server.py); the
+# image builds its own inside the build stage.
+/fsnp-server
+/fsnp-server.exe
+
+# Caches and tooling the image build has no use for.
+/.gocache/
+Makefile
+.gitignore
+Dockerfile
+.dockerignore

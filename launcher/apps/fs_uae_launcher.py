@@ -71,7 +71,6 @@ TODO: Add more documentation
 
 Or you can execute fs-uae-launcher <command> - where command is one of:
   * arcade                             Launch FS-UAE Arcade
-  * fs-uae-netplay-server              Run netplay server
   * list-dirs                          List directories used by the Launcher
   * list-plugins                       List installed plugins
 """.format(

@@ -1,3 +1,7 @@
-# Binary produced by `go build -o fsnp-server ./cmd/fsnp-server`, which is
-# where launcher/server/Server.py looks for it in development mode.
+# Binary produced by `make` (or `go build -o fsnp-server ./cmd/fsnp-server`),
+# which is where launcher/server/Server.py looks for it in development mode.
 /fsnp-server
+/fsnp-server.exe
+
+# Go build and module caches, used when the Makefile builds in a container.
+/.gocache/

@@ -1,0 +1,46 @@
+name: Netplay Server
+
+# gofmt, go vet and the test suite for fsnp-server/ (the Go netplay server).
+# The same checks a developer gets from `make check` in that directory; see
+# docs/netplay-go-server-design.md.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  Netplay-Server:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # Uses the Go preinstalled on the runner image, as fsbuild/build.sh
+      # does. GOTOOLCHAIN=auto means a runner with Go >= 1.21 fetches
+      # whatever fsnp-server/go.mod asks for. Add a SHA-pinned
+      # actions/setup-go step here if that ever proves unreliable.
+      - name: Log Go version
+        run: |
+          go version
+
+      # make, not raw go commands, so this cannot drift from what a
+      # developer runs locally. Go is on PATH here, so the Makefile's
+      # container fallback is not used.
+      - name: Check
+        run: |
+          make -C fsnp-server check
+
+      # Proves the binary the launcher bundles actually builds. fsbuild/build.sh
+      # does this as part of a packaged build, but that only runs on the
+      # platform jobs, and only after a long PyInstaller step.
+      - name: Build
+        run: |
+          make -C fsnp-server build

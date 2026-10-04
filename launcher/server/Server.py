@@ -31,6 +31,10 @@ STOP_TIMEOUT = 2.0
 # is the only place server output reliably ends up.
 LOG_NAME = "fsnp-server.log.txt"
 
+# What to run to produce the development-mode binary. Packaged builds get it
+# from fsbuild/build.sh, which drops it beside the launcher executable.
+BUILD_HINT = "cd fsnp-server && go build -o fsnp-server ./cmd/fsnp-server"
+
 
 class ServerError(Exception):
     """The netplay server could not be found, started, or did not come up."""
@@ -50,8 +54,10 @@ def log_file_path():
 def find_server_executable():
     """Locate the fsnp-server binary.
 
-    Uses the same PluginExecutableFinder as every emulator driver, so
-    packaged builds find it under System/FS-UAE-Netplay-Server/<OS>/<Arch>/
+    Uses the same PluginExecutableFinder as every emulator driver. In a
+    packaged build fsbuild/build.sh puts the binary next to the launcher
+    executable, which the finder's side-by-side branch picks up; a copy
+    installed under System/FS-UAE-Netplay-Server/<OS>/<Arch>/ is found too,
     with the .exe suffix on Windows.
 
     Development mode needs one extra check first: the finder's dev-mode
@@ -88,9 +94,14 @@ class Server:
         """
         exe_file = find_server_executable()
         if exe_file is None:
-            raise ServerError(
-                "Could not find the {0} executable".format(EXECUTABLE_NAME)
+            message = "Could not find the {0} executable".format(
+                EXECUTABLE_NAME
             )
+            if fsboot.development():
+                # Running from a checkout: the binary is not built yet. Say
+                # what to run rather than leaving it to be looked up.
+                message += ". Build it with: {0}".format(BUILD_HINT)
+            raise ServerError(message)
         args = [
             exe_file,
             "--port={0}".format(self.port),
