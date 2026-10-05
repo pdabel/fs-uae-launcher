@@ -66,7 +66,7 @@ class Signal:
     notifications = []  # type: List[Tuple[str, Any]]
     lock = threading.Lock()
 
-    quit = None  # type: Signal
+    quit: "Signal"
 
     def __init__(self, signal=None):
         if not signal:
