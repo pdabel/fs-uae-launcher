@@ -3,15 +3,6 @@ import sys
 
 import launcher.version
 
-try:
-    import typing
-except ImportError:
-    # Workaround to make import typing work without having it on the
-    # default python path (would confuse mypy).
-    import fstd.typing
-
-    sys.modules["typing"] = fstd.typing
-
 
 def find_app(app):
     if app in ["launcher", "fs-uae-launcher"]:
