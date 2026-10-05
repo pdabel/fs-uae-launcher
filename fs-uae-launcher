@@ -127,24 +127,6 @@ sys.exit(0)
 import idna.idnadata
 
 # noinspection PyUnreachableCode,PyUnresolvedReferences,PyProtectedMember
-import pkg_resources._vendor.appdirs
-
-# noinspection PyUnreachableCode,PyUnresolvedReferences,PyProtectedMember
-import pkg_resources._vendor.packaging.requirements
-
-# noinspection PyUnreachableCode,PyUnresolvedReferences,PyProtectedMember
-import pkg_resources._vendor.packaging.specifiers
-
-# noinspection PyUnreachableCode,PyUnresolvedReferences,PyProtectedMember
-import pkg_resources._vendor.packaging.version
-
-# noinspection PyUnreachableCode,PyUnresolvedReferences,PyProtectedMember
-import pkg_resources._vendor.pyparsing
-
-# noinspection PyUnreachableCode,PyUnresolvedReferences,PyProtectedMember
-import pkg_resources._vendor.six
-
-# noinspection PyUnreachableCode,PyUnresolvedReferences,PyProtectedMember
 import PyQt5.sip
 
 # noinspection PyUnreachableCode,PyUnresolvedReferences,PyProtectedMember
