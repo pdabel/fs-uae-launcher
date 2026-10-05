@@ -1,5 +1,5 @@
 import os
-from pkg_resources import resource_filename, resource_stream
+from importlib.resources import files
 
 from .application import Application
 
@@ -21,7 +21,7 @@ class Resources(object):
         resource_name = self.resource_name(resource)
         # return resource_stream(self.package, str_path(resource_name))
         try:
-            return resource_stream(self.package, resource_name)
+            return files(self.package).joinpath(resource_name).open("rb")
         except Exception as e:
             print(e)
         try:
@@ -44,7 +44,9 @@ class Resources(object):
         try:
             # print("resource_filename(\"{0}\", \"{1}\")".format(
             #     self.package, resource_name))
-            return resource_filename(self.package, resource_name)
+            path = files(self.package).joinpath(resource_name)
+            if path.is_file():
+                return str(path)
             # return resource_filename(
             #     self.package, Paths.encode(resource_name))
         except Exception:
