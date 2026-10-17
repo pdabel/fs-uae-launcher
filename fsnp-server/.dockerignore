@@ -6,6 +6,7 @@
 # Caches and tooling the image build has no use for.
 /.gocache/
 Makefile
+README.md
 .gitignore
 Dockerfile
 .dockerignore
