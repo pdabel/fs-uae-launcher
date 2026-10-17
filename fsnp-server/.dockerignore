@@ -10,3 +10,5 @@ README.md
 .gitignore
 Dockerfile
 .dockerignore
+compose.yaml
+irc/

@@ -66,6 +66,20 @@ GET /healthz
   200  ok
 ```
 
+## Lobby and IRC together
+
+Players' launchers also need an IRC server, where they meet in a game channel and the op's launcher sends everyone the game's config. [compose.yaml](compose.yaml) runs both:
+
+```sh
+docker compose up -d          # from this directory
+```
+
+Forward TCP **25101** (lobby and games) and **6667** (IRC) to the machine, and set the launcher's IRC server (Settings → Netplay) to its address.
+
+**The IRC server needs its flood limits relaxed, and the compose file does that** by mounting [irc/netplay.conf](irc/netplay.conf). The launcher sends the config as one message per setting, back to back, and resends it whenever a player joins. On InspIRCd's defaults that took about 40 seconds per sync, and a long config can get the op disconnected. If you run a different IRC server, give it the same allowance: a burst of a few hundred messages, and a receive queue of 64 KB.
+
+The lobby is built from this checkout. To use a published image instead, swap `build:` for `image:` as the file's comment says. `LOBBY_PORT=… docker compose up -d` publishes the lobby on another host port. Players are told the port the op's `/startgame` used, so that works without further changes. IRC has to stay on 6667, because that's the only port the launcher connects to.
+
 ## A single fixed game
 
 ```sh
