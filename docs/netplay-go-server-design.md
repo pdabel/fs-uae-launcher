@@ -4,7 +4,7 @@ Design proposal for replacing the Python netplay game server in `launcher/server
 
 | | |
 |---|---|
-| **Status** | In progress — steps 1–8 done: the server is built, verified in real FS-UAE sessions, spawned and bundled by the launcher, and the Python server is deleted. Next is the lobby (step 9) |
+| **Status** | In progress — steps 1–8 done: the server is built, verified in real FS-UAE sessions, spawned and bundled by the launcher, and the Python server is deleted. Next is the lobby (step 9), designed as single-port: lobby HTTP and every game share 25101 |
 | **Date** | 2026-09-13 |
 | **Protocol** | FSNP v1, byte-compatible |
 | **Scope** | server + launcher spawn path; one small fix to the emulator client, reconnect later |
@@ -277,16 +277,46 @@ The client half (C2) is the real work: on socket error, reconnect instead of goi
 
 ### Many games per process, and the missing lobby
 
-With `Game` a value rather than a global, a single daemon hosts many games. Phase one keeps one listener per game from a port pool, which is exactly what the launcher already assumes (25102–25500 in `netplay.py`). Phase two adds the small HTTP endpoint the `/startgame` path has been calling all along:
+With `Game` a value rather than a global, a single daemon hosts many games. Phase two adds the small HTTP endpoint the `/startgame` path has been calling all along:
 
 ```
 GET /game/create?players=2&password=secret
-→ id=…&password=secret&port=25107&addresses=203.0.113.4
+→ id=…&password=secret&port=25101&addresses=203.0.113.4
 ```
 
 with `launch-timeout` reaping games nobody joins. The Docker image becomes a real netplay host rather than one fixed game. *(W5, W10)*
 
-One shape decision to make here rather than later: a `Game` should be constructable *before* its FSNP listener opens, and hold more than FSNP state — see [Future: the session owns the config](#future-the-session-owns-the-config). It costs nothing in phase two and avoids a retrofit in phase four.
+**Decided: one port for everything.** The lobby's HTTP API and every game it hosts share **25101**, so a host behind a home router or in Docker forwards exactly one port — no range, no per-port Docker proxy, no pool to size. The earlier draft of this section gave each game its own listener from a pool (25102–25500); that was the obvious shape, not a necessary one.
+
+The FSNP handshake carries no game id — a new player sends session key 0 and player `0xFF`, and the tag and emulator version aren't unique — so a shared port needs something else to route on. Two things make it work without touching the client:
+
+- **Sniff the first four bytes.** `GET ` (or any other HTTP method) goes to the lobby's `http.Server` through a one-connection listener that replays the bytes already read; `PING` gets `PONG` and a close, so `ConnectionTester` works unchanged; `FSNP` goes to the game router. Anything else is closed. The sniff runs under the same 5 s handshake deadline as the FSNP handshake itself.
+- **Route `FSNP` on the password hash.** The router reads the rest of the handshake, looks the 4-byte hash up in a `map[uint32]*Game` of live games, and hands the connection — handshake already parsed — to that game. No match is `ERROR_WRONG_PASSWORD`, the same code a wrong password gets from a single game. This needs one small export in `internal/game`: a `HandleConn` variant that accepts a parsed handshake rather than reading it again.
+
+That makes the password the game's address, so the lobby must keep hashes unique across live games:
+
+- **No password given → the lobby generates one** (short, random, ASCII so the filtering in `PasswordHash` is a no-op). It reaches every player for free: `__netplay_password` is a `sync` key, and `/startgame` already stores the returned password rather than the one it sent.
+- **A user-chosen password whose hash matches a live game's → `409`.** At a handful of live games a 32-bit collision is vanishingly rare; the check makes uniqueness a guarantee rather than a probability. Hash 0 (an empty password) is never accepted for a lobby game, since that would be every passwordless client.
+
+What that costs: a lobby game can't be passwordless, and a rejected handshake can't say which game the player meant. Neither changes the threat model — the hash was always the only thing keeping strangers out of a game, now it also picks the game.
+
+`/game/create` returns `port=25101` for every game; the launcher already uses whatever port it's handed. Other choices for the first cut:
+
+| | |
+|---|---|
+| `id` | 128-bit `crypto/rand`, formatted as a UUIDv4 — the same shape `/hostgame` already puts in `__netplay_game` |
+| `addresses` | `--public-addresses` / `PUBLIC_ADDRESSES` (comma-separated) if set; otherwise the request's `Host` header minus the port — the op reached the lobby by that name, so players usually can too |
+| Body | `url.Values.Encode()`, `text/plain`. Key order is irrelevant to `parse_qs` |
+| Errors | `400` for `players` outside 1..6 or an over-long password, `409` for a hash collision, `503` past `--max-games` |
+| Reaping | per-game launch timeout, default 15 min — long enough to sync a config over IRC. A game that ends for any reason leaves the router map and the registry |
+| Shutdown | SIGTERM cancels the root context: every game sends `ERROR_GAME_STOPPED`, then `http.Server.Shutdown` |
+| Also | `GET /healthz`. `POST /game`, `hostToken`, `GET /game/{id}` and `/metrics` are phase four — no client for them yet |
+
+**`/hostgame` moves to 25101 too**, without the router: it still spawns one single-game `fsnp-server` per hosted game, which needs no routing and so keeps allowing passwordless games. The random 25102–25500 port existed because the Python server didn't exit reliably and a stale process could hold its port; the Go server exits on its own, so that reason is gone (and `new_host_port`, which reshuffled on every call because its guard was inverted, goes with it). If 25101 is busy, `/hostgame` fails at once and says so — the 5× backoff retry only ever helped a server that was slowly dying, and against a long-running lobby on the same machine it's a minute of waiting for nothing. `/hostgame host:port` still picks a port explicitly. The one case this doesn't cover — a Docker lobby *and* `/hostgame` on the same machine — could later be solved by `/hostgame` creating its game in the local lobby when `/healthz` answers, which is also what phase four needs; not in this step.
+
+**Client-side bugs in `/startgame` fixed in the same step**, because each breaks the lobby however correct the server is: `parse_qs` drops blank values by default, so a `password=` response raises `KeyError` (now `keep_blank_values=True`, though the lobby no longer returns one); the password was interpolated into the URL unescaped (now `params=`); and `requests.get` had no timeout on the UI thread (now 10 s).
+
+One shape decision to make here rather than later: a `Game` should be constructable *before* its FSNP listener opens, and hold more than FSNP state — see [Future: the session owns the config](#future-the-session-owns-the-config). It costs nothing in phase two and avoids a retrofit in phase four. *(Already true: `game.New` takes no listener, and `Serve` is separate.)*
 
 ### Hardening
 
@@ -396,7 +426,7 @@ stateDiagram-v2
 ### Trade-offs
 
 - **This is a rewrite of `netplay.py`'s command layer, not a patch** — the less fun half of the work. It's sequenced last for that reason. The Go side is small; the value is in deleting Python.
-- **The lobby port must be reachable**, which it already must be for `/startgame` (W10). Games hosted from the launcher (`/hostgame`) would need the local `fsnp-server` to expose the lobby too — one flag, one port next to the FSNP pool.
+- **The lobby port must be reachable**, which it already must be for `/startgame` (W10) — and since phase two it's the same port as the games, 25101. Games hosted from the launcher (`/hostgame`) would need the local `fsnp-server` to run in lobby mode too — one flag, same port.
 - **`hostToken` is the only auth and it's clear text over HTTP.** That's the same threat model as the v1 FSNP password (a 32-bit hash in the clear, [Hardening](#hardening)) — no worse than today, not better. TLS on the lobby is straightforward in Go and doesn't involve the C client, so unlike FSNP it *could* be fixed here; not in scope for the first cut.
 - **The document's key set is defined in Python** (`build_cfg`'s `sync` tags). The server should treat it as opaque strings and validate only against a key list it's handed at `POST /game` or in its config, so `launcher_config.py` stays the single source and the Go side doesn't grow an Amiga-config vocabulary.
 
@@ -443,7 +473,7 @@ internal/game/game.go               Game state machine (lifecycle from created, 
 internal/game/conn.go               handshake, reader/writer goroutines              ✓ built (resume ring is phase three)
 internal/game/clock.go              Clock interface; RealClock's catch-up ticker     ✓ built
 internal/game/game_test.go          net.Pipe() clients, fake clock, -race            ✓ built, 21 tests, 87% coverage, replays the captured session
-internal/lobby/                     phase two: HTTP /game/create, game registry, port pool
+internal/lobby/                     phase two: port-25101 sniffer, password-hash router, registry, HTTP /game/create
                                      phase four: config document, ready/missing per slot, long-poll GET, start gate
 ```
 
@@ -466,7 +496,14 @@ No workflow changes were needed: `release.yml` delegates to `linux.yml` and `mac
 For development mode, `fsnp-server/Makefile` builds the binary where `Server.py` looks for it — `make` from that directory, with `make check` for gofmt/vet/`-race` tests and `make help` to list the rest. **A local Go install is optional:** with no `go` on `PATH` the same commands run inside a `golang` container, and `GO_DOCKER=1` forces that path even when Go is present. The container cross-compiles for the *host* OS and architecture rather than its own — the image is Linux, so without `GOOS`/`GOARCH` a macOS or Windows developer would get a Linux binary that cannot run — which `CGO_ENABLED=0` makes free. Build and module caches are mounted at `.gocache/` so repeat container builds are not cold, and `--user` keeps the output owned by the invoking user rather than root — verified by building on macOS through the Linux container and getting a user-owned Mach-O binary that runs, and that `Server.py`'s dev-mode lookup finds. The image is the Debian-based `golang:` tag rather than the alpine one the `Dockerfile` uses, because `-race` needs cgo and therefore gcc. `make` is a convenience, not part of the release path: `fsbuild/build.sh` calls `go build` directly, and its flags and the Makefile's are commented as a pair to keep in step. If the binary is missing anyway, `Server.start()` raises `ServerError` naming the command to run and `/hostgame` reports that into the channel.
 8. **Delete the Python server. — done.** Gone: `launcher/server/game.py`, `launcher/server/entrypoint.sh`, `launcher/server/Dockerfile`, `launcher/apps/fs_uae_netplay_server.py`, the `fs-uae-netplay-server` branch in `launcher/apps/__init__.py`'s `find_app`, the legacy `--server` argument, and the help-text line in `fs_uae_launcher.py`. `launcher/server/` keeps `Server.py` and `ServerWindow.py`. The image moved in the same change, as it had to — the old Dockerfile copied `game.py` and `entrypoint.sh`: `fsnp-server/Dockerfile` cross-compiles with `FROM --platform=$BUILDPLATFORM golang` (the Go toolchain does this natively, so no QEMU emulation of a compiler) and ships `FROM scratch` with the static binary as the entrypoint — **2.9 MB** against the old `python:3.13-alpine` image, no shell, no libc, no package manager, `USER 101` by numeric uid since there is no `/etc/passwd` to name one in. No `entrypoint.sh` is needed because the server reads its own env vars. Verified by building the image and playing a two-player game through it: both players joined, both input events relayed. `container.yml` now points `file:`/`context:` at `fsnp-server/Dockerfile` and `fsnp-server`, and its QEMU step is removed — with a `$BUILDPLATFORM` build stage and a `scratch` runtime nothing is ever emulated, including for a future multi-arch build. `PASSWORD` is deliberately not declared as `ENV` (it trips Docker's `SecretsUsedInArgOrEnv` lint, and the server already defaults to no password; pass `-e PASSWORD=…` at runtime). `game.py` remains the reference implementation this port was written against and is cited throughout `internal/`; it lives in git history from here — last present at `f9f0e2ec`.
 
-9. **Phase two: lobby. — not started.** Multi-game registry, HTTP `/game/create`, `FROM scratch` image. `/startgame` now has something to talk to.
+9. **Phase two: lobby. — planned, single-port.** Everything on 25101 — see [Many games per process](#many-games-per-process-and-the-missing-lobby) for the design. In order, each its own commit:
+   1. **`/startgame` client fixes** — `keep_blank_values=True`, `params=` for the query, a 10 s timeout. Stands on its own.
+   2. **`internal/game`: accept a pre-parsed handshake**, so the router can parse once and hand over. Existing tests unchanged; one new test.
+   3. **`internal/lobby`** — `sniff.go` (first-four-bytes dispatch, replaying listener for HTTP, `PING`/`PONG`), `router.go` (hash → game, `ERROR_WRONG_PASSWORD` on miss), `lobby.go` (registry, password generation, uniqueness, reaping on `Run` return), `http.go` (`/game/create`, `/healthz`). Tests over real loopback TCP and `httptest` with the fake clock, `-race`: create → two players join on the shared port → game plays; two concurrent games with no cross-talk; one game ending leaves the other running; HTTP, `PING` and `FSNP` all on one port; unknown hash rejected; 409 on collision; generated passwords when none given; launch timeout reaps; shutdown with games live; `Host` fallback vs `PUBLIC_ADDRESSES`.
+   4. **Lobby mode in `cmd/fsnp-server`** — `--lobby` / `LOBBY`, `--max-games`, `--public-addresses`, `--game-launch-timeout`; readiness line gains `"mode":"lobby"`. Single-game mode unchanged.
+   5. **Docker** — image defaults to lobby mode on 25101 (`MODE=game` restores one fixed game); README with the run line.
+   6. **`/hostgame` on 25101** — default port 25101, fail fast when busy, drop `new_host_port` and the retry loop.
+   7. **Real session**, as in step 6: the Docker image, `/startgame` from the launcher, two `fs-uae v3.1.66`; then two games at once, quit one mid-game, the other must keep running. Then `/hostgame` on 25101. Update this doc's status.
 10. **Phase three: reconnect. — not started.** Client-side reconnect (C2) plus server resume ring and grace window. Test by killing one emulator mid-game and restarting it.
 11. **Phase four: config in the session. — not started.** Config document, ready-with-reason, start gate on the lobby; replace `netplay.py`'s `__` command layer with an HTTP client and a long-poll thread; IRC demoted to chat. Independent of phase three — can come before it if the UX pain outweighs the reconnect pain. See [Future: the session owns the config](#future-the-session-owns-the-config).
 
