@@ -469,11 +469,15 @@ class Netplay:
             self.irc.warning("startgame: you need to be an operator")
             return
 
-        url = "http://{0}:{1}/game/create?players={2}&password={3}".format(
-            host, port, players, password
-        )
+        url = "http://{0}:{1}/game/create".format(host, port)
         try:
-            r = requests.get(url)
+            # params= escapes the password; the timeout matters because this
+            # runs on the UI thread and an unreachable lobby would hang it.
+            r = requests.get(
+                url,
+                params={"players": players, "password": password},
+                timeout=10,
+            )
             r.raise_for_status()
         except Exception:
             channel.warning(
@@ -484,7 +488,9 @@ class Netplay:
         else:
             result = r.text
             print(result)
-            result_dict = parse_qs(result)
+            # keep_blank_values: otherwise an empty "password=" is dropped
+            # and the lookup below raises KeyError.
+            result_dict = parse_qs(result, keep_blank_values=True)
             print(result_dict)
             game_id = result_dict["id"][0]
             game_password = result_dict["password"][0]
