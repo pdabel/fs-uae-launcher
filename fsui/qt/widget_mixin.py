@@ -90,7 +90,7 @@ class WidgetMixin(MixinBase):
         widget = getattr(self, "_widget", self)
         font = widget.font()
         metrics = QFontMetrics(font)
-        return metrics.width(text), metrics.height()
+        return metrics.horizontalAdvance(text), metrics.height()
 
     def set_hand_cursor(self):
         widget = getattr(self, "_widget", self)

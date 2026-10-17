@@ -4,7 +4,7 @@ import weakref
 from fsbc.system import macosx
 
 # from fsui import default_window_center, default_window_parent
-from fsui.qt import QMainWindow, QObject, QSignal, QWidget, Qt, QDesktopWidget
+from fsui.qt import QMainWindow, QObject, QSignal, QWidget, Qt
 from fsui.qt import QPainter, QPoint, QRect
 from fsui.qt.Image import Image
 from fsui.qt.qt import init_qt, QEvent
@@ -538,7 +538,9 @@ class Window(QObject):
 
     def center_on_screen(self):
         frame_rect = self._real_window.frameGeometry()
-        frame_rect.moveCenter(QDesktopWidget().availableGeometry().center())
+        frame_rect.moveCenter(
+            self._real_window.screen().availableGeometry().center()
+        )
         self._real_window.move(frame_rect.topLeft())
 
     def set_background_color(self, color):

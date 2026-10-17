@@ -6,11 +6,11 @@ from launcher.netplay.netplay import Netplay
 from launcher.ui.skin import Skin
 from launcher.ui.InfoDialog import InfoDialog
 from launcher.ui.IconButton import IconButton
-from PyQt5.QtWidgets import QApplication
+from fsui.qt import QApplication
 from fsgs.amiga.amiga import Amiga
 from fsui.qt.DrawingContext import Font
 from launcher.launcher_config import LauncherConfig
-from PyQt5 import QtGui
+from qtpy import QtGui
 from fsbc.settings import Settings
 from launcher.sync_settings import sync_settings
 
@@ -266,7 +266,7 @@ class SimpleTextInputDialog(fsui.Dialog):
     @staticmethod
     def get_text(parent, title, label_text):
         dialog = SimpleTextInputDialog(parent, title, label_text)
-        if dialog.exec_():
+        if dialog.exec():
             return dialog.result_text
         return None
 

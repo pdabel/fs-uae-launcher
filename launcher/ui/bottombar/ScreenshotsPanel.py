@@ -1,5 +1,6 @@
 from fsbc.util import unused
 import fsui
+from launcher.i18n import gettext
 from ...launcher_settings import LauncherSettings
 from ...game_paths import GamePaths
 from ..Constants import Constants
@@ -115,6 +116,22 @@ class ScreenshotsPanel(BottomPanel):
         dc = self.create_dc()
         self.draw_background(dc)
         size = self.size()
+
+        if fsui.theme_variant == "modern":
+            dc.set_text_color(fsui.Color(237, 240, 247))
+            dc.draw_text(gettext("Screenshots"), 16, 14)
+            images = [image for image in self.images if image is not self.default_image]
+            if not images:
+                dc.set_text_color(fsui.Color(162, 171, 192))
+                dc.draw_text(gettext("No screenshots available"), 16, 80)
+                return
+            x = 16 + self.x_offset
+            for image in images:
+                if x + image.size[0] > size[0] - 16:
+                    break
+                dc.draw_image(image, x, 48)
+                x += image.size[0] + 16
+            return
 
         y = 2 + 20
         x = 10 + self.x_offset

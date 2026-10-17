@@ -8,31 +8,36 @@ import fsboot
 import fstd.desktop
 from fsbc.settings import Settings
 
-# noinspection PyUnresolvedReferences, PyPackageRequirements
-from PyQt5.QtCore import *
+
+def configure_qt_environment():
+    os.environ.setdefault("QT_API", "pyside6")
+    desktops = os.environ.get("XDG_CURRENT_DESKTOP", "").upper().split(":")
+    if sys.platform.startswith("linux") and "GNOME" in desktops:
+        os.environ.setdefault("QT_QPA_PLATFORMTHEME", "generic")
+
+
+configure_qt_environment()
 
 # noinspection PyUnresolvedReferences, PyPackageRequirements
-from PyQt5.QtGui import *
+from qtpy.QtCore import *
 
 # noinspection PyUnresolvedReferences, PyPackageRequirements
-from PyQt5.QtWidgets import *
+from qtpy.QtGui import *
 
 # noinspection PyUnresolvedReferences, PyPackageRequirements
-from PyQt5.QtCore import pyqtSignal as Signal
+from qtpy.QtWidgets import *
 
 # noinspection PyUnresolvedReferences, PyPackageRequirements
-from PyQt5.QtCore import pyqtSignal as QSignal
+from qtpy.QtCore import Signal
 
 # noinspection PyUnresolvedReferences, PyPackageRequirements
-from PyQt5.QtOpenGL import *
+from qtpy.QtCore import Signal as QSignal
+
+# noinspection PyUnresolvedReferences, PyPackageRequirements
+from qtpy.QtOpenGL import *
+from qtpy.QtOpenGLWidgets import *
 
 from fsgs.option import Option
-
-try:
-    # noinspection PyUnresolvedReferences, PyPackageRequirements
-    from PyQt5.QtX11Extras import *
-except ImportError:
-    pass
 
 
 def open_url_in_browser(url):
@@ -41,8 +46,17 @@ def open_url_in_browser(url):
     QDesktopServices.openUrl(QUrl(url))
 
 
+class DesktopScreens:
+    def screenCount(self):
+        return len(QGuiApplication.screens())
+
+    def screenGeometry(self, index):
+        return QGuiApplication.screens()[index].geometry()
+
+
 class QtBaseApplication(QApplication):
-    pass
+    def desktop(self):
+        return DesktopScreens()
 
 
 @functools.lru_cache()
@@ -69,8 +83,6 @@ def init_qt():
     # Should not be necessary with Qt 5.2.x:
     # fix_qt_for_maverick()
 
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-
     fsbc.desktop.set_open_url_in_browser_function(open_url_in_browser)
     qapplication = QtBaseApplication(sys.argv)
     initialize_qt_style(qapplication)
@@ -83,7 +95,10 @@ def initialize_qt_style(qapplication):
     fusion_variant = ""
 
     launcher_theme = Settings.instance().get(Option.LAUNCHER_THEME)
-    if launcher_theme == "standard":
+    if not launcher_theme or launcher_theme == "fusion-modern":
+        use_fusion_theme = True
+        fusion_variant = "modern"
+    elif launcher_theme == "standard":
         use_fusion_theme = False
     elif launcher_theme == "native":
         # native is an older deprecated name for standard
@@ -115,6 +130,9 @@ def initialize_qt_style(qapplication):
     if "--launcher-theme=fusion-dark" in sys.argv:
         use_fusion_theme = True
         fusion_variant = "dark"
+    if "--launcher-theme=fusion-modern" in sys.argv:
+        use_fusion_theme = True
+        fusion_variant = "modern"
 
     font = qapplication.font()
     print("FONT: Default is {} {}".format(font.family(), font.pointSize()))
@@ -122,7 +140,12 @@ def initialize_qt_style(qapplication):
     if use_fusion_theme:
         # noinspection PyCallByClass,PyTypeChecker,PyArgumentList
         qapplication.setStyle(QStyleFactory.create("Fusion"))
-        if fusion_variant == "adwaita":
+        if fusion_variant == "modern":
+            from fsui.qt.modern_theme import apply_modern_theme
+
+            apply_modern_theme(qapplication)
+            font = qapplication.font()
+        elif fusion_variant == "adwaita":
             pa = QPalette()
             # background = QColor("#f6f5f4")
             background = QColor("#eae7e5")

@@ -42,6 +42,9 @@ class BottomPanel(fsui.Panel):
 
     def draw_background(self, dc):
         size = self.size()
+        if fsui.theme_variant == "modern":
+            dc.draw_rectangle(0, 0, size[0], size[1], fsui.Color(33, 36, 49))
+            return
         if Skin.fws():
             dc.draw_rectangle(0, 0, size[0], 2, self.border_color)
             dc.draw_rectangle(0, 2, size[0], size[1] - 2, self.white_color)

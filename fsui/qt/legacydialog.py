@@ -54,7 +54,7 @@ class LegacyDialog(QDialog):
     def show_modal(self):
         # self.setModal(True)
         # return self.showModal()
-        return self.exec_()
+        return self.exec()
 
     def end_modal(self, value):
         # self.EndModal(value)

@@ -247,11 +247,13 @@ class LauncherWindow(WindowWithTabs):
                     self.layout.min_width = 1280
                     self.layout.min_height = 720
 
-        self.set_size(self.layout.get_min_size())
-
-        self.center_on_screen()
-        if was_maximized or maximize:
-            self.maximize()
+        if fsui.theme_variant == "modern":
+            self.install_dashboard()
+        else:
+            self.set_size(self.layout.get_min_size())
+            self.center_on_screen()
+            if was_maximized or maximize:
+                self.maximize()
 
         LauncherSignal.add_listener("scan_done", self)
         LauncherSignal.add_listener("setting", self)
@@ -259,6 +261,24 @@ class LauncherWindow(WindowWithTabs):
         self.update_title()
         self.check_for_update_once()
         self.implicit_config_handler = ImplicitConfigHandler(self)
+
+    def install_dashboard(self):
+        from fsui.qt import QWidget, Qt
+        from launcher.ui.dashboard import Dashboard
+
+        for child in self.real_widget().findChildren(
+            QWidget, options=Qt.FindDirectChildrenOnly
+        ):
+            child.hide()
+        self.dashboard = Dashboard(self)
+        self.layout = fsui.VerticalLayout()
+        self.layout.add(self.dashboard, fill=True, expand=True)
+        self.dashboard.show()
+        geometry = self.real_window().screen().availableGeometry()
+        self.real_window().setMinimumSize(1000, 720)
+        self.set_size((min(1920, geometry.width()), min(1040, geometry.height())))
+        self.center_on_screen()
+        self.maximize()
 
     def on_destroy(self):
         # FIXME: Is this being run?
@@ -342,6 +362,9 @@ class LauncherWindow(WindowWithTabs):
             self.update_title()
 
     def on_resize(self):
+        if hasattr(self, "dashboard"):
+            super().on_resize()
+            return
         width, height = self.get_size()
         # print("on_resize, size =", width, height)
         if self.is_maximized():
@@ -462,7 +485,7 @@ class LauncherWindow(WindowWithTabs):
                     margin_top=0,
                 )
 
-            if column == 2:
+            if column == 2 and fsui.theme_variant != "modern":
                 # if fs_uae_launcher.ui.get_screen_size()[1] >= 1024:
                 #     vert_layout.add_spacer(100)
 

@@ -10,9 +10,80 @@ requires Python 3 and setuptools to be installed.
 
 ## Requirements
 
-FS-UAE Launcher requires Python 3, `requests` and `PyQt5` to be installed.
+FS-UAE Launcher uses Qt 6 through `PySide6`, the `QtPy` compatibility
+layer, and `QtAwesome` for scalable dashboard icons. Install the latest
+releases supported by your Python version:
+
+  python -m pip install --upgrade PySide6 QtPy QtAwesome requests
+
+The Pipfile also declares these UI dependencies for Pipenv installations.
+An existing virtual environment can be updated in place; recreating it is
+not necessary:
+
+  venv/bin/python -m pip install --upgrade PySide6 QtPy QtAwesome requests
+
+The UI selects PySide6 by default. Use a clean process without another Qt
+binding already imported; PyQt5 and PySide6 must not be mixed. Qt 6 handles
+high-DPI scaling automatically. Existing explicitly selected themes are
+preserved. Emulator, database, and networking behavior is unchanged.
+
 It can optionally use the `lhafile` python package to support .lha archives.
-See the `INSTALL` file for more details.
+The older packaging and INSTALL instructions still target Qt 5 and have not
+been migrated as part of this UI-only change. Run from source with the
+Python environment containing the Qt 6 dependencies.
+
+## Modern Dark Workspace
+
+Modern Dark is the default when no launcher theme has been selected. The
+launcher opens maximized on its current display, with a 1080p-oriented
+workspace, a labeled navigation rail, a searchable configuration library,
+a resizable configuration editor, and persistent launch controls. All eight
+configuration pages remain available. Settings, net play, tools, account
+actions, and configuration warnings retain their existing behavior.
+
+The library can be hidden with its toolbar toggle. Quick settings open in a
+separate resizable pane, temporarily replacing the library below 1400 pixels
+of window width. Screenshots and cover information use the selected
+game's existing artwork; the media strip hides below 820 pixels of window
+height so editing remains usable. The supported minimum window size is
+1000 x 720. Long editor pages scroll rather than forcing a larger window.
+
+Select Modern Dark in the Launcher settings and restart to replace a
+previously saved theme. It can also be requested explicitly at startup:
+
+  venv/bin/python fs-uae-launcher --launcher-theme=fusion-modern
+
+Other saved themes retain the legacy window layout. QtAwesome is installed
+in the project venv; other source installations must install it as above.
+
+## UI Regression Tests
+
+Run the widget, dialog, menu, painting, and screen tests without a display:
+
+    QT_QPA_PLATFORM=offscreen python -m unittest discover -s fsui/test -t .
+
+Native file dialogs, multi-monitor placement, and platform-specific appearance
+also need interactive testing on Linux, Windows, and macOS.
+Image-button regression tests cover icon loading and activation, including
+the launcher's New button, under PySide6.
+Dashboard tests cover page routing, library/quick-settings toggles, the dark
+palette, the theme picker, and 1920x1080, 1280x800, and 1000x720 layouts.
+List-selection tests also verify that clearing a search selection emits None
+rather than converting it to an incorrect row index under PySide6.
+
+## GNOME Startup Compatibility
+
+Some Qt/GNOME combinations abort during startup with a GLib error about the
+missing `org.gnome.settings-daemon.plugins.xsettings` `antialiasing` key.
+This is a desktop theme integration failure, not a missing Python package.
+On Linux GNOME desktops the UI defaults to Qt's generic platform theme to
+avoid that integration. Explicit `QT_QPA_PLATFORMTHEME` settings are respected;
+other desktops and operating systems are unchanged. GNOME-specific theme and
+file-dialog integration may differ with the generic platform theme.
+
+To explicitly select the workaround when launching from a terminal:
+
+  QT_QPA_PLATFORMTHEME=generic venv/bin/python fs-uae-launcher
 
 ## Running FS-UAE Launcher
 
@@ -24,6 +95,10 @@ You can also run FS-UAE Launcher without installation by running the
 following command in the source root directory:
 
     $ ./fs-uae-launcher
+
+For an existing virtual environment, explicitly use its Python interpreter:
+
+    $ venv/bin/python fs-uae-launcher
 
 # About FS-UAE Launcher
 

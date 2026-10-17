@@ -5,7 +5,7 @@ import uuid
 import socket
 
 import requests
-from PyQt5.QtCore import QTimer
+from fsui.qt import QTimer
 
 from fsgs.amiga.amiga import Amiga
 from fsgs.context import fsgs

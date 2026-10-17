@@ -18,6 +18,13 @@ class OptionUI(object):
             thin_layout = fsui.VerticalLayout()
             thin_layout.add(group.layout, fill=True)
         option = Option.get(name)
+        if name == Option.LAUNCHER_THEME:
+            option = dict(option)
+            option["default"] = "fusion-modern"
+            option["values"] = [("fusion-modern", "Modern Dark")] + [
+                value for value in option["values"]
+                if value[0] != "fusion-modern"
+            ]
         if description == "":
             description = gettext(option["description"])
         if description:

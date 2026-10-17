@@ -1,4 +1,5 @@
 import fsui
+from launcher.i18n import gettext
 from ...launcher_config import LauncherConfig
 from ...launcher_settings import LauncherSettings
 from ...game_paths import GamePaths
@@ -184,6 +185,10 @@ class GameInfoPanel(BottomPanel):
         dc = self.create_dc()
         self.draw_background(dc)
 
+        if fsui.theme_variant == "modern":
+            self.draw_modern_info(dc)
+            return
+
         if self.cover_on_right:
             x = self.get_size()[0] - 10 - Constants.COVER_SIZE[0]
             text_x = 10
@@ -259,3 +264,24 @@ class GameInfoPanel(BottomPanel):
                 text_x - 18, y, size[0] - text_x + 18, h, background
             )
             dc.draw_text(self.sub_title, text_x, y + (h - th) // 2)
+
+    def draw_modern_info(self, dc):
+        width = self.size()[0]
+        has_cover = self.image is not None and self.image is not self.default_image
+        text_width = width - (Constants.COVER_SIZE[0] + 48 if has_cover else 32)
+        metrics = self.widget().fontMetrics()
+        dc.set_text_color(fsui.Color(162, 171, 192))
+        dc.draw_text(gettext("SELECTED CONFIGURATION"), 16, 14)
+        font = dc.get_font()
+        font.set_bold(True)
+        dc.set_font(font)
+        dc.set_text_color(fsui.Color(237, 240, 247))
+        dc.draw_text(metrics.elidedText(self.title, fsui.Qt.ElideRight, text_width), 16, 48)
+        font.set_bold(False)
+        dc.set_font(font)
+        dc.set_text_color(fsui.Color(162, 171, 192))
+        details = " / ".join(value for value in (self.year, self.companies) if value)
+        dc.draw_text(metrics.elidedText(details, fsui.Qt.ElideRight, text_width), 16, 80)
+        dc.draw_text(metrics.elidedText(self.sub_title, fsui.Qt.ElideRight, text_width), 16, 112)
+        if has_cover:
+            dc.draw_image(self.image, width - Constants.COVER_SIZE[0] - 16, 20)
