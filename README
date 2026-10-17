@@ -56,6 +56,21 @@ previously saved theme. It can also be requested explicitly at startup:
 Other saved themes retain the legacy window layout. QtAwesome is installed
 in the project venv; other source installations must install it as above.
 
+### Integrated Netplay
+
+In Modern Dark, Net play is a page inside the main window rather than a
+separate window. The navigation button and Tools menu open the same page.
+Chat, channel selection, and the connection persist when switching back to
+configuration pages. Library and quick-settings tools are disabled on the
+netplay page, which uses its own host/start controls.
+
+Hosting displays the game ID, channel, port, player count, and server status
+alongside the chat. The Stop server button stops hosting without closing
+the page. Reset and closing the main window also stop the owned server.
+The details update if the server process exits. The panes are resizable;
+the chat controls scroll when the window is too narrow to fit them.
+Legacy themes retain their standalone netplay and server windows.
+
 ## UI Regression Tests
 
 Run the widget, dialog, menu, painting, and screen tests without a display:
@@ -76,6 +91,10 @@ cover lobby/game-channel and operator/player transitions, button geometry,
 and host/send-config/reset/ready/start dispatch without opening a network
 connection or launching an emulator. Visibility changes immediately relayout
 the netplay controls; no manual resize is required to reveal host buttons.
+Real IRC JOIN/NAMES/MODE replay tests cover operator recognition, nick-list
+updates, and host controls without mocking operator status. Ordinary IRC
+messages use the text widget's current palette color so rendering errors or
+an import-time color cannot interrupt IRC events or hide text in dark mode.
 
 ## GNOME Startup Compatibility
 

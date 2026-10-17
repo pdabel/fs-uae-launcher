@@ -126,6 +126,9 @@ class NetplayPanel(fsui.Panel):
         button_layout.add(self.ready_button, fill=True, margin_left=10)
 
     def on_destroy(self):
+        if getattr(self, "_disposed", False):
+            return
+        self._disposed = True
         print("NetplayPanel.on_destroy")
         IRCBroadcaster.remove_listener(self)
         self.netplay.disconnect()
@@ -217,6 +220,9 @@ class NetplayPanel(fsui.Panel):
             else:
                 btn.hide()
         self.layout.update()
+        callback = getattr(self, "on_action_layout_changed", None)
+        if callback is not None:
+            callback()
 
 
     def on_irc(self, key, args):

@@ -3,7 +3,7 @@ import qtawesome as qta
 from fsui.qt import (
     Qt, QSize, QButtonGroup, QFrame, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QSizePolicy, QSplitter, QStyle, QToolButton, QVBoxLayout,
-    QWidget, QPoint,
+    QWidget, QPoint, QStackedWidget,
 )
 from launcher.i18n import gettext
 from launcher.launcher_settings import LauncherSettings
@@ -25,6 +25,7 @@ class Dashboard(fsui.Panel):
     def __init__(self, owner):
         super().__init__(owner)
         self.owner = owner
+        self.netplay_page = None
         self._restore_library_after_quick = False
         self.widget().setObjectName("dashboard")
         self.set_min_size((1000, 720))
@@ -79,6 +80,14 @@ class Dashboard(fsui.Panel):
         root.addWidget(body, 1)
         body_layout.addWidget(self._topbar())
 
+        self.content_stack = QStackedWidget()
+        self.workspace = QWidget()
+        workspace_layout = QVBoxLayout(self.workspace)
+        workspace_layout.setContentsMargins(0, 0, 0, 0)
+        workspace_layout.setSpacing(12)
+        self.content_stack.addWidget(self.workspace)
+        body_layout.addWidget(self.content_stack, 1)
+
         self.splitter = QSplitter(Qt.Horizontal)
         self.splitter.setChildrenCollapsible(False)
         self.splitter.setHandleWidth(16)
@@ -95,7 +104,7 @@ class Dashboard(fsui.Panel):
         self.splitter.setStretchFactor(0, 2)
         self.splitter.setStretchFactor(1, 3)
         self.splitter.setSizes([450, 850])
-        body_layout.addWidget(self.splitter, 1)
+        workspace_layout.addWidget(self.splitter, 1)
 
         self.media = QWidget()
         media_layout = QHBoxLayout(self.media)
@@ -111,8 +120,9 @@ class Dashboard(fsui.Panel):
             media_layout.addWidget(information, 2)
             information.show()
         self.media.setFixedHeight(220)
-        body_layout.addWidget(self.media)
-        body_layout.addWidget(self._launchbar())
+        workspace_layout.addWidget(self.media)
+        self.launch_bar = self._launchbar()
+        body_layout.addWidget(self.launch_bar)
         status = owner.status_bar.widget()
         status.setFixedHeight(30)
         body_layout.addWidget(status)
@@ -170,8 +180,16 @@ class Dashboard(fsui.Panel):
         self.nav_group.idClicked.connect(self._show_page)
         self.nav_buttons[0].setChecked(True)
         layout.addStretch(1)
+        self.netplay_button = QPushButton(
+            self._icon(QStyle.SP_DriveNetIcon), gettext("Net play")
+        )
+        self.netplay_button.setProperty("nav", True)
+        self.netplay_button.setCheckable(True)
+        self.netplay_button.setMinimumHeight(42)
+        self.netplay_button.setToolTip(gettext("Net play"))
+        self.nav_group.addButton(self.netplay_button, len(self.PAGES))
+        layout.addWidget(self.netplay_button)
         for title, icon, callback in (
-            ("Net play", QStyle.SP_DriveNetIcon, self.owner.on_net_play),
             ("Settings", QStyle.SP_FileDialogDetailedView,
              self.owner.on_settings_button),
             ("Tools & account", QStyle.SP_TitleBarMenuButton, self._tools),
@@ -276,12 +294,33 @@ class Dashboard(fsui.Panel):
         return frame
 
     def _show_page(self, index):
+        if index == len(self.PAGES):
+            self.show_netplay()
+            return
+        self.content_stack.setCurrentWidget(self.workspace)
+        self.library_toggle.setEnabled(True)
+        self.quick_toggle.setEnabled(True)
+        self.launch_bar.show()
         self.owner.books[2].set_page(index)
         self.page_title.setText(gettext(self.PAGES[index][0]))
         self.nav_buttons[index].setChecked(True)
         width = self.owner.books[2].get_min_width()
         height = self.owner.books[2].get_min_height()
         self.owner.books[2].widget().setMinimumSize(width, height)
+
+    def show_netplay(self):
+        if self.netplay_page is None:
+            from launcher.netplay.netplay_page import NetplayPage
+
+            self.netplay_page = NetplayPage(self)
+            self.content_stack.addWidget(self.netplay_page.widget())
+        self.content_stack.setCurrentWidget(self.netplay_page.widget())
+        self.netplay_button.setChecked(True)
+        self.page_title.setText(gettext("Net play"))
+        self.library_toggle.setEnabled(False)
+        self.quick_toggle.setEnabled(False)
+        self.launch_bar.hide()
+        self.netplay_page.on_show()
 
     def _tools(self):
         menu = self.owner.create_menu()
@@ -324,4 +363,6 @@ class Dashboard(fsui.Panel):
             self.configuration_name.setToolTip(value)
 
     def _remove_listener(self):
+        if self.netplay_page is not None:
+            self.netplay_page.shutdown()
         LauncherSettings.remove_listener(self)

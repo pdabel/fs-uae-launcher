@@ -849,4 +849,7 @@ class LauncherWindow(WindowWithTabs):
 
     def on_net_play(self):
         print("on_net_play")
+        if hasattr(self, "dashboard"):
+            self.dashboard.show_netplay()
+            return
         NetplayDialog.open(self)

@@ -43,6 +43,7 @@ class Netplay:
         self.players = {}
         self.irc = IRC()
         self.parent = parent
+        self.game_window = None
 
         LauncherConfig.add_listener(self)
         IRCBroadcaster.add_listener(self)
@@ -56,6 +57,9 @@ class Netplay:
             self.connection_tester = ConnectionTester()
 
     def disconnect(self):
+        if self.game_window is not None:
+            self.game_window.close()
+            self.game_window = None
         if Netplay._current == self:
             Netplay._current = None
 
@@ -569,7 +573,8 @@ class Netplay:
             from ..server.ServerWindow import ServerWindow
             game_id = str(uuid.uuid4())
             channel_name = self.irc.get_active_channel()
-            self.game_window = ServerWindow(self.parent, server, game_id, port, channel_name)
+            create_view = getattr(self.parent, "create_server_view", ServerWindow)
+            self.game_window = create_view(self.parent, server, game_id, port, channel_name)
             self.game_window.show()
             LauncherConfig.set_multiple(
                 [
