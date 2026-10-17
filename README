@@ -70,6 +70,12 @@ Dashboard tests cover page routing, library/quick-settings toggles, the dark
 palette, the theme picker, and 1920x1080, 1280x800, and 1000x720 layouts.
 List-selection tests also verify that clearing a search selection emits None
 rather than converting it to an incorrect row index under PySide6.
+Launch regression tests exercise Start-button dispatch and construction of
+the launch task dialog with and without a netplay session. Netplay tests
+cover lobby/game-channel and operator/player transitions, button geometry,
+and host/send-config/reset/ready/start dispatch without opening a network
+connection or launching an emulator. Visibility changes immediately relayout
+the netplay controls; no manual resize is required to reveal host buttons.
 
 ## GNOME Startup Compatibility
 

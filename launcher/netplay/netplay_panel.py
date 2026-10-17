@@ -58,6 +58,7 @@ class NetplayPanel(fsui.Panel):
 
         # This command is used to set the initial active channel and hide the action buttons
         self.active_channel = LOBBY_CHANNEL 
+        self.update_action_buttons_visibility()
         self.input_field.focus()
 
     def _manual_command_input(self):
@@ -215,6 +216,7 @@ class NetplayPanel(fsui.Panel):
                 btn.show()
             else:
                 btn.hide()
+        self.layout.update()
 
 
     def on_irc(self, key, args):

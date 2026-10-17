@@ -178,6 +178,93 @@ class TestQt6(WidgetTestCase):
         self.assertEqual(image.pixelColor(15, 35), fsui.Color(255, 0, 0))
 
 
+class TestLaunchAndNetplay(WidgetTestCase):
+    def test_start_button_dispatch(self):
+        from launcher.ui.launch import StartButton
+
+        self.setup_dialog()
+        button = StartButton(self.dialog, Mock())
+        with patch("launcher.launcherapp.LauncherApp.start_game") as start:
+            button.widget().click()
+            start.assert_called_once_with()
+        self.run_dialog()
+
+    def test_launch_dialog_netplay_context(self):
+        from launcher.ui.launch import LaunchDialog
+
+        for channel in (None, "#test-game"):
+            with self.subTest(channel=channel):
+                netplay = Mock(game_channel=channel) if channel else None
+                with patch("launcher.ui.launch.Netplay.current", return_value=netplay):
+                    with patch("launcher.ui.launch.LauncherConfig"):
+                        task = Mock()
+                        dialog = LaunchDialog(None, "Launching test", task)
+                        self.assertEqual(dialog.netplay_channel, channel)
+                        task.progressed.connect.assert_called_once_with(dialog.on_progress)
+                        task.finished.connect.assert_called_once_with(dialog.on_complete)
+                        task.failed.connect.assert_called_once_with(dialog.on_error)
+                        dialog.was_closed = True
+                        dialog.close()
+
+    def test_netplay_action_transitions(self):
+        from launcher.netplay.irc import LOBBY_CHANNEL
+        from launcher.netplay.netplay_panel import NetplayPanel
+
+        with patch("launcher.netplay.netplay_panel.Netplay") as netplay_class:
+            netplay = netplay_class.return_value
+            netplay.is_op.return_value = True
+            netplay.irc.channel.return_value.get_nick_list.return_value = []
+            netplay.irc.client.host = "127.0.0.1"
+            window = fsui.Window(None, title="Netplay test")
+            window.layout = fsui.VerticalLayout()
+            panel = NetplayPanel(window, header=False)
+            window.layout.add(panel, fill=True, expand=True)
+            self.assertTrue(panel.host_game_button.explicitly_hidden())
+            self.assertTrue(panel.start_button.explicitly_hidden())
+            window.set_size((800, 600))
+            window.show()
+            self.application.processEvents()
+            try:
+                panel.set_active_channel("#test-game")
+                self.application.processEvents()
+                previous = None
+                for control in (
+                    panel.host_game_button, panel.send_config_button,
+                    panel.reset_button, panel.start_button,
+                ):
+                    self.assertTrue(control.visible())
+                    geometry = control.widget().geometry()
+                    self.assertGreater(geometry.y(), 0)
+                    self.assertLessEqual(geometry.right(), panel.size()[0])
+                    if previous is not None:
+                        self.assertFalse(previous.intersects(geometry))
+                    previous = geometry
+                self.assertFalse(panel.ready_button.visible())
+                panel.host_game_button.widget().click()
+                netplay.handle_command.assert_called_with(
+                    "/hostgame 127.0.0.1:25101 2"
+                )
+                panel.send_config_button.widget().click()
+                netplay.handle_command.assert_called_with("/sendconfig")
+                panel.reset_button.widget().click()
+                netplay.handle_command.assert_called_with("/reset")
+                with patch("launcher.launcherapp.LauncherApp.start_game") as start:
+                    panel.start_button.widget().click()
+                    start.assert_called_once_with()
+                netplay.is_op.return_value = False
+                panel.on_irc("nick_list", {"channel": "#test-game"})
+                self.assertFalse(panel.host_game_button.visible())
+                self.assertTrue(panel.ready_button.visible())
+                self.assertGreater(panel.ready_button.widget().geometry().y(), 0)
+                panel.ready_button.widget().click()
+                netplay.handle_command.assert_called_with("/ready")
+                panel.set_active_channel(LOBBY_CHANNEL)
+                self.assertFalse(panel.ready_button.visible())
+                self.assertFalse(panel.host_game_button.visible())
+            finally:
+                window.close()
+
+
 class TestDashboard(WidgetTestCase):
     def test_modern_theme_option(self):
         from launcher.option import Option
