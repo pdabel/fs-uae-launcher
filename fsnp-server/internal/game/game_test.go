@@ -202,8 +202,13 @@ func handshake(tag string) fsnp.Handshake {
 
 // dial connects a raw pipe to the game without sending anything.
 func (h *harness) dial() *client {
+	return h.dialWith(h.g.HandleConn)
+}
+
+// dialWith connects a raw pipe and hands the server side to handle.
+func (h *harness) dialWith(handle func(net.Conn)) *client {
 	server, clientSide := net.Pipe()
-	go h.g.HandleConn(server)
+	go handle(server)
 	c := &client{
 		t:      h.t,
 		nc:     clientSide,
@@ -457,6 +462,43 @@ func TestPasswordGameRejectsPasswordlessClient(t *testing.T) {
 	c := h.join(hs)
 	c.expectError(fsnp.ErrWrongPassword)
 	c.expectClosed()
+}
+
+// TestHandleJoinPreParsed covers the lobby's path in: the handshake is read
+// and parsed by the caller, and HandleJoin must join the player exactly as
+// HandleConn would — and still apply the protocol and password checks, so a
+// misrouted connection is refused rather than joined.
+func TestHandleJoinPreParsed(t *testing.T) {
+	h := newHarness(t, 2, 0)
+	joinParsed := func(hs fsnp.Handshake) *client {
+		return h.dialWith(func(nc net.Conn) { h.g.HandleJoin(nc, hs) })
+	}
+
+	c := joinParsed(handshake("P1"))
+	c.expectExt(fsnp.CmdSessionKey)
+	if n := int(c.expectExt(fsnp.CmdPlayers).Data() >> 8); n != 0 {
+		t.Fatalf("joined as player %d, want 0", n)
+	}
+	c.expectExt(fsnp.CmdPlayerTag0)
+
+	wrong := handshake("P2")
+	wrong.PasswordHash = fsnp.PasswordHash("other")
+	w := joinParsed(wrong)
+	w.expectError(fsnp.ErrWrongPassword)
+	w.expectClosed()
+
+	old := handshake("P2")
+	old.ProtocolVersion = fsnp.ProtocolVersion + 1
+	o := joinParsed(old)
+	o.expectError(fsnp.ErrProtocolMismatch)
+	o.expectClosed()
+
+	// The slot the rejected players didn't take is still free.
+	c2 := joinParsed(handshake("P2"))
+	c2.expectExt(fsnp.CmdSessionKey)
+	if n := int(c2.expectExt(fsnp.CmdPlayers).Data() >> 8); n != 1 {
+		t.Fatalf("joined as player %d, want 1", n)
+	}
 }
 
 func TestHandshakeRejections(t *testing.T) {
