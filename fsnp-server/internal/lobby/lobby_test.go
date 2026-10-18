@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -491,5 +492,70 @@ func TestResponseParsesInLauncher(t *testing.T) {
 	}
 	if v.Get("password") != "a&b=c d#" {
 		t.Fatalf("password %q", v.Get("password"))
+	}
+}
+
+// TestHTTPConnectionsAreBounded: an HTTP client can't hold a connection open
+// indefinitely, either idle after a response or by promising a body it
+// never sends. Held connections would otherwise pile up until the process
+// runs out of file descriptors.
+func TestHTTPConnectionsAreBounded(t *testing.T) {
+	defer func(r, i time.Duration) { httpReadTimeout, httpIdleTimeout = r, i }(httpReadTimeout, httpIdleTimeout)
+	httpReadTimeout, httpIdleTimeout = 200*time.Millisecond, 200*time.Millisecond
+	h := startLobby(t, Config{})
+
+	for _, tc := range []struct{ name, req string }{
+		{"idle after response", "GET /healthz HTTP/1.1\r\nHost: x\r\n\r\n"},
+		{"body never sent", "GET /healthz HTTP/1.1\r\nHost: x\r\nContent-Length: 1\r\n\r\n"},
+	} {
+		c := h.dial()
+		c.write([]byte(tc.req))
+		_ = c.nc.SetReadDeadline(time.Now().Add(5 * time.Second))
+		if _, err := io.Copy(io.Discard, c.nc); err != nil {
+			t.Fatalf("%s: connection not closed by the server: %v", tc.name, err)
+		}
+	}
+}
+
+// flakyListener fails its first n Accepts with a non-timeout error, as a
+// process out of file descriptors does.
+type flakyListener struct {
+	net.Listener
+	n int
+}
+
+func (l *flakyListener) Accept() (net.Conn, error) {
+	if l.n > 0 {
+		l.n--
+		return nil, &net.OpError{Op: "accept", Net: "tcp", Err: syscall.EMFILE}
+	}
+	return l.Listener.Accept()
+}
+
+// TestAcceptErrorsDoNotStopTheLobby: a failing Accept is retried, not
+// returned, because returning would stop every game in the lobby.
+func TestAcceptErrorsDoNotStopTheLobby(t *testing.T) {
+	ln, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := New(Config{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	ctx, cancel := context.WithCancel(context.Background())
+	errc := make(chan error, 1)
+	go func() { errc <- l.Serve(ctx, &flakyListener{Listener: ln, n: 5}) }()
+	h := &harness{t: t, l: l, addr: ln.Addr().String()}
+	defer func() {
+		cancel()
+		<-errc
+	}()
+
+	h.createOK(2, "secret")
+	if _, n := h.joinOK("secret", "P1"); n != 0 {
+		t.Fatalf("joined as %d, want 0", n)
+	}
+	select {
+	case err := <-errc:
+		t.Fatalf("Serve returned %v after accept errors", err)
+	default:
 	}
 }

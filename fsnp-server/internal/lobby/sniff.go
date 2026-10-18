@@ -22,6 +22,24 @@ const (
 
 	// errorWriteTimeout bounds the write of a routing error word.
 	errorWriteTimeout = 2 * time.Second
+
+	// httpMaxHeaderBytes caps request headers; /game/create needs a few
+	// hundred bytes.
+	httpMaxHeaderBytes = 8 << 10
+
+	// maxAcceptBackoff caps the pause between retries after Accept fails.
+	maxAcceptBackoff = time.Second
+)
+
+// HTTP connection limits. Every game shares the lobby's port and process, so
+// a client that holds HTTP connections open — idle after a response, or
+// promising a body it never sends — must not be able to pile them up until
+// the process runs out of file descriptors. Variables so tests can shorten
+// them.
+var (
+	httpReadTimeout  = 10 * time.Second // whole request, body included
+	httpWriteTimeout = 10 * time.Second
+	httpIdleTimeout  = 30 * time.Second // keep-alive between requests
 )
 
 // Serve accepts connections on ln until ctx is cancelled or Accept fails,
@@ -34,6 +52,10 @@ func (l *Lobby) Serve(ctx context.Context, ln net.Listener) error {
 	srv := &http.Server{
 		Handler:           l.Handler(),
 		ReadHeaderTimeout: game.HandshakeTimeout,
+		ReadTimeout:       httpReadTimeout,
+		WriteTimeout:      httpWriteTimeout,
+		IdleTimeout:       httpIdleTimeout,
+		MaxHeaderBytes:    httpMaxHeaderBytes,
 	}
 	httpDone := make(chan struct{})
 	go func() {
@@ -50,20 +72,31 @@ func (l *Lobby) Serve(ctx context.Context, ln net.Listener) error {
 		_ = ln.Close()
 	}()
 
+	// Accept errors other than the listener closing are retried with a
+	// growing pause, as net/http does, rather than returned: returning
+	// stops every game in the lobby, and the likeliest cause — running out
+	// of file descriptors — clears as connections close.
 	var acceptErr error
+	var backoff time.Duration
 	for {
 		nc, err := ln.Accept()
 		if err != nil {
 			if ctx.Err() != nil {
 				break
 			}
-			var ne net.Error
-			if errors.As(err, &ne) && ne.Timeout() {
-				continue
+			if errors.Is(err, net.ErrClosed) {
+				acceptErr = err
+				break
 			}
-			acceptErr = err
-			break
+			backoff = min(max(2*backoff, 5*time.Millisecond), maxAcceptBackoff)
+			l.log.Warn("accept failed, retrying", "err", err, "retry_in", backoff)
+			select {
+			case <-time.After(backoff):
+			case <-ctx.Done():
+			}
+			continue
 		}
+		backoff = 0
 		go l.dispatch(nc, hl)
 	}
 	close(stop)
