@@ -1,6 +1,5 @@
 import os
-
-import pkg_resources
+from importlib.resources import files
 
 import fsboot
 import fsui
@@ -19,6 +18,4 @@ class Font(fsui.Font):
         try:
             return open(path, "rb")
         except FileNotFoundError:
-            return pkg_resources.resource_stream(
-                "workspace.ui", "data/" + name
-            )
+            return files("workspace.ui").joinpath("data/" + name).open("rb")
