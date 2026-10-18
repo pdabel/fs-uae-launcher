@@ -182,6 +182,11 @@ Real IRC JOIN/NAMES/MODE replay tests cover operator recognition, nick-list
 updates, and host controls without mocking operator status. Ordinary IRC
 messages use the text widget's current palette color so rendering errors or
 an import-time color cannot interrupt IRC events or hide text in dark mode.
+Status-bar text and warnings use the widget's live WindowText palette colour;
+inactive text keeps its existing grey override. All four themes inherit their
+palette backgrounds on every OS unless an explicit background override is set.
+Palette regression tests exercise both status painters, inactive text, and
+background selection with simulated Windows/macOS/Linux flags.
 
 ## GNOME Startup Compatibility
 

@@ -89,6 +89,64 @@ class TestQt6(WidgetTestCase):
             self.application.setStyleSheet(stylesheet)
             self.application.setFont(font)
 
+    def test_status_text_uses_live_window_text_palette(self):
+        from fsui.qt import QColor, QPalette
+        from launcher.ui.statusbar.StatusElement import StatusElement
+        from launcher.ui.statusbar.WarningsElement import WarningsElement
+
+        class WarningStatusElement(StatusElement):
+            paint_element = WarningsElement.paint_element
+
+        self.setup_dialog()
+        parent = fsui.Panel(self.dialog)
+        status = StatusElement(parent)
+        status.text = "Active status"
+        warning = WarningStatusElement(parent)
+        warning.coordinates = []
+        warning.warnings = [(0, "Warning message", "")]
+        icon = QImage(16, 16, QImage.Format_ARGB32)
+        icon.fill(QColor("#ff8800"))
+        warning.icons = [fsui.Image(object=icon)]
+        image = QImage(320, 40, QImage.Format_ARGB32)
+        image.fill(QColor("#171923"))
+        painter = QPainter(image)
+        try:
+            context = DrawingContext(painter)
+            with patch("launcher.ui.statusbar.StatusBar.StatusBar.draw_element_background"):
+                for element in (status, warning):
+                    for color in ("#edf0f7", "#123456"):
+                        with self.subTest(element=type(element).__name__, color=color):
+                            palette = element.widget().palette()
+                            palette.setColor(QPalette.WindowText, QColor(color))
+                            element.widget().setPalette(palette)
+                            with patch.object(element, "create_dc", return_value=context):
+                                with patch.object(context, "draw_text", wraps=context.draw_text) as draw_text:
+                                    element.on_paint()
+                                    draw_text.assert_called_once()
+                            self.assertEqual(context.get_text_color(), QColor(color))
+                status.active = False
+                with patch.object(status, "create_dc", return_value=context):
+                    status.on_paint()
+                self.assertEqual(context.get_text_color(), QColor("#808080"))
+        finally:
+            painter.end()
+        self.run_dialog()
+
+    def test_theme_backgrounds_inherit_palette_across_platforms(self):
+        from launcher.ui.skin import Skin
+
+        for variant in ("modern", "plain", "windows311", "workbench"):
+            for windows, macosx in ((True, False), (False, True), (False, False)):
+                with self.subTest(variant=variant, windows=windows, macosx=macosx):
+                    with patch.object(fsui, "theme_variant", variant):
+                        with patch("fsbc.system.windows", windows), patch("fsbc.system.macosx", macosx):
+                            with patch("launcher.ui.skin.LauncherSettings.get", return_value=""):
+                                self.assertIsNone(Skin._get_background_color.__wrapped__(Skin))
+                            with patch("launcher.ui.skin.LauncherSettings.get", return_value="#314159"):
+                                self.assertEqual(
+                                    Skin._get_background_color.__wrapped__(Skin).name(), "#314159"
+                                )
+
     def test_modern_control_assets_and_interaction(self):
         from pathlib import Path
         from fsui.qt import QCheckBox, QComboBox, QIcon, QSpinBox

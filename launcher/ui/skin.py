@@ -66,7 +66,7 @@ class Skin(object):
             g = convert(value[3:5])
             b = convert(value[5:7])
             return fsui.Color(r, g, b)
-        if fsui.theme_variant in ("plain", "windows311", "workbench"):
+        if fsui.theme_variant in ("modern", "plain", "windows311", "workbench"):
             return None
         elif fsbc.system.windows:
             # FIXME: Should really just check for Windows XP here, or maybe
