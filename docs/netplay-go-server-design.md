@@ -418,28 +418,67 @@ stateDiagram-v2
     ended --> [*]
 ```
 
-`Game` in `internal/game` gains three fields it doesn't need for phase one — `config map[string]string`, a per-slot `ready struct{ hash string; missing []string }`, and a `hostToken` — and the FSNP listener is opened by the `ready → running` transition instead of by the constructor. That's the whole structural implication for the Go side, and it's why this section exists now.
+`Game` in `internal/game` gains fields it doesn't need for phase one — `config map[string]string`, a `title`, a `listed` flag, a `hostToken`, and per slot a `name`, a `playerToken`, a `lastSeen` time and `ready struct{ hash string; missing []string }` — and the FSNP listener is opened by the `ready → running` transition instead of by the constructor. That's the whole structural implication for the Go side, and it's why this section exists now.
 
 **Launcher↔server API.** JSON over the lobby's HTTP port; everything below the phase-two `GET /game/create` alias.
 
 | Call | Who | Does |
 |---|---|---|
-| `POST /game {players, password}` | host | Creates the game; returns `id`, `port`, `addresses` and a `hostToken` that authorises the host-only calls |
-| `GET /game/{id}` | anyone with the id | The config document, its hash, each slot's `ready`/`missing`, the state. Long-poll on `?since=<version>` (or SSE) so launchers see changes without polling on a timer |
+| `POST /game {players, password, title, listed}` | host | Creates the game; returns `id`, `port`, `addresses`, the password (generated if none was given) and a `hostToken` that authorises the host-only calls. The host takes slot 1. `title` is the launcher's `__config_name` — not a `sync` key, so it isn't in the document and has to be sent here. `listed` defaults to false and nothing reads it until [game listing](#finding-a-game) lands |
+| `POST /game/{id}/players {password, name}` | joining player | Claims the first free slot; returns `slot` and a `playerToken` that authorises that slot's calls. Wrong password is `403`, no free slot is `409`, a game past `configuring`/`ready` is `409` |
+| `GET /game/{id}` | anyone with the id | With a `hostToken` or `playerToken`: the member view — config document, its hash, the password, each slot's `name`/`ready`/`missing`, the state. Without one: the public summary only (below). Long-poll on `?since=<version>` (or SSE) so launchers see changes without polling on a timer; a member's poll is also its heartbeat |
 | `PUT /game/{id}/config` | host | Whole document, keys restricted to the `sync` set; server computes the hash with the **same algorithm and key order as `checksum_config()`** so the Python side can verify it locally; bumps the version; clears every `ready` |
-| `POST /game/{id}/players/{n}/ready {hash, missing:[sha1…]}` | each player | "I applied version *v* and got hash *h*; these SHA-1s I couldn't find locally." Mismatched hash or non-empty `missing` is a not-ready *with a reason* |
+| `POST /game/{id}/players/{n}/ready {hash, missing:[sha1…]}` | that slot's player | "I applied version *v* and got hash *h*; these SHA-1s I couldn't find locally." Mismatched hash or non-empty `missing` is a not-ready *with a reason* |
+| `DELETE /game/{id}/players/{n}` | that slot's player, or host | Leaves, or kicks; frees the slot |
 | `POST /game/{id}/start` | host | Refused unless the state is `ready`; otherwise opens the FSNP listener and flips every subscriber's `GET` to `running` — that's the signal to launch `fs-uae` |
 | `DELETE /game/{id}` | host | Ends it |
 
+**Public summary and member view.** The password is the game's address on the shared port ([Many games per process](#many-games-per-process-and-the-missing-lobby)), so it must never appear in anything a non-member can read. Phase three fixes that split now, even though only `GET /game/{id}` uses it, so that a listing later is a filter rather than an audit of what leaks:
+
+| | Fields |
+|---|---|
+| **Public summary** | `id`, `title`, `players` (slots), `filled`, `state`, `created` |
+| **Member view** | everything above, plus the password, the config document and hash, `version`, and per slot `name`/`ready`/`missing` |
+
+Tokens are never returned by `GET`; each is handed out once, by the call that creates it.
+
+**Joining and leaving.** A player joins with the game id, the server's `host:port` and the password — shared over chat, or typed in. Slot numbers are the server's to assign, not the player's to pick, so two players joining at once can't collide. HTTP has no connection to lose, so leaving is detected by heartbeat: each member's long-poll returns within 25 s and is renewed at once, and a slot not seen for 60 s is freed as if `DELETE`d — which clears `ready` and drops the game back to `configuring`. A host that goes silent for 60 s ends the game, since only the host can start it. The heartbeat stops mattering at `running`: from there, FSNP's own disconnect handling ([Player loss](#player-loss-without-collateral-damage-phase-one)) applies.
+
+**What players see.** The panel renders the state the long-poll returns, not a log:
+
+| State | Panel |
+|---|---|
+| `created` | Game card — id, `host:port`, password, Copy — and "Waiting for the host's config" |
+| `configuring` | Player list with a status per row; Start disabled |
+| `ready` | Every row ready; Start enabled for the host, "Waiting for the host to start" for others |
+| `running` | "Game in progress"; `fs-uae` launches |
+| `ended` | Why: launch timeout, desync, a player left, host stopped it |
+
+Each player row is one of: **ready** (hash matches), **missing files** (named — the server has the SHA-1s, the launcher's file database has the names), **config mismatch** (hash differs), **applying** (no `ready` yet for this version), or an empty slot. A config change visibly drops every row back to *applying*, rather than surfacing at start as a bare "not the same config hash".
+
 **What the Python side becomes.** `handle_game_instruction` and the whole `__` command set are deleted. In their place: a small HTTP client plus one thread that long-polls `GET /game/{id}` and raises a `Signal` per change, which the panel renders as *state* — a player list with ready/missing-file/hash-mismatch per row, and a start button that's enabled exactly when the server would accept `start`. `set_config`, `set_kickstart_config` and `set_file_config` survive intact: they're the "apply this document locally and find out what I'm missing" step, which is the genuinely useful part of the current code, and their output *is* the `ready` call's body.
 
-**What IRC is still for.** Chat, and finding each other — "join `#game-xyz`" becomes "here's game id `xyz` on `host:port`". For two players who already know each other it can be a text field. Either way it carries no protocol traffic any more, so its plaintext-ness stops mattering.
+**What IRC is still for.** Chat, and finding each other — "join `#game-xyz`" becomes "here's game id `xyz` on `host:port`, password `…`". For two players who already know each other it can be a text field. Either way it carries no protocol traffic any more, so its plaintext-ness stops mattering.
+
+### Finding a game
+
+> **Status: designed here, built after phase three.** Phase three ships no listing — the people playing today already share game details with each other — but the [public summary](#the-proposal) and the `listed` flag on `POST /game` exist so this is purely additive.
+
+Phase three as written has no discovery: a game exists for you only if someone sends you its id. A public lobby needs a list, and the shared port shapes what that list can be — it can't carry passwords, because the password is what routes a player to a game. Three options were considered:
+
+| | |
+|---|---|
+| **No listing** | Phase three as written. Fine while every player knows the host |
+| **Opt-in listing, password still required** — chosen | `GET /games` returns the public summary of each game created with `listed: true` that is in `created`, `configuring` or `ready`. Joining still takes the password from the host. A "Sensible Soccer — 1 of 2 — waiting" view without making games open to anyone |
+| **Listed and open** | The join call hands the password to anyone who asks. Simplest for strangers, but gives up the only access control there is |
+
+What the follow-up adds: `GET /games` (a filter over the registry the lobby already keeps), a "Browse games on this server" view in the panel that prompts for the password on join, and whatever an internet-facing lobby needs — a cap on games returned and rate-limiting of the list and of `POST /game/{id}/players`, which is otherwise an online guess at the password.
 
 ### Trade-offs
 
 - **This is a rewrite of `netplay.py`'s command layer, not a patch** — the less fun half of the work. It's sequenced last for that reason. The Go side is small; the value is in deleting Python.
 - **The lobby port must be reachable**, which it already must be for `/startgame` (W10) — and since phase two it's the same port as the games, 25101. Games hosted from the launcher (`/hostgame`) would need the local `fsnp-server` to run in lobby mode too — one flag, same port.
-- **`hostToken` is the only auth and it's clear text over HTTP.** That's the same threat model as the v1 FSNP password (a 32-bit hash in the clear, [Hardening](#hardening)) — no worse than today, not better. TLS on the lobby is straightforward in Go and doesn't involve the C client, so unlike FSNP it *could* be fixed here; not in scope for the first cut.
+- **`hostToken` and `playerToken` are the only auth and they're clear text over HTTP.** That's the same threat model as the v1 FSNP password (a 32-bit hash in the clear, [Hardening](#hardening)) — no worse than today, not better. TLS on the lobby is straightforward in Go and doesn't involve the C client, so unlike FSNP it *could* be fixed here; not in scope for the first cut.
 - **The document's key set is defined in Python** (`build_cfg`'s `sync` tags). The server should treat it as opaque strings and validate only against a key list it's handed at `POST /game` or in its config, so `launcher_config.py` stays the single source and the Go side doesn't grow an Amiga-config vocabulary.
 
 ## Repository layout
@@ -522,8 +561,9 @@ For development mode, `fsnp-server/Makefile` builds the binary where `Server.py`
    **Verified in real sessions.** Two `fs-uae v3.1.66` instances from the command line against the lobby image: 3,229 frames in sync, `ping_ms=0 lag_ms=0–1`, inputs relayed both ways, game removed from the registry the moment a player quit; a player using the wrong password got `no game for password` and the client's offline fallback (see [Player loss](#player-loss-without-collateral-damage-phase-one) for what that looks like). From the launcher, `/startgame 127.0.0.1 2` against the lobby image and a local InspIRCd: `GET /game/create?players=2&password=` → 200, generated password parsed, `__netplay_*` keys sent to the channel, the connection tester's `PING` verified the host on the shared port.
 
    **Not verified: a game started from the launcher.** The launcher's start sequence counts players *in the IRC channel* against `__netplay_players` (`on_ackstart`), so it needs a second launcher in the channel, not a command-line emulator — the first attempt stopped at "wanted 2 players, has 1". The code from Start to the emulator (`do_start_game` → `start_local_game`, writing `netplay_server`/`port`/`password`) is unchanged by this step, and the emulator's side of it is what the command-line sessions verified, so the residual risk is small; it's left for the next two-launcher session. Likewise `/hostgame` on 25101 has been checked with mocks and real listeners but not yet hosted from the launcher.
-10. **Phase three: config in the session. — not started, next.** Config document, ready-with-reason, start gate on the lobby; replace `netplay.py`'s `__` command layer with an HTTP client and a long-poll thread; IRC demoted to chat. Comes before rejoin: config sync over IRC is the day-to-day pain (see the flood-limit entry in [Risks](#risks)), rejoin is a nice-to-have. See [Future: the session owns the config](#future-the-session-owns-the-config).
+10. **Phase three: config in the session. — not started, next.** Config document, slot assignment by join with per-player tokens, public summary and member view, heartbeat-based leaving, ready-with-reason, start gate on the lobby; replace `netplay.py`'s `__` command layer with an HTTP client and a long-poll thread; IRC demoted to chat. Comes before rejoin: config sync over IRC is the day-to-day pain (see the flood-limit entry in [Risks](#risks)), rejoin is a nice-to-have. See [Future: the session owns the config](#future-the-session-owns-the-config).
 11. **Phase four: rejoin. — not started, redesigned; nice to have.** Rejoin by relaunch and replay from frame 0, pausing the others meanwhile — no client change, see [Rejoin](#rejoin-phase-four). First task: find out whether `fs-uae` consumes a backlog of frame words faster than real time, which decides whether the rest is worth building. Test by quitting one emulator mid-game and relaunching it with the same password.
+12. **Game listing. — not started, after phase three.** `GET /games` over listed games' public summaries, a browse view in the panel, rate limits for an internet-facing lobby. Independent of rejoin; additive on phase three, which defines the public summary and accepts `listed`. See [Finding a game](#finding-a-game).
 
 ## Risks
 
