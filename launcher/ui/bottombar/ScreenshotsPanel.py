@@ -125,7 +125,9 @@ class ScreenshotsPanel(BottomPanel):
                 dc.set_text_color(fsui.Color(162, 171, 192))
                 dc.draw_text(gettext("No screenshots available"), 16, 80)
                 return
-            x = 16 + self.x_offset
+            content_width = sum(image.size[0] for image in images) + 16 * (len(images) - 1)
+            offset = min(0, size[0] - 32 - content_width) if self.x_offset else 0
+            x = 16 + offset
             for image in images:
                 if x + image.size[0] > size[0] - 16:
                     break
