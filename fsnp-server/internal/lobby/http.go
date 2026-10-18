@@ -67,13 +67,18 @@ func (l *Lobby) handleCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 // hostAndPort is the address the client used to reach the lobby: the Host
-// header, which carries the port as the client sees it (so a NAT or Docker
-// port mapping is reported correctly), falling back to the listener's own
-// port when the header has none.
+// header, which carries the port as the client sees it, so a NAT or Docker
+// port mapping is reported correctly. A Host without a port means the
+// client used HTTP's default, 80 — requests omits ":80" — not the
+// listener's port, which may only be the inside of a mapping. Only a
+// request with no Host at all falls back to the listener's own port.
 func hostAndPort(r *http.Request) (string, string) {
 	host, port, err := net.SplitHostPort(r.Host)
 	if err != nil {
 		host, port = r.Host, ""
+		if host != "" {
+			port = "80"
+		}
 	}
 	if port == "" {
 		if a, ok := r.Context().Value(http.LocalAddrContextKey).(net.Addr); ok {

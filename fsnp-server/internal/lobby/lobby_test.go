@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -416,10 +417,11 @@ func TestAddresses(t *testing.T) {
 		t.Fatalf("got addresses=%q port=%q, want lobby.example and the Host header's port",
 			v.Get("addresses"), v.Get("port"))
 	}
+	// No port in Host: the client used HTTP's default port, so a mapping
+	// such as 80 -> 25101 must report 80, not the container's 25101.
 	_, v = h.createWithHost("players=2&password=b", "lobby.example")
-	_, port, _ := net.SplitHostPort(h.addr)
-	if v.Get("port") != port {
-		t.Fatalf("Host without a port: got port=%q, want the listener's %s", v.Get("port"), port)
+	if v.Get("port") != "80" {
+		t.Fatalf("Host without a port: got port=%q, want 80", v.Get("port"))
 	}
 
 	p := startLobby(t, Config{PublicAddresses: []string{"203.0.113.4", "lan.example"}})
@@ -557,5 +559,23 @@ func TestAcceptErrorsDoNotStopTheLobby(t *testing.T) {
 	case err := <-errc:
 		t.Fatalf("Serve returned %v after accept errors", err)
 	default:
+	}
+}
+
+func TestHostAndPort(t *testing.T) {
+	local := &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 25101}
+	for _, tc := range []struct{ hostHeader, host, port string }{
+		{"lobby.example:30000", "lobby.example", "30000"},
+		{"lobby.example", "lobby.example", "80"},
+		{"[2001:db8::1]:25101", "2001:db8::1", "25101"},
+		{"[2001:db8::1]", "2001:db8::1", "80"},
+		{"", "", "25101"}, // no Host at all: only the listener is left
+	} {
+		r := httptest.NewRequest("GET", "/game/create", nil)
+		r.Host = tc.hostHeader
+		r = r.WithContext(context.WithValue(r.Context(), http.LocalAddrContextKey, net.Addr(local)))
+		if host, port := hostAndPort(r); host != tc.host || port != tc.port {
+			t.Errorf("Host %q: got %q %q, want %q %q", tc.hostHeader, host, port, tc.host, tc.port)
+		}
 	}
 }
