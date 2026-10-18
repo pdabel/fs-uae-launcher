@@ -58,13 +58,7 @@ func newConn(nc net.Conn) *conn {
 // game, and then reads messages from it until it fails. It blocks for the
 // life of the connection; callers run it in its own goroutine.
 func (g *Game) HandleConn(nc net.Conn) {
-	if tc, ok := nc.(*net.TCPConn); ok {
-		_ = tc.SetNoDelay(true)
-	}
-	c := newConn(nc)
-	log := g.log.With("addr", c.addr)
-
-	hs, err := c.readHandshake()
+	hs, err := readHandshake(nc)
 	if errors.Is(err, fsnp.ErrNotFSNP) {
 		// Bare connectivity probe from connection_tester.py.
 		_ = nc.SetWriteDeadline(time.Now().Add(errorWriteTimeout))
@@ -73,10 +67,26 @@ func (g *Game) HandleConn(nc net.Conn) {
 		return
 	}
 	if err != nil {
-		log.Warn("handshake failed", "err", err)
+		g.log.Warn("handshake failed", "addr", nc.RemoteAddr().String(), "err", err)
 		_ = nc.Close()
 		return
 	}
+	g.HandleJoin(nc, hs)
+}
+
+// HandleJoin is HandleConn for a connection whose handshake has already been
+// read — by the lobby, which has to parse it to choose a game before handing
+// the connection over. It applies the same protocol and password checks as
+// HandleConn, so a caller that routed on the password hash still gets a
+// correct rejection if it routed wrongly. Like HandleConn it blocks for the
+// life of the connection.
+func (g *Game) HandleJoin(nc net.Conn, hs fsnp.Handshake) {
+	if tc, ok := nc.(*net.TCPConn); ok {
+		_ = tc.SetNoDelay(true)
+	}
+	c := newConn(nc)
+	log := g.log.With("addr", c.addr)
+
 	if hs.ProtocolVersion != fsnp.ProtocolVersion {
 		log.Warn("protocol mismatch", "version", hs.ProtocolVersion)
 		c.writeErrorAndClose(fsnp.ErrProtocolMismatch)
@@ -123,18 +133,18 @@ func (g *Game) HandleConn(nc net.Conn) {
 
 // readHandshake reads the leading 4 bytes and, unless they are the PING
 // probe, the remaining 24 bytes of the handshake.
-func (c *conn) readHandshake() (fsnp.Handshake, error) {
-	_ = c.nc.SetReadDeadline(time.Now().Add(HandshakeTimeout))
-	defer c.nc.SetReadDeadline(time.Time{})
+func readHandshake(nc net.Conn) (fsnp.Handshake, error) {
+	_ = nc.SetReadDeadline(time.Now().Add(HandshakeTimeout))
+	defer nc.SetReadDeadline(time.Time{})
 
 	var buf [fsnp.HandshakeSize]byte
-	if _, err := io.ReadFull(c.nc, buf[:4]); err != nil {
+	if _, err := io.ReadFull(nc, buf[:4]); err != nil {
 		return fsnp.Handshake{}, err
 	}
 	if fsnp.IsPingProbe(buf[:4]) {
 		return fsnp.Handshake{}, fsnp.ErrNotFSNP
 	}
-	if _, err := io.ReadFull(c.nc, buf[4:]); err != nil {
+	if _, err := io.ReadFull(nc, buf[4:]); err != nil {
 		return fsnp.Handshake{}, err
 	}
 	return fsnp.ParseHandshake(buf[:])
