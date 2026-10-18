@@ -1,11 +1,8 @@
-import random
 import traceback
 from urllib.parse import parse_qs
 import uuid
-import socket
 
 import requests
-from fsui.qt import QTimer
 
 from fsgs.amiga.amiga import Amiga
 from fsgs.context import fsgs
@@ -14,8 +11,15 @@ from .irc import IRC
 from .irc_broadcaster import IRCBroadcaster
 from .irc_color import IRCColor
 from ..launcher_config import LauncherConfig
-from ..server.Server import Server, ServerError
+from ..server.Server import PortInUseError, Server, ServerError
 from launcher.sync_settings import sync_settings
+
+
+# The port /hostgame listens on unless the op names one. It is the lobby's
+# port too (fsnp-server --lobby), so a host forwards the same single port
+# however they host.
+HOST_PORT = 25101
+
 
 class Netplay:
     _current = None
@@ -25,15 +29,6 @@ class Netplay:
         if cls._current:
             return cls._current
         return None
-
-    host_ports = []
-
-    @classmethod
-    def new_host_port(cls):
-        if cls.host_ports is not None:
-            cls.host_ports = list(range(25102, 25500))
-            random.shuffle(cls.host_ports)
-        return cls.host_ports.pop()
 
     def __init__(self, parent=None):
         self.enabled = False
@@ -473,11 +468,15 @@ class Netplay:
             self.irc.warning("startgame: you need to be an operator")
             return
 
-        url = "http://{0}:{1}/game/create?players={2}&password={3}".format(
-            host, port, players, password
-        )
+        url = "http://{0}:{1}/game/create".format(host, port)
         try:
-            r = requests.get(url)
+            # params= escapes the password; the timeout matters because this
+            # runs on the UI thread and an unreachable lobby would hang it.
+            r = requests.get(
+                url,
+                params={"players": players, "password": password},
+                timeout=10,
+            )
             r.raise_for_status()
         except Exception:
             channel.warning(
@@ -488,7 +487,9 @@ class Netplay:
         else:
             result = r.text
             print(result)
-            result_dict = parse_qs(result)
+            # keep_blank_values: otherwise an empty "password=" is dropped
+            # and the lookup below raises KeyError.
+            result_dict = parse_qs(result, keep_blank_values=True)
             print(result_dict)
             game_id = result_dict["id"][0]
             game_password = result_dict["password"][0]
@@ -511,21 +512,11 @@ class Netplay:
                 )
             )
 
-    @staticmethod
-    def is_port_free(port):
-        """Check if the given port is free on localhost."""
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            try:
-                s.bind(("127.0.0.1", int(port)))
-                return True
-            except OSError:
-                return False
-
     def command_hostgame(self, args):
         channel = self.irc.active_channel()
         if not self.require_game_channel(channel):
             return
-        result = self.parse_server_args(args, self.new_host_port())
+        result = self.parse_server_args(args, HOST_PORT)
         if not result:
             self.irc.warning(
                 "usage: /hostgame <address>[,<address2>][:<port>] "
@@ -538,70 +529,47 @@ class Netplay:
             self.irc.warning("hostgame: you need to be an operator")
             return
 
-        # Setup retry logic
-        self._hostgame_attempt = 1
-        self._hostgame_max_retries = 5
-        self._hostgame_port = port
-        self._hostgame_players = players
-        self._hostgame_password = password
-        self._hostgame_addresses = addresses
-        self._hostgame_channel = channel
-        self._hostgame_args = args
-        self._hostgame_backoff_base = 5  # seconds
-        self._hostgame_retry()
-
-    def _hostgame_retry(self):
-        port = self._hostgame_port
-        attempt = self._hostgame_attempt
-        max_retries = self._hostgame_max_retries
-        backoff = min(attempt * self._hostgame_backoff_base, 15)
-
-        if self.is_port_free(port):
-            # Proceed with hosting the game
-            server = Server(port, self._hostgame_players, self._hostgame_password)
-            try:
-                server.start()
-            except ServerError as e:
-                # The server is not listening, so there is nothing to
-                # announce and no window to open. Retrying would not help:
-                # the port was free, so this is a missing binary or a
-                # server that failed to come up.
-                self._hostgame_channel.privmsg(
-                    f"ERROR: could not start the netplay server: {e}"
-                )
-                return
-            game_id = str(uuid.uuid4())
-            channel_name = self.irc.get_active_channel()
-            self.game_window = self.parent.create_server_view(
-                self.parent, server, game_id, port, channel_name
-            )
-            self.game_window.show()
-            LauncherConfig.set_multiple(
-                [
-                    ("__netplay_game", game_id),
-                    ("__netplay_password", self._hostgame_password),
-                    ("__netplay_players", str(self._hostgame_players)),
-                    ("__netplay_port", str(port)),
-                    ("__netplay_host", ""),
-                    ("__netplay_addresses", self._hostgame_addresses),
-                ]
-            )
-            self._hostgame_channel.info(
-                f"started game id: {game_id} password: {self._hostgame_password} "
-                f"server: {self._hostgame_addresses} port: {port}"
+        # No pre-check of the port: only the server's own bind can answer
+        # it. A test bind from here would refuse a port still in TIME_WAIT
+        # after the previous game, which the server's listener accepts.
+        server = Server(port, players, password)
+        try:
+            server.start()
+        except PortInUseError:
+            # Waiting would not help: the Go server exits as soon as its
+            # game ends, so a port in use now is held by something still
+            # running, most likely a lobby or another hosted game.
+            channel.privmsg(
+                f"ERROR: port {port} is in use. Is a netplay lobby or another "
+                f"game running on this machine? Close it, or use "
+                f"/hostgame <address>:<port> to pick another port."
             )
             return
-
-        if attempt < max_retries:
-            self._hostgame_channel.privmsg(
-                f"Port {port} is busy. Waiting {backoff} seconds before retry {attempt}/{max_retries}..."
-            )
-            self._hostgame_attempt += 1
-            QTimer.singleShot(backoff * 1000, self._hostgame_retry)
-        else:
-            self._hostgame_channel.privmsg(
-                f"ERROR: Port {port} is still in use after {max_retries} attempts. Please choose another port or close the running server."
-            )
+        except ServerError as e:
+            # The server is not listening, so there is nothing to announce
+            # and no window to open.
+            channel.privmsg(f"ERROR: could not start the netplay server: {e}")
+            return
+        game_id = str(uuid.uuid4())
+        channel_name = self.irc.get_active_channel()
+        self.game_window = self.parent.create_server_view(
+            self.parent, server, game_id, port, channel_name
+        )
+        self.game_window.show()
+        LauncherConfig.set_multiple(
+            [
+                ("__netplay_game", game_id),
+                ("__netplay_password", password),
+                ("__netplay_players", str(players)),
+                ("__netplay_port", str(port)),
+                ("__netplay_host", ""),
+                ("__netplay_addresses", addresses),
+            ]
+        )
+        channel.info(
+            f"started game id: {game_id} password: {password} "
+            f"server: {addresses} port: {port}"
+        )
 
     # noinspection SpellCheckingInspection
     def command_setserver(self, args):

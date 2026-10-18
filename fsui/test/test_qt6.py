@@ -408,23 +408,18 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 parent = Mock(create_server_view=view.present)
                 netplay = Netplay(parent=parent)
                 netplay.irc.active_channel_name = "#embedded-game"
-                netplay._hostgame_port = 25101
-                netplay._hostgame_attempt = 1
-                netplay._hostgame_max_retries = 5
-                netplay._hostgame_backoff_base = 5
-                netplay._hostgame_players = 2
-                netplay._hostgame_password = ""
-                netplay._hostgame_addresses = "127.0.0.1"
-                netplay._hostgame_channel = Mock()
+                channel = Mock()
+                channel.is_op.return_value = True
+                netplay.irc.active_channel = Mock(return_value=channel)
                 try:
-                    with patch.object(netplay, "is_port_free", return_value=True):
+                    with patch.object(netplay, "require_game_channel", return_value=True):
                         with patch("launcher.netplay.netplay.Server") as server_class:
                             with patch("launcher.netplay.netplay.LauncherConfig.set_multiple"):
                                 with patch.object(view, "show", wraps=view.show) as show_view:
                                     server = server_class.return_value
                                     server.players = 2
                                     server.process = None
-                                    netplay._hostgame_retry()
+                                    netplay.command_hostgame(["127.0.0.1:25101", "2"])
                                     server.start.assert_called_once_with()
                                     show_view.assert_called_once_with()
                                     self.assertIs(netplay.game_window, view)
@@ -446,6 +441,82 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     if Netplay.current() is netplay:
                         netplay.disconnect()
                     view.deleteLater()
+
+    def test_hostgame_shared_port_and_configuration(self):
+        from launcher.netplay.netplay import HOST_PORT, Netplay
+
+        parent = Mock()
+        netplay = Netplay(parent=parent)
+        channel = Mock()
+        channel.is_op.return_value = True
+        netplay.irc.active_channel = Mock(return_value=channel)
+        netplay.irc.active_channel_name = "#shared-game"
+        try:
+            with patch.object(netplay, "require_game_channel", return_value=True):
+                with patch("launcher.netplay.netplay.Server") as server_class:
+                    with patch("launcher.netplay.netplay.LauncherConfig.set_multiple") as set_config:
+                        netplay.command_hostgame(["127.0.0.1", "2", "secret"])
+                        server_class.assert_called_once_with(HOST_PORT, 2, "secret")
+                        server_class.return_value.start.assert_called_once_with()
+                        parent.create_server_view.assert_called_once()
+                        netplay.game_window.show.assert_called_once_with()
+                        self.assertEqual(dict(set_config.call_args.args[0]), {
+                            "__netplay_game": parent.create_server_view.call_args.args[2],
+                            "__netplay_password": "secret",
+                            "__netplay_players": "2",
+                            "__netplay_port": str(HOST_PORT),
+                            "__netplay_host": "",
+                            "__netplay_addresses": "127.0.0.1",
+                        })
+        finally:
+            netplay.disconnect()
+
+    def test_hostgame_start_failure_does_not_publish_game(self):
+        from launcher.netplay.netplay import Netplay
+        from launcher.server.Server import PortInUseError, ServerError
+
+        for error, message in (
+            (PortInUseError(25101, "Address in use"), "netplay lobby"),
+            (ServerError("Missing binary"), "Missing binary"),
+        ):
+            with self.subTest(error=type(error).__name__):
+                parent = Mock()
+                netplay = Netplay(parent=parent)
+                channel = Mock()
+                channel.is_op.return_value = True
+                netplay.irc.active_channel = Mock(return_value=channel)
+                try:
+                    with patch.object(netplay, "require_game_channel", return_value=True):
+                        with patch("launcher.netplay.netplay.Server") as server_class:
+                            with patch("launcher.netplay.netplay.LauncherConfig.set_multiple") as set_config:
+                                server_class.return_value.start.side_effect = error
+                                netplay.command_hostgame(["127.0.0.1", "2"])
+                                parent.create_server_view.assert_not_called()
+                                set_config.assert_not_called()
+                                channel.info.assert_not_called()
+                                channel.privmsg.assert_called_once()
+                                self.assertIn(message, channel.privmsg.call_args.args[0])
+                                self.assertIsNone(netplay.game_window)
+                finally:
+                    netplay.disconnect()
+
+    def test_startgame_accepts_empty_password(self):
+        from launcher.netplay.netplay import Netplay
+
+        netplay = Netplay()
+        channel = Mock()
+        channel.is_op.return_value = True
+        netplay.irc.active_channel = Mock(return_value=channel)
+        try:
+            with patch.object(netplay, "require_game_channel", return_value=True):
+                with patch("launcher.netplay.netplay.requests.get") as get:
+                    get.return_value.text = "id=test-game&password=&port=25101&addresses=127.0.0.1"
+                    with patch("launcher.netplay.netplay.LauncherConfig.set_multiple") as set_config:
+                        netplay.command_startgame(["127.0.0.1:25101", "2"])
+                        self.assertEqual(dict(set_config.call_args.args[0])["__netplay_password"], "")
+                        channel.info.assert_called_once()
+        finally:
+            netplay.disconnect()
 
     def test_server_details_detects_process_exit(self):
         from launcher.netplay.server_details import ServerDetails

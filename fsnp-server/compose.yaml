@@ -1,0 +1,32 @@
+# Everything an FS-UAE netplay host runs: the game lobby and an IRC server for
+# the players' launchers to meet in. See README.md.
+#
+#   docker compose up -d        from this directory
+#
+# Then forward TCP 25101 (lobby and games) and 6667 (IRC) to this machine.
+name: fs-uae-netplay
+
+services:
+  lobby:
+    # Built from this checkout. To run a published image instead, replace
+    # build: with image: ghcr.io/pdabel/fs-uae-netplay:<version>.
+    build: .
+    image: fs-uae-netplay:local
+    ports:
+      # The container always listens on 25101. Players are told the port the
+      # op's /startgame used, so a different host port works too.
+      - "${LOBBY_PORT:-25101}:25101"
+    # environment:
+    #   PUBLIC_ADDRESSES: "203.0.113.4"   # what to tell players; see README.md
+    #   MAX_GAMES: "64"
+    #   GAME_LAUNCH_TIMEOUT: "900"
+    restart: unless-stopped
+
+  irc:
+    image: inspircd/inspircd-docker:4.12.1
+    ports:
+      # The launcher only connects to 6667, in plain text.
+      - "6667:6667"
+    volumes:
+      - ./irc/netplay.conf:/inspircd/conf.d/netplay.conf:ro
+    restart: unless-stopped

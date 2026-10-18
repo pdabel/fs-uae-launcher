@@ -133,6 +133,13 @@ the page. Reset and closing the main window also stop the owned server.
 The details update if the server process exits. The panes are resizable;
 the chat controls scroll when the window is too narrow to fit them.
 
+Hosting uses the shared netplay port 25101 by default. The server's bind result
+determines whether the port is available; the launcher does not test-bind or
+retry a busy port. A running lobby or another hosted game produces an explicit
+port-in-use message rather than opening a server view. Successful hosting still
+uses the inline details pane in every theme. Remote startgame responses support
+an empty password.
+
 ## UI Regression Tests
 
 Run the widget, dialog, menu, painting, and screen tests without a display:
@@ -161,6 +168,8 @@ migration, and shared Settings/workspace/server routing.
 Restart checks cover confirmation/cancellation, save-before-close ordering,
 source/frozen commands, clean launch arguments, shutdown notifications,
 and save/relaunch failure handling.
+Merged hosting checks cover the shared default port, inline lifecycle,
+port-in-use/startup failures without publishing a game, and empty passwords.
 List-selection tests also verify that clearing a search selection emits None
 rather than converting it to an incorrect row index under PySide6.
 Launch regression tests exercise Start-button dispatch and construction of

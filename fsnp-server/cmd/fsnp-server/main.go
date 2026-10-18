@@ -1,8 +1,17 @@
-// Command fsnp-server hosts one FSNP v1 netplay game, as
-// launcher/server/game.py did. It takes the same --port/--players/--password/
-// --launch-timeout flags so launcher/server/Server.py can spawn it in place
-// of the Python script, prints a one-line JSON readiness event on stdout once
-// it is listening, and exits on its own when the game ends or on SIGTERM.
+// Command fsnp-server hosts FSNP v1 netplay games.
+//
+// By default it hosts one game, as launcher/server/game.py did. It takes the
+// same --port/--players/--password/--launch-timeout flags so
+// launcher/server/Server.py can spawn it in place of the Python script, and
+// exits on its own when the game ends or on SIGTERM.
+//
+// With --lobby it instead hosts many games on the one port: an HTTP API
+// (GET /game/create, what /startgame calls) and every game it creates share
+// the listener, and connections find their game by password hash. It runs
+// until SIGTERM. See internal/lobby.
+//
+// Either way it prints a one-line JSON readiness event on stdout once it is
+// listening.
 package main
 
 import (
@@ -17,30 +26,42 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/pdabel/fs-uae-launcher/fsnp-server/internal/fsnp"
 	"github.com/pdabel/fs-uae-launcher/fsnp-server/internal/game"
+	"github.com/pdabel/fs-uae-launcher/fsnp-server/internal/lobby"
 )
 
 func main() {
-	os.Exit(run())
+	os.Exit(run(context.Background(), os.Args[1:], os.Stdin, os.Stdout))
 }
 
-func run() int {
+// run is main with its inputs passed in, so tests can drive it: cancelling
+// ctx stops it as SIGTERM does. It returns the process exit code.
+func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) int {
+	fs := flag.NewFlagSet("fsnp-server", flag.ContinueOnError)
 	var (
-		host          = flag.String("host", envOr("HOST", "0.0.0.0"), "address to listen on")
-		port          = flag.Int("port", envInt("PORT", 25101), "port to listen on (0 picks a free one; see the readiness line)")
-		players       = flag.Int("players", envInt("PLAYERS", 2), "number of players the game waits for")
-		password      = flag.String("password", envOr("PASSWORD", ""), "game password")
-		launchTimeout = flag.Int("launch-timeout", envInt("LAUNCH_TIMEOUT", 0), "seconds to wait from startup for all players to join; 0 = forever")
-		exitOnStdin   = flag.Bool("exit-on-stdin-close", false, "stop the game and exit when stdin reaches EOF (for a supervising launcher)")
-		logFile       = flag.String("log-file", envOr("LOG_FILE", ""), "also append the log to this file")
-		logInput      = flag.Bool("log-input", true, "log every relayed input event (sender, action, state, recipients)")
-		verbose       = flag.Bool("verbose", false, "debug logging")
+		host          = fs.String("host", envOr("HOST", "0.0.0.0"), "address to listen on")
+		port          = fs.Int("port", envInt("PORT", 25101), "port to listen on (0 picks a free one; see the readiness line)")
+		players       = fs.Int("players", envInt("PLAYERS", 2), "number of players the game waits for (single game only)")
+		password      = fs.String("password", envOr("PASSWORD", ""), "game password (single game only)")
+		launchTimeout = fs.Int("launch-timeout", envInt("LAUNCH_TIMEOUT", 0), "seconds to wait from startup for all players to join; 0 = forever (single game only)")
+		exitOnStdin   = fs.Bool("exit-on-stdin-close", false, "stop and exit when stdin reaches EOF (for a supervising launcher)")
+		logFile       = fs.String("log-file", envOr("LOG_FILE", ""), "also append the log to this file")
+		logInput      = fs.Bool("log-input", true, "log every relayed input event (sender, action, state, recipients)")
+		verbose       = fs.Bool("verbose", false, "debug logging")
+
+		lobbyMode       = fs.Bool("lobby", envBool("LOBBY", false), "host many games on --port, created over HTTP with GET /game/create")
+		maxGames        = fs.Int("max-games", envInt("MAX_GAMES", lobby.DefaultMaxGames), "lobby: most games live at once")
+		gameTimeout     = fs.Int("game-launch-timeout", envInt("GAME_LAUNCH_TIMEOUT", int(lobby.DefaultLaunchTimeout/time.Second)), "lobby: seconds a game may wait for its players before it is reaped")
+		publicAddresses = fs.String("public-addresses", envOr("PUBLIC_ADDRESSES", ""), "lobby: comma-separated addresses to tell players; empty = the host name the creator used")
 	)
-	flag.Parse()
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
 
 	level := slog.LevelInfo
 	if *verbose {
@@ -62,51 +83,103 @@ func run() int {
 	}
 	log := slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{Level: level}))
 
-	g, err := game.New(game.Config{
-		Players:       *players,
-		PasswordHash:  fsnp.ExpectedPasswordHash(*password),
-		LaunchTimeout: time.Duration(*launchTimeout) * time.Second,
-		Logger:        log,
-		LogInput:      *logInput,
-	})
-	if err != nil {
-		log.Error("invalid configuration", "err", err)
-		return 1
+	var g *game.Game
+	var l *lobby.Lobby
+	if *lobbyMode {
+		fs.Visit(func(f *flag.Flag) {
+			switch f.Name {
+			case "players", "password", "launch-timeout":
+				log.Warn("flag ignored in lobby mode; each game sets its own", "flag", f.Name)
+			}
+		})
+		l = lobby.New(lobby.Config{
+			MaxGames:        *maxGames,
+			LaunchTimeout:   time.Duration(*gameTimeout) * time.Second,
+			PublicAddresses: splitList(*publicAddresses),
+			Logger:          log,
+			LogInput:        *logInput,
+		})
+	} else {
+		var err error
+		g, err = game.New(game.Config{
+			Players:       *players,
+			PasswordHash:  fsnp.ExpectedPasswordHash(*password),
+			LaunchTimeout: time.Duration(*launchTimeout) * time.Second,
+			Logger:        log,
+			LogInput:      *logInput,
+		})
+		if err != nil {
+			log.Error("invalid configuration", "err", err)
+			return 1
+		}
 	}
 
 	ln, err := net.Listen(listenNetwork(*host), net.JoinHostPort(*host, strconv.Itoa(*port)))
 	if err != nil {
 		log.Error("listen failed", "err", err)
+		// Reported on stdout too, where the launcher reads the readiness
+		// line, so it can tell a port in use (which the op can do something
+		// about) from any other failure. The bind is the authoritative test:
+		// a pre-check from the launcher can't match this listener's
+		// SO_REUSEADDR, and refused ports still in TIME_WAIT after a game.
+		reason := "listen_failed"
+		if errors.Is(err, syscall.EADDRINUSE) {
+			reason = "address_in_use"
+		}
+		failed, _ := json.Marshal(map[string]any{"event": "error", "reason": reason, "port": *port, "message": err.Error()})
+		fmt.Fprintln(stdout, string(failed))
 		return 1
 	}
 	actualPort := ln.Addr().(*net.TCPAddr).Port
-	log.Info("listening", "host", *host, "port", actualPort, "players", *players,
-		"network", listenNetwork(*host), "log_input", *logInput,
-		"password_set", *password != "")
+	mode := "game"
+	if *lobbyMode {
+		mode = "lobby"
+		log.Info("listening", "mode", mode, "host", *host, "port", actualPort,
+			"network", listenNetwork(*host), "max_games", *maxGames,
+			"game_launch_timeout", time.Duration(*gameTimeout)*time.Second,
+			"public_addresses", *publicAddresses, "log_input", *logInput)
+	} else {
+		log.Info("listening", "mode", mode, "host", *host, "port", actualPort, "players", *players,
+			"network", listenNetwork(*host), "log_input", *logInput,
+			"password_set", *password != "")
+	}
 	if *logFile != "" {
 		log.Info("logging to file", "path", *logFile)
 	}
 
 	// Readiness line: the launcher reads stdout until it sees this.
-	ready, _ := json.Marshal(map[string]any{"event": "listening", "port": actualPort})
-	fmt.Fprintln(os.Stdout, string(ready))
+	ready, _ := json.Marshal(map[string]any{"event": "listening", "port": actualPort, "mode": mode})
+	fmt.Fprintln(stdout, string(ready))
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sigs)
 	go func() {
-		s := <-sigs
-		log.Info("signal received, stopping", "signal", s)
-		cancel()
+		select {
+		case s := <-sigs:
+			log.Info("signal received, stopping", "signal", s)
+			cancel()
+		case <-ctx.Done():
+		}
 	}()
 	if *exitOnStdin {
 		go func() {
-			_, _ = io.Copy(io.Discard, os.Stdin)
+			_, _ = io.Copy(io.Discard, stdin)
 			log.Info("stdin closed, stopping")
 			cancel()
 		}()
+	}
+
+	if l != nil {
+		if err := l.Serve(ctx, ln); err != nil {
+			log.Error("accept loop failed", "err", err)
+			return 1
+		}
+		log.Info("lobby stopped")
+		return 0
 	}
 
 	go func() {
@@ -168,4 +241,24 @@ func envInt(key string, def int) int {
 		}
 	}
 	return def
+}
+
+func envBool(key string, def bool) bool {
+	if v, ok := os.LookupEnv(key); ok {
+		if b, err := strconv.ParseBool(v); err == nil {
+			return b
+		}
+	}
+	return def
+}
+
+// splitList splits a comma-separated flag value, dropping blanks.
+func splitList(s string) []string {
+	var out []string
+	for _, part := range strings.Split(s, ",") {
+		if part = strings.TrimSpace(part); part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
 }

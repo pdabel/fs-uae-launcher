@@ -20,10 +20,15 @@ RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -trimpath -ldflags="-s -w" -o /fsnp-server ./cmd/fsnp-server
 
 # No libc, no shell, no package manager: the binary is the whole image. This
-# also means there is no entrypoint.sh to go wrong — the server reads
-# PORT/PLAYERS/PASSWORD/LOG_FILE from the environment itself.
+# also means there is no entrypoint.sh to go wrong — the server reads its
+# settings (LOBBY, PORT, MAX_GAMES, ...) from the environment itself.
 FROM scratch AS base
 
+# A lobby: HTTP GET /game/create (what the launcher's /startgame calls) and
+# every game it creates share port 25101, so it is the only port to publish.
+# -e LOBBY=false runs one fixed game instead, as this image did before,
+# configured by PLAYERS and PASSWORD. See README.md.
+ENV LOBBY=true
 ENV PORT=25101
 ENV PLAYERS=2
 # PASSWORD is read from the environment too, but is deliberately not declared
