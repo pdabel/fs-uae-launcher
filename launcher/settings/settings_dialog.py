@@ -151,6 +151,9 @@ class SettingsDialog(PagedDialog):
         # gettext("Synchronization")
         gettext("Advanced")
 
+        if fsui.theme_variant in ("modern", "windows311", "workbench"):
+            self._style_navigation()
+
         last_index = self.get_page_index_by_title(
             LauncherSettings.get("last_settings_page")
         )
@@ -166,11 +169,41 @@ class SettingsDialog(PagedDialog):
         )
         self.button_layout.insert(1, defaults_label, margin_left=20)
 
-        self.set_size((940, 560))
+        if fsui.theme_variant == "modern":
+            self.set_size((1000, 720))
+        elif fsui.theme_variant in ("windows311", "workbench"):
+            self.set_size((1100, 720))
+        else:
+            self.set_size((940, 560))
         # self.center_on_parent()
 
         self.closed.connect(self.__closed)
         self.page_changed.connect(self.__page_changed)
+
+    def _style_navigation(self):
+        from launcher.ui.navigation_icons import navigation_icon
+
+        names = {
+            "language-settings": "fa5s.globe",
+            "gamepad": "fa5s.gamepad",
+            "settings": "fa5s.sliders-h",
+            "fs-uae": "fa5s.microchip",
+            "keyboard-settings": "fa5s.keyboard",
+            "mouse-settings": "fa5s.mouse",
+            "audio-settings": "fa5s.volume-up",
+            "video-settings": "fa5s.desktop",
+            "fs-uae-launcher": "fa5s.home",
+            "indexing-settings": "fa5s.folder-open",
+            "database-settings": "fa5s.database",
+            "netplay-settings": "fa5s.network-wired",
+            "hd": "fa5s.hdd",
+        }
+        for index, item in enumerate(self.page_titles):
+            icon = item["icon"]
+            if icon is not None:
+                self.list_view.model().item(index).setIcon(
+                    navigation_icon(names.get(icon.name, "fa5s.cog"))
+                )
 
     def __page_changed(self):
         index = self.get_index()

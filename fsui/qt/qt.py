@@ -111,6 +111,9 @@ def initialize_qt_style(qapplication):
     elif launcher_theme == "fusion-dark":
         use_fusion_theme = True
         fusion_variant = "dark"
+    elif launcher_theme in ("fusion-windows311", "fusion-workbench"):
+        use_fusion_theme = True
+        fusion_variant = launcher_theme.removeprefix("fusion-")
     elif launcher_theme == "fusion-windows10":
         use_fusion_theme = True
         fusion_variant = "windows10"
@@ -133,6 +136,10 @@ def initialize_qt_style(qapplication):
     if "--launcher-theme=fusion-modern" in sys.argv:
         use_fusion_theme = True
         fusion_variant = "modern"
+    for variant in ("windows311", "workbench"):
+        if "--launcher-theme=fusion-" + variant in sys.argv:
+            use_fusion_theme = True
+            fusion_variant = variant
 
     font = qapplication.font()
     print("FONT: Default is {} {}".format(font.family(), font.pointSize()))
@@ -144,6 +151,11 @@ def initialize_qt_style(qapplication):
             from fsui.qt.modern_theme import apply_modern_theme
 
             apply_modern_theme(qapplication)
+            font = qapplication.font()
+        elif fusion_variant in ("windows311", "workbench"):
+            from fsui.qt.retro_theme import apply_retro_theme
+
+            apply_retro_theme(qapplication, fusion_variant)
             font = qapplication.font()
         elif fusion_variant == "adwaita":
             pa = QPalette()

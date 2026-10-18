@@ -1,5 +1,4 @@
 import fsui
-import qtawesome as qta
 from fsui.qt import (
     Qt, QSize, QButtonGroup, QFrame, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QSizePolicy, QSplitter, QStyle, QToolButton, QVBoxLayout,
@@ -8,6 +7,7 @@ from fsui.qt import (
 from launcher.i18n import gettext
 from launcher.launcher_settings import LauncherSettings
 from launcher.ui.launch import LaunchGroup
+from launcher.ui.navigation_icons import navigation_icon
 
 
 class Dashboard(fsui.Panel):
@@ -68,6 +68,28 @@ class Dashboard(fsui.Panel):
             QSplitter::handle:hover { background: #46b7ee; }
             QScrollArea { border: 0; background: #212431; }
         """)
+        if fsui.theme_variant in ("windows311", "workbench"):
+            self.widget().setStyleSheet("""
+                QWidget#dashboard, QFrame#navigation {
+                    background: palette(window); color: palette(window-text); }
+                QFrame#navigation { border-right: 2px solid palette(shadow); }
+                QLabel#brand { font-size: 23px; font-weight: 700; }
+                QLabel#brandCaption, QLabel#eyebrow { font-size: 11px; }
+                QLabel#pageTitle { font-size: 25px; font-weight: 600; }
+                QLabel#sectionTitle { font-size: 15px; font-weight: 600; }
+                QLabel#badge { padding: 5px 9px; font-size: 11px; }
+                QLabel#configurationName { font-size: 13px; }
+                QPushButton[nav="true"] { text-align: left; padding: 7px 8px; }
+                QPushButton[nav="true"]:checked {
+                    background: palette(highlight); color: palette(highlighted-text); }
+                QFrame#topbar { border-bottom: 2px solid palette(shadow); }
+                QFrame#launchbar { border-top: 2px solid palette(shadow); }
+                QToolButton { padding: 8px; }
+                QPushButton#launchButton { font-weight: 700; padding: 10px 24px; }
+                QSplitter::handle { background: palette(window); }
+                QSplitter::handle:hover { background: palette(highlight); }
+                QScrollArea { border: 0; background: palette(window); }
+            """)
         root = QHBoxLayout(self.widget())
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -147,7 +169,7 @@ class Dashboard(fsui.Panel):
             QStyle.SP_TitleBarMenuButton: "fa5s.ellipsis-h",
             QStyle.SP_MediaPlay: "fa5s.play",
         }
-        return qta.icon(names[standard_icon], color="#9bcce2")
+        return navigation_icon(names[standard_icon])
 
     def _navigation(self):
         frame = QFrame()
@@ -165,6 +187,9 @@ class Dashboard(fsui.Panel):
         layout.addSpacing(30)
         self.nav_group = QButtonGroup(frame)
         self.nav_buttons = []
+        icon_size = QSize(24, 24) if fsui.theme_variant in (
+            "windows311", "workbench"
+        ) else QSize(20, 20)
         for index, (title, icon) in enumerate(self.PAGES):
             button = QPushButton(
                 self._icon(icon), gettext(title).replace("&", "&&")
@@ -172,7 +197,7 @@ class Dashboard(fsui.Panel):
             button.setProperty("nav", True)
             button.setCheckable(True)
             button.setMinimumHeight(44)
-            button.setIconSize(QSize(20, 20))
+            button.setIconSize(icon_size)
             button.setToolTip(gettext(title))
             self.nav_group.addButton(button, index)
             layout.addWidget(button)
@@ -186,6 +211,7 @@ class Dashboard(fsui.Panel):
         self.netplay_button.setProperty("nav", True)
         self.netplay_button.setCheckable(True)
         self.netplay_button.setMinimumHeight(42)
+        self.netplay_button.setIconSize(icon_size)
         self.netplay_button.setToolTip(gettext("Net play"))
         self.nav_group.addButton(self.netplay_button, len(self.PAGES))
         layout.addWidget(self.netplay_button)
@@ -199,6 +225,7 @@ class Dashboard(fsui.Panel):
             )
             button.setProperty("nav", True)
             button.setMinimumHeight(42)
+            button.setIconSize(icon_size)
             button.clicked.connect(callback)
             layout.addWidget(button)
         return frame

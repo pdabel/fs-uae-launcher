@@ -1,3 +1,4 @@
+import fsui
 import qtawesome as qta
 
 from fsui.qt import (
@@ -17,6 +18,12 @@ class ServerDetails(QFrame):
             QLabel[detailLabel="true"] { color: #a2abc0; font-size: 12px; }
             QLabel#serverStatus { color: #69d6ae; font-weight: 600; }
         """)
+        if fsui.theme_variant in ("windows311", "workbench"):
+            self.setStyleSheet("""
+                QFrame#serverDetails { background: palette(window); }
+                QLabel[detailLabel="true"] { font-size: 12px; }
+                QLabel#serverStatus { font-weight: 600; }
+            """)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(10)

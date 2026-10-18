@@ -86,6 +86,8 @@ class Skin(object):
             return None
         elif cls.fws():
             return None
+        elif fsui.theme_variant in ("windows311", "workbench"):
+            return None
         elif fsbc.system.windows:
             # FIXME: Should really just check for Windows XP here, or maybe
             # just remove it altogether.

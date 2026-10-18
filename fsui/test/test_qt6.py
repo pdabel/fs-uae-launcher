@@ -89,6 +89,117 @@ class TestQt6(WidgetTestCase):
             self.application.setStyleSheet(stylesheet)
             self.application.setFont(font)
 
+    def test_modern_control_assets_and_interaction(self):
+        from pathlib import Path
+        from fsui.qt import QCheckBox, QComboBox, QIcon, QSpinBox
+        from fsui.qt import modern_theme
+
+        for name in ("check", "chevron-up", "chevron-down", "retro-chevron"):
+            icon = QIcon(str(Path(modern_theme.__file__).parent / "res" / (name + ".svg")))
+            self.assertFalse(icon.pixmap(16, 16).isNull())
+        checkbox = QCheckBox("Default")
+        checkbox.click()
+        self.assertTrue(checkbox.isChecked())
+        checkbox.setEnabled(False)
+        checkbox.click()
+        self.assertTrue(checkbox.isChecked())
+        choice = QComboBox()
+        choice.addItems(["Default", "On", "Off"])
+        choice.setCurrentIndex(2)
+        self.assertEqual(choice.currentText(), "Off")
+        spinbox = QSpinBox()
+        spinbox.setRange(0, 500)
+        spinbox.setValue(200)
+        spinbox.stepUp()
+        self.assertEqual(spinbox.value(), 201)
+        for control in (checkbox, choice, spinbox):
+            control.deleteLater()
+
+    def test_navigation_icon_variants(self):
+        from fsui.qt import QIcon, QSize
+        from launcher.ui.navigation_icons import navigation_icon
+
+        images = {}
+        for variant in ("modern", "windows311", "workbench"):
+            with self.subTest(variant=variant), patch.object(fsui, "theme_variant", variant):
+                icon = navigation_icon("fa5s.save")
+                self.assertFalse(icon.isNull())
+                for extent in (20, 24, 48):
+                    for mode in (QIcon.Normal, QIcon.Selected, QIcon.Disabled):
+                        image = icon.pixmap(QSize(extent, extent), mode).toImage()
+                        self.assertEqual(image.size(), QSize(extent, extent))
+                        self.assertTrue(any(
+                            image.pixelColor(horizontal, vertical).alpha() > 0
+                            for horizontal in range(extent)
+                            for vertical in range(extent)
+                        ))
+                images[variant] = icon.pixmap(48, 48).toImage()
+        self.assertNotEqual(images["windows311"], images["workbench"])
+        self.assertNotEqual(images["modern"], images["workbench"])
+
+    def test_retro_theme_selection(self):
+        from fsui.qt import QPalette
+        from fsui.qt.qt import initialize_qt_style
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        theme, theme_variant = fsui.theme, fsui.theme_variant
+        try:
+            for variant, background, highlight in (
+                ("windows311", "#c0c0c0", "#000080"),
+                ("workbench", "#0055aa", "#ff8800"),
+            ):
+                for command_line in (False, True):
+                    with self.subTest(variant=variant, command_line=command_line):
+                        arguments = ["fs-uae-launcher"]
+                        if command_line:
+                            arguments.append("--launcher-theme=fusion-" + variant)
+                        with patch("fsui.qt.qt.Settings.instance") as settings:
+                            settings.return_value.get.side_effect = lambda key: (
+                                ("fusion-modern" if command_line else "fusion-" + variant)
+                                if key == "launcher_theme" else ""
+                            )
+                            with patch("sys.argv", arguments):
+                                initialize_qt_style(self.application)
+                        self.assertEqual(fsui.theme_variant, variant)
+                        self.assertEqual(
+                            self.application.palette().color(QPalette.Window).name(), background
+                        )
+                        self.assertEqual(
+                            self.application.palette().color(QPalette.Highlight).name(), highlight
+                        )
+                        self.assertNotIn("@", self.application.styleSheet())
+        finally:
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+            fsui.theme, fsui.theme_variant = theme, theme_variant
+
+    def test_modern_information_icons(self):
+        import qtawesome as qta
+        from launcher.ui.HelpButton import HelpButton
+        from launcher.ui.IconButton import IconButton
+
+        self.setup_dialog()
+        with patch.object(fsui, "theme_variant", "modern"):
+            with patch("qtawesome.icon", wraps=qta.icon) as icons:
+                help_button = HelpButton(self.dialog, "https://fs-uae.net/options")
+                info_button = IconButton(self.dialog, "info.png")
+                self.assertEqual(icons.call_count, 2)
+                icons.assert_called_with("fa5s.info-circle", color="#9bcce2")
+                for button in (help_button, info_button):
+                    self.assertFalse(button.widget().icon().isNull())
+                    self.assertEqual(button.widget().iconSize().width(), 18)
+                with patch("launcher.ui.HelpButton.open_url_in_browser") as open_url:
+                    help_button.widget().click()
+                    open_url.assert_called_once_with("https://fs-uae.net/options")
+        with patch.object(fsui, "theme_variant", "windows311"):
+            with patch("qtawesome.icon") as icons:
+                IconButton(self.dialog, "info.png")
+                icons.assert_not_called()
+        self.run_dialog()
+
     def test_image_button(self):
         self.setup_dialog()
         image = QImage(16, 16, QImage.Format_ARGB32)
@@ -397,6 +508,68 @@ class TestLaunchAndNetplay(WidgetTestCase):
 
 
 class TestDashboard(WidgetTestCase):
+    def test_workspace_settings_navigation(self):
+        from fsui.qt.modern_theme import apply_modern_theme
+        from fsui.qt.retro_theme import apply_retro_theme
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        try:
+            for variant in ("modern", "windows311", "workbench"):
+                with self.subTest(variant=variant), patch.object(fsui, "theme_variant", variant):
+                    if variant == "modern":
+                        apply_modern_theme(self.application)
+                    else:
+                        apply_retro_theme(self.application, variant)
+                    self._check_workspace_settings_navigation()
+        finally:
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+
+    def _check_workspace_settings_navigation(self):
+        import qtawesome as qta
+        from fsui.qt import QEvent
+        from launcher.settings.settings_dialog import SettingsDialog
+
+        with patch("qtawesome.icon", wraps=qta.icon) as icons:
+            with patch("launcher.settings.settings_dialog.LauncherSettings.set"):
+                with patch("launcher.settings.settings_dialog.LauncherSignal.broadcast"):
+                    window = SettingsDialog(None)
+                    try:
+                        window.show()
+                        for title in ("WHDLoad", "Audio", "Keyboard", "WHDLoad"):
+                            index = window.set_page_by_title(title)
+                            self.application.processEvents()
+                            self.assertEqual(window.get_index(), index)
+                            self.assertIs(window.page, window.pages[index])
+                            self.assertFalse(window.page.widget().isHidden())
+                            self.assertIsNone(window.page.icon_header.image_view)
+                            self.assertEqual(
+                                window.page.icon_header.title_label.font().pixelSize(),
+                                25,
+                            )
+                        for index in range(len(window.pages)):
+                            item = window.list_view.model().item(index)
+                            self.assertFalse(item.icon().isNull())
+                            expected_height = 42 if fsui.theme_variant == "modern" else 44
+                            self.assertEqual(item.sizeHint().height(), expected_height)
+                        colors = {
+                            "modern": "#9bcce2", "windows311": "#183867",
+                            "workbench": "#0055aa",
+                        }
+                        icons.assert_any_call("fa5s.globe", color=colors[fsui.theme_variant])
+                        icons.assert_any_call("fa5s.hdd", color=colors[fsui.theme_variant])
+                        if fsui.theme_variant != "modern":
+                            self.assertEqual(window.list_view.iconSize().width(), 24)
+                            self.assertIn("palette(highlight)", window.list_view.styleSheet())
+                            self.assertNotIn("#1c1e2b", window.list_view.styleSheet())
+                    finally:
+                        window.close()
+                        window.real_window().deleteLater()
+                        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+
     def test_modern_theme_option(self):
         from launcher.option import Option
         from launcher.settings.option_ui import OptionUI
@@ -409,9 +582,32 @@ class TestDashboard(WidgetTestCase):
         labels = [group.widget.itemText(index) for index in range(group.widget.count())]
         self.assertIn("Modern Dark", labels)
         self.assertEqual(labels[0], "Modern Dark (*)")
+        self.assertEqual(labels.count("Windows 3.11"), 1)
+        self.assertEqual(labels.count("Amiga Workbench 1.3"), 1)
         self.run_dialog()
 
     def test_navigation_and_responsive_layout(self):
+        from fsui.qt.modern_theme import apply_modern_theme
+        from fsui.qt.retro_theme import apply_retro_theme
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        try:
+            for variant in ("modern", "windows311", "workbench"):
+                with self.subTest(variant=variant):
+                    with patch.object(fsui, "theme_variant", variant):
+                        if variant == "modern":
+                            apply_modern_theme(self.application)
+                        else:
+                            apply_retro_theme(self.application, variant)
+                        self._check_navigation_and_responsive_layout()
+        finally:
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+
+    def _check_navigation_and_responsive_layout(self):
         from launcher.ui.book import Book
         from launcher.ui.dashboard import Dashboard
 
@@ -477,6 +673,10 @@ class TestDashboard(WidgetTestCase):
                         dashboard.netplay_button.click()
                         page = dashboard.netplay_page
                         self.assertIs(dashboard.content_stack.currentWidget(), page.widget())
+                        self.assertIs(page.server_details.window(), owner.real_window())
+                        if fsui.theme_variant in ("windows311", "workbench"):
+                            self.assertNotIn("#212431", page.server_details.styleSheet())
+                            self.assertNotIn("#171923", dashboard.widget().styleSheet())
                         self.assertTrue(dashboard.netplay_button.isChecked())
                         self.assertTrue(dashboard.launch_bar.isHidden())
                         self.assertFalse(dashboard.library_toggle.isEnabled())

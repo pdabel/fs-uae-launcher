@@ -50,6 +50,54 @@ class PagedDialog(fsui.Window):
                 base=self.window.theme.sidebar_list_background.to_hex(),
             )
         )
+        if fsui.theme_variant in ("modern", "windows311", "workbench"):
+            from fsui.qt import QSize, Qt
+
+            self.list_view.set_min_width(216)
+            self.list_view.set_row_height(42)
+            self.list_view.setIconSize(QSize(20, 20))
+            self.list_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+            self.list_view.setStyleSheet("""
+                QListView { background: #1c1e2b; color: #aeb8ce;
+                    border: 0; border-right: 1px solid #303447;
+                    padding: 20px 10px; outline: none; }
+                QListView::item { padding-left: 12px; margin: 2px 0;
+                    border: 0; border-left: 3px solid transparent;
+                    border-radius: 4px; }
+                QListView::item:hover { background: #282d40; color: white; }
+                QListView::item:selected { background: #253e54;
+                    color: #73cef8; border-left: 3px solid #46b7ee; }
+            """)
+            if fsui.theme_variant in ("windows311", "workbench"):
+                self.list_view.set_row_height(44)
+                self.list_view.setIconSize(QSize(24, 24))
+                stylesheet = """
+                    QListView { background: palette(window);
+                        color: palette(window-text); border: 0;
+                        border-right: 2px solid palette(shadow);
+                        padding: 20px 10px; outline: none; }
+                    QListView::item { background: palette(button);
+                        color: palette(button-text); padding-left: 8px;
+                        margin: 2px 0; border: 2px solid;
+                        border-top-color: palette(light);
+                        border-left-color: palette(light);
+                        border-right-color: palette(shadow);
+                        border-bottom-color: palette(shadow); }
+                    QListView::item:hover { border-color: palette(highlight); }
+                    QListView::item:selected {
+                        background: palette(highlight); color: palette(highlighted-text);
+                        border-top-color: palette(shadow);
+                        border-left-color: palette(shadow);
+                        border-right-color: palette(light);
+                        border-bottom-color: palette(light); }
+                """
+                if fsui.theme_variant == "workbench":
+                    stylesheet += """
+                        QListView::item { border: 2px solid #000000; }
+                        QListView::item:hover { border-color: palette(highlight); }
+                        QListView::item:selected { border: 2px solid #000000; }
+                    """
+                self.list_view.setStyleSheet(stylesheet)
         layout_2.add(self.list_view, fill=True, expand=True)
         h_layout.add(layout_2, fill=True)
 

@@ -15,6 +15,16 @@ class SettingsHeader(fsui.Group):
         fsui.Group.__init__(self, parent)
         self.layout = fsui.HorizontalLayout()
 
+        if fsui.theme_variant in ("modern", "windows311", "workbench"):
+            self.image_view = None
+            self.title_label = fsui.HeadingLabel(self, title)
+            font = self.title_label.font()
+            font.setPixelSize(25)
+            font.setBold(True)
+            self.title_label.setFont(font)
+            self.layout.add(self.title_label, expand=True, fill=True)
+            return
+
         image = icon.image(48)
         self.image_view = fsui.ImageView(self, image)
         if icon_position == self.ICON_LEFT:

@@ -53,13 +53,47 @@ previously saved theme. It can also be requested explicitly at startup:
 
   venv/bin/python fs-uae-launcher --launcher-theme=fusion-modern
 
-Other saved themes retain the legacy window layout. QtAwesome is installed
-in the project venv; other source installations must install it as above.
+The retro themes below share this workspace layout. Other saved themes retain
+the legacy layout. QtAwesome is installed in the project venv; other source
+installations must install it as above.
+
+Settings uses the same spacious navigation rows, scalable icons, and cyan
+selection accent as the main workspace. Its navigation scrolls when needed.
+Modern Dark also applies flat, rounded buttons, dropdowns with custom chevrons,
+clear keyboard-focus outlines, and larger checkbox/radio indicators throughout
+the launcher. These are native Qt controls; no browser or React runtime is
+required. Other themes keep their existing controls and settings layout.
+Help and netplay information buttons and status-bar notices use the same cyan
+icon family as the navigation rail in Modern Dark.
+
+### Retro Themes
+
+The Launcher theme setting also offers Windows 3.11 and Amiga Workbench 1.3.
+Select a theme and restart the launcher. Both use the single-window workspace:
+Windows 3.11 has gray beveled controls, white fields, and navy selections;
+Workbench has a blue background, white square controls, orange selections,
+and a monospace font. Fonts fall back to installed alternatives. These are
+inspired styles, not emulations; outer window decorations remain controlled
+by the operating system. They do not replace any emulator or netplay behavior.
+Retro Settings opens at 1100 x 720 to accommodate its wider typography.
+Retro navigation uses original, scalable tile treatments around familiar
+QtAwesome symbols: teal-topped beveled windows for Windows 3.11 and folded
+white tiles with blue/orange details for Workbench. They are modern
+reinterpretations, not copies of the original operating systems' artwork.
+Settings shares the same icon family, roomy navigation rows, square button
+edges, and navy/orange selection colours as its theme's main sidebar. Page
+headings use the same typography as the workspace, without large bitmap art.
+
+They can also be selected for a single launch:
+
+  venv/bin/python fs-uae-launcher --launcher-theme=fusion-windows311
+  venv/bin/python fs-uae-launcher --launcher-theme=fusion-workbench
 
 ### Integrated Netplay
 
-In Modern Dark, Net play is a page inside the main window rather than a
-separate window. The navigation button and Tools menu open the same page.
+In Modern Dark, Windows 3.11, and Amiga Workbench 1.3, Net play is a page inside
+the main window rather than a separate window. The navigation button and Tools
+menu open the same page. The retro themes retain their own colours and controls.
 Chat, channel selection, and the connection persist when switching back to
 configuration pages. Library and quick-settings tools are disabled on the
 netplay page, which uses its own host/start controls.
@@ -69,7 +103,7 @@ alongside the chat. The Stop server button stops hosting without closing
 the page. Reset and closing the main window also stop the owned server.
 The details update if the server process exits. The panes are resizable;
 the chat controls scroll when the window is too narrow to fit them.
-Legacy themes retain their standalone netplay and server windows.
+Other legacy themes retain their standalone netplay and server windows.
 
 ## UI Regression Tests
 
@@ -83,6 +117,17 @@ Image-button regression tests cover icon loading and activation, including
 the launcher's New button, under PySide6.
 Dashboard tests cover page routing, library/quick-settings toggles, the dark
 palette, the theme picker, and 1920x1080, 1280x800, and 1000x720 layouts.
+The navigation and embedded-netplay checks run in all three workspace themes,
+including chat persistence, inline server ownership, and shutdown on main close.
+Settings tests cover navigation icons, page switching, and headings in all
+three workspace themes, including the retro themes' larger icons,
+palette-based sidebar styling, and matching workspace typography.
+Icon-rendering tests cover theme differences and nonblank output at 20, 24,
+and 48 pixels in normal, selected, and disabled states.
+Control tests verify SVG assets, dropdown selection, checkbox activation,
+and numeric stepping.
+Theme checks cover saved and command-line retro selection, their palettes,
+picker entries, and modern info-icon styling and help-link activation.
 List-selection tests also verify that clearing a search selection emits None
 rather than converting it to an incorrect row index under PySide6.
 Launch regression tests exercise Start-button dispatch and construction of

@@ -247,7 +247,7 @@ class LauncherWindow(WindowWithTabs):
                     self.layout.min_width = 1280
                     self.layout.min_height = 720
 
-        if fsui.theme_variant == "modern":
+        if fsui.theme_variant in ("modern", "windows311", "workbench"):
             self.install_dashboard()
         else:
             self.set_size(self.layout.get_min_size())
@@ -485,7 +485,9 @@ class LauncherWindow(WindowWithTabs):
                     margin_top=0,
                 )
 
-            if column == 2 and fsui.theme_variant != "modern":
+            if column == 2 and fsui.theme_variant not in (
+                "modern", "windows311", "workbench"
+            ):
                 # if fs_uae_launcher.ui.get_screen_size()[1] >= 1024:
                 #     vert_layout.add_spacer(100)
 
