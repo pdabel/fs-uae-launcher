@@ -4,15 +4,14 @@ import uuid
 
 import requests
 
-from fsgs.amiga.amiga import Amiga
 from fsgs.context import fsgs
+from .config_apply import apply_config
 from .connection_tester import ConnectionTester
 from .irc import IRC
 from .irc_broadcaster import IRCBroadcaster
 from .irc_color import IRCColor
 from ..launcher_config import LauncherConfig
 from ..server.Server import PortInUseError, Server, ServerError
-from launcher.sync_settings import sync_settings
 
 
 # The port /hostgame listens on unless the op names one. It is the lobby's
@@ -755,113 +754,8 @@ class Netplay:
     def set_config(self, key, value):
         # this config was received from a game channel operator
         print("received config", key, value)
-        # channel =
-        self.irc.channel(self.game_channel)
-        if key not in LauncherConfig.sync_keys_set:
-            print("not processing this key")
-            return
-        elif key in ["x_kickstart_file_sha1", "x_kickstart_ext_file_sha1"]:
-            self.set_kickstart_config(key, value)
-        elif key in self.file_config:
-            self.set_file_config(key, value)
-        else:
-            LauncherConfig.set(key, value)
-
-    def set_kickstart_config(self, key, value):
+        missing = apply_config({key: value})
         channel = self.irc.channel(self.game_channel)
-        if key == "x_kickstart_file_sha1":
-            if value == Amiga.INTERNAL_ROM_SHA1:
-                LauncherConfig.set_multiple(
-                    [
-                        ("kickstart_file", "internal"),
-                        ("x_kickstart_file", "internal"),
-                        (key, value),
-                    ]
-                )
-            else:
-                path = fsgs.file.find_by_sha1(sha1=value)
-                if path:
-                    LauncherConfig.set_multiple(
-                        [
-                            ("kickstart_file", path),
-                            ("x_kickstart_file", path),
-                            (key, value),
-                        ]
-                    )
-                else:
-                    channel.action(
-                        "could not find kickstart for {0}".format(repr(value))
-                    )
-        elif key == "x_kickstart_ext_file_sha1":
-            if not value:
-                LauncherConfig.set_multiple(
-                    [
-                        ("kickstart_ext_file", ""),
-                        ("x_kickstart_ext_file", ""),
-                        (key, ""),
-                    ]
-                )
-                return
-            path = fsgs.file.find_by_sha1(sha1=value)
-            if path:
-                LauncherConfig.set_multiple(
-                    [
-                        ("kickstart_ext_file", path),
-                        ("x_kickstart_ext_file", path),
-                        (key, value),
-                    ]
-                )
-            else:
-                channel.action(
-                    "could not find (ext) kickstart "
-                    "for {0}".format(repr(value))
-                )
-
-    def set_file_config(self, key, value):
-        channel = self.irc.channel(self.game_channel)
-        set_key = self.file_config[key]
-        if not value:
-            LauncherConfig.set_multiple([(set_key, ""), (key, "")])
-            return
-        if value.startswith("http://") or value.startswith("https://"):
-            path = value
-        else:
-            # path = Database.get_instance().find_file(sha1=value)
-            path = fsgs.file.find_by_sha1(sha1=value)
-        # if not path:
-        #     path = find_downloadable_file(value)
-        if path:
-            LauncherConfig.set_multiple([(set_key, path), (key, value)])
-        else:
-            LauncherConfig.set_multiple([(set_key, ""), (key, "")])
-            channel.action(
-                "could not find {1} for " "for {0}".format(value, set_key)
-            )
-
-    @property
-    def file_config(self):
-        # Built on each use rather than once at import: the Sync Config
-        # dialog changes these limits at runtime, and LauncherConfig's sync
-        # keys follow them (refresh_keys), so this mapping must too.
-        file_config = {}
-        for i in range(sync_settings.MAX_FLOPPY_DRIVES):
-            file_config[
-                "x_floppy_drive_{0}_sha1".format(i)
-            ] = "floppy_drive_{0}".format(i)
-        for i in range(sync_settings.MAX_FLOPPY_IMAGES):
-            file_config[
-                "x_floppy_image_{0}_sha1".format(i)
-            ] = "floppy_image_{0}".format(i)
-        for i in range(sync_settings.MAX_CDROM_DRIVES):
-            file_config[
-                "x_cdrom_drive_{0}_sha1".format(i)
-            ] = "cdrom_drive_{0}".format(i)
-        for i in range(sync_settings.MAX_CDROM_IMAGES):
-            file_config[
-                "x_cdrom_image_{0}_sha1".format(i)
-            ] = "cdrom_image_{0}".format(i)
-        for i in range(sync_settings.MAX_HARD_DRIVES):
-            file_config[
-                "x_hard_drive_{0}_sha1".format(i)
-            ] = "hard_drive_{0}".format(i)
-        return file_config
+        for sha1_key, sha1 in missing.items():
+            what = sha1_key.removeprefix("x_").removesuffix("_sha1")
+            channel.action("could not find {0} for {1!r}".format(what, sha1))
