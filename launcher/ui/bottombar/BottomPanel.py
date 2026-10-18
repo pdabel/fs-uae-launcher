@@ -2,9 +2,6 @@ import fsui
 from ..skin import Skin
 
 
-BORDER_COLOR = (0xE5, 0xE5, 0xE5, 0xFF)
-
-
 class BottomPanel(fsui.Panel):
     def __init__(self, parent):
         fsui.Panel.__init__(self, parent, paintable=True)
@@ -33,9 +30,6 @@ class BottomPanel(fsui.Panel):
             self.line_color_1 = fsui.Color(0xFF, 0xFF, 0xFF, 0xA0)
             self.line_color_2 = self.line_color_1
 
-        self.border_color = fsui.Color(*BORDER_COLOR)
-        self.white_color = fsui.Color(0xFF, 0xFF, 0xFF, 0xFF)
-
     def on_paint(self):
         dc = self.create_dc()
         self.draw_background(dc)
@@ -44,10 +38,6 @@ class BottomPanel(fsui.Panel):
         size = self.size()
         if fsui.theme_variant == "modern":
             dc.draw_rectangle(0, 0, size[0], size[1], fsui.Color(33, 36, 49))
-            return
-        if Skin.fws():
-            dc.draw_rectangle(0, 0, size[0], 2, self.border_color)
-            dc.draw_rectangle(0, 2, size[0], size[1] - 2, self.white_color)
             return
         dc.draw_line(0, 0, size[0], 0, self.line_color_1)
         dc.draw_line(0, 1, size[0], 1, self.line_color_2)

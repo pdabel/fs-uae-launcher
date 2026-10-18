@@ -50,7 +50,7 @@ class PagedDialog(fsui.Window):
                 base=self.window.theme.sidebar_list_background.to_hex(),
             )
         )
-        if fsui.theme_variant in ("modern", "windows311", "workbench"):
+        if fsui.theme_variant in ("modern", "plain", "windows311", "workbench"):
             from fsui.qt import QSize, Qt
 
             self.list_view.set_min_width(216)
@@ -68,9 +68,9 @@ class PagedDialog(fsui.Window):
                 QListView::item:selected { background: #253e54;
                     color: #73cef8; border-left: 3px solid #46b7ee; }
             """)
-            if fsui.theme_variant in ("windows311", "workbench"):
+            if fsui.theme_variant != "modern":
                 self.list_view.set_row_height(44)
-                self.list_view.setIconSize(QSize(24, 24))
+                self.list_view.setIconSize(QSize(20, 20) if fsui.theme_variant == "plain" else QSize(24, 24))
                 stylesheet = """
                     QListView { background: palette(window);
                         color: palette(window-text); border: 0;

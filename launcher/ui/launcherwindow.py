@@ -16,7 +16,6 @@ from launcher.implicit_handler import ImplicitConfigHandler
 from launcher.launcher_config import LauncherConfig
 from launcher.launcher_settings import LauncherSettings
 from launcher.launcher_signal import LauncherSignal
-from launcher.netplay.netplay_dialog import NetplayDialog
 from launcher.option import Option
 from launcher.panels.additionalconfigpanel import AdditionalConfigPanel
 from launcher.panels.cdpanel import CDPanel
@@ -32,12 +31,10 @@ from launcher.ui.book import Book
 from launcher.ui.bottombar.BottomPanel import BottomPanel
 from launcher.ui.bottombar.GameInfoPanel import GameInfoPanel
 from launcher.ui.bottombar.ScreenshotsPanel import ScreenshotsPanel
-from launcher.ui.config.browser import ConfigBrowser
 from launcher.ui.config.configscrollarea import ConfigScrollArea
 from launcher.ui.ConfigurationsPanel import ConfigurationsPanel
 from launcher.ui.Constants import Constants
 from launcher.ui.kickstartimportdialog import KickstartImportDialog
-from launcher.ui.launch import LaunchGroup
 from launcher.ui.skin import Skin
 from launcher.ui.statusbar.StatusBar import StatusBar
 from launcher.ui.WindowWithTabs import WindowWithTabs
@@ -49,21 +46,8 @@ from workspace.apps.login import LoginWindow
 from workspace.apps.logout import LogoutWindow
 from workspace.apps.refresh import RefreshWindow
 
-USE_MAIN_MENU = 1
 QUICK_SETTINGS_WIDTH = 200
-CONFIG_BROWSER_WIDTH = 200
 GAME_INFO_PANEL_MIN_WIDTH = 500
-
-SCREENSHOT_WIDTH = 212
-SCREENSHOT_SPACING = 20
-MARGIN = 20
-CONFIGURATIONS_PANEL_WIDTH_1 = (
-    SCREENSHOT_WIDTH * 2 + SCREENSHOT_SPACING * 1 + MARGIN
-)
-CONFIGURATIONS_PANEL_WIDTH_2 = (
-    SCREENSHOT_WIDTH * 3 + SCREENSHOT_SPACING * 2 + MARGIN
-)
-CONFIGURATIONS_PANEL_WIDTH_THRESHOLD_2 = 1600
 
 
 # noinspection PyMethodMayBeStatic
@@ -91,17 +75,11 @@ class LauncherWindow(WindowWithTabs):
         LauncherApp.pre_start()
 
         border = True
-        maximize = None
-        menu = False
         if launcher.ui.get_screen_size()[1] <= 768:
             if fstd.desktop.is_running_gnome_3():
                 border = False
                 if "--window-border" in sys.argv:
                     border = True
-            maximize = True
-        if Skin.fws():
-            border = False
-            menu = True
         if "--no-window-border" in sys.argv:
             border = False
 
@@ -109,12 +87,9 @@ class LauncherWindow(WindowWithTabs):
             app_name = "OpenRetro Launcher"
         else:
             app_name = "FS-UAE Launcher"
-        if Skin.fws():
-            title = app_name
-        else:
-            title = "{} {}".format(app_name, Application.instance().version)
+        title = "{} {}".format(app_name, Application.instance().version)
 
-        WindowWithTabs.__init__(self, None, title, border=border, menu=menu)
+        WindowWithTabs.__init__(self, None, title, border=border, menu=False)
         icon = self.find_icon()
         if icon:
             self.set_icon_from_path(icon)
@@ -239,21 +214,7 @@ class LauncherWindow(WindowWithTabs):
         self.status_bar = StatusBar(self)
         self.layout.add(self.status_bar, fill=True)
 
-        was_maximized = LauncherSettings.get("maximized") == "1"
-
-        if LauncherSettings.get(Option.LAUNCHER_CONFIG_FEATURE) == "1":
-            if launcher.ui.get_screen_size()[0] > 1300:
-                if launcher.ui.get_screen_size()[1] > 1000:
-                    self.layout.min_width = 1280
-                    self.layout.min_height = 720
-
-        if fsui.theme_variant in ("modern", "windows311", "workbench"):
-            self.install_dashboard()
-        else:
-            self.set_size(self.layout.get_min_size())
-            self.center_on_screen()
-            if was_maximized or maximize:
-                self.maximize()
+        self.install_dashboard()
 
         LauncherSignal.add_listener("scan_done", self)
         LauncherSignal.add_listener("setting", self)
@@ -338,9 +299,6 @@ class LauncherWindow(WindowWithTabs):
         LauncherConfig.update_kickstart()
 
     def update_title(self):
-        if Skin.fws():
-            # Just want to keep "FS-UAE Launcher" in the title
-            return
         auth = LauncherSettings.get(Option.DATABASE_AUTH)
         if auth:
             username = LauncherSettings.get(Option.DATABASE_USERNAME)
@@ -360,41 +318,6 @@ class LauncherWindow(WindowWithTabs):
         unused(value)
         if key == Option.DATABASE_AUTH:
             self.update_title()
-
-    def on_resize(self):
-        if hasattr(self, "dashboard"):
-            super().on_resize()
-            return
-        width, height = self.get_size()
-        # print("on_resize, size =", width, height)
-        if self.is_maximized():
-            if LauncherSettings.get("maximized") != "1":
-                LauncherSettings.set("maximized", "1")
-        else:
-            if LauncherSettings.get("maximized") != "0":
-                LauncherSettings.set("maximized", "0")
-        if self.screenshots_panel is not None:
-            available = width - 2 * 10 - self.game_info_panel.get_min_width()
-            num_screenshots = int(
-                (available - 22 + 22) / (Constants.SCREEN_SIZE[0] + 22)
-            )
-            # print("Screenshots count:", num_screenshots)
-            screenshots_panel_width = (
-                (Constants.SCREEN_SIZE[0] + 22) * num_screenshots - 22 + 22
-            )
-            self.screenshots_panel.set_min_width(screenshots_panel_width)
-        if width > CONFIGURATIONS_PANEL_WIDTH_THRESHOLD_2:
-            configurations_width = (
-                SCREENSHOT_WIDTH * 3 + SCREENSHOT_SPACING * 2 + MARGIN
-            )
-            self.configurations_panel.set_min_width(
-                CONFIGURATIONS_PANEL_WIDTH_2
-            )
-        else:
-            self.configurations_panel.set_min_width(
-                CONFIGURATIONS_PANEL_WIDTH_1
-            )
-        super().on_resize()
 
     def is_editor_enabled(self):
         return "--editor" in sys.argv
@@ -485,18 +408,6 @@ class LauncherWindow(WindowWithTabs):
                     margin_top=0,
                 )
 
-            if column == 2 and fsui.theme_variant not in (
-                "modern", "windows311", "workbench"
-            ):
-                # if fs_uae_launcher.ui.get_screen_size()[1] >= 1024:
-                #     vert_layout.add_spacer(100)
-
-                hor2_layout = fsui.HorizontalLayout()
-                vert_layout.add(hor2_layout, fill=True, margin=10)
-                launch_group = LaunchGroup(self, self.gsc)
-                # hor2_layout.add_spacer(0, expand=True)
-                hor2_layout.add(launch_group, expand=True)
-
             self.books.append(book)
             self.add_column_content(column)
         else:
@@ -534,21 +445,15 @@ class LauncherWindow(WindowWithTabs):
 
     def add_column_content(self, column):
         default_page_index = 0
-        default_tab_index_offset = 0
         if column == 1:
-            if Skin.fws():
-                self.add_tab_spacer(5)
-                self.add_tab_spacer(64)
-            else:
-                # if USE_MAIN_MENU:
-                icon = fsui.Image("launcher:res/32/main-menu.png")
-                self.menu_button = self.add_tab_button(
-                    None,
-                    icon,
-                    gettext("Main Menu"),
-                    menu_function=self.open_main_menu,
-                    left_padding=5,
-                )
+            icon = fsui.Image("launcher:res/32/main-menu.png")
+            self.menu_button = self.add_tab_button(
+                None,
+                icon,
+                gettext("Main Menu"),
+                menu_function=self.open_main_menu,
+                left_padding=5,
+            )
             # default_tab_index_offset = 1
             # self.add_tab_spacer(60)
             # else:
@@ -636,9 +541,7 @@ class LauncherWindow(WindowWithTabs):
             )
 
             # column - 1 is the group id of the tab group
-            self.select_tab(
-                default_page_index + default_tab_index_offset, column - 1
-            )
+            self.select_tab(default_page_index, column - 1)
         self.books[column].set_page(default_page_index)
 
     def create_menu(self):
@@ -851,7 +754,4 @@ class LauncherWindow(WindowWithTabs):
 
     def on_net_play(self):
         print("on_net_play")
-        if hasattr(self, "dashboard"):
-            self.dashboard.show_netplay()
-            return
-        NetplayDialog.open(self)
+        self.dashboard.show_netplay()

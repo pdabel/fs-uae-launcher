@@ -52,6 +52,16 @@ def app_main():
     from fsbc.signal import Signal
 
     Signal("quit").notify()
+    try:
+        app.restart_if_requested()
+    except OSError as error:
+        import fsui
+
+        fsui.show_error(
+            "Unable to restart the launcher. Your settings were saved. "
+            "Please launch it again.\n\n" + str(error),
+            "FS-UAE Launcher",
+        )
     print("app_main done")
 
 

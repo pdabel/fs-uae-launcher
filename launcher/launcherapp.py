@@ -45,7 +45,26 @@ class LauncherApp(ApplicationMixin, fsui.Application):
         fsui.Application.__init__(self, "fs-uae-launcher")
         self.set_icon(fsui.Icon("fs-uae-launcher", "pkg:launcher"))
         self.fsgs = fsgs
+        self._restart_arguments = None
         # Try to auto-detect game when launching with an archive
+
+    def request_restart(self):
+        import fsboot
+
+        if self._restart_arguments is not None:
+            return
+        arguments = [sys.executable]
+        if not getattr(sys, "frozen", False):
+            arguments.append(os.path.abspath(sys.argv[0]))
+        arguments.append("--base-dir=" + fsboot.base_dir())
+        self.save_settings()
+        self._restart_arguments = arguments
+        self.qapplication.closeAllWindows()
+        self.qapplication.quit()
+
+    def restart_if_requested(self):
+        if self._restart_arguments is not None:
+            os.execv(self._restart_arguments[0], self._restart_arguments)
 
     def on_idle(self):
         self.fsgs.signal.process()

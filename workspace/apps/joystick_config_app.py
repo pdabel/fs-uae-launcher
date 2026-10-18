@@ -14,7 +14,6 @@ from fsgs.amiga.fsuaedevicehelper import FSUAEDeviceHelper
 from fsgs.input.inputdevice import InputDevice
 from launcher.devicemanager import DeviceManager
 from launcher.i18n import gettext
-from launcher.ui.skin import Skin
 from launcher.ui.widgets import CloseButton
 from workspace.ui.theme import WorkspaceTheme
 
@@ -37,12 +36,6 @@ class JoystickConfigWindow(fsui.Window):
         self.image = fsui.Image("workspace:res/gamepad-config.png")
         self.joystick_panel = fsui.ImageView(self, self.image)
         self.layout.add(self.joystick_panel)
-
-        if Skin.fws():
-            from workspace.ui import TitleSeparator
-
-            separator = TitleSeparator(self)
-            self.layout.add(separator, fill=True)
 
         panel = fsui.Panel(self)
         self.layout.add(panel, fill=True)

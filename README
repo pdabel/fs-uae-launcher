@@ -24,8 +24,9 @@ not necessary:
 
 The UI selects PySide6 by default. Use a clean process without another Qt
 binding already imported; PyQt5 and PySide6 must not be mixed. Qt 6 handles
-high-DPI scaling automatically. Existing explicitly selected themes are
-preserved. Emulator, database, and networking behavior is unchanged.
+high-DPI scaling automatically. Supported saved themes are preserved; retired
+theme names fall back to plain Fusion. Emulator, database, and networking
+behavior is unchanged.
 
 It can optionally use the `lhafile` python package to support .lha archives.
 The older packaging and INSTALL instructions still target Qt 5 and have not
@@ -53,18 +54,46 @@ previously saved theme. It can also be requested explicitly at startup:
 
   venv/bin/python fs-uae-launcher --launcher-theme=fusion-modern
 
-The retro themes below share this workspace layout. Other saved themes retain
-the legacy layout. QtAwesome is installed in the project venv; other source
-installations must install it as above.
+The four available themes are Modern Dark, Fusion, Windows 3.11, and Amiga
+Workbench 1.3. All share this single-window workspace and embedded netplay
+server controls. Fusion retains Qt's original light palette and native-style
+controls. Removed or unknown saved themes fall back to Fusion; an empty theme
+setting still defaults to Modern Dark. Retired saved theme names are normalized
+to Fusion so the Settings picker agrees with the running theme. QtAwesome is
+installed in the project venv; other source installations must install it as above.
+
+Plain Fusion can also be selected for a single launch:
+
+  venv/bin/python fs-uae-launcher --launcher-theme=fusion-plain
 
 Settings uses the same spacious navigation rows, scalable icons, and cyan
 selection accent as the main workspace. Its navigation scrolls when needed.
 Modern Dark also applies flat, rounded buttons, dropdowns with custom chevrons,
 clear keyboard-focus outlines, and larger checkbox/radio indicators throughout
 the launcher. These are native Qt controls; no browser or React runtime is
-required. Other themes keep their existing controls and settings layout.
+required. The other three themes use their own palette and controls.
 Help and netplay information buttons and status-bar notices use the same cyan
 icon family as the navigation rail in Modern Dark.
+
+### Quick Theme Switching
+Choose a theme in Settings > FS-UAE Launcher, then click Restart Launcher
+beside the theme selector. After confirmation, preferences are saved and the
+launcher reopens with the selected theme and font. The current base directory
+is preserved; old theme overrides and game/disk command-line arguments are
+not repeated. Active netplay sessions and hosted servers are stopped. Save
+configuration edits before restarting. Cancelling leaves the launcher open.
+
+This is a launcher restart, not a live theme preview: palettes, fonts, and
+icon sets are initialized at startup.
+
+### GUI Cleanup
+
+The obsolete standalone netplay/server GUI wrappers and the launcher's
+old theme-specific startup, drawing, and resize fallbacks have been removed.
+Theme choices now come from one option definition. The tab/book widgets remain
+in use by configuration-page construction; shared toolkit window classes and
+independently accessible tools are not treated as dead code. Emulator, server
+process, database, and network protocol logic is outside this GUI cleanup.
 
 ### Retro Themes
 
@@ -91,8 +120,8 @@ They can also be selected for a single launch:
 
 ### Integrated Netplay
 
-In Modern Dark, Windows 3.11, and Amiga Workbench 1.3, Net play is a page inside
-the main window rather than a separate window. The navigation button and Tools
+In all four themes, Net play is a page inside the main window rather than a
+separate window. The navigation button and Tools
 menu open the same page. The retro themes retain their own colours and controls.
 Chat, channel selection, and the connection persist when switching back to
 configuration pages. Library and quick-settings tools are disabled on the
@@ -103,7 +132,6 @@ alongside the chat. The Stop server button stops hosting without closing
 the page. Reset and closing the main window also stop the owned server.
 The details update if the server process exits. The panes are resizable;
 the chat controls scroll when the window is too narrow to fit them.
-Other legacy themes retain their standalone netplay and server windows.
 
 ## UI Regression Tests
 
@@ -117,10 +145,10 @@ Image-button regression tests cover icon loading and activation, including
 the launcher's New button, under PySide6.
 Dashboard tests cover page routing, library/quick-settings toggles, the dark
 palette, the theme picker, and 1920x1080, 1280x800, and 1000x720 layouts.
-The navigation and embedded-netplay checks run in all three workspace themes,
+The navigation and embedded-netplay checks run in all four workspace themes,
 including chat persistence, inline server ownership, and shutdown on main close.
 Settings tests cover navigation icons, page switching, and headings in all
-three workspace themes, including the retro themes' larger icons,
+four workspace themes, including the retro themes' larger icons,
 palette-based sidebar styling, and matching workspace typography.
 Icon-rendering tests cover theme differences and nonblank output at 20, 24,
 and 48 pixels in normal, selected, and disabled states.
@@ -128,6 +156,11 @@ Control tests verify SVG assets, dropdown selection, checkbox activation,
 and numeric stepping.
 Theme checks cover saved and command-line retro selection, their palettes,
 picker entries, and modern info-icon styling and help-link activation.
+Fusion checks cover its light palette, exact four-theme picker, retired-theme
+migration, and shared Settings/workspace/server routing.
+Restart checks cover confirmation/cancellation, save-before-close ordering,
+source/frozen commands, clean launch arguments, shutdown notifications,
+and save/relaunch failure handling.
 List-selection tests also verify that clearing a search selection emits None
 rather than converting it to an incorrect row index under PySide6.
 Launch regression tests exercise Start-button dispatch and construction of

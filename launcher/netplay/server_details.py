@@ -18,7 +18,7 @@ class ServerDetails(QFrame):
             QLabel[detailLabel="true"] { color: #a2abc0; font-size: 12px; }
             QLabel#serverStatus { color: #69d6ae; font-weight: 600; }
         """)
-        if fsui.theme_variant in ("windows311", "workbench"):
+        if fsui.theme_variant != "modern":
             self.setStyleSheet("""
                 QFrame#serverDetails { background: palette(window); }
                 QLabel[detailLabel="true"] { font-size: 12px; }

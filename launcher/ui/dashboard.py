@@ -68,7 +68,7 @@ class Dashboard(fsui.Panel):
             QSplitter::handle:hover { background: #46b7ee; }
             QScrollArea { border: 0; background: #212431; }
         """)
-        if fsui.theme_variant in ("windows311", "workbench"):
+        if fsui.theme_variant != "modern":
             self.widget().setStyleSheet("""
                 QWidget#dashboard, QFrame#navigation {
                     background: palette(window); color: palette(window-text); }

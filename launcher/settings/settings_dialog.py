@@ -1,6 +1,5 @@
 import fsgs
 import fsui
-from fsbc import settings
 from launcher.i18n import gettext
 from launcher.launcher_settings import LauncherSettings
 from launcher.launcher_signal import LauncherSignal
@@ -8,7 +7,6 @@ from launcher.option import Option
 from launcher.settings.advanced_settings_page import AdvancedSettingsPage
 from launcher.settings.advanced_video_settings import AdvancedVideoSettingsPage
 from launcher.settings.audio_settings_page import AudioSettingsPage
-from launcher.settings.directories_settings_page import DirectoriesSettingsPage
 from launcher.settings.fs_uae_settings_page import FSUAESettingsPage
 from launcher.settings.gamedatabasesettingspage import GameDatabaseSettingsPage
 from launcher.settings.joystick_settings_page import JoystickSettingsPage
@@ -151,8 +149,7 @@ class SettingsDialog(PagedDialog):
         # gettext("Synchronization")
         gettext("Advanced")
 
-        if fsui.theme_variant in ("modern", "windows311", "workbench"):
-            self._style_navigation()
+        self._style_navigation()
 
         last_index = self.get_page_index_by_title(
             LauncherSettings.get("last_settings_page")

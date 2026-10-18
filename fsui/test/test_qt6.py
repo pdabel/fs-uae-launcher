@@ -120,7 +120,7 @@ class TestQt6(WidgetTestCase):
         from launcher.ui.navigation_icons import navigation_icon
 
         images = {}
-        for variant in ("modern", "windows311", "workbench"):
+        for variant in ("modern", "plain", "windows311", "workbench"):
             with self.subTest(variant=variant), patch.object(fsui, "theme_variant", variant):
                 icon = navigation_icon("fa5s.save")
                 self.assertFalse(icon.isNull())
@@ -175,6 +175,43 @@ class TestQt6(WidgetTestCase):
             self.application.setStyleSheet(stylesheet)
             self.application.setFont(font)
             fsui.theme, fsui.theme_variant = theme, theme_variant
+
+    def test_fusion_and_removed_theme_migration(self):
+        from fsui.qt import QPalette
+        from fsui.qt.qt import initialize_qt_style
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        theme, variant = fsui.theme, fsui.theme_variant
+        try:
+            for saved in (
+                "fusion-plain", "standard", "native", "fusion", "fusion-adwaita",
+                "fusion-dark", "fusion-windows10", "fws", "unknown-theme",
+            ):
+                for command_line in (False, True):
+                    with self.subTest(saved=saved, command_line=command_line):
+                        arguments = ["fs-uae-launcher"]
+                        if command_line:
+                            arguments.append("--launcher-theme=" + saved)
+                        with patch("fsui.qt.qt.Settings.instance") as settings:
+                            settings.return_value.get.side_effect = lambda key: (
+                                ("fusion-modern" if command_line else saved)
+                                if key == "launcher_theme" else ""
+                            )
+                            with patch("sys.argv", arguments):
+                                initialize_qt_style(self.application)
+                            if saved != "fusion-plain":
+                                settings.return_value.set.assert_called_with("launcher_theme", "fusion-plain")
+                        self.assertEqual(fsui.theme_variant, "plain")
+                        self.assertEqual(self.application.styleSheet(), "")
+                        self.assertGreater(self.application.palette().color(QPalette.Window).lightness(), 150)
+                        self.assertLess(self.application.palette().color(QPalette.Text).lightness(), 100)
+        finally:
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+            fsui.theme, fsui.theme_variant = theme, variant
 
     def test_modern_information_icons(self):
         import qtawesome as qta
@@ -290,6 +327,77 @@ class TestQt6(WidgetTestCase):
 
 
 class TestLaunchAndNetplay(WidgetTestCase):
+    def test_restart_command_and_shutdown_order(self):
+        from types import SimpleNamespace
+        from launcher.launcherapp import LauncherApp
+
+        for frozen in (False, True):
+            with self.subTest(frozen=frozen):
+                application = SimpleNamespace(
+                    _restart_arguments=None, qapplication=Mock(), save_settings=Mock()
+                )
+                calls = []
+                application.save_settings.side_effect = lambda: calls.append("save")
+                application.qapplication.closeAllWindows.side_effect = lambda: calls.append("close")
+                application.qapplication.quit.side_effect = lambda: calls.append("quit")
+                with patch("sys.argv", ["fs-uae-launcher", "--launcher-theme=fusion-modern", "game.adf"]):
+                    with patch("sys.executable", "/test/python"), patch("sys.frozen", frozen, create=True):
+                        with patch("fsboot.base_dir", return_value="/test/Amiga Data"):
+                            LauncherApp.request_restart(application)
+                            LauncherApp.request_restart(application)
+                self.assertEqual(calls, ["save", "close", "quit"])
+                self.assertEqual(application._restart_arguments[0], "/test/python")
+                self.assertEqual(application._restart_arguments[-1], "--base-dir=/test/Amiga Data")
+                self.assertEqual(len(application._restart_arguments), 2 if frozen else 3)
+                self.assertNotIn("game.adf", application._restart_arguments)
+                self.assertNotIn("--launcher-theme=fusion-modern", application._restart_arguments)
+                with patch("launcher.launcherapp.os.execv") as execute:
+                    LauncherApp.restart_if_requested(application)
+                    execute.assert_called_once_with(
+                        application._restart_arguments[0], application._restart_arguments
+                    )
+
+    def test_restart_save_failure_keeps_windows_open(self):
+        from types import SimpleNamespace
+        from launcher.launcherapp import LauncherApp
+
+        application = SimpleNamespace(
+            _restart_arguments=None, qapplication=Mock(),
+            save_settings=Mock(side_effect=OSError("Disk full")),
+        )
+        with self.assertRaises(OSError):
+            LauncherApp.request_restart(application)
+        self.assertIsNone(application._restart_arguments)
+        application.qapplication.closeAllWindows.assert_not_called()
+        application.qapplication.quit.assert_not_called()
+        with patch("launcher.launcherapp.os.execv") as execute:
+            LauncherApp.restart_if_requested(application)
+            execute.assert_not_called()
+
+    def test_restart_runs_after_shutdown_notification(self):
+        from launcher.apps.fs_uae_launcher import app_main
+
+        for restart_failure in (False, True):
+            with self.subTest(restart_failure=restart_failure):
+                events = []
+                with patch("launcher.launcherapp.LauncherApp") as application_class:
+                    application = application_class.return_value
+                    application.run.side_effect = lambda: events.append("run")
+                    application.save_settings.side_effect = lambda: events.append("save")
+
+                    def restart():
+                        events.append("restart")
+                        if restart_failure:
+                            raise OSError("Executable unavailable")
+
+                    application.restart_if_requested.side_effect = restart
+                    with patch("fsbc.signal.Signal") as signal, patch("sys.argv", ["fs-uae-launcher"]):
+                        signal.return_value.notify.side_effect = lambda: events.append("notify")
+                        with patch("fsui.show_error") as show_error:
+                            app_main()
+                            self.assertEqual(events, ["run", "save", "notify", "restart"])
+                            self.assertEqual(show_error.call_count, int(restart_failure))
+
     def test_embedded_host_server_lifecycle(self):
         from launcher.netplay.netplay import Netplay
         from launcher.netplay.server_details import ServerDetails
@@ -312,13 +420,13 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     with patch.object(netplay, "is_port_free", return_value=True):
                         with patch("launcher.netplay.netplay.Server") as server_class:
                             with patch("launcher.netplay.netplay.LauncherConfig.set_multiple"):
-                                with patch("launcher.server.ServerWindow.ServerWindow") as popup:
+                                with patch.object(view, "show", wraps=view.show) as show_view:
                                     server = server_class.return_value
                                     server.players = 2
                                     server.process = None
                                     netplay._hostgame_retry()
                                     server.start.assert_called_once_with()
-                                    popup.assert_not_called()
+                                    show_view.assert_called_once_with()
                                     self.assertIs(netplay.game_window, view)
                                     self.assertEqual(view.fields["port"].text(), "25101")
                                     self.assertEqual(view.fields["players"].text(), "2")
@@ -508,6 +616,29 @@ class TestLaunchAndNetplay(WidgetTestCase):
 
 
 class TestDashboard(WidgetTestCase):
+    def test_restart_button_confirmation(self):
+        from fsui.qt import QMessageBox
+        from launcher.settings.launchersettingspage import LauncherSettingsPage
+
+        self.setup_dialog()
+        application = Mock(qapplication=self.application)
+        with patch("launcher.settings.option_ui.app", application):
+            with patch("launcher.settings.launchersettingspage.app", application):
+                page = LauncherSettingsPage(self.dialog)
+                self.assertFalse(page.restart_button.widget().icon().isNull())
+                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.No):
+                    page.restart_button.widget().click()
+                    application.request_restart.assert_not_called()
+                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+                    page.restart_button.widget().click()
+                    application.request_restart.assert_called_once_with()
+                application.request_restart.side_effect = OSError("Disk full")
+                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+                    with patch("fsui.show_error") as show_error:
+                        page.restart_button.widget().click()
+                        show_error.assert_called_once()
+        self.run_dialog()
+
     def test_workspace_settings_navigation(self):
         from fsui.qt.modern_theme import apply_modern_theme
         from fsui.qt.retro_theme import apply_retro_theme
@@ -516,10 +647,13 @@ class TestDashboard(WidgetTestCase):
         stylesheet = self.application.styleSheet()
         font = self.application.font()
         try:
-            for variant in ("modern", "windows311", "workbench"):
+            for variant in ("modern", "plain", "windows311", "workbench"):
                 with self.subTest(variant=variant), patch.object(fsui, "theme_variant", variant):
                     if variant == "modern":
                         apply_modern_theme(self.application)
+                    elif variant == "plain":
+                        self.application.setStyleSheet("")
+                        self.application.setPalette(self.application.style().standardPalette())
                     else:
                         apply_retro_theme(self.application, variant)
                     self._check_workspace_settings_navigation()
@@ -533,7 +667,9 @@ class TestDashboard(WidgetTestCase):
         from fsui.qt import QEvent
         from launcher.settings.settings_dialog import SettingsDialog
 
-        with patch("qtawesome.icon", wraps=qta.icon) as icons:
+        with patch("qtawesome.icon", wraps=qta.icon) as icons, patch(
+            "launcher.settings.option_ui.app", Mock(qapplication=self.application)
+        ):
             with patch("launcher.settings.settings_dialog.LauncherSettings.set"):
                 with patch("launcher.settings.settings_dialog.LauncherSignal.broadcast"):
                     window = SettingsDialog(None)
@@ -557,12 +693,12 @@ class TestDashboard(WidgetTestCase):
                             self.assertEqual(item.sizeHint().height(), expected_height)
                         colors = {
                             "modern": "#9bcce2", "windows311": "#183867",
-                            "workbench": "#0055aa",
+                            "workbench": "#0055aa", "plain": "#000000",
                         }
                         icons.assert_any_call("fa5s.globe", color=colors[fsui.theme_variant])
                         icons.assert_any_call("fa5s.hdd", color=colors[fsui.theme_variant])
                         if fsui.theme_variant != "modern":
-                            self.assertEqual(window.list_view.iconSize().width(), 24)
+                            self.assertEqual(window.list_view.iconSize().width(), 20 if fsui.theme_variant == "plain" else 24)
                             self.assertIn("palette(highlight)", window.list_view.styleSheet())
                             self.assertNotIn("#1c1e2b", window.list_view.styleSheet())
                     finally:
@@ -584,6 +720,9 @@ class TestDashboard(WidgetTestCase):
         self.assertEqual(labels[0], "Modern Dark (*)")
         self.assertEqual(labels.count("Windows 3.11"), 1)
         self.assertEqual(labels.count("Amiga Workbench 1.3"), 1)
+        self.assertEqual(labels, [
+            "Modern Dark (*)", "Modern Dark", "Fusion", "Windows 3.11", "Amiga Workbench 1.3"
+        ])
         self.run_dialog()
 
     def test_navigation_and_responsive_layout(self):
@@ -594,11 +733,14 @@ class TestDashboard(WidgetTestCase):
         stylesheet = self.application.styleSheet()
         font = self.application.font()
         try:
-            for variant in ("modern", "windows311", "workbench"):
+            for variant in ("modern", "plain", "windows311", "workbench"):
                 with self.subTest(variant=variant):
                     with patch.object(fsui, "theme_variant", variant):
                         if variant == "modern":
                             apply_modern_theme(self.application)
+                        elif variant == "plain":
+                            self.application.setStyleSheet("")
+                            self.application.setPalette(self.application.style().standardPalette())
                         else:
                             apply_retro_theme(self.application, variant)
                         self._check_navigation_and_responsive_layout()
@@ -674,7 +816,7 @@ class TestDashboard(WidgetTestCase):
                         page = dashboard.netplay_page
                         self.assertIs(dashboard.content_stack.currentWidget(), page.widget())
                         self.assertIs(page.server_details.window(), owner.real_window())
-                        if fsui.theme_variant in ("windows311", "workbench"):
+                        if fsui.theme_variant != "modern":
                             self.assertNotIn("#212431", page.server_details.styleSheet())
                             self.assertNotIn("#171923", dashboard.widget().styleSheet())
                         self.assertTrue(dashboard.netplay_button.isChecked())
@@ -691,9 +833,9 @@ class TestDashboard(WidgetTestCase):
                         from launcher.ui.launcherwindow import LauncherWindow
 
                         owner.dashboard = dashboard
-                        with patch("launcher.ui.launcherwindow.NetplayDialog.open") as popup:
+                        with patch("launcher.netplay.netplay_page.NetplayPage") as new_page:
                             LauncherWindow.on_net_play(owner)
-                            popup.assert_not_called()
+                            new_page.assert_not_called()
                         server = Mock(players=2, process=None)
                         page.server_details.present(
                             page.panel, server, "test-id", 25101, "#test-game"
