@@ -169,3 +169,32 @@ func TestLobbyExitsOnStdinClose(t *testing.T) {
 	_ = w.Close()
 	waitExit(t, code, 0)
 }
+
+// TestListenFailureReported: a port already in use is reported on stdout as
+// an error event the launcher can recognise, not just a non-zero exit.
+func TestListenFailureReported(t *testing.T) {
+	held, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer held.Close()
+	port := held.Addr().(*net.TCPAddr).Port
+
+	for _, mode := range [][]string{nil, {"--lobby"}} {
+		var out strings.Builder
+		args := append([]string{"--host=127.0.0.1", "--port=" + strconv.Itoa(port)}, mode...)
+		if code := run(context.Background(), args, strings.NewReader(""), &out); code != 1 {
+			t.Fatalf("%v: exit code %d, want 1", mode, code)
+		}
+		var ev struct {
+			Event, Reason, Message string
+			Port                   int
+		}
+		if err := json.Unmarshal([]byte(out.String()), &ev); err != nil {
+			t.Fatalf("%v: stdout %q: %v", mode, out.String(), err)
+		}
+		if ev.Event != "error" || ev.Reason != "address_in_use" || ev.Port != port || ev.Message == "" {
+			t.Fatalf("%v: got %+v", mode, ev)
+		}
+	}
+}

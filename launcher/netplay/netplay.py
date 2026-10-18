@@ -1,7 +1,6 @@
 import traceback
 from urllib.parse import parse_qs
 import uuid
-import socket
 
 import requests
 
@@ -12,7 +11,7 @@ from .irc import IRC
 from .irc_broadcaster import IRCBroadcaster
 from .irc_color import IRCColor
 from ..launcher_config import LauncherConfig
-from ..server.Server import Server, ServerError
+from ..server.Server import PortInUseError, Server, ServerError
 from launcher.sync_settings import sync_settings
 
 
@@ -509,20 +508,6 @@ class Netplay:
                 )
             )
 
-    @staticmethod
-    def is_port_free(port):
-        """Check if the netplay server could listen on the given port.
-
-        Binds the IPv4 wildcard address, as fsnp-server does, so a lobby or
-        another game already listening there is found.
-        """
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            try:
-                s.bind(("", int(port)))
-                return True
-            except OSError:
-                return False
-
     def command_hostgame(self, args):
         channel = self.irc.active_channel()
         if not self.require_game_channel(channel):
@@ -540,20 +525,22 @@ class Netplay:
             self.irc.warning("hostgame: you need to be an operator")
             return
 
-        # Waiting would not help: the Go server exits as soon as its game
-        # ends, so a port that is busy now is held by something that is
-        # still running, most likely a lobby or another hosted game.
-        if not self.is_port_free(port):
+        # No pre-check of the port: only the server's own bind can answer
+        # it. A test bind from here would refuse a port still in TIME_WAIT
+        # after the previous game, which the server's listener accepts.
+        server = Server(port, players, password)
+        try:
+            server.start()
+        except PortInUseError:
+            # Waiting would not help: the Go server exits as soon as its
+            # game ends, so a port in use now is held by something still
+            # running, most likely a lobby or another hosted game.
             channel.privmsg(
                 f"ERROR: port {port} is in use. Is a netplay lobby or another "
                 f"game running on this machine? Close it, or use "
                 f"/hostgame <address>:<port> to pick another port."
             )
             return
-
-        server = Server(port, players, password)
-        try:
-            server.start()
         except ServerError as e:
             # The server is not listening, so there is nothing to announce
             # and no window to open.

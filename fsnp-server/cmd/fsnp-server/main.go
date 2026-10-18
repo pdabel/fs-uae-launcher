@@ -117,6 +117,17 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) 
 	ln, err := net.Listen(listenNetwork(*host), net.JoinHostPort(*host, strconv.Itoa(*port)))
 	if err != nil {
 		log.Error("listen failed", "err", err)
+		// Reported on stdout too, where the launcher reads the readiness
+		// line, so it can tell a port in use (which the op can do something
+		// about) from any other failure. The bind is the authoritative test:
+		// a pre-check from the launcher can't match this listener's
+		// SO_REUSEADDR, and refused ports still in TIME_WAIT after a game.
+		reason := "listen_failed"
+		if errors.Is(err, syscall.EADDRINUSE) {
+			reason = "address_in_use"
+		}
+		failed, _ := json.Marshal(map[string]any{"event": "error", "reason": reason, "port": *port, "message": err.Error()})
+		fmt.Fprintln(stdout, string(failed))
 		return 1
 	}
 	actualPort := ln.Addr().(*net.TCPAddr).Port

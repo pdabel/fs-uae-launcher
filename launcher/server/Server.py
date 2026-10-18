@@ -40,6 +40,14 @@ class ServerError(Exception):
     """The netplay server could not be found, started, or did not come up."""
 
 
+class PortInUseError(ServerError):
+    """The netplay server could not listen because its port is in use."""
+
+    def __init__(self, port, message):
+        super().__init__(message)
+        self.port = port
+
+
 def log_file_path():
     """Path the server should append its log to, or None if unavailable."""
     try:
@@ -88,9 +96,10 @@ class Server:
     def start(self):
         """Start the netplay server and wait until it is listening.
 
-        Raises ServerError if the executable cannot be found, if it exits
-        immediately (a port already in use, say), or if it does not report
-        that it is listening within READY_TIMEOUT.
+        Raises PortInUseError if its port is in use, and ServerError if the
+        executable cannot be found, if it exits immediately for any other
+        reason, or if it does not report that it is listening within
+        READY_TIMEOUT.
         """
         exe_file = find_server_executable()
         if exe_file is None:
@@ -136,6 +145,15 @@ class Server:
             self.stop()
             raise ServerError(
                 "Unexpected output from netplay server: {0!r}".format(line)
+            )
+        if event.get("event") == "error":
+            # The server could not listen and has exited; it says why.
+            self.stop()
+            message = event.get("message") or line
+            if event.get("reason") == "address_in_use":
+                raise PortInUseError(self.port, message)
+            raise ServerError(
+                "Netplay server could not start: {0}".format(message)
             )
         if event.get("event") != "listening":
             self.stop()
