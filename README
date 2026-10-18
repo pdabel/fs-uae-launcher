@@ -33,6 +33,10 @@ The older packaging and INSTALL instructions still target Qt 5 and have not
 been migrated as part of this UI-only change. Run from source with the
 Python environment containing the Qt 6 dependencies.
 
+See [the Python and dependency modernization TODO](docs/python-dependency-modernization.md)
+for the reviewed packaging, supported-Python, dependency, and code-quality
+work items.
+
 ## Modern Dark Workspace
 
 Modern Dark is the default when no launcher theme has been selected. The
