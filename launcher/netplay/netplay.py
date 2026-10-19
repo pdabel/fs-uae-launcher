@@ -111,6 +111,7 @@ class Netplay:
         print("initiate start sequence")
         if not self.game_channel:
             self.game_info("cannot start - no game channel")
+            return
         self.start_sequence = str(uuid.uuid4())
         message = "__prestart {0} {1}".format(
             self.start_sequence, self.get_config_hash()
@@ -283,7 +284,7 @@ class Netplay:
     def reset_netplay_config():
         LauncherConfig.set_multiple(
             [
-                ("__netplay_id", ""),
+                ("__netplay_game", ""),
                 ("__netplay_password", ""),
                 ("__netplay_players", ""),
                 ("__netplay_port", ""),
@@ -837,24 +838,30 @@ class Netplay:
                 "could not find {1} for " "for {0}".format(value, set_key)
             )
 
-    file_config = {}
-    for i in range(sync_settings.MAX_FLOPPY_DRIVES):
-        file_config[
-            "x_floppy_drive_{0}_sha1".format(i)
-        ] = "floppy_drive_{0}".format(i)
-    for i in range(sync_settings.MAX_FLOPPY_IMAGES):
-        file_config[
-            "x_floppy_image_{0}_sha1".format(i)
-        ] = "floppy_image_{0}".format(i)
-    for i in range(sync_settings.MAX_CDROM_DRIVES):
-        file_config[
-            "x_cdrom_drive_{0}_sha1".format(i)
-        ] = "cdrom_drive_{0}".format(i)
-    for i in range(sync_settings.MAX_CDROM_IMAGES):
-        file_config[
-            "x_cdrom_image_{0}_sha1".format(i)
-        ] = "cdrom_image_{0}".format(i)
-    for i in range(sync_settings.MAX_HARD_DRIVES):
-        file_config[
-            "x_hard_drive_{0}_sha1".format(i)
-        ] = "hard_drive_{0}".format(i)
+    @property
+    def file_config(self):
+        # Built on each use rather than once at import: the Sync Config
+        # dialog changes these limits at runtime, and LauncherConfig's sync
+        # keys follow them (refresh_keys), so this mapping must too.
+        file_config = {}
+        for i in range(sync_settings.MAX_FLOPPY_DRIVES):
+            file_config[
+                "x_floppy_drive_{0}_sha1".format(i)
+            ] = "floppy_drive_{0}".format(i)
+        for i in range(sync_settings.MAX_FLOPPY_IMAGES):
+            file_config[
+                "x_floppy_image_{0}_sha1".format(i)
+            ] = "floppy_image_{0}".format(i)
+        for i in range(sync_settings.MAX_CDROM_DRIVES):
+            file_config[
+                "x_cdrom_drive_{0}_sha1".format(i)
+            ] = "cdrom_drive_{0}".format(i)
+        for i in range(sync_settings.MAX_CDROM_IMAGES):
+            file_config[
+                "x_cdrom_image_{0}_sha1".format(i)
+            ] = "cdrom_image_{0}".format(i)
+        for i in range(sync_settings.MAX_HARD_DRIVES):
+            file_config[
+                "x_hard_drive_{0}_sha1".format(i)
+            ] = "hard_drive_{0}".format(i)
+        return file_config
