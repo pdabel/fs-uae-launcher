@@ -89,6 +89,14 @@ jobs:
         run: |
           pipenv run pytest fsbc fstd fspy launcher/netplay
 
+      # The widget, panel and theme tests. The offscreen platform needs no
+      # display server.
+      - name: Run Qt tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          pipenv run pytest fsui/test/test_qt6.py
+
       - name: Set base version
         run: |
           echo "BASEVERSION_FS=${{ inputs.version }}" > BASEVERSION.FS
