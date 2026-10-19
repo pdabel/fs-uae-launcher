@@ -9,16 +9,17 @@ declaring support.
 
 ## Priority 0: Make Dependency Installation Reproducible
 
-- [ ] Reconcile `Pipfile` and `Pipfile.lock`. `Pipfile` declares PySide6,
-  QtPy, and QtAwesome, while the lockfile contains PyQt5 and does not contain
-  those three Qt 6 packages. CI runs `pipenv sync --dev`, so CI and a fresh
-  development install do not currently get the UI dependencies documented in
-  `README`.
-- [ ] Choose one supported Qt binding and version family. The current GUI
-  documentation and recent UI work use Qt 6/PySide6, but `debian/control`,
-  `docs/compiling.md`, `fsbuild/fix-pyqt5.py`, and the bundle scripts still
-  describe or manipulate Qt 5/PyQt5. Update or explicitly retire each
-  distribution path; do not mix bindings in one environment.
+- [x] Reconcile `Pipfile` and `Pipfile.lock`. `Pipfile` declares PySide6,
+  QtPy, and QtAwesome, while the lockfile contained PyQt5 and none of those
+  three Qt 6 packages. The lock now has them and no PyQt5, and CI runs the
+  Qt tests from a clean `pipenv sync --dev`.
+- [ ] Choose one supported Qt binding and version family. Qt 6/PySide6 it
+  is: `fsbuild/fix-qt.py` (was `fix-pyqt5.py`), `fsbuild/build.sh`,
+  `debian/control`, the RPM spec, and the Linux and macOS sections of
+  `docs/compiling.md` now use it. Still Qt 5/PyQt5: the Windows section of
+  `docs/compiling.md` and `fsbuild/bundle-clean-*.sh`, which `bundle.sh` no
+  longer calls. Update or explicitly retire each; do not mix bindings in one
+  environment.
 - [ ] Regenerate the lockfile from the agreed manifest with the supported
   Python version(s), then verify a clean `pipenv sync --dev` and the CI build.
   Do not hand-edit generated lock data.

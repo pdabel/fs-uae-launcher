@@ -29,8 +29,10 @@ platforms.
 
 The following packages are needed:
 
-    sudo apt install python3 python3-pillow python3-pyqt5 \
-        python3-pyqt5.qtopengl python3-requests python3-opengl \
+    sudo apt install python3 python3-pillow python3-pyside6.qtcore \
+        python3-pyside6.qtgui python3-pyside6.qtwidgets \
+        python3-pyside6.qtopengl python3-pyside6.qtopenglwidgets \
+        python3-qtpy python3-qtawesome python3-requests python3-opengl \
         python3-rx python3-typing-extensions
 
 To add support for .lha archives, you also need to have the lhafile
@@ -133,7 +135,8 @@ verify that pip3 is found in the correct place:
 
 Then run:
 
-    pip3 install lhafile pillow pyobjc pyqt5 requests rx typing_extensions
+    pip3 install lhafile pillow pyobjc pyside6 qtpy qtawesome requests rx \
+        typing_extensions
 
 And finally, from the fs-uae-launcher source directory:
 
