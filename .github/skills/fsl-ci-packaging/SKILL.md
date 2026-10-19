@@ -15,6 +15,7 @@ ci.yml  (push to main/release-*, PRs to main/release-*, dispatch)
   -> container.yml       buildx fsnp-server/Dockerfile (target base) -> ghcr.io/<owner>/fs-uae-netplay; push not on PRs
   -> source.yml          source bundle
   -> netplay-server.yml  make -C fsnp-server check, then make -C fsnp-server build
+  -> agent-instructions.yml  fails if .github/copilot-instructions.md differs from AGENTS.md
 
 release.yml  (dispatch: type=branch creates a release branch; type=release tags and builds)
   -> linux.yml, macos.yml, container.yml, source.yml with a version input

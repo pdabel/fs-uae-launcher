@@ -113,6 +113,7 @@ Unverified -> don't write it. **Verified** means a call site you read, command o
 | `.github/workflows/**` | SHA pins with version comments, least-privilege permissions, no publishing on PRs |
 | `fsbuild/build.sh`, `fsnp-server/Makefile`, `fsnp-server/Dockerfile` | Build flags consistent across all three |
 | A netplay rollout step | Design-doc Status/Rollout updated |
+| `AGENTS.md` | `.github/copilot-instructions.md` updated to an identical copy (`agent-instructions.yml` fails otherwise) |
 
 ## Change classification
 

@@ -17,6 +17,8 @@ FS-UAE Launcher -- a PySide6 (Qt 6) desktop launcher for the FS-UAE Amiga emulat
 
 Use the codebase as the authoritative reference for patterns and style. Plan before implementing. Read files before modifying them.
 
+`.github/copilot-instructions.md` is a byte-for-byte copy of this file for the Copilot surfaces that read only that file. Edit `AGENTS.md`, then `cp AGENTS.md .github/copilot-instructions.md`; CI fails if they differ. `CLAUDE.md` is a symlink to this file.
+
 ---
 
 ## Build, Test, Validate
