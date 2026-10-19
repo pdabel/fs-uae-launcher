@@ -6,10 +6,20 @@ file database first. Whatever can't be found is returned, not reported:
 the caller decides whether that is a message in a channel or the
 "missing" list of a ready call.
 
+A lobby document comes with its own key lists, and is applied and hashed
+against those rather than this launcher's: launchers whose Sync Config
+limits differ build different lists, and would otherwise drop each
+other's media slots and never agree on the hash. The lists come from
+the host, though, so they only narrow what this launcher would sync
+anyway (accepted_keys). See "Key lists travel with the document" in
+docs/netplay-go-server-design.md.
+
 resolve_config is pure and takes its dependencies as arguments, so it
-can be tested without the launcher; apply_config wires it to the live
-config.
+can be tested without the launcher; apply_config and apply_document wire
+it to the live config.
 """
+
+import re
 
 from fsgs.amiga.amiga import Amiga
 
@@ -22,39 +32,51 @@ KICKSTART_KEYS = {
     ),
 }
 
+# x_floppy_drive_3_sha1 -> floppy_drive_3, and the same for every media
+# kind. Matched by name rather than listed up to this launcher's limits,
+# so a slot beyond them is still resolved to a path.
+MEDIA_SHA1_KEY = re.compile(
+    r"^x_((?:floppy_drive|floppy_image|cdrom_drive|cdrom_image|hard_drive)"
+    r"_\d+)_sha1$"
+)
 
-def file_keys(limits):
-    """Map each media SHA-1 key to its path key, up to the given limits.
 
-    limits has the MAX_* attributes of launcher.sync_settings; it is read
-    on every call because the Sync Config dialog changes it at runtime.
+def media_path_key(key):
+    """The path key a media SHA-1 key resolves to, or None."""
+    m = MEDIA_SHA1_KEY.match(key)
+    return m.group(1) if m else None
+
+
+def accepted_keys(document_keys, local_sync_keys):
+    """The document's sync keys this launcher will apply.
+
+    The document's lists are the host's, so they narrow what is applied
+    but can't widen it: a key is taken only if this launcher syncs it
+    too, or it is a media SHA-1 key, matched by name so a host's extra
+    slots still resolve. Anything else -- a key a newer launcher added,
+    or a local-only one such as a raw hard_drive_0 path -- keeps its
+    local value, and if it is hashed, the slot shows a mismatch.
     """
-    keys = {}
-    for kind, count in [
-        ("floppy_drive", limits.MAX_FLOPPY_DRIVES),
-        ("floppy_image", limits.MAX_FLOPPY_IMAGES),
-        ("cdrom_drive", limits.MAX_CDROM_DRIVES),
-        ("cdrom_image", limits.MAX_CDROM_IMAGES),
-        ("hard_drive", limits.MAX_HARD_DRIVES),
-    ]:
-        for i in range(count):
-            keys[f"x_{kind}_{i}_sha1"] = f"{kind}_{i}"
-    return keys
+    return {
+        key
+        for key in document_keys
+        if key in local_sync_keys or media_path_key(key) is not None
+    }
 
 
-def resolve_config(document, limits, sync_keys, find_by_sha1):
+def resolve_config(document, sync_keys, find_by_sha1):
     """Work out the config changes a document makes locally.
 
     Returns (updates, missing): updates is a list of (key, value) pairs
     to set, and missing maps each SHA-1 key that could not be resolved to
     the SHA-1 it was sent with. Keys outside sync_keys are ignored.
     """
-    media_keys = file_keys(limits)
     updates = []
     missing = {}
     for key, value in document.items():
         if key not in sync_keys:
             continue
+        path_key = media_path_key(key)
         if key in KICKSTART_KEYS:
             path_keys = KICKSTART_KEYS[key]
             if key == "x_kickstart_file_sha1" and (
@@ -71,8 +93,7 @@ def resolve_config(document, limits, sync_keys, find_by_sha1):
                     continue
             updates.extend((path_key, path) for path_key in path_keys)
             updates.append((key, value))
-        elif key in media_keys:
-            path_key = media_keys[key]
+        elif path_key is not None:
             if not value:
                 path = ""
             elif value.startswith(("http://", "https://")):
@@ -89,18 +110,42 @@ def resolve_config(document, limits, sync_keys, find_by_sha1):
     return updates, missing
 
 
-def apply_config(document):
-    """Apply a document to LauncherConfig and return what's missing."""
+def apply_config(document, sync_keys=None):
+    """Apply a document to LauncherConfig and return what's missing.
+
+    sync_keys defaults to this launcher's own, which is right only for
+    config that didn't come with a key list (the IRC path).
+    """
     from fsgs.context import fsgs
     from launcher.launcher_config import LauncherConfig
-    from launcher.sync_settings import sync_settings
 
     updates, missing = resolve_config(
         document,
-        sync_settings,
-        LauncherConfig.sync_keys_set,
+        LauncherConfig.sync_keys_set if sync_keys is None else sync_keys,
         lambda sha1: fsgs.file.find_by_sha1(sha1=sha1),
     )
     if updates:
         LauncherConfig.set_multiple(updates)
     return missing
+
+
+def apply_document(snapshot):
+    """Apply a lobby snapshot's config and hash the result.
+
+    Returns (config_hash, missing), the body of the ready call for the
+    snapshot's config_version: the hash is checksum_config over the
+    document's own checksum list, taken from the live config after
+    applying, so a file that couldn't be found shows up in both.
+    """
+    from fsgs.context import fsgs
+    from launcher.launcher_config import LauncherConfig
+
+    keys = snapshot["keys"]
+    missing = apply_config(
+        snapshot["config"],
+        accepted_keys(keys["sync"], LauncherConfig.sync_keys_set),
+    )
+    config_hash = LauncherConfig.checksum_config(
+        fsgs.config.copy(), keys["checksum"]
+    )
+    return config_hash, missing
