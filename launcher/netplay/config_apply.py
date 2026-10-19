@@ -7,12 +7,12 @@ the caller decides whether that is a message in a channel or the
 "missing" list of a ready call.
 
 A lobby document comes with its own key lists, and is applied and hashed
-against those rather than this launcher's: launchers whose Sync Config
-limits differ build different lists, and would otherwise drop each
-other's media slots and never agree on the hash. The lists come from
-the host, though, so they only narrow what this launcher would sync
-anyway (accepted_keys). See "Key lists travel with the document" in
-docs/netplay-go-server-design.md.
+against those rather than this launcher's, so two launcher versions
+whose key lists differ still agree on the hash. The lists come from the
+host, though, so they only narrow what this launcher would sync anyway
+(accepted_keys): a key it doesn't know keeps its local value and shows
+up as a mismatch rather than a match. See "Key lists travel with the
+document" in docs/netplay-go-server-design.md.
 
 resolve_config is pure and takes its dependencies as arguments, so it
 can be tested without the launcher; apply_config and apply_document wire
@@ -33,8 +33,8 @@ KICKSTART_KEYS = {
 }
 
 # x_floppy_drive_3_sha1 -> floppy_drive_3, and the same for every media
-# kind. Matched by name rather than listed up to this launcher's limits,
-# so a slot beyond them is still resolved to a path.
+# kind. Matched by name rather than listed up to Amiga.MAX_*, so a slot
+# the document has is resolved to a path whatever this launcher lists.
 MEDIA_SHA1_KEY = re.compile(
     r"^x_((?:floppy_drive|floppy_image|cdrom_drive|cdrom_image|hard_drive)"
     r"_\d+)_sha1$"
