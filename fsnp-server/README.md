@@ -44,7 +44,8 @@ Each flag can also be set through its environment variable, which is how you con
 | `--host` | `HOST` | `0.0.0.0` | address to listen on |
 | `--port` | `PORT` | `25101` | the one port, for the API and all games |
 | `--max-games` | `MAX_GAMES` | `64` | live games at once. Beyond that, `/game/create` returns `503` |
-| `--game-launch-timeout` | `GAME_LAUNCH_TIMEOUT` | `900` | seconds a game may wait for all its players before it's removed |
+| `--game-launch-timeout` | `GAME_LAUNCH_TIMEOUT` | `900` | seconds a running game may wait for all its players before it's removed. A `/game/create` game runs from creation; a `POST /game` game from its start |
+| `--idle-timeout` | `IDLE_TIMEOUT` | `600` | seconds a `POST /game` game may sit untouched (no join, config, ready or poll) before it starts |
 | `--public-addresses` | `PUBLIC_ADDRESSES` | — | comma-separated addresses to give players. Unset, they get the host name the op used in `/startgame` |
 | `--log-file` | `LOG_FILE` | — | also append the log here |
 | `--log-input` | — | `true` | log every relayed input event |
@@ -64,6 +65,23 @@ GET /game/create?players=N&password=P
   503  too many games, or shutting down
 GET /healthz
   200  ok
+```
+
+The session API, for launchers that keep the game's config on the server rather than in IRC (phase three of [the design](../docs/netplay-go-server-design.md#future-the-session-owns-the-config)). JSON in and out; calls marked *host* or *slot* need `Authorization: Bearer <token>` from the create or join reply. A `POST /game` game's password is reserved at once but reaches no emulator until `start`.
+
+```
+POST   /game                          {players, password, tag, keys:{sync, checksum}}
+  201  {id, password, players, port, addresses, host_token, slot: 0, player_token}
+GET    /game/{id}[?since=revision]    snapshot; with since, waits up to 25 s for a change
+POST   /game/{id}/players             {tag} → 201 {slot, player_token}; 409 when full
+DELETE /game/{id}/players/{n}         slot or host: free a slot
+PUT    /game/{id}/config              host: {config:{key: value}} → {config_version, hash}
+POST   /game/{id}/players/{n}/ready   slot: {config_version, hash, missing:{key: sha1}}
+POST   /game/{id}/start               host: 409 unless every slot is ready
+DELETE /game/{id}                     host: end it
+
+errors {"error": "…"}: 400 invalid, 403 wrong token, 404 no game or slot,
+       409 wrong state for the call, 503 too many games or shutting down
 ```
 
 ## Lobby and IRC together

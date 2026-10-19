@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// Handler returns the lobby's HTTP API:
+// Handler returns the lobby's HTTP API: the session API (see api.go), and
 //
 //	GET /game/create?players=N&password=P
 //	  → 200 text/plain  id=…&password=…&port=…&addresses=…
@@ -19,10 +19,13 @@ import (
 //
 // /game/create's response is form-encoded because that is what /startgame
 // in launcher/netplay/netplay.py parses (parse_qs). Every game is on the
-// lobby's own port, so port is the one the client reached the lobby on.
+// lobby's own port, so port is the one the client reached the lobby on. A
+// game created this way runs at once and has no session: its config is
+// agreed over IRC.
 func (l *Lobby) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /game/create", l.handleCreate)
+	l.sessionRoutes(mux)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		fmt.Fprintln(w, "ok")
@@ -47,7 +50,7 @@ func (l *Lobby) handleCreate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	default:
-		// ErrPasswordLength, or game.New refusing the player count.
+		// ErrPasswordLength or ErrPlayers.
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

@@ -20,6 +20,7 @@ services:
     #   PUBLIC_ADDRESSES: "203.0.113.4"   # what to tell players; see README.md
     #   MAX_GAMES: "64"
     #   GAME_LAUNCH_TIMEOUT: "900"
+    #   IDLE_TIMEOUT: "600"
     restart: unless-stopped
 
   irc:
