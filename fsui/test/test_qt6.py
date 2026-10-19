@@ -533,9 +533,15 @@ class TestLaunchAndNetplay(WidgetTestCase):
         from launcher.netplay.netplay import Netplay
         from launcher.server.Server import PortInUseError, ServerError
 
-        for error, message in (
-            (PortInUseError(25101, "Address in use"), "netplay lobby"),
-            (ServerError("Missing binary"), "Missing binary"),
+        # A server error's details can be paths and build guidance, longer
+        # than an IRC line: they stay local, and the channel gets a summary.
+        for error, message, local_only in (
+            (PortInUseError(25101, "Address in use"), "netplay lobby", None),
+            (
+                ServerError("Missing binary"),
+                "could not start the netplay server",
+                "Missing binary",
+            ),
         ):
             with self.subTest(error=type(error).__name__):
                 parent = Mock()
@@ -554,6 +560,9 @@ class TestLaunchAndNetplay(WidgetTestCase):
                                 channel.info.assert_not_called()
                                 channel.privmsg.assert_called_once()
                                 self.assertIn(message, channel.privmsg.call_args.args[0])
+                                if local_only is not None:
+                                    self.assertNotIn(local_only, channel.privmsg.call_args.args[0])
+                                    self.assertIn(local_only, channel.warning.call_args.args[0])
                                 self.assertIsNone(netplay.game_window)
                 finally:
                     netplay.disconnect()

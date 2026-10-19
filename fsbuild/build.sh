@@ -5,9 +5,9 @@ make
 
 BUILDDIR=fsbuild/_build
 
-# Remove files from PyQt5 that we don't want to bundle (before pyinstaller
+# Remove files from Qt that we don't want to bundle (before pyinstaller
 # pulls in their dependencies).
-python3 fsbuild/fix-pyqt5.py
+python3 fsbuild/fix-qt.py
 
 rm -Rf $BUILDDIR/pyinstaller
 if [ "$SYSTEM_OS" = "Windows" ]; then
@@ -36,21 +36,23 @@ pyinstaller \
 BINDIR=fsbuild/_build/pyinstaller/$PACKAGE_NAME
 # Fontconfig in particular can crash the application because it conflicts
 # with system font cache or config files. For now, assume these library are
-# always present and use the system ones.
-echo "rm $BINDIR/libfreetype.so.6"
-rm -f $BINDIR/libfreetype.so.6
-echo "rm $BINDIR/libfontconfig.so.1"
-rm -f $BINDIR/libfontconfig.so.1
+# always present and use the system ones. PyInstaller puts libraries in
+# _internal, next to the executable.
+for LIB in libfreetype.so.6 libfontconfig.so.1; do
+	echo "rm $BINDIR/_internal/$LIB"
+	rm -f $BINDIR/_internal/$LIB
+done
 fi
 
 # These do not work with macOS notarization, but might as well remove for all
-# platforms.
-rm -Rf $BINDIR/PyQt5/Qt/translations
-rm -Rf $BINDIR/PyQt5/Qt/qml
-
-# In case the Qt dir is Qt5...
-rm -Rf $BINDIR/PyQt5/Qt5/translations
-rm -Rf $BINDIR/PyQt5/Qt5/qml
+# platforms. fix-qt.py has removed them from Qt before pyinstaller ran; this
+# catches any that got in anyway. PyInstaller puts PySide6 in _internal on
+# Linux, and in Contents/Frameworks and Contents/Resources in a macOS app.
+for QTDIR in $BINDIR/_internal/PySide6/Qt \
+	$BINDIR/../Frameworks/PySide6/Qt $BINDIR/../Resources/PySide6/Qt; do
+	rm -Rf $QTDIR/translations
+	rm -Rf $QTDIR/qml
+done
 
 # FS-UAE Netplay Server (Go), built into the same directory as the launcher
 # executable. In a frozen build fsboot.executable_dir() resolves to exactly

@@ -127,7 +127,4 @@ sys.exit(0)
 import idna.idnadata
 
 # noinspection PyUnreachableCode,PyUnresolvedReferences,PyProtectedMember
-import PyQt5.sip
-
-# noinspection PyUnreachableCode,PyUnresolvedReferences,PyProtectedMember
 import _sysconfigdata_m_darwin_darwin

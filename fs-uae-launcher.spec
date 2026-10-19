@@ -33,7 +33,9 @@ Prefix: %{_prefix}
 BuildArch: noarch
 Vendor: Frode Solheim <frode@solheim.dev>
 Requires: fs-uae
-Requires: python3-qt5
+Requires: python3dist(pyside6)
+Requires: python3dist(qtpy)
+Requires: python3dist(qtawesome)
 Requires: python3-lhafile
 Requires: python3-requests
 Requires: python3-setuptools
