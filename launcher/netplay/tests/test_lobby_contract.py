@@ -1,14 +1,10 @@
 """LobbyClient against a real fsnp-server --lobby.
 
 The unit tests pin what the client sends; this pins that the server
-agrees. It needs the binary: FSNP_SERVER names one; otherwise it is built
-with a local Go toolchain, falling back to fsnp-server/fsnp-server (what
-`make -C fsnp-server` builds). With none of those it is skipped.
+agrees. It needs the binary; see the fsnp_server_binary fixture.
 """
 
 import json
-import os
-import shutil
 import subprocess
 import threading
 
@@ -20,9 +16,6 @@ from launcher.netplay.lobby_client import (
     LobbyError,
     SessionWatcher,
 )
-
-REPO = os.path.join(os.path.dirname(__file__), *[os.pardir] * 3)
-MODULE = os.path.join(REPO, "fsnp-server")
 
 SYNC = [
     "amiga_model",
@@ -44,34 +37,10 @@ CHECKSUM = [
 ]
 
 
-def find_server(tmp_dir):
-    if os.environ.get("FSNP_SERVER"):
-        return os.environ["FSNP_SERVER"]
-    # A fresh build when possible: a binary left over from an older make
-    # may predate the API under test.
-    go = shutil.which("go")
-    if go is not None:
-        out = os.path.join(tmp_dir, "fsnp-server")
-        subprocess.run(
-            [go, "build", "-o", out, "./cmd/fsnp-server"],
-            cwd=MODULE,
-            check=True,
-            timeout=300,
-        )
-        return out
-    built = os.path.join(MODULE, "fsnp-server")
-    if os.path.isfile(built):
-        return built
-    return None
-
-
 @pytest.fixture(scope="module")
-def lobby(tmp_path_factory):
-    binary = find_server(str(tmp_path_factory.mktemp("fsnp")))
-    if binary is None:
-        pytest.skip("no fsnp-server binary and no Go toolchain to build one")
+def lobby(fsnp_server_binary):
     proc = subprocess.Popen(
-        [binary, "--lobby", "--host", "127.0.0.1", "--port", "0"],
+        [fsnp_server_binary, "--lobby", "--host", "127.0.0.1", "--port", "0"],
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
         text=True,

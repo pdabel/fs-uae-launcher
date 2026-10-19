@@ -93,10 +93,23 @@ def find_server_executable():
 
 
 class Server:
-    def __init__(self, port, players, password):
+    def __init__(
+        self, port, players, password, lobby=False, public_addresses=""
+    ):
+        """A local fsnp-server.
+
+        By default it runs one game for players with password. With lobby
+        it is a lobby instead, as /hostgame uses: games are created over
+        its HTTP API on the same port, and players and password only
+        describe the game the launcher is about to create. Players are
+        told public_addresses (comma-separated) rather than the name the
+        launcher reaches the lobby by, which is this machine's loopback.
+        """
         self.port = port
         self.players = players
         self.password = password
+        self.lobby = lobby
+        self.public_addresses = public_addresses
         self.process = None
 
     def start(self):
@@ -125,12 +138,19 @@ class Server:
         args = [
             exe_file,
             "--port={0}".format(self.port),
-            "--players={0}".format(self.players),
             # Stop the server if the launcher goes away without closing it.
             "--exit-on-stdin-close",
         ]
-        if self.password:
-            args.append("--password={0}".format(self.password))
+        if self.lobby:
+            args.append("--lobby")
+            if self.public_addresses:
+                args.append(
+                    "--public-addresses={0}".format(self.public_addresses)
+                )
+        else:
+            args.append("--players={0}".format(self.players))
+            if self.password:
+                args.append("--password={0}".format(self.password))
         log_file = log_file_path()
         if log_file:
             args.append("--log-file={0}".format(log_file))
