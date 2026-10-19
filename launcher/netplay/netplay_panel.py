@@ -43,6 +43,11 @@ class NetplayPanel(fsui.Panel):
         ver_layout.add(self.channel_list, fill=True, expand=True, margin=10)
         self.nick_list = fsui.ListView(self)
         ver_layout.add(self.nick_list, fill=True, expand=True, margin=10)
+        # The lobby game, one row per slot: who is ready, and why not.
+        self.session_label = fsui.Label(self, gettext("No game"))
+        ver_layout.add(self.session_label, margin=10, margin_bottom=0)
+        self.session_list = fsui.ListView(self)
+        ver_layout.add(self.session_list, fill=True, expand=True, margin=10)
 
         self.text_area = fsui.TextArea(self, font_family="monospace")
         hori_layout.add(
@@ -51,6 +56,7 @@ class NetplayPanel(fsui.Panel):
 
         self.netplay = Netplay(parent=self)
         IRCBroadcaster.add_listener(self)
+        self.netplay.session_listeners.append(self.on_session)
 
         self._build_netplay_game_inputs()
         self._manual_command_input()
@@ -108,9 +114,6 @@ class NetplayPanel(fsui.Panel):
         # Host Game button to host a game on the IRC channel (only shown in game channels)
         self.host_game_button = HostGameButton(self, self.netplay, self, self.netplay.irc)
         button_layout.add(self.host_game_button, fill=True, margin_left=10)
-        # Send Config button to send the current config to other players (only shown in game channels)
-        self.send_config_button = SendConfig(self, self.netplay, self.netplay.irc)
-        button_layout.add(self.send_config_button, fill=True, margin_left=10)
         # Reset button to reset config (only shown in game channels)
         self.reset_button = Reset(self, self.netplay, self.netplay.irc)
         button_layout.add(self.reset_button, fill=True, margin_left=10)
@@ -121,9 +124,10 @@ class NetplayPanel(fsui.Panel):
         # Add a spacer before the Start Game button and store a reference
         self.action_spacer_post = button_layout.add_spacer(0, expand=True)
 
-        # Ready button to indicate player is ready (only shown in game channels)
-        self.ready_button = Ready(self, self.netplay, self.netplay.irc)
-        button_layout.add(self.ready_button, fill=True, margin_left=10)
+        # Re-check: apply the game's config again, after adding missing files
+        self.recheck_button = Recheck(self, self.netplay, self.netplay.irc)
+        button_layout.add(self.recheck_button, fill=True, margin_left=10)
+        self.on_session(None)
 
     def on_destroy(self):
         if getattr(self, "_disposed", False):
@@ -131,6 +135,8 @@ class NetplayPanel(fsui.Panel):
         self._disposed = True
         print("NetplayPanel.on_destroy")
         IRCBroadcaster.remove_listener(self)
+        if self.on_session in self.netplay.session_listeners:
+            self.netplay.session_listeners.remove(self.on_session)
         self.netplay.disconnect()
 
     def on_show(self):
@@ -194,22 +200,21 @@ class NetplayPanel(fsui.Panel):
         # Master list of all action buttons
         all_buttons = [
             self.host_game_button,
-            self.send_config_button,
             self.reset_button,
             self.start_button,
             self.player_count_field,
             self.player_count_label,
-            self.port_field,            
+            self.port_field,
             self.port_label,
-            self.ready_button,
+            self.recheck_button,
             self.config_button
         ]
 
         # Determine which buttons should be shown
         if in_game_channel and is_op:
-            show_list = set(all_buttons) - {self.ready_button}
+            show_list = set(all_buttons)
         elif in_game_channel and not is_op:
-            show_list = {self.ready_button, self.config_button}
+            show_list = {self.recheck_button, self.config_button}
         else:
             show_list = set()
 
@@ -224,6 +229,33 @@ class NetplayPanel(fsui.Panel):
         if callback is not None:
             callback()
 
+
+    def on_session(self, session):
+        """Render the lobby game: a heading, one row per slot."""
+        if session is None:
+            self.session_label.set_text(gettext("No game"))
+            self.session_list.set_items([])
+        else:
+            role = gettext("hosting") if session.is_host else gettext("joined")
+            self.session_label.set_text(
+                "{0} {1} \u2014 {2}, {3}".format(
+                    gettext("Game"), session.game_id[:8], role, session.state
+                )
+            )
+            self.session_list.set_items(session.slot_lines())
+        # Not just "ready": an edit the lobby doesn't have yet would start
+        # the version before it.
+        can_start = session is not None and session.can_start
+        self.start_button.set_enabled(can_start)
+        if session is not None and session.is_host and not can_start:
+            self.start_button.set_tooltip(
+                gettext("Waiting: ") + "; ".join(session.waiting_on())
+            )
+        else:
+            self.start_button.set_tooltip(
+                gettext("Start the game for every player")
+            )
+        self.recheck_button.set_enabled(session is not None)
 
     def on_irc(self, key, args):
         if key == "active_channel":
@@ -325,29 +357,20 @@ class HostGameButton(fsui.Button):
         self.irc.handle_command(f"/me {command}")
         self.netplay.handle_command(command)
 
-class SendConfig(fsui.Button):
+class Recheck(fsui.Button):
     def __init__(self, parent, netplay, irc):
-        super().__init__(parent, gettext("Send Config"))
+        super().__init__(parent, gettext("Re-check"))
         self.irc = irc
         self.netplay = netplay
+        self.set_tooltip(
+            gettext(
+                "Apply the game's config again, for example after adding "
+                "missing files"
+            )
+        )
 
     def on_activated(self):
-        command = "/sendconfig"
-        self.irc.handle_command(f"/me ran the following command:")
-        self.irc.handle_command(f"/me {command}")
-        self.netplay.handle_command(command)
-
-class Ready(fsui.Button):
-    def __init__(self, parent, netplay, irc):
-        super().__init__(parent, gettext("Ready"))
-        self.irc = irc
-        self.netplay = netplay
-
-    def on_activated(self):
-        command = "/ready"
-        self.irc.handle_command(f"/me ran the following command:")
-        self.irc.handle_command(f"/me {command}")
-        self.netplay.handle_command(command)
+        self.netplay.handle_command("/recheck")
 
 class Reset(fsui.Button):
     def __init__(self, parent, netplay, irc):

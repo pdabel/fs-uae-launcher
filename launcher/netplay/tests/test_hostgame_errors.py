@@ -42,6 +42,11 @@ def test_hostgame_keeps_detailed_startup_error_local(
     netplay.irc = irc
     netplay.parent = Mock()
     netplay.game_window = None
+    # No lobby game yet, as Netplay.__init__ leaves it.
+    netplay.session = None
+    netplay.session_lobby = None
+    netplay.session_generation = 0
+    netplay.joining = None
     monkeypatch.setattr(netplay, "require_game_channel", lambda channel: True)
     monkeypatch.setattr(
         netplay,

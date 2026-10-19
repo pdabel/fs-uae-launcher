@@ -38,11 +38,14 @@ info_message = """\n
 How to Use Netplay:
 
 1. Join or create a game channel using the 'Join Game Channel' button.
-2. Enter the port and number of players if you are hosting.
-3. Use the 'Host Game' button to start hosting.
-4. Use the 'Ready' button to indicate you are ready to play.
-5. Use the 'Send Config' button to send your configuration to other players (optional).
-6. Once all players are ready, you can start the game in FS-UAE.
+2. If you are hosting, enter the port and number of players, choose the
+   game and its settings, and use the 'Host Game' button.
+3. Everyone else's launcher joins the game and takes its config from the
+   netplay server automatically. The game list under the channel shows
+   each player as ready, missing files, or config differs.
+4. If you are missing a file, add it and press 'Re-check'.
+5. Once every player is ready, the host presses 'Start Game', and FS-UAE
+   starts for everyone.
 
 If required, you can use the netplay command box to enter manual IRC or netplay commands.
 
@@ -51,21 +54,22 @@ You can also use IRC commands directly in the command box as follows:
 
 Create a game channel (make sure the -game is appended):
 /join #<game-name>-game
-Once in the channel, host a game using the FQDN to allow players to either 
+Once in the channel, host a game using the FQDN to allow players to either
 use public DNS resolution or a static host file entry.
-To start the game with a specific number of players (in this case 2) use the following command:
+To host the game here for a specific number of players (in this case 2):
 /hostgame <host.domain.com>:<port> <players>
+Or create it on a netplay server (lobby) elsewhere:
+/startgame <lobby.domain.com>[:<port>] <players>
 
-Once both players are in the channel and the hostgame command has been run, enter the following:
-/ready
-You can now start the game in FS-UAE.
+Players join automatically. If an announcement was missed:
+/joingame <host>:<port> <game-id>
 
 Other commands:
 
-/sendconfig
-/resetconfig
-/verify
-check amiga_model
+/recheck        apply the game's config again
+/reset          leave the game (the host ends it)
+/resetconfig    reset your config (the host's reaches every player)
+/set <key> <value>
 
 More info @ https://fs-uae.net/launcher-net-play
 """

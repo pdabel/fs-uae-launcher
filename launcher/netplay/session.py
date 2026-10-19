@@ -232,6 +232,7 @@ class NetplaySession:
         if key not in self.sync_keys or self._push_scheduled:
             return
         self._push_scheduled = True
+        self._on_change(self)  # can_start is now false
 
         def push():
             self._push_scheduled = False
@@ -330,6 +331,8 @@ class NetplaySession:
             if self._push_again:
                 self._push_again = False
                 self._push_if_changed()
+            if not self.ended:
+                self._on_change(self)
 
         self._call(
             self.client.set_config,
@@ -413,6 +416,8 @@ class NetplaySession:
         if not self.snapshot or "slots" not in self.snapshot:
             return ["the lobby has not answered yet"]
         reasons = []
+        if self.sending_config:
+            reasons.append("your config changes are still being sent")
         for s in self.snapshot["slots"]:
             if s["status"] != SLOT_READY:
                 who = s.get("tag") or f"slot {s['slot'] + 1}"
