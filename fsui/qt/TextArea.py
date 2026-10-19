@@ -37,6 +37,8 @@ class TextArea(fsui.qt.QTextEdit, WidgetMixin):
         # self.insertPlainText(text.strip())
         if color is not None:
             self.setTextColor(fsui.qt.QColor(*color))
+        else:
+            self.setTextColor(self.palette().color(fsui.qt.QPalette.Text))
         # self.appendPlainText(text.strip())
         self.append(text.strip())
         self.moveCursor(fsui.qt.QTextCursor.End)

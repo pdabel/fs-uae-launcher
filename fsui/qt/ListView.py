@@ -5,7 +5,7 @@ from .widget_mixin import WidgetMixin
 
 class ListView(QListView, WidgetMixin):
 
-    item_selected = Signal(int)
+    item_selected = Signal(object)
     item_activated = Signal(int)
 
     def __init__(self, parent, border=True):

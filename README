@@ -10,9 +10,201 @@ requires Python 3 and setuptools to be installed.
 
 ## Requirements
 
-FS-UAE Launcher requires Python 3, `requests` and `PyQt5` to be installed.
+FS-UAE Launcher uses Qt 6 through `PySide6`, the `QtPy` compatibility
+layer, and `QtAwesome` for scalable dashboard icons. Install the latest
+releases supported by your Python version:
+
+  python -m pip install --upgrade PySide6 QtPy QtAwesome requests
+
+The Pipfile also declares these UI dependencies for Pipenv installations.
+An existing virtual environment can be updated in place; recreating it is
+not necessary:
+
+  venv/bin/python -m pip install --upgrade PySide6 QtPy QtAwesome requests
+
+The UI selects PySide6 by default. Use a clean process without another Qt
+binding already imported; PyQt5 and PySide6 must not be mixed. Qt 6 handles
+high-DPI scaling automatically. Supported saved themes are preserved; retired
+theme names fall back to plain Fusion. Emulator, database, and networking
+behavior is unchanged.
+
 It can optionally use the `lhafile` python package to support .lha archives.
-See the `INSTALL` file for more details.
+The older packaging and INSTALL instructions still target Qt 5 and have not
+been migrated as part of this UI-only change. Run from source with the
+Python environment containing the Qt 6 dependencies.
+
+See [the Python and dependency modernization TODO](docs/python-dependency-modernization.md)
+for the reviewed packaging, supported-Python, dependency, and code-quality
+work items.
+
+## Modern Dark Workspace
+
+Modern Dark is the default when no launcher theme has been selected. The
+launcher opens maximized on its current display, with a 1080p-oriented
+workspace, a labeled navigation rail, a searchable configuration library,
+a resizable configuration editor, and persistent launch controls. All eight
+configuration pages remain available. Settings, net play, tools, account
+actions, and configuration warnings retain their existing behavior.
+
+The library can be hidden with its toolbar toggle. Quick settings open in a
+separate resizable pane, temporarily replacing the library below 1400 pixels
+of window width. Screenshots and cover information use the selected
+game's existing artwork; the media strip hides below 820 pixels of window
+height so editing remains usable. The supported minimum window size is
+1000 x 720. Long editor pages scroll rather than forcing a larger window.
+
+Select Modern Dark in the Launcher settings and restart to replace a
+previously saved theme. It can also be requested explicitly at startup:
+
+  venv/bin/python fs-uae-launcher --launcher-theme=fusion-modern
+
+The four available themes are Modern Dark, Fusion, Windows 3.11, and Amiga
+Workbench 1.3. All share this single-window workspace and embedded netplay
+server controls. Fusion retains Qt's original light palette and native-style
+controls. Removed or unknown saved themes fall back to Fusion; an empty theme
+setting still defaults to Modern Dark. Retired saved theme names are normalized
+to Fusion so the Settings picker agrees with the running theme. QtAwesome is
+installed in the project venv; other source installations must install it as above.
+
+Plain Fusion can also be selected for a single launch:
+
+  venv/bin/python fs-uae-launcher --launcher-theme=fusion-plain
+
+Settings uses the same spacious navigation rows, scalable icons, and cyan
+selection accent as the main workspace. Its navigation scrolls when needed.
+Modern Dark also applies flat, rounded buttons, dropdowns with custom chevrons,
+clear keyboard-focus outlines, and larger checkbox/radio indicators throughout
+the launcher. These are native Qt controls; no browser or React runtime is
+required. The other three themes use their own palette and controls.
+Help and netplay information buttons and status-bar notices use the same cyan
+icon family as the navigation rail in Modern Dark.
+
+### Quick Theme Switching
+Choose a theme in Settings > FS-UAE Launcher, then click Restart Launcher
+beside the theme selector. After confirmation, preferences are saved and the
+launcher reopens with the selected theme and font. The current base directory
+is preserved; old theme overrides and game/disk command-line arguments are
+not repeated. Active netplay sessions and hosted servers are stopped. Save
+configuration edits before restarting. Cancelling leaves the launcher open.
+
+This is a launcher restart, not a live theme preview: palettes, fonts, and
+icon sets are initialized at startup.
+
+### GUI Cleanup
+
+The obsolete standalone netplay/server GUI wrappers and the launcher's
+old theme-specific startup, drawing, and resize fallbacks have been removed.
+Theme choices now come from one option definition. The tab/book widgets remain
+in use by configuration-page construction; shared toolkit window classes and
+independently accessible tools are not treated as dead code. Emulator, server
+process, database, and network protocol logic is outside this GUI cleanup.
+
+### Retro Themes
+
+The Launcher theme setting also offers Windows 3.11 and Amiga Workbench 1.3.
+Select a theme and restart the launcher. Both use the single-window workspace:
+Windows 3.11 has gray beveled controls, white fields, and navy selections;
+Workbench has a blue background, white square controls, orange selections,
+and a monospace font. Fonts fall back to installed alternatives. These are
+inspired styles, not emulations; outer window decorations remain controlled
+by the operating system. They do not replace any emulator or netplay behavior.
+Retro Settings opens at 1100 x 720 to accommodate its wider typography.
+Retro navigation uses original, scalable tile treatments around familiar
+QtAwesome symbols: teal-topped beveled windows for Windows 3.11 and folded
+white tiles with blue/orange details for Workbench. They are modern
+reinterpretations, not copies of the original operating systems' artwork.
+Settings shares the same icon family, roomy navigation rows, square button
+edges, and navy/orange selection colours as its theme's main sidebar. Page
+headings use the same typography as the workspace, without large bitmap art.
+
+They can also be selected for a single launch:
+
+  venv/bin/python fs-uae-launcher --launcher-theme=fusion-windows311
+  venv/bin/python fs-uae-launcher --launcher-theme=fusion-workbench
+
+### Integrated Netplay
+
+In all four themes, Net play is a page inside the main window rather than a
+separate window. The navigation button and Tools
+menu open the same page. The retro themes retain their own colours and controls.
+Chat, channel selection, and the connection persist when switching back to
+configuration pages. Library and quick-settings tools are disabled on the
+netplay page, which uses its own host/start controls.
+
+Hosting displays the game ID, channel, port, player count, and server status
+alongside the chat. The Stop server button stops hosting without closing
+the page. Reset and closing the main window also stop the owned server.
+The details update if the server process exits. The panes are resizable;
+the chat controls scroll when the window is too narrow to fit them.
+
+Hosting uses the shared netplay port 25101 by default. The server's bind result
+determines whether the port is available; the launcher does not test-bind or
+retry a busy port. A running lobby or another hosted game produces an explicit
+port-in-use message rather than opening a server view. Successful hosting still
+uses the inline details pane in every theme. Remote startgame responses support
+an empty password.
+
+## UI Regression Tests
+
+Run the widget, dialog, menu, painting, and screen tests without a display:
+
+    QT_QPA_PLATFORM=offscreen python -m unittest discover -s fsui/test -t .
+
+Native file dialogs, multi-monitor placement, and platform-specific appearance
+also need interactive testing on Linux, Windows, and macOS.
+Image-button regression tests cover icon loading and activation, including
+the launcher's New button, under PySide6.
+Dashboard tests cover page routing, library/quick-settings toggles, the dark
+palette, the theme picker, and 1920x1080, 1280x800, and 1000x720 layouts.
+The navigation and embedded-netplay checks run in all four workspace themes,
+including chat persistence, inline server ownership, and shutdown on main close.
+Settings tests cover navigation icons, page switching, and headings in all
+four workspace themes, including the retro themes' larger icons,
+palette-based sidebar styling, and matching workspace typography.
+Icon-rendering tests cover theme differences and nonblank output at 20, 24,
+and 48 pixels in normal, selected, and disabled states.
+Control tests verify SVG assets, dropdown selection, checkbox activation,
+and numeric stepping.
+Theme checks cover saved and command-line retro selection, their palettes,
+picker entries, and modern info-icon styling and help-link activation.
+Fusion checks cover its light palette, exact four-theme picker, retired-theme
+migration, and shared Settings/workspace/server routing.
+Restart checks cover confirmation/cancellation, save-before-close ordering,
+source/frozen commands, clean launch arguments, shutdown notifications,
+and save/relaunch failure handling.
+Merged hosting checks cover the shared default port, inline lifecycle,
+port-in-use/startup failures without publishing a game, and empty passwords.
+List-selection tests also verify that clearing a search selection emits None
+rather than converting it to an incorrect row index under PySide6.
+Launch regression tests exercise Start-button dispatch and construction of
+the launch task dialog with and without a netplay session. Netplay tests
+cover lobby/game-channel and operator/player transitions, button geometry,
+and host/send-config/reset/ready/start dispatch without opening a network
+connection or launching an emulator. Visibility changes immediately relayout
+the netplay controls; no manual resize is required to reveal host buttons.
+Real IRC JOIN/NAMES/MODE replay tests cover operator recognition, nick-list
+updates, and host controls without mocking operator status. Ordinary IRC
+messages use the text widget's current palette color so rendering errors or
+an import-time color cannot interrupt IRC events or hide text in dark mode.
+Status-bar text and warnings use the widget's live WindowText palette colour;
+inactive text keeps its existing grey override. All four themes inherit their
+palette backgrounds on every OS unless an explicit background override is set.
+Palette regression tests exercise both status painters, inactive text, and
+background selection with simulated Windows/macOS/Linux flags.
+
+## GNOME Startup Compatibility
+
+Some Qt/GNOME combinations abort during startup with a GLib error about the
+missing `org.gnome.settings-daemon.plugins.xsettings` `antialiasing` key.
+This is a desktop theme integration failure, not a missing Python package.
+On Linux GNOME desktops the UI defaults to Qt's generic platform theme to
+avoid that integration. Explicit `QT_QPA_PLATFORMTHEME` settings are respected;
+other desktops and operating systems are unchanged. GNOME-specific theme and
+file-dialog integration may differ with the generic platform theme.
+
+To explicitly select the workaround when launching from a terminal:
+
+  QT_QPA_PLATFORMTHEME=generic venv/bin/python fs-uae-launcher
 
 ## Running FS-UAE Launcher
 
@@ -24,6 +216,10 @@ You can also run FS-UAE Launcher without installation by running the
 following command in the source root directory:
 
     $ ./fs-uae-launcher
+
+For an existing virtual environment, explicitly use its Python interpreter:
+
+    $ venv/bin/python fs-uae-launcher
 
 # About FS-UAE Launcher
 

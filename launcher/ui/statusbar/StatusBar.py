@@ -16,10 +16,7 @@ class StatusBar(Panel):
         # self.set_background_color(Color(0xd8, 0xd8, 0xd8))
         self.layout = VerticalLayout()
         self.hori_layout = HorizontalLayout()
-        if Skin.fws():
-            self.top_border_size = 2
-        else:
-            self.top_border_size = 1
+        self.top_border_size = 1
         self.layout.add(
             self.hori_layout,
             fill=True,
@@ -92,9 +89,6 @@ class StatusBar(Panel):
     def on_paint(self):
         dc = self.create_dc()
         size = self.size()
-        if Skin.fws():
-            dc.draw_rectangle(0, 0, size[0], 2, Color(0xE5, 0xE5, 0xE5, 0xFF))
-            return
         color_1 = Skin.get_background_color()
         if color_1 is not None:
             color_1 = color_1.copy().darken(0.12)
@@ -110,8 +104,6 @@ class StatusBar(Panel):
     @classmethod
     def draw_background(cls, widget, dc, offset=None, height=None):
         size = widget.size()
-        if Skin.fws():
-            return
         x = 0
         y = 0
         w = size[0]

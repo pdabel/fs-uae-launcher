@@ -6,11 +6,11 @@ from launcher.netplay.netplay import Netplay
 from launcher.ui.skin import Skin
 from launcher.ui.InfoDialog import InfoDialog
 from launcher.ui.IconButton import IconButton
-from PyQt5.QtWidgets import QApplication
+from fsui.qt import QApplication
 from fsgs.amiga.amiga import Amiga
 from fsui.qt.DrawingContext import Font
 from launcher.launcher_config import LauncherConfig
-from PyQt5 import QtGui
+from qtpy import QtGui
 from fsbc.settings import Settings
 from launcher.sync_settings import sync_settings
 
@@ -58,6 +58,7 @@ class NetplayPanel(fsui.Panel):
 
         # This command is used to set the initial active channel and hide the action buttons
         self.active_channel = LOBBY_CHANNEL 
+        self.update_action_buttons_visibility()
         self.input_field.focus()
 
     def _manual_command_input(self):
@@ -125,6 +126,9 @@ class NetplayPanel(fsui.Panel):
         button_layout.add(self.ready_button, fill=True, margin_left=10)
 
     def on_destroy(self):
+        if getattr(self, "_disposed", False):
+            return
+        self._disposed = True
         print("NetplayPanel.on_destroy")
         IRCBroadcaster.remove_listener(self)
         self.netplay.disconnect()
@@ -215,6 +219,10 @@ class NetplayPanel(fsui.Panel):
                 btn.show()
             else:
                 btn.hide()
+        self.layout.update()
+        callback = getattr(self, "on_action_layout_changed", None)
+        if callback is not None:
+            callback()
 
 
     def on_irc(self, key, args):
@@ -266,7 +274,7 @@ class SimpleTextInputDialog(fsui.Dialog):
     @staticmethod
     def get_text(parent, title, label_text):
         dialog = SimpleTextInputDialog(parent, title, label_text)
-        if dialog.exec_():
+        if dialog.exec():
             return dialog.result_text
         return None
 

@@ -796,16 +796,14 @@ options = {
         "type": "Boolean",
     },
     Option.LAUNCHER_THEME: {
-        "default": "fusion",
+        "default": "fusion-modern",
         "description": N_("Launcher Theme"),
         "type": "Choice",
         "values": [
-            ("standard", N_("Standard Qt Theme")),
-            ("fusion", "Fusion Auto"),
+            ("fusion-modern", "Modern Dark"),
             ("fusion-plain", "Fusion"),
-            ("fusion-adwaita", "Fusion Adwaita"),
-            ("fusion-dark", "Fusion Dark"),
-            ("fusion-windows10", "Fusion Windows 10"),
+            ("fusion-windows311", "Windows 3.11"),
+            ("fusion-workbench", "Amiga Workbench 1.3"),
         ],
     },
     Option.LOAD_STATE: {

@@ -1,5 +1,5 @@
 from weakref import ref
-from .qt import Qt, QDesktopWidget, QSignal
+from .qt import Qt, QSignal
 
 # from .. import default_window_center, default_window_parent
 
@@ -139,7 +139,7 @@ def WindowBase(BaseClass):
 
         def center_on_screen(self):
             frect = self.frameGeometry()
-            frect.moveCenter(QDesktopWidget().availableGeometry().center())
+            frect.moveCenter(self.screen().availableGeometry().center())
             self.move(frect.topLeft())
 
         def set_background_color(self, color):

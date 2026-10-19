@@ -20,6 +20,7 @@ class ConfigurationsPanel(fsui.Panel):
         fsui.Panel.__init__(self, parent)
         Skin.set_background_color(self)
         self.layout = fsui.HorizontalLayout()
+        modern = fsui.theme_variant == "modern"
 
         vert_layout = fsui.VerticalLayout()
         self.layout.add(vert_layout, fill=True, expand=True)
@@ -30,12 +31,15 @@ class ConfigurationsPanel(fsui.Panel):
         label_stand_in = fsui.Panel(self)
         tw, th = label_stand_in.measure_text("Games")
         label_stand_in.set_min_height(th)
-        hor_layout.add(label_stand_in, margin_top=10, margin_bottom=10)
+        if not modern:
+            hor_layout.add(label_stand_in, margin_top=10, margin_bottom=10)
+        else:
+            label_stand_in.hide()
 
         hor_layout.add(NewButton(self), margin_left=10, margin_right=10)
 
         game_list_selector = GameListSelector(self)
-        game_list_selector.set_min_width(250)
+        game_list_selector.set_min_width(180 if modern else 250)
         game_list_selector.setMaximumWidth(250)
         game_list_selector.changed.connect(self.on_game_list_changed)
         hor_layout.add(game_list_selector, expand=False, margin_left=10)
@@ -44,7 +48,11 @@ class ConfigurationsPanel(fsui.Panel):
             self, LauncherSettings.get("config_search")
         )
         self.text_field.on_changed = self.on_search_changed
-        if VariantsBrowser.use_horizontal_layout():
+        if modern:
+            self.text_field.setPlaceholderText(gettext("Search games and configurations"))
+            self.text_field.setClearButtonEnabled(True)
+            vert_layout.add(self.text_field, fill=True, margin=10)
+        elif VariantsBrowser.use_horizontal_layout():
             # window is big enough to use fixed size
             # self.text_field.set_min_width(210)
             self.text_field.set_min_width(229)
@@ -72,6 +80,9 @@ class ConfigurationsPanel(fsui.Panel):
         #     self.refresh_button, margin=10, margin_top=0, margin_bottom=0)
 
         self.configurations_browser = ConfigurationsBrowser(self)
+        if modern:
+            self.configurations_browser.set_row_height(36)
+            self.configurations_browser.setAlternatingRowColors(True)
 
         vert_layout.add(
             self.configurations_browser, fill=True, expand=3, margin=10

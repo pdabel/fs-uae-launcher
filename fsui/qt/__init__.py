@@ -4,7 +4,6 @@ import queue
 from fsui.res import gettext
 from fsui.qt.qt import (
     init_qt,
-    QDesktopWidget,
     QEvent,
     QObject,
     QCoreApplication,
@@ -17,9 +16,8 @@ from fsui.qt.helpers import QParent
 
 
 def get_screen_size():
-    init_qt()
-    desktop = QDesktopWidget()
-    geometry = desktop.geometry()
+    application = init_qt()
+    geometry = application.primaryScreen().virtualGeometry()
     size = geometry.width(), geometry.height()
     print("using screen size", size)
     return size

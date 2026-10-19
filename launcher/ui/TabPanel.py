@@ -57,13 +57,7 @@ class TabPanel(fsui.Panel):
         size = widget.size()
 
         line_color_1 = Skin.get_background_color()
-        if Skin.fws() or Skin.windows_10():
-            from workspace.ui.theme import WorkspaceTheme
-
-            theme = WorkspaceTheme.instance()
-            line_color_1 = theme.title_separator_color
-            line_color_2 = line_color_1
-        elif line_color_1 is not None:
+        if line_color_1 is not None:
             line_color_1 = line_color_1.mix(fsui.Color(0xFF, 0xFF, 0xFF))
             line_color_2 = line_color_1
         else:
@@ -91,53 +85,6 @@ class TabPanel(fsui.Panel):
         y = 0
         w = size[0]
         h = size[1] - 2
-
-        if Skin.fws() or Skin.windows_10():
-            from workspace.ui.theme import WorkspaceTheme
-
-            theme = WorkspaceTheme.instance()
-            white = fsui.Color(0xFF, 0xFF, 0xFF)
-            if selected:
-                bg_color = theme.window_background
-                bd_color = theme.title_separator_color
-            elif hover:
-                bg_color = theme.window_background.copy().mix(
-                    theme.title_background
-                )
-                bd_color = theme.title_separator_color.copy().mix(
-                    theme.title_background
-                )
-            else:
-                bg_color = theme.title_background
-                bd_color = theme.title_background
-
-            # dc.draw_rectangle(0, 0, w, h, bd_color)
-            if selected or hover:
-                dc.draw_vertical_gradient(0, 0, 2, size[1], white, bd_color)
-                dc.draw_vertical_gradient(
-                    size[0] - 2,
-                    0,
-                    2,
-                    size[1],
-                    theme.title_background,
-                    bd_color,
-                )
-                # dc.draw_rectangle(2, 2, w - 4, h - 2, bg_color)
-                dc.draw_vertical_gradient(
-                    2,
-                    0,
-                    size[0] - 4,
-                    size[1],
-                    theme.title_background,
-                    bg_color,
-                )
-                if hover and not selected:
-                    dc.draw_rectangle(
-                        0, size[1] - 2, size[0], 2, theme.title_separator_color
-                    )
-            else:
-                dc.draw_rectangle(0, 0, w, h, bd_color)
-            return
 
         if fsbc.system.macosx:
             # dc.draw_line(0, 0, w, 0, fsui.Color(198, 198, 198))
@@ -199,13 +146,7 @@ class TabPanel(fsui.Panel):
     @classmethod
     def draw_selected_tab(cls, widget, dc):
         line_color_1 = Skin.get_background_color()
-        if Skin.fws() or Skin.windows_10():
-            from workspace.ui.theme import WorkspaceTheme
-
-            theme = WorkspaceTheme.instance()
-            line_color_1 = theme.title_separator_color
-            line_color_2 = line_color_1
-        elif fsbc.system.macosx and False:
+        if fsbc.system.macosx and False:
             line_color_1 = fsui.Color(0xA7, 0xA7, 0xA7)
             line_color_2 = Skin.get_background_color().mix(
                 fsui.Color(0xFF, 0xFF, 0xFF)

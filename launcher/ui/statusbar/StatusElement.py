@@ -1,4 +1,5 @@
 from fsui import Panel, Color
+from fsui.qt import QPalette
 
 
 class StatusElement(Panel):
@@ -21,6 +22,7 @@ class StatusElement(Panel):
         from .StatusBar import StatusBar
 
         StatusBar.draw_element_background(self, dc)
+        dc.set_text_color(self.widget().palette().color(QPalette.WindowText))
         self.paint_element(dc)
 
     def get_draw_operations(self):

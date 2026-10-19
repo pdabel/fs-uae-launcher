@@ -7,6 +7,7 @@ from launcher.i18n import gettext
 from launcher.launcher_config import LauncherConfig
 from launcher.launcher_settings import LauncherSettings
 from launcher.option import Option
+from launcher.netplay.netplay import Netplay
 from launcher.settings.override_warning import OverrideWarning
 from launcher.ui.behaviors.settingsbehavior import SettingsBehavior
 

@@ -85,7 +85,7 @@ class Widget(QObject):
     def measure_text(self, text):
         font = self.widget().font()
         metrics = QFontMetrics(font)
-        return metrics.width(text), metrics.height()
+        return metrics.horizontalAdvance(text), metrics.height()
 
     def set_hand_cursor(self):
         self.widget().setCursor(Qt.PointingHandCursor)

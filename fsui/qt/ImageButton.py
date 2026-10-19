@@ -13,7 +13,6 @@ class ImageButton(Widget):
     def __init__(self, parent, image):
         super().__init__(parent)
         self.set_widget(QPushButton(QParent(parent)))
-        fsui.qt.QPushButton.__init__(self, parent.get_container())
         icon = image.qicon
         self._widget.setIcon(icon)
         self._widget.setIconSize(fsui.qt.QSize(image.size[0], image.size[1]))
