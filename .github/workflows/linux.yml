@@ -46,6 +46,12 @@ jobs:
       # are not found on the host. Example: Qt depends on
       # libxkbcommon-x11.so.0 which is not bundled unless explicitly installed
       # first So we install some dependencies here.
+      #
+      # The second group is what PySide6's QtGui, QtWidgets and offscreen
+      # platform link against and its wheel doesn't ship: without libEGL,
+      # importing QtGui fails, in the build and in the Qt tests. PyInstaller
+      # never bundles the GL libraries (they belong to the user's graphics
+      # stack), and build.sh removes the bundled fontconfig and freetype.
 
       - name: Install library dependencies
         run: >-
@@ -67,6 +73,13 @@ jobs:
           libxkbcommon-x11-0
           libglib2.0-0
           libjpeg-dev
+          libegl1
+          libgl1
+          libx11-6
+          libdbus-1-3
+          libfontconfig1
+          libfreetype6
+          libxkbcommon0
 
       - name: Debug list libraries
         run: |
@@ -88,6 +101,14 @@ jobs:
       - name: Run Python tests
         run: |
           pipenv run pytest fsbc fstd fspy launcher/netplay
+
+      # The widget, panel and theme tests. The offscreen platform needs no
+      # display server.
+      - name: Run Qt tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          pipenv run pytest fsui/test/test_qt6.py
 
       - name: Set base version
         run: |
@@ -126,25 +147,3 @@ jobs:
           name: Linux_x86-64-${{ inputs.version }}
           path: fsbuild/_dist/*
         if: github.event_name != 'pull_request'
-
-      # The widget, panel and theme tests run last: PyInstaller bundles the
-      # host libraries it finds, and the GL libraries Qt needs here belong
-      # to the user's system, not the bundle. The offscreen platform needs
-      # no display server. The list is what PySide6's QtGui, QtWidgets and
-      # offscreen plugin link against and the wheel doesn't ship.
-      - name: Install Qt test libraries
-        run: >-
-          sudo apt install
-          libegl1
-          libgl1
-          libx11-6
-          libdbus-1-3
-          libfontconfig1
-          libfreetype6
-          libxkbcommon0
-
-      - name: Run Qt tests
-        env:
-          QT_QPA_PLATFORM: offscreen
-        run: |
-          pipenv run pytest fsui/test/test_qt6.py
