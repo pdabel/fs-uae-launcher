@@ -32,6 +32,14 @@ class SaveHandler(object):
         self.uuid = uuid
         self.change_handlers = []
 
+        # Read now, not when the state dir is resolved: that happens on the
+        # launch thread, after Netplay.do_start_game has already cleared
+        # the netplay keys for the next game.
+        self._netplay_state_dir_name = fsgc.config.get(
+            "__netplay_state_dir_name"
+        )
+        self._netplay_game = fsgc.config.get("__netplay_game")
+
         self.config_name = name
         if "(" in name:
             parts = name.split("(", 1)
@@ -195,13 +203,12 @@ class SaveHandler(object):
 
         if Netplay.current():
             # It is possible to manually specify the state dir.
-            config_name = self.fsgc.config.get("__netplay_state_dir_name")
+            config_name = self._netplay_state_dir_name
             if not config_name:
                 # This is the default behavior, create a clean state
                 # dir for the net play session.
-                netplay_game = self.fsgc.config.get("__netplay_game")
-                if netplay_game:
-                    config_name = "Net Play ({0})".format(netplay_game)
+                if self._netplay_game:
+                    config_name = "Net Play ({0})".format(self._netplay_game)
 
         # Convert the config name to a name which can be represented on
         # the file system (really all/most filesystems).
