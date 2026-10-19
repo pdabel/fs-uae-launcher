@@ -87,7 +87,7 @@ jobs:
 
       - name: Run Python tests
         run: |
-          pipenv run pytest fsbc fstd fspy
+          pipenv run pytest fsbc fstd fspy launcher/netplay
 
       - name: Set base version
         run: |
