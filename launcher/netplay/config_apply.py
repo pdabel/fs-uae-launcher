@@ -83,7 +83,10 @@ def resolve_config(document, sync_keys, find_by_sha1):
                 value == Amiga.INTERNAL_ROM_SHA1
             ):
                 path = "internal"
-            elif key == "x_kickstart_ext_file_sha1" and not value:
+            elif not value:
+                # No kickstart, not a missing one: the host has none set,
+                # which the launch treats as the internal ROM, so clearing
+                # it here gives every player the same.
                 path = ""
             else:
                 path = find_by_sha1(value)
