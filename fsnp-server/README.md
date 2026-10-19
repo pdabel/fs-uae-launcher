@@ -125,5 +125,8 @@ announcing a game:
 - **Missing executable/loader or invalid executable format:** rebuild or
   reinstall the server for your operating system and CPU architecture.
 
-Launch errors include the executable path and the operating-system error.
-Source checkouts also show the command to build the server.
+Detailed launch errors appear only in the host's local netplay output and
+include the executable path and the operating-system error. Source checkouts
+also show the command to build the server. The IRC channel receives only a short
+failure notification, keeping long paths and build guidance off the wire and
+within IRC's line limit.

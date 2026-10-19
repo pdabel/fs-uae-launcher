@@ -546,9 +546,12 @@ class Netplay:
             )
             return
         except ServerError as e:
-            # The server is not listening, so there is nothing to announce
-            # and no window to open.
-            channel.privmsg(f"ERROR: could not start the netplay server: {e}")
+            # Paths and build guidance can exceed IRC's line limit.
+            channel.warning(f"ERROR: could not start the netplay server: {e}")
+            channel.privmsg(
+                "ERROR: could not start the netplay server. "
+                "The host's netplay output has details and repair instructions."
+            )
             return
         game_id = str(uuid.uuid4())
         channel_name = self.irc.get_active_channel()
