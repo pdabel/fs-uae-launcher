@@ -45,7 +45,9 @@ jobs:
       # When pyinstaller collects libraries, it seems to ignore libraries that
       # are not found on the host. Example: Qt depends on
       # libxkbcommon-x11.so.0 which is not bundled unless explicitly installed
-      # first So we install some dependencies here.
+      # first So we install some dependencies here. Qt 6.5 and later also
+      # need libxcb-cursor.so.0 for the xcb platform plugin, which many
+      # desktops don't install by default.
       #
       # The second group is what PySide6's QtGui, QtWidgets and offscreen
       # platform link against and its wheel doesn't ship: without libEGL,
@@ -56,6 +58,7 @@ jobs:
       - name: Install library dependencies
         run: >-
           sudo apt install
+          libxcb-cursor0
           libxcb-glx0
           libxcb-icccm4
           libxcb-image0
