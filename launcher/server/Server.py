@@ -1,4 +1,5 @@
 import atexit
+import errno
 import json
 import queue
 import subprocess
@@ -33,7 +34,12 @@ LOG_NAME = "fsnp-server.log.txt"
 
 # What to run to produce the development-mode binary. Packaged builds get it
 # from fsbuild/build.sh, which drops it beside the launcher executable.
-BUILD_HINT = "cd fsnp-server && go build -o fsnp-server ./cmd/fsnp-server"
+BUILD_HINT = (
+    "cd fsnp-server && go build -o fsnp-server ./cmd/fsnp-server"
+    ". If Go is not installed, on Debian/Ubuntu install it first with: "
+    "sudo apt install golang-go; on macOS with Homebrew: brew install go"
+    ". Alternatively, install Go from https://go.dev/dl/"
+)
 
 
 class ServerError(Exception):
@@ -97,9 +103,9 @@ class Server:
         """Start the netplay server and wait until it is listening.
 
         Raises PortInUseError if its port is in use, and ServerError if the
-        executable cannot be found, if it exits immediately for any other
-        reason, or if it does not report that it is listening within
-        READY_TIMEOUT.
+        executable cannot be found or launched, if it exits immediately for
+        any other reason, or if it does not report that it is listening
+        within READY_TIMEOUT.
         """
         exe_file = find_server_executable()
         if exe_file is None:
@@ -110,6 +116,11 @@ class Server:
                 # Running from a checkout: the binary is not built yet. Say
                 # what to run rather than leaving it to be looked up.
                 message += ". Build it with: {0}".format(BUILD_HINT)
+            else:
+                message += (
+                    ". Reinstall the netplay server or the launcher package "
+                    "that includes it"
+                )
             raise ServerError(message)
         args = [
             exe_file,
@@ -128,12 +139,44 @@ class Server:
         # The server logs to stderr, which is inherited so its output shows
         # up alongside the launcher's own. Only the readiness line goes to
         # stdout, so this pipe cannot fill up and block the server.
-        self.process = subprocess.Popen(
-            args,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            close_fds=True,
-        )
+        try:
+            self.process = subprocess.Popen(
+                args,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                close_fds=True,
+            )
+        except OSError as e:
+            message = "Could not launch netplay server {0!r}: {1}.".format(
+                exe_file, e
+            )
+            if e.errno in (errno.EACCES, errno.EPERM):
+                message += (
+                    " Check that this is a server executable file, that you "
+                    "have permission to run it, and that its filesystem "
+                    "allows execution."
+                )
+            elif e.errno == errno.ENOENT:
+                message += (
+                    " The executable or its required loader is missing. "
+                    "Rebuild or reinstall the server for your operating "
+                    "system."
+                )
+            elif e.errno == errno.ENOEXEC:
+                message += (
+                    " Rebuild or reinstall the server for your operating "
+                    "system and CPU architecture."
+                )
+            else:
+                message += (
+                    " Check the operating-system error above and repair or "
+                    "reinstall the server."
+                )
+            if fsboot.development():
+                message += " To build it from this checkout: {0}".format(
+                    BUILD_HINT
+                )
+            raise ServerError(message) from e
         atexit.register(self.stop)
         self.__wait_until_listening()
 

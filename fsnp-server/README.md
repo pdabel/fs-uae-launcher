@@ -97,3 +97,36 @@ make help     # everything else
 ```
 
 No local Go install is needed: without `go` on `PATH`, `make` runs the same commands in a `golang` container.
+
+To build directly with Go instead, install it first if needed:
+
+- **Debian/Ubuntu:** `sudo apt install golang-go`
+- **macOS with Homebrew:** `brew install go`
+- **Without a package manager:** use the installer for your operating system
+  from [the Go downloads page](https://go.dev/dl/). On macOS, choose the package
+  matching your Mac (Apple Silicon/ARM64 or Intel/x86-64).
+
+Then run the `go build` command below.
+
+### Launcher startup errors
+
+When `/hostgame` cannot find or launch the server, it reports an error without
+announcing a game:
+
+- **Executable not found:** in a source checkout, run `make` in this directory,
+  or `go build -o fsnp-server ./cmd/fsnp-server` with Go installed. This creates
+  `fsnp-server/fsnp-server` relative to the repository root. The source directory
+  itself is not an executable. For a packaged launcher, reinstall the netplay
+  server or the launcher package that includes it.
+- **Permission denied:** check the reported executable's permissions and whether
+  its filesystem allows execution. On Linux/macOS, a trusted server binary may
+  need its execute bit restored with `chmod u+x <path-to-binary>`; changing the
+  source directory's permissions will not build the binary.
+- **Missing executable/loader or invalid executable format:** rebuild or
+  reinstall the server for your operating system and CPU architecture.
+
+Detailed launch errors appear only in the host's local netplay output and
+include the executable path and the operating-system error. Source checkouts
+also show the command to build the server. The IRC channel receives only a short
+failure notification, keeping long paths and build guidance off the wire and
+within IRC's line limit.
