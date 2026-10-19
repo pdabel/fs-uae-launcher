@@ -4,7 +4,7 @@ Design proposal for replacing the Python netplay game server in `launcher/server
 
 | | |
 |---|---|
-| **Status** | In progress — steps 1–9 done: the server is built, verified in real FS-UAE sessions, spawned and bundled by the launcher, the Python server is deleted, and the lobby hosts many games on one port, 25101, with `/hostgame` on the same port. Next is config in the session (phase three); rejoin (phase four) is a nice-to-have after it |
+| **Status** | In progress — steps 1–9 done: the server is built, verified in real FS-UAE sessions, spawned and bundled by the launcher, the Python server is deleted, and the lobby hosts many games on one port, 25101, with `/hostgame` on the same port. Config in the session (phase three) is in progress: its two shared pieces — `config_apply.py` and the golden-tested `game.ConfigHash` — are done, and the API was revised after checking it against the code (see step 10). Rejoin (phase four) is a nice-to-have after it |
 | **Date** | 2026-09-13 |
 | **Protocol** | FSNP v1, byte-compatible |
 | **Scope** | server + launcher spawn path; one small fix to the emulator client, reconnect later |
@@ -328,7 +328,7 @@ What that costs: a lobby game can't be passwordless, and a rejected handshake ca
 
 **Client-side bugs in `/startgame` fixed in the same step**, because each breaks the lobby however correct the server is: `parse_qs` drops blank values by default, so a `password=` response raises `KeyError` (now `keep_blank_values=True`, though the lobby no longer returns one); the password was interpolated into the URL unescaped (now `params=`); and `requests.get` had no timeout on the UI thread (now 10 s).
 
-One shape decision to make here rather than later: a `Game` should be constructable *before* its FSNP listener opens, and hold more than FSNP state — see [Future: the session owns the config](#future-the-session-owns-the-config). It costs nothing in phase two and avoids a retrofit in phase three. *(Already true: `game.New` takes no listener, and `Serve` is separate.)*
+One shape decision to make here rather than later: a `Game` should be constructable *before* its FSNP listener opens, and hold more than FSNP state — see [Future: the session owns the config](#future-the-session-owns-the-config). It costs nothing in phase two and avoids a retrofit in phase three. *(Already true: `game.New` takes no listener, and `Serve` is separate. The lobby side isn't yet: `Lobby.Create` routes the hash and starts `Game.Run` at once, which phase three splits — see the proposal.)*
 
 ### Hardening
 
@@ -376,7 +376,9 @@ Not hardcoded, not `$PATH`, not a user-facing settings field — the launcher al
 
 ## Future: the session owns the config
 
-> **Status: next, phase three.** Nothing in phases one and two depended on it. It was written down early because it changes what a `Game` *is* in the Go server, which was cheap to get right in phase two and expensive to retrofit — and phase two kept that door open: `game.New` takes no listener. `netplay.c` is untouched by everything in this section — this is a launcher↔server contract only.
+> **Status: in progress, phase three.** Done: `launcher/netplay/config_apply.py` (the apply-and-report-missing step, pulled out of `netplay.py` with tests) and `game.ConfigHash` (the server's copy of `checksum_config`, checked against the same golden file as the Python). Not started: the lobby API, the Python HTTP client and the panel. Nothing in phases one and two depended on it. It was written down early because it changes what a game *is* in the Go server, which was cheap to get right in phase two and expensive to retrofit — and phase two kept that door open: `game.New` takes no listener. `netplay.c` is untouched by everything in this section — this is a launcher↔server contract only.
+>
+> **Revised after checking it against the code.** The first draft assumed a fixed checksum key order (it depends on each user's Sync Config), had no way for a player to claim a slot, and had the FSNP listener opening at start (under the single-port lobby there is no per-game listener). The proposal below is the corrected one.
 
 ### The problem it solves
 
@@ -390,7 +392,7 @@ Today a netplay "game" is two unrelated things glued together by the op's launch
 | Agreement is checked | `__check key value` / `__verify` round-trips, read back by eye in the channel | `command_check`, `command_verify` |
 | Start | `__prestart seq hash` → each client compares `LauncherConfig.checksum()` and replies `__ackstart` → op counts acks → `__start` | `initiate_start_sequence`, `on_ackstart`, `handle_game_instruction` |
 
-The keys and the hash are already well defined: `build_cfg()` in `launcher/launcher_config.py` tags each key `sync` and/or `checksum`, and `checksum_config()` is a SHA-1 over the checksum keys in a fixed order. **The data model is done; the problem is where it lives.**
+The keys and the hash are already well defined: `build_cfg()` in `launcher/launcher_config.py` tags each key `sync` and/or `checksum` (every `checksum` key is also `sync`), and `checksum_config()` is a SHA-1 over the checksum keys' values in list order. That list is *not* fixed today, though: it depends on each user's Sync Config limits, which phase three removes — see [The Sync Config limits go](#the-sync-config-limits-go). **The data model is done; the problem is where it lives.**
 
 What that placement costs, all of which the UX patches so far have been working around:
 
@@ -406,41 +408,93 @@ The lobby from phase two already creates the game; make it own the game's whole 
 
 ```mermaid
 stateDiagram-v2
-    [*] --> created: POST /game
+    [*] --> created: POST /game (password hash reserved, not routed)
     created --> configuring: host PUTs config
     configuring --> configuring: config changed → all ready flags cleared
-    configuring --> ready: every slot ready, hashes match
+    configuring --> ready: every slot claimed and ready, hashes match
     ready --> configuring: config changed / player leaves
-    ready --> running: host POSTs start → FSNP listener opens
+    ready --> running: host POSTs start → hash routed, Game.Run starts
     running --> ended: last player gone / desync / host stop
-    created --> ended: launch-timeout
-    configuring --> ended: launch-timeout
+    created --> ended: idle timeout
+    configuring --> ended: idle timeout
+    running --> ended: launch-timeout (no FSNP joins)
     ended --> [*]
 ```
 
-`Game` in `internal/game` gains three fields it doesn't need for phase one — `config map[string]string`, a per-slot `ready struct{ hash string; missing []string }`, and a `hostToken` — and the FSNP listener is opened by the `ready → running` transition instead of by the constructor. That's the whole structural implication for the Go side, and it's why this section exists now.
+**What changes in the Go server: when a game becomes an FSNP session, not what a `Game` is.** Today `Lobby.Create` registers the password hash in the router and starts `Game.Run` straight away, so a lobby game accepts FSNP connections from the moment it's created. Phase three separates the two:
 
-**Launcher↔server API.** JSON over the lobby's HTTP port; everything below the phase-two `GET /game/create` alias.
+- `POST /game` **reserves** the hash. Uniqueness is still checked at create, so a clashing user-chosen password still gets its `409` then rather than at start, but the router doesn't route on a reserved hash.
+- `POST /game/{id}/start` **routes** it and starts `Game.Run`. Before start, a handshake with that password finds no game and gets `ERROR_WRONG_PASSWORD` — harmless, because no launcher starts `fs-uae` before the state is `running`.
+
+The config document, its version, the key lists, the slots and the tokens are lobby state, held on the lobby's `entry`. None of it is FSNP state, so `Game` needn't grow fields for it; `game.New` taking no listener is what keeps this cheap. The lobby-side split of reserve from route is new work.
+
+**Timeouts.** Phase two's per-game launch timeout (default 15 min, "long enough to sync a config over IRC") counts from create. With a configuring state that's the wrong clock: a group can legitimately spend longer than that finding a disk. Pre-start games are reaped by an **idle timeout** instead — no `PUT`, `ready`, join or poll for *N* minutes — and the FSNP launch timeout counts from `start`, when it's measuring what it was meant to: emulators failing to connect.
+
+**Launcher↔server API.** JSON over the lobby's HTTP port; everything below the phase-two `GET /game/create` alias. Config values are always JSON strings — `checksum_config` hashes `str(value)` and `game.ConfigHash` takes strings, so the launcher stringifies before sending and the server rejects anything else.
 
 | Call | Who | Does |
 |---|---|---|
-| `POST /game {players, password}` | host | Creates the game; returns `id`, `port`, `addresses` and a `hostToken` that authorises the host-only calls |
-| `GET /game/{id}` | anyone with the id | The config document, its hash, each slot's `ready`/`missing`, the state. Long-poll on `?since=<version>` (or SSE) so launchers see changes without polling on a timer |
-| `PUT /game/{id}/config` | host | Whole document, keys restricted to the `sync` set; server computes the hash with the **same algorithm and key order as `checksum_config()`** so the Python side can verify it locally; bumps the version; clears every `ready` |
-| `POST /game/{id}/players/{n}/ready {hash, missing:[sha1…]}` | each player | "I applied version *v* and got hash *h*; these SHA-1s I couldn't find locally." Mismatched hash or non-empty `missing` is a not-ready *with a reason* |
-| `POST /game/{id}/start` | host | Refused unless the state is `ready`; otherwise opens the FSNP listener and flips every subscriber's `GET` to `running` — that's the signal to launch `fs-uae` |
+| `POST /game {players, password, tag, keys:{sync:[…], checksum:[…]}}` | host | Creates the game in `created` and reserves the password hash. `keys` is the host's sync key set and its ordered checksum key list, duplicates kept (see [below](#key-lists-travel-with-the-document)). The host takes slot 0. Returns `id`, `password` (generated if none was given), `port`, `addresses`, a `hostToken` for the host-only calls, and slot 0's `playerToken` |
+| `POST /game/{id}/players {tag}` | each other player | Claims the lowest free slot; returns `slot` and a `playerToken` that authorises that slot's calls. `409` when every slot is taken. Without this, "every slot ready" has nothing to count and anyone with the id could mark any slot ready |
+| `DELETE /game/{id}/players/{n}` | that slot's player, or the host | Frees the slot (leaving, or the host kicking); state drops back to `configuring` |
+| `GET /game/{id}` | anyone with the id | State, document version, the config document, both key lists, the server's hash, and per slot: tag, `ready`, `missing`. Long-poll on `?since=<version>` (or SSE) so launchers see changes without polling on a timer |
+| `PUT /game/{id}/config` | host | Whole document. A key outside the sync set from create is a `400`. The server writes the [server-owned keys](#server-owned-keys) itself and refuses host values for them, computes the hash with `game.ConfigHash` over the checksum list from create, bumps the version, clears every `ready` |
+| `POST /game/{id}/players/{n}/ready {version, hash, missing:{key: sha1}}` | that slot's player | "I applied version *v*, got hash *h*, and couldn't find these files." `missing` is what `config_apply.apply_config` already returns: the SHA-1 key (which names the slot, e.g. `x_floppy_drive_1_sha1`) mapped to the SHA-1 it was sent. A stale `version` is a `409` — the player applied a document that has since changed. A mismatched hash or a non-empty `missing` is a not-ready *with a reason* |
+| `POST /game/{id}/start` | host | Refused unless the state is `ready`; otherwise routes the password hash, starts `Game.Run` and flips every subscriber's `GET` to `running` — that's the signal to launch `fs-uae` |
 | `DELETE /game/{id}` | host | Ends it |
 
-**What the Python side becomes.** `handle_game_instruction` and the whole `__` command set are deleted. In their place: a small HTTP client plus one thread that long-polls `GET /game/{id}` and raises a `Signal` per change, which the panel renders as *state* — a player list with ready/missing-file/hash-mismatch per row, and a start button that's enabled exactly when the server would accept `start`. `set_config`, `set_kickstart_config` and `set_file_config` survive intact: they're the "apply this document locally and find out what I'm missing" step, which is the genuinely useful part of the current code, and their output *is* the `ready` call's body.
+A missing file is also a hash mismatch: `resolve_config` clears a slot it can't fill, so that player's hash differs too. The panel should show *missing* rather than *mismatch* whenever `missing` is non-empty — it's the cause, and the one the player can act on.
+
+#### The Sync Config limits go
+
+**Design goal: netplay settings don't change how a game loads or launches.** Phase three removes the Sync Config dialog and its limits, and restores the fixed `Amiga.MAX_*` hardware maximums (4 floppy drives, 20 floppy images, 4 CD-ROM drives, 20 CD-ROM images, 4 hard drives) everywhere.
+
+The limits — Default (the `Amiga.MAX_*` values), Fast (4 floppy drives, 4 floppy images, no CD-ROM or hard drives) or Custom (0–20 each), set per user in `launcher/sync_settings.py` — were added in #23 to shorten the IRC sync, which sends one message per key. Once the config is one `PUT` to the lobby there's nothing left for them to speed up. They also reach well beyond netplay: #23 replaced `Amiga.MAX_*` with `sync_settings.MAX_*` in the code that loads, prepares and launches *every* game, so a netplay setting decides how many media slots a single-player game gets:
+
+| Where | What the limit controls |
+|---|---|
+| `fsgs/amiga/launchhandler.py` | which floppies and CD-ROMs are prepared at launch — with Fast's CD-ROM limit of 0 the CD-ROM loops don't run at all |
+| `fsgs/amiga/configwriter.py` | the drive count written to fs-uae — Custom allows more than the hardware's 4 |
+| `fsgs/amiga/valueconfigloader.py` | which media paths are shortened against the floppy and CD-ROM directories when a game loads (`contract_paths`) — images past the limit still load, with their full paths |
+| `fsgs/amiga/amigacontext.py`, `launcher/ui/MediaListGroup.py` | how many images the media list holds |
+| `launcher/launcher_config.py` | which keys exist at all (`build_cfg`, `refresh_keys`, the reset values) |
+
+Those effects follow from reading the loops; none has been reproduced in a session yet. Either way the fix is the same: delete `sync_settings.py`, `SyncConfigDialog` and `LauncherConfig.refresh_keys()`, and put `Amiga.MAX_*` back at every call site above.
+
+**Why it lands with phase three, not before.** While config still goes over IRC, the full key set is the slow sync again on any IRC server not configured like `fsnp-server/irc/netplay.conf` (see the flood-limit entry in [Risks](#risks)). Removing the limits and taking config off IRC are one change.
+
+#### Key lists travel with the document
+
+Today the checksum key list isn't fixed: `build_cfg` appends the floppy, CD-ROM and hard-drive keys up to the per-user limits above. So:
+
+- **Two launchers with different limits hash different lists** and can never agree, however identical their configs.
+- **`resolve_config` drops keys outside the *local* sync set**, so a host with more floppy slots than a player loses disks on the player's side with nobody told.
+
+Removing the limits fixes both for launchers of the same version. The host's lists are part of the game anyway: sent at `POST /game`, returned by `GET /game/{id}`, and used by every player both to bound what it applies (`resolve_config`'s `sync_keys` argument, which already takes the set as a parameter) and to hash (`checksum_config` over the document's checksum list — exactly what `test_checksum_golden.py` already does when it patches `checksum_keys`). That's a safeguard rather than a fix now, and it costs a few hundred bytes per game:
+
+- **The server needs them regardless**, to validate keys and compute the hash without growing an Amiga vocabulary — it treats both lists as opaque strings.
+- **Launchers of different versions** can still disagree whenever `build_cfg` changes; hashing against the document's lists means they agree on the hash when they agree on the config.
+
+**The document's lists say what the host sent, not what a player accepts.** The server checks a `PUT` only against the lists the host gave it at create, so those lists are host input like the values. Each player applies a key only when it is in the document's sync list *and* this launcher would take it over the network: in its own `build_cfg` sync set, or a media SHA-1 key, matched by name so that a host's extra media slots still resolve. Anything else — a key a newer launcher added, or a local-only key such as a raw `hard_drive_0` path — is left as it is locally. If it is a checksum key, the player's hash then differs, so the slot shows a mismatch and the game can't start on a config one launcher can't honour.
+
+#### Server-owned keys
+
+`__netplay_game`, `__netplay_password`, `__netplay_players` and `__netplay_addresses` are checksum keys, and `__netplay_port` is a sync key, but each is a fact about the game the server already holds. The server writes them into the document on every `PUT` and rejects a host-supplied value for any of them, so a host can't produce a document that disagrees with the game it describes — and the only way to change one is to change the game. `__netplay_state_dir_name` stays host-owned.
+
+#### Slots aren't FSNP player numbers
+
+A lobby slot is a launcher-side identity: who has joined, and who is ready. FSNP assigns its player numbers first-come at the handshake, and the handshake carries nothing that could tie a connection back to a lobby slot — a new player sends session key 0 and player `0xFF` (see [Many games per process](#many-games-per-process-and-the-missing-lobby)). Making the two match would need a client change, so the panel must not present the lobby slot as the in-game player number. Open question, to settle before the panel is built: whether anything a player sees in-game follows the FSNP number (join order) rather than the config, in which case the panel should say so.
+
+**What the Python side becomes.** `handle_game_instruction` and the whole `__` command set are deleted. In their place: a small HTTP client plus one thread that long-polls `GET /game/{id}` and raises a `Signal` per change, which the panel renders as *state* — a player list with ready/missing-file/hash-mismatch per row, and a start button that's enabled exactly when the server would accept `start`. The apply step survives: `set_config`, `set_kickstart_config` and `set_file_config` have already been folded into `launcher/netplay/config_apply.py`, whose `apply_config` takes a document and returns the `missing` map — the genuinely useful part of the current code, and the body of the `ready` call. What it still needs is to take the document's sync set rather than reading `LauncherConfig.sync_keys_set`.
 
 **What IRC is still for.** Chat, and finding each other — "join `#game-xyz`" becomes "here's game id `xyz` on `host:port`". For two players who already know each other it can be a text field. Either way it carries no protocol traffic any more, so its plaintext-ness stops mattering.
 
 ### Trade-offs
 
-- **This is a rewrite of `netplay.py`'s command layer, not a patch** — the less fun half of the work. It's sequenced last for that reason. The Go side is small; the value is in deleting Python.
-- **The lobby port must be reachable**, which it already must be for `/startgame` (W10) — and since phase two it's the same port as the games, 25101. Games hosted from the launcher (`/hostgame`) would need the local `fsnp-server` to run in lobby mode too — one flag, same port.
+- **This is a rewrite of `netplay.py`'s command layer, not a patch** — the less fun half of the work. It was held back until the lobby existed and had run real sessions for that reason; it now comes before rejoin. The Go side is small; the value is in deleting Python.
+- **The lobby port must be reachable**, which it already must be for `/startgame` (W10) — and since phase two it's the same port as the games, 25101. Games hosted from the launcher (`/hostgame`) would need the local `fsnp-server` to run in lobby mode too — `--lobby`, same port. **That changes `/hostgame`'s behaviour:** today it spawns a single-game server with whatever password it's given, empty included, and a lobby game can't be passwordless. An empty `/hostgame` password would get a generated one instead, which reaches every player through the document as it does for `/startgame` — but it's a visible change and needs saying in the command's help.
 - **`hostToken` is the only auth and it's clear text over HTTP.** That's the same threat model as the v1 FSNP password (a 32-bit hash in the clear, [Hardening](#hardening)) — no worse than today, not better. TLS on the lobby is straightforward in Go and doesn't involve the C client, so unlike FSNP it *could* be fixed here; not in scope for the first cut.
-- **The document's key set is defined in Python** (`build_cfg`'s `sync` tags). The server should treat it as opaque strings and validate only against a key list it's handed at `POST /game` or in its config, so `launcher_config.py` stays the single source and the Go side doesn't grow an Amiga-config vocabulary.
+- **The document's key set is defined in Python** (`build_cfg`'s `sync` and `checksum` tags). The server treats both lists as opaque strings handed to it at `POST /game`, so `launcher_config.py` stays the single source and the Go side doesn't grow an Amiga-config vocabulary. The cost is that a buggy or hostile host can send any key list it likes; the server's checks are only "keys are in the list" and "the hash is over the list", which is all the start gate needs.
 
 ## Repository layout
 
@@ -488,7 +542,8 @@ internal/game/conn.go               handshake, reader/writer goroutines         
 internal/game/clock.go              Clock interface; RealClock's catch-up ticker     ✓ built
 internal/game/*_test.go             net.Pipe() clients, fake clock, -race            ✓ built, 27 tests, 89% coverage, replays the captured session
 internal/lobby/                     ✓ phase two: port-25101 sniffer, password-hash router, registry, HTTP /game/create; 11 tests over loopback TCP, 91% coverage
-                                     phase three: config document, ready/missing per slot, long-poll GET, start gate
+                                     phase three: reserve-then-route, slots and tokens, config document with key lists, ready/missing per slot, long-poll GET, start gate, idle reaping
+internal/game/confighash.go         ConfigHash, the server's checksum_config          ✓ built, golden cases shared with launcher/netplay/tests/test_checksum_golden.py
 ```
 
 `internal/fsnp`, `internal/game`, `internal/lobby` and `cmd/fsnp-server` are real code as of this doc revision, in `fsnp-server/` at the repo root per [Repository layout](#repository-layout) — `go build ./...`, `go vet ./...`, and `gofmt -l .` all clean, `go test ./... -race` passes. The tests are the part Python never had: `TestSyncCheckInvariant` and `TestTagBroadcastAsymmetry` in `internal/fsnp` turn the captured-session findings above into regressions, and `internal/game` goes further — `TestStartupMatchesCapture` checks the server's first words to each client against the captured bytes (join-order tag asymmetry included), and `TestReplayCapturedSession` is the "fake emulator": it feeds both captured client streams through a running game, frame by frame, and requires every one of the 6,164 common frames to verify with no desync. `net.Pipe()` gives in-memory clients, a fake clock drives the ticker and the launch timeout, so none of it depends on wall-clock timing. CI runs all of it: `.github/workflows/netplay-server.yml` calls `make -C fsnp-server check` and then `build`, and `ci.yml` invokes it as `check-netplay-server`. It goes through `make` rather than raw `go` commands so CI cannot drift from what a developer runs locally, and it builds the binary too — `fsbuild/build.sh` covers that in a packaged build, but only on the platform jobs and only after a long PyInstaller step.
@@ -522,7 +577,18 @@ For development mode, `fsnp-server/Makefile` builds the binary where `Server.py`
    **Verified in real sessions.** Two `fs-uae v3.1.66` instances from the command line against the lobby image: 3,229 frames in sync, `ping_ms=0 lag_ms=0–1`, inputs relayed both ways, game removed from the registry the moment a player quit; a player using the wrong password got `no game for password` and the client's offline fallback (see [Player loss](#player-loss-without-collateral-damage-phase-one) for what that looks like). From the launcher, `/startgame 127.0.0.1 2` against the lobby image and a local InspIRCd: `GET /game/create?players=2&password=` → 200, generated password parsed, `__netplay_*` keys sent to the channel, the connection tester's `PING` verified the host on the shared port.
 
    **Not verified: a game started from the launcher.** The launcher's start sequence counts players *in the IRC channel* against `__netplay_players` (`on_ackstart`), so it needs a second launcher in the channel, not a command-line emulator — the first attempt stopped at "wanted 2 players, has 1". The code from Start to the emulator (`do_start_game` → `start_local_game`, writing `netplay_server`/`port`/`password`) is unchanged by this step, and the emulator's side of it is what the command-line sessions verified, so the residual risk is small; it's left for the next two-launcher session. Likewise `/hostgame` on 25101 has been checked with mocks and real listeners but not yet hosted from the launcher.
-10. **Phase three: config in the session. — not started, next.** Config document, ready-with-reason, start gate on the lobby; replace `netplay.py`'s `__` command layer with an HTTP client and a long-poll thread; IRC demoted to chat. Comes before rejoin: config sync over IRC is the day-to-day pain (see the flood-limit entry in [Risks](#risks)), rejoin is a nice-to-have. See [Future: the session owns the config](#future-the-session-owns-the-config).
+10. **Phase three: config in the session. — in progress.** Comes before rejoin: config sync over IRC is the day-to-day pain (see the flood-limit entry in [Risks](#risks)), rejoin is a nice-to-have. See [Future: the session owns the config](#future-the-session-owns-the-config) for the design, revised after checking it against the code.
+
+    Done:
+    - **Apply step extracted** (#85). `launcher/netplay/config_apply.py`: `resolve_config` is pure and takes the sync set, limits and file lookup as arguments; `apply_config` wires it to the live config and returns the `missing` map. Tested in `launcher/netplay/tests/test_config_apply.py`.
+    - **Shared hash** (#87). `game.ConfigHash` in Go, with `internal/game/testdata/config-hash.json` as golden cases that both it and `checksum_config` (`test_checksum_golden.py`) are tested against, so the two can't drift.
+
+    Remaining, roughly in order:
+    - **Lobby:** reserve the hash at create, route it at start; slots and tokens; the config document with its key lists and server-owned keys; `ready` with version and `missing`; long-poll `GET`; start gate; idle timeout before start, launch timeout from start.
+    - **Python:** `apply_config` takes the document's sync set; hash with the document's checksum list; an HTTP client and a long-poll thread raising `Signal`s; the panel's player list and start button; `/hostgame` on a local `--lobby` server.
+    - **Remove the Sync Config limits:** delete `sync_settings.py`, `SyncConfigDialog` and `refresh_keys()`, and restore `Amiga.MAX_*` in the launch, load, config-writer and media-list code (see [The Sync Config limits go](#the-sync-config-limits-go)). Same change as taking config off IRC, so the IRC sync never runs with the full key set.
+    - **Delete** `handle_game_instruction`, the `__` command set and `send_config`; IRC carries chat and the game id only.
+    - **Verify** with one player missing a disk, which the IRC path reports only as a bare hash mismatch; and, single-player, that a CD-ROM game and a game with more than four floppy images load and launch with every disc and image — the cases the limits affected.
 11. **Phase four: rejoin. — not started, redesigned; nice to have.** Rejoin by relaunch and replay from frame 0, pausing the others meanwhile — no client change, see [Rejoin](#rejoin-phase-four). First task: find out whether `fs-uae` consumes a backlog of frame words faster than real time, which decides whether the rest is worth building. Test by quitting one emulator mid-game and relaunching it with the same password.
 
 ## Risks
@@ -537,7 +603,8 @@ For development mode, `fsnp-server/Makefile` builds the binary where `Server.py`
 - **Windows timers.** Verify 20 ms tick accuracy on a Windows build; fall back to a hybrid sleep-then-short-spin only if measured jitter demands it.
 - **Distribution.** The launcher is PyInstaller-packaged; a Go toolchain enters the build — one `go build` per platform, no cgo, and `fsbuild/build.sh` fails loudly rather than shipping a bundle without the server. Contributors who only touch the Python side need no Go install: `fsnp-server/Makefile` falls back to a `golang` container.
 - **Protocol v2 temptation.** Single-port multiplexing, TLS and explicit frame numbers on checksum words are all worthwhile, but each needs the emulator to change. Ship v1 in Go and run real sessions first.
-- **Phase-three scope.** Moving config into the session is the change that deletes the most fragile Python, which made it tempting to pull forward; it waited until the lobby existed and real sessions had run on the Go server, and both are now true. What remains is that it's a rewrite of the launcher's netplay command layer and panel, not a patch — scope it as such, and keep `set_config`/`set_kickstart_config`/`set_file_config` intact as the plan says.
+- **Phase-three scope.** Moving config into the session is the change that deletes the most fragile Python, which made it tempting to pull forward; it waited until the lobby existed and real sessions had run on the Go server, and both are now true. What remains is that it's a rewrite of the launcher's netplay command layer and panel, not a patch — scope it as such. The apply step it keeps is already extracted and tested (`config_apply.py`), so the rewrite has a fixed point to build around.
+- **The Sync Config limits leak out of netplay.** They were meant to shorten the IRC sync, but they also set how many media slots *every* game gets at load and launch — Fast mode's CD-ROM limit of 0 reaches the CD-ROM preparation at launch, and images past the floppy limit aren't prepared at launch. Between players, different limits mean different checksum key lists: the hashes can never match, and `resolve_config` silently drops the host's extra media slots. Phase three removes the limits ([The Sync Config limits go](#the-sync-config-limits-go)); until then, players need matching Sync Config modes, and Default is the only mode that doesn't affect single-player games.
 
 ---
 
