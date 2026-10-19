@@ -89,14 +89,6 @@ jobs:
         run: |
           pipenv run pytest fsbc fstd fspy launcher/netplay
 
-      # The widget, panel and theme tests. The offscreen platform needs no
-      # display server.
-      - name: Run Qt tests
-        env:
-          QT_QPA_PLATFORM: offscreen
-        run: |
-          pipenv run pytest fsui/test/test_qt6.py
-
       - name: Set base version
         run: |
           echo "BASEVERSION_FS=${{ inputs.version }}" > BASEVERSION.FS
@@ -134,3 +126,25 @@ jobs:
           name: Linux_x86-64-${{ inputs.version }}
           path: fsbuild/_dist/*
         if: github.event_name != 'pull_request'
+
+      # The widget, panel and theme tests run last: PyInstaller bundles the
+      # host libraries it finds, and the GL libraries Qt needs here belong
+      # to the user's system, not the bundle. The offscreen platform needs
+      # no display server. The list is what PySide6's QtGui, QtWidgets and
+      # offscreen plugin link against and the wheel doesn't ship.
+      - name: Install Qt test libraries
+        run: >-
+          sudo apt install
+          libegl1
+          libgl1
+          libx11-6
+          libdbus-1-3
+          libfontconfig1
+          libfreetype6
+          libxkbcommon0
+
+      - name: Run Qt tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          pipenv run pytest fsui/test/test_qt6.py
