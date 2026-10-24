@@ -41,7 +41,7 @@ class FSUAE(object):
         print(args)
         for name in ["SDL_VIDEODRIVER", "__GL_SYNC_TO_VBLANK"]:
             if name in os.environ:
-                print("{0} was present in environment, removing!".format(name))
+                print(f"{name} was present in environment, removing!")
                 del os.environ[name]
         env = os.environ.copy()
         print(repr(env))
@@ -75,7 +75,7 @@ class FSUAE(object):
                 if c not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789":
                     break
             else:
-                print("[ENV] {} = {}".format(key, value))
+                print(f"[ENV] {key} = {value}")
                 env[key] = value
 
     @classmethod
@@ -114,8 +114,8 @@ class FSUAE(object):
         #     import wx
         #    y += wx.SystemSettings_GetMetric(wx.SYS_CAPTION_Y)
 
-        env[str("SDL_VIDEO_WINDOW_POS")] = str("{0},{1}".format(x, y))
-        args.append("--window-x={0}".format(x))
-        args.append("--window-y={0}".format(y))
+        env[str("SDL_VIDEO_WINDOW_POS")] = str(f"{x},{y}")
+        args.append(f"--window-x={x}")
+        args.append(f"--window-y={y}")
         # print("window position", env["SDL_VIDEO_WINDOW_POS"])
         # os.environ["SDL_VIDEO_WINDOW_POS"] = "{0},{1}".format(x, y)

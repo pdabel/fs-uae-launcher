@@ -78,7 +78,7 @@ class GzipHandler(object):
             self.name = name + ".rom"
         else:
             raise Exception(
-                "Unexpected extension {} in GzipHandler".format(ext)
+                f"Unexpected extension {ext} in GzipHandler"
             )
 
     def exists(self, name):
@@ -106,7 +106,7 @@ class XzHandler(object):
         if ext == ".xz":
             self.name = name
         else:
-            raise Exception("Unexpected extension {} in XzHandler".format(ext))
+            raise Exception(f"Unexpected extension {ext} in XzHandler")
 
     def exists(self, name):
         return name == self.name
@@ -234,7 +234,7 @@ def filter_open(path, stream=None):
 
 class SkipFilter:
     def __init__(self, stream, count):
-        print("[ARCHIVE] Skip({}) filter for".format(count), stream)
+        print(f"[ARCHIVE] Skip({count}) filter for", stream)
         self.stream = stream
         self.count = count
         self.strip_left = count

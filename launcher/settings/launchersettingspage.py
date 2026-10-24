@@ -15,7 +15,7 @@ class LauncherSettingsPage(SettingsPage):
     def __init__(self, parent):
         super().__init__(parent)
         icon = fsui.Icon("fs-uae-launcher", "pkg:launcher")
-        self.add_header(icon, "{} Launcher".format(fsgs.product))
+        self.add_header(icon, f"{fsgs.product} Launcher")
 
         theme_group = self.add_option(Option.LAUNCHER_THEME)
         self.theme_choice = theme_group.widget

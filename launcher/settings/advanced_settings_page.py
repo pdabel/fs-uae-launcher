@@ -79,18 +79,18 @@ class AdvancedSettingsPage(SettingsPage):
             #             "(use config dialog instead)\n".format(key)
             if LauncherConfig.is_config_only_option(key):
                 text += (
-                    "\n# {0} will here function as a global config "
+                    f"\n# {key} will here function as a global config "
                     "default and may cause\nunexpected problems. It is "
                     "recommended to only use this as a per-config "
-                    "option.\n".format(key)
+                    "option.\n"
                 )
             value = app.settings[key]
             if LauncherConfig.get(key):
                 text += (
-                    "\n# {0} is overridden by current "
-                    "configuration\n".format(key)
+                    f"\n# {key} is overridden by current "
+                    "configuration\n"
                 )
-            text += "{0} = {1}\n".format(key, value)
+            text += f"{key} = {value}\n"
             if LauncherConfig.get(key):
                 text += "\n"
             if key in LauncherConfig.config_keys:

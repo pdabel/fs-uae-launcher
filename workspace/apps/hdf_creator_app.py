@@ -115,7 +115,7 @@ class HDFCreatorWindow(fsui.DialogWindow):
         k = 1
         while True:
             if k > 1:
-                name = "New Disk {0}.hdf".format(k)
+                name = f"New Disk {k}.hdf"
             else:
                 name = "New Disk.hdf"
             if not os.path.exists(os.path.join(self.path, name)):
@@ -210,7 +210,7 @@ class HDFCreatorWindow(fsui.DialogWindow):
         if disk_type == 2:
             if size >= 512 * 1024 * 1024:
                 return self.show_error(
-                    gettext("Use RDB disk images for size >= {0}".format(512))
+                    gettext(f"Use RDB disk images for size >= {512}")
                 )
 
         if os.path.exists(path):

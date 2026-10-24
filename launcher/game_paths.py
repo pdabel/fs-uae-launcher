@@ -58,21 +58,21 @@ class GamePaths(object):
         if number == 0:
             sha1 = LauncherConfig.get("title_sha1")
         else:
-            sha1 = LauncherConfig.get("screen{0}_sha1".format(number))
+            sha1 = LauncherConfig.get(f"screen{number}_sha1")
         if sha1:
             return "sha1:" + sha1
 
         if number == 0:
             path = self.get_override_path("title_image")
         else:
-            path = self.get_override_path("screen{0}_image".format(number))
+            path = self.get_override_path(f"screen{number}_image")
         if path and os.path.exists(path):
             return path
         if self.uuid:
             if number == 0:
                 name = "title.png"
             else:
-                name = "screen{0}.png".format(number)
+                name = f"screen{number}.png"
             paths = FSGSDirectories.get_images_dirs()
             for dir_ in paths:
                 p = os.path.join(
@@ -112,7 +112,7 @@ class GamePaths(object):
             else:
                 paths = FSGSDirectories.get_screenshots_dirs()
         if number >= 2:
-            name = "{0}_{1}".format(name, number)
+            name = f"{name}_{number}"
         for dir_ in paths:
             path = os.path.join(dir_, letter, name + ".png")
             if os.path.exists(path):
@@ -242,7 +242,7 @@ class GamePaths(object):
                 # dir for the net play session
                 netplay_game = LauncherConfig.get("__netplay_game")
                 if netplay_game:
-                    config_name = "Net Play ({0})".format(netplay_game)
+                    config_name = f"Net Play ({netplay_game})"
 
         letter = self.get_letter(config_name)
         if not letter:

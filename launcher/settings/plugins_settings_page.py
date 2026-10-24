@@ -16,9 +16,9 @@ class PluginsSettingsPage(SettingsPage):
         image = fsui.Image("workspace:res/16x16/settings.png")
         plugin_manager = PluginManager.instance()
         for plugin in plugin_manager.plugins():
-            text = "{0} ({1})".format(plugin.name, plugin.version)
+            text = f"{plugin.name} ({plugin.version})"
             if plugin.outdated:
                 text += " - " + gettext("This plugin is outdated").upper()
-            print("[PLUGINS] {0}".format(text))
+            print(f"[PLUGINS] {text}")
             self.list_view.add_item(text, icon=image)
         self.layout.add(self.list_view, fill=True, expand=True)

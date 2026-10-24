@@ -317,9 +317,7 @@ class WarningsElement(StatusElement):
         if len(self.settings_config_keys):
             if len(self.settings_config_keys) == 1:
                 text = gettext(
-                    "Config in settings: {name}".format(
-                        name=list(self.settings_config_keys)[0]
-                    )
+                    f"Config in settings: {list(self.settings_config_keys)[0]}"
                 )
             else:
                 text = gettext("Config options in settings")
@@ -327,9 +325,7 @@ class WarningsElement(StatusElement):
         if len(self.custom_uae_config):
             if len(self.custom_uae_config) == 1:
                 text = gettext(
-                    "Custom option: {name}".format(
-                        name=list(self.custom_uae_config)[0]
-                    )
+                    f"Custom option: {list(self.custom_uae_config)[0]}"
                 )
             else:
                 text = gettext("Custom uae_ Options")
@@ -337,9 +333,7 @@ class WarningsElement(StatusElement):
         if len(self.custom_config):
             if len(self.custom_config) == 1:
                 text = gettext(
-                    "Custom option: {name}".format(
-                        name=list(self.custom_config)[0]
-                    )
+                    f"Custom option: {list(self.custom_config)[0]}"
                 )
             else:
                 text = gettext("Custom options")

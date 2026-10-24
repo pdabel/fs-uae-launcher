@@ -99,7 +99,7 @@ class ImportTask(threading.Thread):
     def copy_roms(self, src, dst):
         count = 0
         if not os.path.isdir(src):
-            self.log("{0} is not a directory".format(src))
+            self.log(f"{src} is not a directory")
             return count
         src_file = os.path.join(src, "rom.key")
         if os.path.exists(src_file):

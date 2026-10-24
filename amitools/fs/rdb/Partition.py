@@ -72,20 +72,20 @@ class Partition:
     """return a string line with typical info about this partition"""
     p = self.part_blk
     de = p.dos_env
-    name = "'{!s}'".format(p.drv_name)
+    name = f"'{p.drv_name!s}'"
     part_blks = self.get_num_blocks()
     part_bytes = self.get_num_bytes()
     extra = ""
     if total_blks != 0:
       ratio = 100.0 * part_blks / total_blks
-      extra += "{:6.2f}%  ".format(ratio)
+      extra += f"{ratio:6.2f}%  "
     # add dos type
     dos_type = de.dos_type
     extra += DosType.num_to_tag_str(dos_type)
-    extra += "/0x{:04x}".format(dos_type)
+    extra += f"/0x{dos_type:04x}"
     # max transfer
-    extra += " max_transfer=0x{:x}".format(de.max_transfer)
-    extra += " mask=0x{:x}".format(de.mask)
+    extra += f" max_transfer=0x{de.max_transfer:x}"
+    extra += f" mask=0x{de.mask:x}"
     extra += " num_buffer=%d" % de.num_buffer
     # add flags
     flags = p.flags

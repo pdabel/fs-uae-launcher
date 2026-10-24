@@ -73,7 +73,7 @@ class SaveButton(IconButton):
                 if value == LauncherConfig.default_config.get(key, ""):
                     continue
                 if value:
-                    f.write("{0} = {1}\n".format(key, value))
+                    f.write(f"{key} = {value}\n")
 
         # scanner = ConfigurationScanner()
         # search = ConfigurationScanner.create_configuration_search(name)

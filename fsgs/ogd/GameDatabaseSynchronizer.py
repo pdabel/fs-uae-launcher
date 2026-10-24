@@ -231,7 +231,7 @@ class GameDatabaseSynchronizer(object):
                 else:
                     self.database.delete_game(game_sync_id, game_uuid)
             t2 = time.time()
-            print("  {0:0.2f} seconds".format(t2 - t1))
+            print(f"  {t2 - t1:0.2f} seconds")
 
         last_json_data = ""
         while True:
@@ -245,7 +245,7 @@ class GameDatabaseSynchronizer(object):
                 break
             last_json_data = json_data
             num_changes = len(json_data["ratings"])
-            print("  processing {0} entries".format(num_changes))
+            print(f"  processing {num_changes} entries")
             t1 = time.time()
             for update in json_data["ratings"]:
                 cursor = self.client.database.cursor()
@@ -277,7 +277,7 @@ class GameDatabaseSynchronizer(object):
                     ),
                 )
             t2 = time.time()
-            print("  {0:0.2f} seconds".format(t2 - t1))
+            print(f"  {t2 - t1:0.2f} seconds")
 
         # print(
         #     "downloaded size: {0:0.2f} MiB".format(
@@ -290,7 +290,7 @@ class GameDatabaseSynchronizer(object):
             if is_http_url(self.host):
                 url_prefix = self.host
             else:
-                url_prefix = "http://{}".format(self.host)
+                url_prefix = f"http://{self.host}"
         else:
             url_prefix = openretro_url_prefix()
         return url_prefix
@@ -298,14 +298,12 @@ class GameDatabaseSynchronizer(object):
     def fetch_game_sync_data(self):
         last_id = self.database.get_last_game_id()
         if self.context.meta["games"][self.platform_id]["sync"] == last_id:
-            print("[SYNC] Platform {} already synced".format(self.platform_id))
+            print(f"[SYNC] Platform {self.platform_id} already synced")
             return b""
         self.set_status(
             gettext("Fetching database entries ({0})").format(last_id + 1)
         )
-        url = "{0}/api/sync/{1}/games?v=3&sync={2}".format(
-            self.url_prefix(), self.platform_id, last_id
-        )
+        url = f"{self.url_prefix()}/api/sync/{self.platform_id}/games?v=3&sync={last_id}"
         print(url)
         data = self.fetch_data(url)
         # self.downloaded_size += len(data)
@@ -321,9 +319,7 @@ class GameDatabaseSynchronizer(object):
         self.set_status(
             gettext("Fetching game ratings ({0})").format(last_time)
         )
-        url = "{0}/api/sync/{1}/ratings?from={2}".format(
-            self.url_prefix(), self.platform_id, quote_plus(last_time)
-        )
+        url = f"{self.url_prefix()}/api/sync/{self.platform_id}/ratings?from={quote_plus(last_time)}"
         print(url)
         # data, json_data = self.fetch_json(url)
         json_data = self.fetch_json(url)

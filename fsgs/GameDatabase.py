@@ -100,9 +100,7 @@ class GameDatabase(BaseDatabase):
     @staticmethod
     def binary_uuid_to_str(data):
         s = hexlify(data).decode("ASCII")
-        return "{}-{}-{}-{}-{}".format(
-            s[0:8], s[8:12], s[12:16], s[16:20], s[20:32]
-        )
+        return f"{s[0:8]}-{s[8:12]}-{s[12:16]}-{s[16:20]}-{s[20:32]}"
 
     def get_all_uuids(self):
         cursor = self.internal_cursor()
@@ -112,9 +110,7 @@ class GameDatabase(BaseDatabase):
             data = row[0]
             if len(data) != 16:
                 print(
-                    "WARNING: Invalid UUID ({} bytes) found: {}".format(
-                        len(data), repr(data)
-                    )
+                    f"WARNING: Invalid UUID ({len(data)} bytes) found: {repr(data)}"
                 )
                 continue
             result.add(self.binary_uuid_to_str(data))
@@ -135,14 +131,14 @@ class GameDatabase(BaseDatabase):
             )
             row = cursor.fetchone()
             if not row:
-                raise LookupError("Cannot find game uuid {}".format(game_uuid))
+                raise LookupError(f"Cannot find game uuid {game_uuid}")
         else:
             cursor.execute(
                 "SELECT uuid, data FROM game WHERE id = ?", (game_id,)
             )
             row = cursor.fetchone()
             if not row:
-                raise LookupError("Cannot find game id {}".format(game_id))
+                raise LookupError(f"Cannot find game id {game_id}")
         if game_uuid is None:
             game_uuid = self.binary_uuid_to_str(row[0])
         else:
@@ -178,9 +174,7 @@ class GameDatabase(BaseDatabase):
                 row = cursor.fetchone()
                 if not row:
                     raise IncompleteGameException(
-                        "Could not find parent {0} of game {1}".format(
-                            next_parent_uuid, game_uuid
-                        )
+                        f"Could not find parent {next_parent_uuid} of game {game_uuid}"
                     )
                 data = zlib.decompress(row[0])
                 data = data.decode("UTF-8")

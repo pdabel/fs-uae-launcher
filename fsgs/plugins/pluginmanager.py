@@ -74,7 +74,7 @@ class Plugin(BasePlugin):
             pass
 
     def __str__(self):
-        return "<Plugin {0}".format(self.path)
+        return f"<Plugin {self.path}"
 
     @staticmethod
     def os_name(pretty=False):
@@ -114,7 +114,7 @@ class Plugin(BasePlugin):
 
     @classmethod
     def platform(cls):
-        return "{}_{}".format(cls.os_name(), cls.arch_name())
+        return f"{cls.os_name()}_{cls.arch_name()}"
 
 
 class Expansion(BasePlugin):
@@ -189,7 +189,7 @@ class Expansion(BasePlugin):
         return path
 
     def __str__(self):
-        return "<Expansion {0}".format(self.path)
+        return f"<Expansion {self.path}"
 
 
 class PluginResource:

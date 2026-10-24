@@ -86,5 +86,5 @@ def initial_text():
         value = fsgs.config.values[key]
         if not value:
             continue
-        text.append("{0} = {1}\n".format(key, value))
+        text.append(f"{key} = {value}\n")
     return "".join(text)

@@ -27,9 +27,9 @@ class ConfigBrowser(fsui.VerticalItemView):
         self.set_row_height(28)
         # self.list_view.set_background_color(fsui.Color(0xeb, 0xeb, 0xeb))
         self.setStyleSheet(
-            """
+            f"""
         QListView {{
-            background-color: {0};
+            background-color: {theme.sidebar_background.to_hex()};
             outline: none;
         }}
         QListView::item {{
@@ -37,12 +37,9 @@ class ConfigBrowser(fsui.VerticalItemView):
             border: 0px;
         }}
         QListView::item:selected {{
-            background-color: {1};
+            background-color: {theme.selection_background.to_hex()};
         }}
-        """.format(
-                theme.sidebar_background.to_hex(),
-                theme.selection_background.to_hex(),
-            )
+        """
         )
 
     def update_from_implicit(self, implicit):

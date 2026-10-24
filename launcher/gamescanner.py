@@ -446,12 +446,12 @@ class GameScanner(object):
                     # we ignore players = 1 here, that is reserved for games
                     # with max 1 players
                     for i in range(min_players + 1, max_players + 1):
-                        search_terms.add("p:{0}".format(i))
+                        search_terms.add(f"p:{i}")
                 if sim_players > 0:
                     # we ignore players = 1 here, that is reserved for games
                     # with max 1 players
                     for i in range(min_players + 1, sim_players + 1):
-                        search_terms.add("p:{0}s".format(i))
+                        search_terms.add(f"p:{i}s")
 
             database_cursor.execute(
                 "UPDATE game SET name = ?, update_stamp = ?, sort_key = ?, "
@@ -586,6 +586,4 @@ class ScanHelper(object):
 
 def binary_to_uuid(v):
     v = hexlify(v).decode("ASCII")
-    return "{0}-{1}-{2}-{3}-{4}".format(
-        v[0:8], v[8:12], v[12:16], v[16:20], v[20:32]
-    )
+    return f"{v[0:8]}-{v[8:12]}-{v[12:16]}-{v[16:20]}-{v[20:32]}"

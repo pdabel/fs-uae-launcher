@@ -111,7 +111,7 @@ class OGDClient(object):
 
     def post(self, path, params=None, data=None, auth=True):
         headers = {}
-        url = "{0}{1}".format(openretro_url_prefix(), path)
+        url = f"{openretro_url_prefix()}{path}"
         if not data and params:
             data = urlencode(params)
             headers["Content-Type"] = "application/x-www-form-urlencoded"
@@ -123,7 +123,7 @@ class OGDClient(object):
         return r.json()
 
     def build_url(self, path, **kwargs):
-        url = "{0}{1}".format(self.url_prefix(), path)
+        url = f"{self.url_prefix()}{path}"
         if kwargs:
             url += "?" + urlencode(kwargs)
         return url

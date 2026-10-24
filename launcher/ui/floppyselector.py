@@ -73,7 +73,7 @@ class FloppySelector(fsui.Panel):
             dir_path, name = os.path.split(value)
             if dir_path:
                 if self.show_path:
-                    path = "{0} ({1})".format(name, dir_path)
+                    path = f"{name} ({dir_path})"
                 else:
                     path = name
             else:
@@ -101,29 +101,25 @@ class FloppySelector(fsui.Panel):
 
     def update_config_key(self):
         if self.mode == self.CD_MODE:
-            self.config_key = "cdrom_drive_{}".format(self.drive)
-            self.config_key_sha1 = "x_cdrom_drive_{}_sha1".format(self.drive)
+            self.config_key = f"cdrom_drive_{self.drive}"
+            self.config_key_sha1 = f"x_cdrom_drive_{self.drive}_sha1"
             self.config_key_implicit = "__implicit_cdrom_drive_count"
         elif self.mode == self.TAPE_MODE:
-            self.config_key = "tape_drive_{}".format(self.drive)
-            self.config_key_sha1 = "x_tape_drive_{}_sha1".format(self.drive)
+            self.config_key = f"tape_drive_{self.drive}"
+            self.config_key_sha1 = f"x_tape_drive_{self.drive}_sha1"
             self.config_key_implicit = "__implicit_tape_drive_count"
         elif self.mode == self.CARTRIDGE_MODE:
             if self.drive == 0:
                 self.config_key = Option.CARTRIDGE_SLOT
                 self.config_key_sha1 = "x_cartridge_slot_sha1"
             else:
-                self.config_key = "cartridge_drive_{}".format(self.drive)
-                self.config_key_sha1 = "x_cartridge_drive_{}_sha1".format(
-                    self.drive
-                )
+                self.config_key = f"cartridge_drive_{self.drive}"
+                self.config_key_sha1 = f"x_cartridge_drive_{self.drive}_sha1"
             self.config_key_implicit = "__implicit_cartridge_drive_count"
         else:
-            self.config_key = "floppy_drive_{}".format(self.drive)
-            self.config_key_sha1 = "x_floppy_drive_{}_sha1".format(self.drive)
-            self.config_key_implicit = "__implicit_uae_floppy{}type".format(
-                self.drive
-            )
+            self.config_key = f"floppy_drive_{self.drive}"
+            self.config_key_sha1 = f"x_floppy_drive_{self.drive}_sha1"
+            self.config_key_implicit = f"__implicit_uae_floppy{self.drive}type"
         self.on_config(self.config_key, LauncherConfig.get(self.config_key))
         self.on_config(
             self.config_key_implicit,

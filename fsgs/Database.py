@@ -271,7 +271,7 @@ class Database(BaseDatabase):
                     query += " WHERE search like ?"
                 else:
                     query += " AND search like ?"
-                args.append("%{0}%".format(word))
+                args.append(f"%{word}%")
         query += " ORDER BY name"
         cursor = self.internal_cursor()
         cursor.execute(query, args)
@@ -466,7 +466,7 @@ class Database(BaseDatabase):
     def find_games_new(
         self, search="", have=3, list_uuid="", database_only=False
     ):
-        print("Database.find_games_new search = {0}".format(repr(search)))
+        print(f"Database.find_games_new search = {repr(search)}")
         non_database_only = False
         if list_uuid == self.GAME_LIST_GAMES:
             database_only = True
@@ -561,23 +561,23 @@ class Database(BaseDatabase):
                 #     #additional_args.append("%" + term + "%")
                 if exact_term:
                     query += (
-                        " INNER JOIN search_term as st{0} ON "
-                        "game.id = st{0}.game AND "
-                        "st{0}.term = ?".format(i)
+                        f" INNER JOIN search_term as st{i} ON "
+                        f"game.id = st{i}.game AND "
+                        f"st{i}.term = ?"
                     )
                     args.append(term)
                 else:
                     query += (
-                        " INNER JOIN search_term as st{0} ON "
-                        "game.id = st{0}.game AND "
-                        "st{0}.term like ?".format(i)
+                        f" INNER JOIN search_term as st{i} ON "
+                        f"game.id = st{i}.game AND "
+                        f"st{i}.term like ?"
                     )
                     args.append(term + "%")
 
         if have_false:
             query += " WHERE have = 0"
         else:
-            query += " WHERE have >= {0}".format(int(have))
+            query += f" WHERE have >= {int(have)}"
         if published_false:
             query += " AND published = 0"
         elif not include_unpublished:

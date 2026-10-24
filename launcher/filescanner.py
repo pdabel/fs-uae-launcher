@@ -388,9 +388,7 @@ class FileScanner(object):
             if filter_sha1:
                 if filter_sha1 != sha1:
                     print(
-                        "[Files] Found encrypted rom {0} => {1}".format(
-                            sha1, filter_sha1
-                        )
+                        f"[Files] Found encrypted rom {sha1} => {filter_sha1}"
                     )
                     # sha1 is now the decrypted sha1, not the actual sha1 of the
                     # file itself, a bit ugly, since md5 and crc32 are still

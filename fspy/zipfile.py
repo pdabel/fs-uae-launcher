@@ -119,7 +119,7 @@ def create_deterministic_archive(
             data = f.read(size)
             checksum = zlib.crc32(data)
             f.seek(-8, 2)
-            f.write("{:X}".format(checksum).encode("ASCII"))
+            f.write(f"{checksum:X}".encode("ASCII"))
 
 
 def convert_deterministic_archive(

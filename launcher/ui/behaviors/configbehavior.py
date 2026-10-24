@@ -26,5 +26,5 @@ class ConfigBehavior:
     def on_config(self, key, value):
         if key in self._names:
             widget = self._parent()
-            func = getattr(widget, "on_{0}_config".format(key))
+            func = getattr(widget, f"on_{key}_config")
             func(value)

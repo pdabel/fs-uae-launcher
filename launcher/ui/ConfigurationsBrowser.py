@@ -103,7 +103,7 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
             #     sep = ""
             # return "{0}{1}{2}{3}".format(name, sep, extra, "")
         # else:
-        text = "{0}{1}{2}".format(name, extra, platform) or "Missing Name"
+        text = f"{name}{extra}{platform}" or "Missing Name"
         return text
 
         # else:
@@ -135,7 +135,7 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
             if platform_id not in self.platform_icons:
                 try:
                     icon = fsui.Image(
-                        "launcher:res/16x16/{0}.png".format(platform_id)
+                        f"launcher:res/16x16/{platform_id}.png"
                     )
                 except Exception:
                     icon = self.game_icon

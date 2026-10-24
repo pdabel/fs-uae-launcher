@@ -9,7 +9,7 @@ def app_main():
     if "--help" in sys.argv:
         print(help_text)
         return
-    print("FS-UAE Launcher {0}".format(VERSION))
+    print(f"FS-UAE Launcher {VERSION}")
     print(sys.argv)
     print(platform.uname())
 
@@ -65,8 +65,8 @@ def app_main():
     print("app_main done")
 
 
-help_text = """\
-FS-UAE Launcher {version}
+help_text = f"""\
+FS-UAE Launcher {VERSION}
 
 Options:
   --new-config[=<platform>]
@@ -83,6 +83,4 @@ Or you can execute fs-uae-launcher <command> - where command is one of:
   * arcade                             Launch FS-UAE Arcade
   * list-dirs                          List directories used by the Launcher
   * list-plugins                       List installed plugins
-""".format(
-    version=VERSION
-)
+"""

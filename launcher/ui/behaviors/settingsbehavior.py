@@ -27,9 +27,9 @@ class SettingsBehavior:
         if key in self._names:
             widget = self._parent()
             try:
-                func = getattr(widget, "on_{0}_setting".format(key))
+                func = getattr(widget, f"on_{key}_setting")
             except AttributeError:
-                func = getattr(widget, "on_settings".format(key))
+                func = getattr(widget, "on_settings")
                 func(key, value)
             else:
                 func(value)

@@ -30,10 +30,10 @@ class PagedDialog(fsui.Window):
             self.window.theme.sidebar_list_row_height
         )
         self.list_view.setStyleSheet(
-            """
+            f"""
         QListView {{
             padding-top: 20px;
-            background-color: {base};
+            background-color: {self.window.theme.sidebar_list_background.to_hex()};
             outline: none;
         }}
         QListView::item {{
@@ -41,14 +41,10 @@ class PagedDialog(fsui.Window):
             border: 0px;
         }}
         QListView::item:selected {{
-            background-color: {row_bg};
-            color: {row_fg};
+            background-color: {self.window.theme.sidebar_list_row_background.to_hex()};
+            color: {self.window.theme.sidebar_list_row_text.to_hex()};
         }}
-        """.format(
-                row_fg=self.window.theme.sidebar_list_row_text.to_hex(),
-                row_bg=self.window.theme.sidebar_list_row_background.to_hex(),
-                base=self.window.theme.sidebar_list_background.to_hex(),
-            )
+        """
         )
         if fsui.theme_variant in ("modern", "plain", "windows311", "workbench"):
             from fsui.qt import QSize, Qt

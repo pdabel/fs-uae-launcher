@@ -159,8 +159,8 @@ class FileContext(BaseContext):
                 if not license_status["accepted"]:
                     # FIXME: custom exception here
                     raise Exception(
-                        'Usage terms "{0}" was not '
-                        "accepted".format(license_code)
+                        f'Usage terms "{license_code}" was not '
+                        "accepted"
                     )
         path = Downloader.cache_file_from_url(url)
         return path + hash_part
@@ -199,7 +199,7 @@ class FileContext(BaseContext):
     def _copy_game_file(self, src, dst):
         ifs = self.open(src, prefer_path=True)
         if not ifs:
-            raise NotFoundError("Could not find file for {0}".format(src))
+            raise NotFoundError(f"Could not find file for {src}")
 
         if os.path.exists(dst):
             print("removing existing file", dst)
@@ -208,7 +208,7 @@ class FileContext(BaseContext):
         if isinstance(ifs, str):
             # If the resolved path is a directory, treat as not found
             if os.path.isdir(ifs):
-                raise NotFoundError("Expected file but found directory: {0}".format(ifs))
+                raise NotFoundError(f"Expected file but found directory: {ifs}")
             # we got a direct path
             try:
                 os.link(ifs, dst)
@@ -577,7 +577,7 @@ class GameContext(object):
             return {}
         print("")
         for key in sorted(doc.keys()):
-            print(" * {0} = {1}".format(key, doc[key]))
+            print(f" * {key} = {doc[key]}")
         print("")
 
         platform_id = doc["platform"]

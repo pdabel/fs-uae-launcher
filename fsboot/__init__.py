@@ -133,7 +133,7 @@ if sys.platform == "win32":
         result = _SHGetFolderPath(0, csidl, 0, 0, path_buf)
         if result != S_OK:
             raise RuntimeError(
-                "Could not find common directory for CSIDL {}".format(csidl)
+                f"Could not find common directory for CSIDL {csidl}"
             )
         return path_buf.value
 
@@ -145,7 +145,7 @@ if sys.platform == "win32":
             return result
         else:
             raise WinPathsException(
-                'Failed to retrieve windows path: {!s}'.format(result)
+                f'Failed to retrieve windows path: {result!s}'
             )
 
     _SHGetFolderPath.restype = err_unless_zero

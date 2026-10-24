@@ -66,12 +66,8 @@ class Color(QColor, BaseColor):
 
     def to_hex(self):
         if self.alpha() != 255:
-            return "#{:02x}{:02x}{:02x}{:02x}".format(
-                self.red(), self.green(), self.blue(), self.alpha()
-            )
-        return "#{:02x}{:02x}{:02x}".format(
-            self.red(), self.green(), self.blue()
-        )
+            return f"#{self.red():02x}{self.green():02x}{self.blue():02x}{self.alpha():02x}"
+        return f"#{self.red():02x}{self.green():02x}{self.blue():02x}"
 
     def to_hsl(self):
         return HSLColor.from_rgb(self.red(), self.green(), self.blue())

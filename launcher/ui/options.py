@@ -216,10 +216,10 @@ class OptionCheckBox(fsui.CheckBox):
         self.implicit_value = ""
         self.options = options
         self.key = key
-        setattr(self, "on_{}_option".format(key), self.on_explicit_option)
+        setattr(self, f"on_{key}_option", self.on_explicit_option)
         setattr(
             self,
-            "on___implicit_{}_option".format(key),
+            f"on___implicit_{key}_option",
             self.on_implicit_option,
         )
         OptionsBehavior(self, options, [key, "__implicit_" + key])
@@ -262,10 +262,10 @@ class ChoiceControl(fsui.Choice):
         self.use_checkbox = use_checkbox
         self.invalid_index = None
 
-        setattr(self, "on_{}_option".format(key), self.on_explicit_option)
+        setattr(self, f"on_{key}_option", self.on_explicit_option)
         setattr(
             self,
-            "on___implicit_{}_option".format(key),
+            f"on___implicit_{key}_option",
             self.on_implicit_option,
         )
         OptionsBehavior(self, options, [key, "__implicit_" + key])
@@ -339,7 +339,7 @@ class ChoiceControl(fsui.Choice):
         #     pass
         # else:
         if self.get_index() == 0 and self.implicit_value:
-            text = gettext("Auto - {}".format(self.implicit_value))
+            text = gettext(f"Auto - {self.implicit_value}")
         else:
             text = gettext("Auto")
         self.set_item_text(0, text)
@@ -371,10 +371,10 @@ class SpinValueControl(fsui.SpinCtrl):
         self.options = options
         self.key = key
 
-        setattr(self, "on_{}_option".format(key), self.on_explicit_option)
+        setattr(self, f"on_{key}_option", self.on_explicit_option)
         setattr(
             self,
-            "on___implicit_{}_option".format(key),
+            f"on___implicit_{key}_option",
             self.on_implicit_option,
         )
         OptionsBehavior(self, options, [key, "__implicit_" + key])
