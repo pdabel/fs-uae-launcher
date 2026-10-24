@@ -128,6 +128,11 @@ class NetplaySession:
     def state(self):
         return self.snapshot["state"] if self.snapshot else STATE_CREATED
 
+    @property
+    def started(self):
+        """Past the lobby: the players' FS-UAE runs it, or has."""
+        return self.state not in PRE_START
+
     def start(self):
         self._watcher.start()
         if self.is_host:
@@ -366,14 +371,18 @@ class NetplaySession:
         )
 
     def leave(self):
-        """Leave the game; the host ends it for everyone."""
+        """Stop following the game. Before it starts, the host ends it for
+        everyone and a player hands their slot back. Once it runs it
+        belongs to the players' FS-UAE: the host moving to another
+        channel or game must not stop it, and the lobby ends it when a
+        player quits."""
         if self.ended:
             return
-        if self.is_host:
+        if self.is_host and not self.started:
             self._call(
                 self.client.end, self.game_id, self.host_token, what="end"
             )
-        elif self.state in PRE_START:
+        elif not self.started:
             self._call(
                 self.client.leave,
                 self.game_id,

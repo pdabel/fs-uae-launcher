@@ -8,11 +8,13 @@ run by the test, as Qt's event loop would.
 
 import queue
 import time
+from types import SimpleNamespace
 
 import pytest
 
 from fsgs.context import fsgs
 from launcher.netplay import netplay as netplay_module
+from launcher.server import Server as server_module
 from launcher.netplay.irc_color import IRCColor
 from launcher.netplay.lobby_client import LobbyClient
 from launcher.netplay.netplay import Netplay, format_lobby, parse_lobby
@@ -189,6 +191,97 @@ def test_host_and_player_start_together(lobby_port, ui, launchers):
     assert warnings(host) + warnings(player) == [
         "the game server's address is not verified yet; trying 127.0.0.1"
     ]
+
+
+def test_host_moving_on_keeps_a_running_game(lobby_port, ui, launchers):
+    host = launchers("HST", ops={"HST"})
+    player = launchers("PL2", ops={"HST"})
+    announce = hosted_game(host, lobby_port)
+    first = host.session.game_id
+    player.on_irc(
+        "privmsg", {"channel": CHANNEL, "nick": "HST", "message": announce}
+    )
+    ui.pump_until(
+        lambda: player.session is not None
+        and host.session.state == "ready"
+        and player.session.state == "ready"
+    )
+    host.start_netplay_game()
+    ui.pump_until(lambda: host.launched and player.launched)
+
+    # The op opens a new game channel and starts a second game there.
+    host.on_irc("joined", {"channel": "#second-game"})
+    assert host.session is None
+    host.irc.active_channel_name = "#second-game"
+    host.handle_command(f"/startgame 127.0.0.1:{lobby_port} 2")
+    assert host.session.game_id != first
+
+    lobby = LobbyClient("127.0.0.1", lobby_port)
+    time.sleep(0.2)  # let a stray end request reach the lobby
+    assert lobby.game(first)["state"] == "running"
+
+
+class FakeServerView:
+    """ServerDetails without Qt: holds the /hostgame lobby until stopped."""
+
+    def __init__(self):
+        self.server = None
+
+    def present(self, parent, server, game_id, port, channel):
+        if server is not self.server:
+            self.stop_server()
+        self.server = server
+        return self
+
+    def show(self):
+        pass
+
+    def stop_server(self):
+        if self.server is not None:
+            self.server.stop()
+            self.server = None
+
+    def close(self):
+        self.stop_server()
+
+
+def test_host_moving_on_keeps_a_running_hosted_game(
+    fsnp_server_binary, monkeypatch, ui, launchers
+):
+    monkeypatch.setattr(
+        server_module, "find_server_executable", lambda: fsnp_server_binary
+    )
+    monkeypatch.setattr(server_module, "log_file_path", lambda: None)
+    host = launchers("HST", ops={"HST"})
+    player = launchers("PL2", ops={"HST"})
+    view = FakeServerView()
+    host.parent = SimpleNamespace(create_server_view=view.present)
+
+    host.handle_command("/hostgame 127.0.0.1:0 2")
+    lobby = view.server
+    first = host.session.game_id
+    player.on_irc(
+        "privmsg",
+        {"channel": CHANNEL, "nick": "HST", "message": host.irc.sent[-1]},
+    )
+    ui.pump_until(
+        lambda: player.session is not None
+        and host.session.state == "ready"
+        and player.session.state == "ready"
+    )
+    host.start_netplay_game()
+    ui.pump_until(lambda: host.launched and player.launched)
+
+    host.on_irc("joined", {"channel": "#second-game"})
+    host.irc.active_channel_name = "#second-game"
+    host.handle_command(f"/hostgame 127.0.0.1:{lobby.port} 2")
+    # The second game is in the same lobby, beside the first.
+    assert view.server is lobby and lobby.process.poll() is None
+    assert host.session.game_id != first
+    time.sleep(0.2)  # let a stray end request reach the lobby
+    client = LobbyClient("127.0.0.1", lobby.port)
+    assert client.game(first)["state"] == "running"
+    assert client.game(host.session.game_id)["state"] != "ended"
 
 
 def test_host_change_clears_ready_until_reapplied(lobby_port, ui, launchers):
