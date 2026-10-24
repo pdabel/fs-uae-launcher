@@ -1,11 +1,11 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "75b04feb42539d1fb1117442feed4a2b515f58a4a51ae3fd618da4f28d259842"
+            "sha256": "0b537ca773aba063350e2394c84a11a08d6a76d60773b5b94f7b42a8bfc9ec6c"
         },
         "pipfile-spec": 6,
         "requires": {
-            "python_version": "3"
+            "python_version": "3.12"
         },
         "sources": [
             {
@@ -1055,6 +1055,31 @@
             "markers": "python_version >= '3.10'",
             "version": "==1.15.0"
         },
+        "ruff": {
+            "hashes": [
+                "sha256:122258f6ecde0e0dd1bb60b24263c3edde4338caf723fca711cc729f9bfd414a",
+                "sha256:195ad918027f817c119310ca89a42d347887dfc28934aaa869325e9c5dc9d962",
+                "sha256:1b59d447f197bef9ef48a22ba1a6016137753c6099e9bac9c36eb566e422424c",
+                "sha256:2d086be452eed686aa51271ecf2cbe5037956517cc6ee39a17b4489ac12f8bbe",
+                "sha256:39c5b55c960515cdb32be16e69efb5734c589c06a0eb38a22694524a336b889d",
+                "sha256:583bd67bb9e7061dd09bc46a0a884bae2bbd214dbcd48e509813612619683869",
+                "sha256:5875a16b0de70b43cb81eabea5ae5e8f5d1b2fd1b5e6ed07f80cfe5019d0bd5a",
+                "sha256:6bce7d1f5165701ae18f5df85c65afe78cddfa6c5fb4b9bdb0014d60388f3edd",
+                "sha256:7cfd783590edf2b77317882631900f6a13ea2e8eacefe6ebf2370d2715299160",
+                "sha256:7f8fba429d6ac4128ab29cfb8fa6240d2fa671d04adf7f84d3b22fc7b6b6bea4",
+                "sha256:84d632402d14c23b488f941db23712d6736a013225162062d34558c3f3c780eb",
+                "sha256:8c21b4ab24485358f17291a4f8dc5399b834e963b8efedd920fe4fdb02081bb4",
+                "sha256:92a80d2f44584dabb0189b3a6c393e37e525e04942838482010575cb81945be7",
+                "sha256:96a65e755d8dba094707fb23ab602111d9a31ec2835b3a6992a1914a8fcb211e",
+                "sha256:b7d0906677d89bbf3cf73cde64b5bbe2ab35df3ae43e49ee2627301e91265bac",
+                "sha256:ba405cbd5ec7bda1f555d5e52be1fd68d02608d4d95d24591bdac92cfacb579f",
+                "sha256:c555a877f8f41447e318101cfefea9bf12dfa9f82eedf90c376e57e069f917d0",
+                "sha256:c60f93fec7142dba5b8f487f94bf2f6231dae24dc11e4c48648347c8b0720004"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.7'",
+            "version": "==0.17.2"
+        },
         "setuptools": {
             "hashes": [
                 "sha256:51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670",
@@ -1076,6 +1101,7 @@
                 "sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
                 "sha256:dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5"
             ],
+            "index": "pypi",
             "markers": "python_version >= '3.9'",
             "version": "==4.16.0"
         }

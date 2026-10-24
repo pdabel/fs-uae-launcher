@@ -6,7 +6,36 @@ This is the README file for FS-UAE Launcher.
 
 If you are using the source distribution, you should be able to install
 FS-UAE Launcher by running "make install". The setup procedure
-requires Python 3 and setuptools to be installed.
+requires Python 3.12+ and setuptools to be installed. The tracked `bootstrap`
+script generates the legacy setup file; do not edit the generated file.
+
+## Python And Platform Target
+
+The target is Python 3.12+ on Ubuntu 24.04+ and macOS. Pipenv's default
+development interpreter is Python 3.12; package metadata has no upper bound.
+Windows packaging is outside this support target and its legacy recipes are
+not validation evidence.
+
+CI is configured to test and build Python 3.12 and 3.15 independently on
+Ubuntu 24.04 and macOS 15 Intel, with version-specific artifact names.
+Configured jobs are not passed jobs: Python 3.15 support is pending successful
+dependency installation, tests, and frozen platform builds on both systems.
+Neither the new CI matrix nor macOS builds have been run in this local pass.
+Python 3.13/3.14 are not separately validated by this matrix; macOS ARM builds
+also remain unverified. Release publishing continues to select Python 3.12
+artifacts; Python 3.15 artifacts are for validation, not an implied promotion.
+
+For a locked source environment, install Pipenv under Python 3.12 and run:
+
+  pipenv --python 3.12
+  pipenv sync --dev
+  pipenv run python fs-uae-launcher
+
+To validate another matrix interpreter, explicitly create a separate Pipenv
+environment with `pipenv --python /path/to/python3.15` before syncing. The
+manifest's 3.12 value is the development default, not a package upper bound.
+This stack's lock regeneration adds Ruff and interpreter metadata without
+upgrading any existing locked dependency versions.
 
 ## Requirements
 
@@ -29,9 +58,9 @@ theme names fall back to plain Fusion. Emulator, database, and networking
 behavior is unchanged.
 
 It can optionally use the `lhafile` python package to support .lha archives.
-The older packaging and INSTALL instructions still target Qt 5 and have not
-been migrated as part of this UI-only change. Run from source with the
-Python environment containing the Qt 6 dependencies.
+Historical INSTALL and Windows packaging recipes still mention Qt 5. For the
+current Ubuntu/macOS target, use the locked Qt 6 source environment above and
+the platform workflows described in docs/compiling.md.
 
 See [the Python and dependency modernization TODO](docs/python-dependency-modernization.md)
 for the reviewed packaging, supported-Python, dependency, and code-quality
@@ -71,9 +100,13 @@ Run the core regression slice with:
   venv/bin/python -m pytest fsbc fstd fspy launcher/netplay launcher/server/tests
 
 On the stack's main baseline (615cb4d2), the server readiness test has an
-unrelated argument-order expectation failure. The initial percent-format layer
-passes its focused output checks; full-tree lint findings and three invalid
-escape warnings predate it and are not silently treated as passing checks.
+unrelated argument-order expectation failure. It is left unchanged. The API
+layer resolves the three pre-existing invalid-escape warnings; strict tracked
+Python compilation and the scoped Ruff gate pass on local Python 3.12.
+
+The completed stack's local Python 3.12 validation passed 138 core, API,
+command and packaging tests (10 skipped), plus 39 offscreen Qt tests and
+65 subtests. This does not certify frozen builds or another platform/version.
 
 ## Modern Dark Workspace
 
