@@ -9,6 +9,19 @@ from fsui.qt.qt import configure_qt_environment
 from .WidgetTestCase import WidgetTestCase
 
 
+# What a lobby answers POST /game with, for tests that mock LobbyClient.
+CREATED = {
+    "id": "4d5211d9-2761-454c-b5aa-993264745dc4",
+    "password": "8kmzbsfq",
+    "players": 2,
+    "port": "25101",
+    "addresses": ["host.example"],
+    "host_token": "host-token",
+    "slot": 0,
+    "player_token": "player-token",
+}
+
+
 class TestQtEnvironment(unittest.TestCase):
     def test_gnome_defaults_to_generic_theme(self):
         with patch.dict(os.environ, {"XDG_CURRENT_DESKTOP": "ubuntu:GNOME"}, clear=True):
@@ -470,12 +483,17 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 channel.is_op.return_value = True
                 netplay.irc.active_channel = Mock(return_value=channel)
                 try:
-                    with patch.object(netplay, "require_game_channel", return_value=True):
+                    with patch.object(netplay, "require_game_channel", return_value=True), \
+                            patch("launcher.netplay.netplay.LobbyClient") as client_class, \
+                            patch("launcher.netplay.netplay.NetplaySession") as session_class:
+                        client_class.return_value.create_game.return_value = CREATED
+                        session_class.return_value.game_id = CREATED["id"]
                         with patch("launcher.netplay.netplay.Server") as server_class:
                             with patch("launcher.netplay.netplay.LauncherConfig.set_multiple"):
                                 with patch.object(view, "show", wraps=view.show) as show_view:
                                     server = server_class.return_value
                                     server.players = 2
+                                    server.port = 25101
                                     server.process = None
                                     netplay.command_hostgame(["127.0.0.1:25101", "2"])
                                     server.start.assert_called_once_with()
@@ -484,7 +502,7 @@ class TestLaunchAndNetplay(WidgetTestCase):
                                     self.assertEqual(view.fields["port"].text(), "25101")
                                     self.assertEqual(view.fields["players"].text(), "2")
                                     self.assertEqual(view.fields["channel"].text(), "#embedded-game")
-                                    self.assertTrue(view.fields["game_id"].text())
+                                    self.assertEqual(view.fields["game_id"].text(), CREATED["id"])
                                     self.assertTrue(view.stop_button.isEnabled())
                                     if action == "stop":
                                         view.stop_button.click()
@@ -500,32 +518,61 @@ class TestLaunchAndNetplay(WidgetTestCase):
                         netplay.disconnect()
                     view.deleteLater()
 
-    def test_hostgame_shared_port_and_configuration(self):
+    def test_hostgame_runs_a_local_lobby_and_announces_the_game(self):
+        from launcher.launcher_config import LauncherConfig
         from launcher.netplay.netplay import HOST_PORT, Netplay
 
         parent = Mock()
         netplay = Netplay(parent=parent)
+        netplay.irc.my_nick = "HostNick"
+        netplay.game_channel = "#shared-game"
         channel = Mock()
         channel.is_op.return_value = True
         netplay.irc.active_channel = Mock(return_value=channel)
+        netplay.irc.channel = Mock(return_value=channel)
         netplay.irc.active_channel_name = "#shared-game"
         try:
-            with patch.object(netplay, "require_game_channel", return_value=True):
+            with patch.object(netplay, "require_game_channel", return_value=True), \
+                    patch("launcher.netplay.netplay.LobbyClient") as client_class, \
+                    patch("launcher.netplay.netplay.NetplaySession") as session_class:
+                client = client_class.return_value
+                client.create_game.return_value = dict(CREATED, password="secret")
+                session_class.return_value.game_id = CREATED["id"]
+                session_class.return_value.is_host = True
                 with patch("launcher.netplay.netplay.Server") as server_class:
+                    server_class.return_value.port = HOST_PORT
                     with patch("launcher.netplay.netplay.LauncherConfig.set_multiple") as set_config:
-                        netplay.command_hostgame(["127.0.0.1", "2", "secret"])
-                        server_class.assert_called_once_with(HOST_PORT, 2, "secret")
+                        netplay.command_hostgame(["host.example", "2", "secret"])
+                        server_class.assert_called_once_with(
+                            HOST_PORT, 2, "secret", lobby=True,
+                            public_addresses="host.example",
+                        )
                         server_class.return_value.start.assert_called_once_with()
-                        parent.create_server_view.assert_called_once()
-                        netplay.game_window.show.assert_called_once_with()
+                        # The launcher reaches its own lobby on loopback.
+                        client_class.assert_called_once_with("127.0.0.1", HOST_PORT)
+                        client.create_game.assert_called_once_with(
+                            2, "secret", "HostNick",
+                            LauncherConfig.sync_keys_list,
+                            LauncherConfig.checksum_keys,
+                        )
                         self.assertEqual(dict(set_config.call_args.args[0]), {
-                            "__netplay_game": parent.create_server_view.call_args.args[2],
+                            "__netplay_game": CREATED["id"],
                             "__netplay_password": "secret",
                             "__netplay_players": "2",
                             "__netplay_port": str(HOST_PORT),
                             "__netplay_host": "",
-                            "__netplay_addresses": "127.0.0.1",
+                            "__netplay_addresses": "host.example",
                         })
+                        session_class.return_value.start.assert_called_once_with()
+                        self.assertEqual(
+                            session_class.call_args.kwargs["host_token"], "host-token"
+                        )
+                        # Players are pointed at the public address.
+                        channel.privmsg.assert_called_once_with(
+                            f"__session host.example:{HOST_PORT} {CREATED['id']}"
+                        )
+                        parent.create_server_view.assert_called_once()
+                        netplay.game_window.show.assert_called_once_with()
         finally:
             netplay.disconnect()
 
@@ -567,21 +614,39 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 finally:
                     netplay.disconnect()
 
-    def test_startgame_accepts_empty_password(self):
+    def test_startgame_creates_a_lobby_game(self):
         from launcher.netplay.netplay import Netplay
 
         netplay = Netplay()
+        netplay.irc.my_nick = "HostNick"
+        netplay.game_channel = "#test-game"
         channel = Mock()
         channel.is_op.return_value = True
         netplay.irc.active_channel = Mock(return_value=channel)
+        netplay.irc.channel = Mock(return_value=channel)
         try:
-            with patch.object(netplay, "require_game_channel", return_value=True):
-                with patch("launcher.netplay.netplay.requests.get") as get:
-                    get.return_value.text = "id=test-game&password=&port=25101&addresses=127.0.0.1"
-                    with patch("launcher.netplay.netplay.LauncherConfig.set_multiple") as set_config:
-                        netplay.command_startgame(["127.0.0.1:25101", "2"])
-                        self.assertEqual(dict(set_config.call_args.args[0])["__netplay_password"], "")
-                        channel.info.assert_called_once()
+            with patch.object(netplay, "require_game_channel", return_value=True), \
+                    patch("launcher.netplay.netplay.LobbyClient") as client_class, \
+                    patch("launcher.netplay.netplay.NetplaySession") as session_class:
+                client_class.return_value.create_game.return_value = CREATED
+                session_class.return_value.game_id = CREATED["id"]
+                session_class.return_value.is_host = True
+                with patch("launcher.netplay.netplay.LauncherConfig.set_multiple") as set_config:
+                    netplay.command_startgame(["lobby.example:25101", "2"])
+                    client_class.assert_called_once_with("lobby.example", 25101)
+                    # No password given: the lobby generates one, which is
+                    # what the host and every player use.
+                    self.assertEqual(
+                        client_class.return_value.create_game.call_args.args[1], ""
+                    )
+                    self.assertEqual(
+                        dict(set_config.call_args.args[0])["__netplay_password"],
+                        CREATED["password"],
+                    )
+                    channel.info.assert_called_once()
+                    channel.privmsg.assert_called_once_with(
+                        f"__session lobby.example:25101 {CREATED['id']}"
+                    )
         finally:
             netplay.disconnect()
 
@@ -635,16 +700,16 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     self.assertEqual(panel.nick_list.get_item(0), "@ReplayUser")
                     self.assertIn("You are the Operator", panel.text_area.get_text())
                     for control in (
-                        panel.host_game_button, panel.send_config_button,
-                        panel.reset_button, panel.start_button,
+                        panel.host_game_button, panel.reset_button,
+                        panel.start_button, panel.recheck_button,
                     ):
                         self.assertTrue(control.visible())
                         self.assertGreater(control.widget().geometry().y(), 0)
-                    self.assertFalse(panel.ready_button.visible())
                     irc.irc_mode("server", "#replay-game", "-o", "ReplayUser")
                     self.assertFalse(panel.netplay.is_op())
                     self.assertFalse(panel.host_game_button.visible())
-                    self.assertTrue(panel.ready_button.visible())
+                    self.assertFalse(panel.start_button.visible())
+                    self.assertTrue(panel.recheck_button.visible())
                     irc.irc_mode("server", "#replay-game", "+o", "ReplayUser")
                     self.assertTrue(panel.netplay.is_op())
                     self.assertTrue(panel.host_game_button.visible())
@@ -717,8 +782,8 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 self.application.processEvents()
                 previous = None
                 for control in (
-                    panel.host_game_button, panel.send_config_button,
-                    panel.reset_button, panel.start_button,
+                    panel.host_game_button, panel.reset_button,
+                    panel.start_button, panel.recheck_button,
                 ):
                     self.assertTrue(control.visible())
                     geometry = control.widget().geometry()
@@ -727,13 +792,40 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     if previous is not None:
                         self.assertFalse(previous.intersects(geometry))
                     previous = geometry
-                self.assertFalse(panel.ready_button.visible())
                 panel.host_game_button.widget().click()
                 netplay.handle_command.assert_called_with(
                     "/hostgame 127.0.0.1:25101 2"
                 )
-                panel.send_config_button.widget().click()
-                netplay.handle_command.assert_called_with("/sendconfig")
+                # With no game yet, Start and Re-check have nothing to do.
+                self.assertFalse(panel.start_button.widget().isEnabled())
+                self.assertFalse(panel.recheck_button.widget().isEnabled())
+                session = Mock(
+                    is_host=True, game_id="4d5211d9-2761", state="configuring",
+                    can_start=False,
+                )
+                session.slot_lines.return_value = [
+                    "1. HST (you) \u2014 ready", "2. PL2 \u2014 missing: floppy_drive_0",
+                ]
+                session.waiting_on.return_value = ["PL2 is missing"]
+                panel.on_session(session)
+                self.assertEqual(panel.session_list.get_item_count(), 2)
+                self.assertFalse(panel.start_button.widget().isEnabled())
+                self.assertIn("PL2 is missing", panel.start_button.widget().toolTip())
+                # Ready, but with an edit the lobby doesn't have yet.
+                session.state = "ready"
+                session.waiting_on.return_value = [
+                    "your config changes are still being sent"
+                ]
+                panel.on_session(session)
+                self.assertFalse(panel.start_button.widget().isEnabled())
+                self.assertIn(
+                    "still being sent", panel.start_button.widget().toolTip()
+                )
+                session.can_start = True
+                panel.on_session(session)
+                self.assertTrue(panel.start_button.widget().isEnabled())
+                panel.recheck_button.widget().click()
+                netplay.handle_command.assert_called_with("/recheck")
                 panel.reset_button.widget().click()
                 netplay.handle_command.assert_called_with("/reset")
                 with patch("launcher.launcherapp.LauncherApp.start_game") as start:
@@ -742,12 +834,10 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 netplay.is_op.return_value = False
                 panel.on_irc("nick_list", {"channel": "#test-game"})
                 self.assertFalse(panel.host_game_button.visible())
-                self.assertTrue(panel.ready_button.visible())
-                self.assertGreater(panel.ready_button.widget().geometry().y(), 0)
-                panel.ready_button.widget().click()
-                netplay.handle_command.assert_called_with("/ready")
+                self.assertTrue(panel.recheck_button.visible())
+                self.assertGreater(panel.recheck_button.widget().geometry().y(), 0)
                 panel.set_active_channel(LOBBY_CHANNEL)
-                self.assertFalse(panel.ready_button.visible())
+                self.assertFalse(panel.recheck_button.visible())
                 self.assertFalse(panel.host_game_button.visible())
             finally:
                 window.close()

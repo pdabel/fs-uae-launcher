@@ -1,5 +1,6 @@
 """Fixtures for tests that run a real fsnp-server."""
 
+import json
 import os
 import shutil
 import subprocess
@@ -35,3 +36,21 @@ def fsnp_server_binary(tmp_path_factory):
     if os.path.isfile(built):
         return built
     pytest.skip("no fsnp-server binary and no Go toolchain to build one")
+
+
+@pytest.fixture(scope="session")
+def lobby_port(fsnp_server_binary):
+    """Port of an fsnp-server --lobby on 127.0.0.1, for the session."""
+    proc = subprocess.Popen(
+        [fsnp_server_binary, "--lobby", "--host", "127.0.0.1", "--port", "0"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+    )
+    try:
+        ready = json.loads(proc.stdout.readline())
+        assert ready["event"] == "listening", ready
+        yield ready["port"]
+    finally:
+        proc.terminate()
+        proc.wait(timeout=10)

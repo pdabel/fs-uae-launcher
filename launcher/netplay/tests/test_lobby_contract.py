@@ -4,8 +4,6 @@ The unit tests pin what the client sends; this pins that the server
 agrees. It needs the binary; see the fsnp_server_binary fixture.
 """
 
-import json
-import subprocess
 import threading
 
 import pytest
@@ -37,21 +35,9 @@ CHECKSUM = [
 ]
 
 
-@pytest.fixture(scope="module")
-def lobby(fsnp_server_binary):
-    proc = subprocess.Popen(
-        [fsnp_server_binary, "--lobby", "--host", "127.0.0.1", "--port", "0"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        text=True,
-    )
-    try:
-        ready = json.loads(proc.stdout.readline())
-        assert ready["event"] == "listening", ready
-        yield LobbyClient("127.0.0.1", ready["port"])
-    finally:
-        proc.terminate()
-        proc.wait(timeout=10)
+@pytest.fixture
+def lobby(lobby_port):
+    return LobbyClient("127.0.0.1", lobby_port)
 
 
 def test_session_round_trip(lobby, monkeypatch):

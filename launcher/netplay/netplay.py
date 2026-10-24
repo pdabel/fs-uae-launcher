@@ -1,23 +1,62 @@
+import threading
 import traceback
-from urllib.parse import parse_qs
-import uuid
-
-import requests
 
 from fsgs.context import fsgs
-from .config_apply import apply_config
+from .config_apply import apply_document
 from .connection_tester import ConnectionTester
 from .irc import IRC
 from .irc_broadcaster import IRCBroadcaster
 from .irc_color import IRCColor
+from .lobby_client import LobbyClient
+from .session import NetplaySession
 from ..launcher_config import LauncherConfig
 from ..server.Server import PortInUseError, Server, ServerError
 
 
-# The port /hostgame listens on unless the op names one. It is the lobby's
-# port too (fsnp-server --lobby), so a host forwards the same single port
-# however they host.
+# The lobby's port, for /startgame and /hostgame alike, so a host forwards
+# the same single port however they host.
 HOST_PORT = 25101
+
+# The one protocol line left on IRC: an op's launcher announces the lobby
+# game it created, and players' launchers join it. Everything else — the
+# config, who is ready, the start — is held by the lobby. See "Future: the
+# session owns the config" in docs/netplay-go-server-design.md.
+SESSION_ANNOUNCE = "__session"
+
+# The lobby's limit on a player's tag; IRC nicks are normally shorter.
+MAX_TAG_LENGTH = 32
+
+
+def call_after(function, *args):
+    """Run function on the UI thread. fsui is imported late, and the two
+    helpers are module functions, so tests can run Netplay without Qt."""
+    import fsui
+
+    fsui.call_after(function, *args)
+
+
+def call_later(duration_ms, function):
+    import fsui
+
+    fsui.call_later(duration_ms, function)
+
+
+def format_lobby(host, port):
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    return f"{host}:{port}"
+
+
+def parse_lobby(text, default_port=HOST_PORT):
+    """host[:port] or [v6]:port -> (host, port)."""
+    if text.startswith("["):
+        host, _, rest = text[1:].partition("]")
+        port = rest[1:] if rest.startswith(":") else ""
+    elif text.count(":") == 1:
+        host, port = text.split(":")
+    else:
+        host, port = text, ""
+    return host, int(port) if port else default_port
 
 
 class Netplay:
@@ -33,11 +72,20 @@ class Netplay:
         self.enabled = False
         self.game_channel = ""
         self.connection_tester = None
-        self.start_sequence = ""
         self.players = {}
         self.irc = IRC()
         self.parent = parent
         self.game_window = None
+        # The lobby game this launcher is in, and where to announce it from
+        # when hosting.
+        self.session = None
+        self.session_lobby = None
+        # Bumped whenever the session ends or is replaced, so a join still
+        # in flight can tell it was overtaken; and that join's game id.
+        self.session_generation = 0
+        self.joining = None
+        # Called with the session (or None) whenever it changes.
+        self.session_listeners = []
 
         LauncherConfig.add_listener(self)
         IRCBroadcaster.add_listener(self)
@@ -51,6 +99,7 @@ class Netplay:
             self.connection_tester = ConnectionTester()
 
     def disconnect(self):
+        self.end_session()
         if self.game_window is not None:
             self.game_window.close()
             self.game_window = None
@@ -73,83 +122,99 @@ class Netplay:
             from .player import Player
 
             self.players[nick] = Player(nick)
-            print("players are now", self.players)
             return self.players[nick]
 
     def remove_player(self, nick):
-        try:
-            del self.players[nick]
-        except Exception:
-            print(
-                "[NETPLAY] Warning, tried to remove player "
-                "(but wasn't in list):",
-                nick,
-            )
-        else:
-            print("[NETPLAY] Players are now", self.players)
-
-    def start_netplay_game(self):
-        if self.set_ready():
-            if self.is_op():
-                self.game_info(
-                    "you are marked as ready, initiating game start"
-                )
-                self.initiate_start_sequence()
-            else:
-                self.game_info(
-                    "you are marked as ready (only ops can start game)"
-                )
-        else:
-            self.game_info("you are not ready")
+        self.players.pop(nick, None)
 
     def is_op(self):
         return self.irc.channel(self.game_channel).is_op(self.irc.my_nick)
 
-    # noinspection SpellCheckingInspection
-    def initiate_start_sequence(self):
-        print("initiate start sequence")
-        if not self.game_channel:
-            self.game_info("cannot start - no game channel")
-            return
-        self.start_sequence = str(uuid.uuid4())
-        message = "__prestart {0} {1}".format(
-            self.start_sequence, self.get_config_hash()
-        )
-        self.irc.channel(self.game_channel).privmsg(message)
-        # in case one wants to try a single-player game for testing
-        self.on_ackstart()
+    # --- The lobby game -------------------------------------------------
 
-    # noinspection SpellCheckingInspection
-    def on_ackstart(self):
-        config_hash = self.get_config_hash()
-        start_sequence = self.start_sequence
-        player_count = 0
-        for player in self.players.values():
-            player_count += 1
-            if player.nick == self.irc.my_nick:
-                # implicitly ok!
-                continue
-            if player.get("config_hash") != config_hash:
-                return
-            if player.get("start_sequence") != start_sequence:
-                return
-        want_players = int(LauncherConfig.get("__netplay_players") or "0")
-        if player_count != want_players:
+    def start_netplay_game(self):
+        """The Start Game button: the host asks the lobby to start."""
+        if self.session is None:
             self.game_warning(
-                "cannot start game, wanted {0} players, "
-                "has {1}".format(want_players, player_count)
+                "no game yet: an operator needs to use /startgame or "
+                "/hostgame first"
             )
             return
-        self.game_info("sending game start command to all clients!")
-        message = "__start {0} {1}".format(
-            self.start_sequence, self.get_config_hash()
+        self.session.start_game()
+
+    def begin_session(self, client, game_id, slot, player_token, **host):
+        """Follow a lobby game; host passes host_token and sync_keys."""
+        self.end_session()
+        self.session = NetplaySession(
+            client,
+            game_id,
+            slot,
+            player_token,
+            apply=apply_document,
+            local_value=LauncherConfig.get,
+            launch=self.launch_session_game,
+            dispatch=call_after,
+            later=call_later,
+            on_change=self.on_session_change,
+            on_message=self.session_message,
+            **host,
         )
-        self.irc.channel(self.game_channel).privmsg(message)
+        self.session.start()
+        self.notify_session()
+
+    def end_session(self):
+        """Leave the current game; a host ends it, and its local lobby."""
+        session, self.session = self.session, None
+        self.session_lobby = None
+        self.session_generation += 1
+        self.joining = None
+        if session is not None:
+            session.leave()
+            self.stop_hosted_server()
+            self.notify_session()
+
+    def on_session_change(self, session):
+        if session is not self.session:
+            return
+        if session.ended:
+            self.session = None
+            self.session_lobby = None
+            self.stop_hosted_server()
+            if not session.launched:
+                self.reset_netplay_config()
+        self.notify_session(session)
+
+    def notify_session(self, session=None):
+        for listener in list(self.session_listeners):
+            listener(session or self.session)
+
+    def session_message(self, text, warning=False):
+        if warning:
+            self.game_warning(text)
+        else:
+            self.game_info(text)
+
+    def stop_hosted_server(self):
+        if self.game_window is not None:
+            self.game_window.stop_server()
+
+    def launch_session_game(self, snapshot):
+        listed = snapshot["config"].get("__netplay_addresses", "")
+        addresses = [a.strip() for a in listed.split(",") if a.strip()]
+        if LauncherConfig.get("__netplay_host") not in addresses:
+            # The connection tester hasn't verified one of this game's
+            # addresses yet: what's there is nothing, or the last game's
+            # server. Without one FS-UAE would quietly start offline.
+            first = addresses[0] if addresses else ""
+            self.game_warning(
+                f"the game server's address is not verified yet; "
+                f"trying {first}"
+            )
+            LauncherConfig.set("__netplay_host", first)
         self.do_start_game()
 
     def do_start_game(self):
         self.game_info("starting game!")
-        print("do start game")
 
         # we now reset __netplay_addresses so that the ConnectionTester
         # does not connect to the game in progress
@@ -162,32 +227,118 @@ class Netplay:
         # used again
         self.reset_netplay_config()
 
-    @staticmethod
-    def get_config_hash():
-        return LauncherConfig.checksum()
+    def announce_session(self):
+        if self.session is None or not self.session.is_host:
+            return
+        if not self.game_channel or self.session_lobby is None:
+            return
+        self.irc.channel(self.game_channel).privmsg(
+            f"{SESSION_ANNOUNCE} {self.session_lobby} {self.session.game_id}"
+        )
 
-    # noinspection SpellCheckingInspection
-    def set_ready(self):
-        if not self.enabled:
-            return False
-        if not self.game_channel:
-            self.irc.warning("cannot set ready - not in a game")
-            return False
-        if not LauncherConfig.get("__netplay_addresses"):
-            self.game_warning("cannot set ready - no server configured")
-            self.game_info(
-                "an operator needs to use /startgame or "
-                "/hostgame (or /customgame) first"
+    def on_session_announce(self, nick, arg):
+        """An op announced a lobby game: join it, off the UI thread."""
+        try:
+            lobby, game_id = arg.split(" ")
+            host, port = parse_lobby(lobby)
+        except ValueError:
+            self.game_warning(f"ignored a malformed game announcement: {arg}")
+            return
+        if self.session is not None and self.session.game_id == game_id:
+            return
+        if self.joining == game_id:
+            return  # announced again while the join is on its way
+        self.end_session()
+        self.joining = game_id
+        generation = self.session_generation
+        self.game_info(f"{nick} is hosting game {game_id[:8]}; joining")
+        client = LobbyClient(host, port)
+        tag = self.irc.my_nick[:MAX_TAG_LENGTH]
+
+        def join():
+            try:
+                joined, error = client.join(game_id, tag), None
+            except Exception as e:
+                joined, error = None, e
+            call_after(joined_game, joined, error)
+
+        def joined_game(joined, error):
+            if generation != self.session_generation:
+                # Reset, left the channel, disconnected or joined another
+                # game meanwhile: hand the slot back rather than follow it.
+                if error is None:
+                    leave_quietly(joined)
+                return
+            self.joining = None
+            if error is not None:
+                self.game_warning(f"could not join game {game_id}: {error}")
+                return
+            self.begin_session(
+                client, game_id, joined["slot"], joined["player_token"]
             )
-            return False
-        if not LauncherConfig.get("__netplay_host"):
-            self.game_warning(
-                "cannot set ready - no connection to game " "server"
+
+        def leave_quietly(joined):
+            def leave():
+                try:
+                    client.leave(
+                        game_id, joined["slot"], joined["player_token"]
+                    )
+                except Exception:
+                    pass  # the idle reaper frees it anyway
+
+            threading.Thread(
+                target=leave, name="lobby-leave", daemon=True
+            ).start()
+
+        threading.Thread(target=join, name="lobby-join", daemon=True).start()
+
+    def create_session(self, channel, client, players, password, announce):
+        """Create a lobby game as its host; returns False on failure.
+
+        announce is the host:port players' launchers reach the lobby at.
+        """
+        try:
+            created = client.create_game(
+                players,
+                password,
+                self.irc.my_nick[:MAX_TAG_LENGTH],
+                LauncherConfig.sync_keys_list,
+                LauncherConfig.checksum_keys,
             )
+        except Exception as e:
+            channel.warning(f"could not create the game: {e}")
             return False
-        LauncherConfig.set("__netplay_ready", "1")
-        # check in case an component has force __netplay_ready back to 0
-        return LauncherConfig.get("__netplay_ready") == "1"
+        LauncherConfig.set_multiple(
+            [
+                ("__netplay_game", created["id"]),
+                ("__netplay_password", created["password"]),
+                ("__netplay_players", str(created["players"])),
+                ("__netplay_port", created["port"]),
+                ("__netplay_host", ""),
+                ("__netplay_addresses", ",".join(created["addresses"])),
+            ]
+        )
+        self.begin_session(
+            client,
+            created["id"],
+            created["slot"],
+            created["player_token"],
+            host_token=created["host_token"],
+            sync_keys=LauncherConfig.sync_keys_list,
+        )
+        self.session_lobby = announce
+        channel.info(
+            "started game id: {0} password: {1} server: {2} port: {3}".format(
+                created["id"],
+                created["password"],
+                ",".join(created["addresses"]),
+                created["port"],
+            )
+        )
+        self.announce_session()
+        return True
+
+    # --- Config and IRC ---------------------------------------------------
 
     def on_config(self, key, value):
         if key == "__netplay_host_last_error" and value:
@@ -197,13 +348,8 @@ class Netplay:
                 self.game_info(
                     "successfully connected to net play host: " + value
                 )
-        if not self.irc.running:
-            return
-        if not self.game_channel:
-            return
-        if key in LauncherConfig.sync_keys_set:
-            message = "__config {0} {1}".format(key, value)
-            self.irc.channel(self.game_channel).privmsg(message)
+        if self.session is not None:
+            self.session.config_changed(key)
 
     def game_message(self, message, color=None):
         if not self.game_channel:
@@ -238,28 +384,42 @@ class Netplay:
                 if self.game_channel:
                     self.irc.part(self.game_channel)
                 self.game_channel = ""
+                self.end_session()
                 self.reset_netplay_config()
                 self.on_join_game_channel(args["channel"])
         elif key == "parted":
             if self.game_channel == args["channel"]:
+                self.end_session()
                 self.game_channel = ""
                 self.reset_netplay_config()
         elif key == "privmsg":
-            if args["message"].startswith("__"):
-                if args["channel"] == self.game_channel:
-                    self.handle_game_instruction(args["nick"], args["message"])
+            message = args["message"]
+            if (
+                message.startswith(SESSION_ANNOUNCE + " ")
+                and args["channel"] == self.game_channel
+            ):
+                channel = self.irc.channel(self.game_channel)
+                if args["nick"] != self.irc.my_nick and channel.is_op(
+                    args["nick"]
+                ):
+                    self.on_session_announce(
+                        args["nick"], message[len(SESSION_ANNOUNCE) + 1 :]
+                    )
         elif key == "join":
             if args["channel"] == self.game_channel:
                 # initialize new player
                 self.player(args["nick"])
                 if args["nick"] == self.irc.my_nick and self.is_op():
-                    self.irc.message(f"You are the Operator for this game channel.")
-                if args["nick"] != self.irc.my_nick:
-                    if self.is_op():
-                        # Broadcast to all users
-                        self.irc.handle_command(f"/me is the Operator for this game channel.")
-                        self.irc.handle_command(f"/me is sending configuration settings to {args['nick']}.")
-                        self.send_config()
+                    self.irc.message(
+                        "You are the Operator for this game channel."
+                    )
+                if args["nick"] != self.irc.my_nick and self.is_op():
+                    self.irc.handle_command(
+                        "/me is the Operator for this game channel."
+                    )
+                    # One line tells the newcomer's launcher where the game
+                    # is; it fetches the config from the lobby itself.
+                    self.announce_session()
         elif key == "part":
             if args["channel"] == self.game_channel:
                 self.remove_player(args["nick"])
@@ -292,11 +452,12 @@ class Netplay:
             ]
         )
 
+    # --- Commands ---------------------------------------------------------
+
     def handle_command(self, command):
         if not command.startswith("/"):
             return False
         args = command[1:].split(" ")
-        print(args)
         function_name = "command_" + args[0]
         try:
             function = getattr(self, function_name)
@@ -309,19 +470,11 @@ class Netplay:
                 self.game_warning(traceback.format_exc())
             return True
 
-    def command_ready(self, args):
-        if len(args) != 0:
-            self.irc.warning("syntax: /ready")
-            return
-        self.set_ready()
-        if LauncherConfig.get("__netplay_ready") == "1":
-            self.game_info("status set to ready")
-
     def command_reset(self, args):
         if len(args) != 0:
             self.irc.warning("syntax: /reset")
             return
-        # Get info before resetting config
+        self.end_session()
         if self.game_window:
             self.game_window.close()
             self.game_window = None
@@ -329,76 +482,15 @@ class Netplay:
         self.connection_tester = None
 
     # noinspection SpellCheckingInspection
-    def command_notready(self, args):
+    def command_recheck(self, args):
         if len(args) != 0:
-            self.irc.warning("syntax: /notready")
+            self.irc.warning("syntax: /recheck")
             return
-        LauncherConfig.set("__netplay_ready", "0")
-        self.game_info("status set to not ready")
-
-    def command_check(self, args):
-        channel = self.irc.active_channel()
-        if not self.require_game_channel(channel):
+        if self.session is None:
+            self.game_warning("not in a game")
             return
-        if len(args) != 1:
-            self.irc.warning("syntax: /check <key>")
-            return
-        if not channel.is_op():
-            self.irc.warning("check: you need to be an operator")
-            return
-        for arg in args:
-            self.print_check_request(
-                self.irc.my_nick, arg, LauncherConfig.get(arg)
-            )
-            message = "__check {0} {1}".format(arg, LauncherConfig.get(arg))
-            self.irc.channel(self.game_channel).privmsg(message)
-
-    # noinspection SpellCheckingInspection
-    def command_verify(self, args):
-        channel = self.irc.active_channel()
-        if not self.require_game_channel(channel):
-            return
-        if len(args) != 0:
-            self.irc.warning("syntax: /verify")
-            return
-        if not channel.is_op():
-            self.irc.warning("verify: you need to be an operator")
-            return
-        # for arg in args:
-        #     self.game_info("requesting verification of {0} = {1}".format(arg,
-        #             Config.get(arg)))
-        self.print_verify_request(self.irc.my_nick)
-        self.irc.channel(self.game_channel).privmsg("__beginverify")
-        for key in LauncherConfig.checksum_keys:
-            value = LauncherConfig.get(key)
-            message = "__verify {0} {1}".format(key, value)
-            self.irc.channel(self.game_channel).privmsg(message)
-        self.irc.channel(self.game_channel).privmsg("__endverify")
-
-    # noinspection SpellCheckingInspection
-    def command_sendconfig(self, args):
-        channel = self.irc.active_channel()
-        if not self.require_game_channel(channel):
-            return
-        if len(args) != 0:
-            self.irc.warning("syntax: /sendconfig")
-            return
-        self.irc.handle_command(f"/me is sending configuration settings.")
-        self.send_config()
-
-    def send_config(self):
-        if not self.game_channel:
-            return
-        channel = self.irc.channel(self.game_channel)
-        # sending keys in preferred key order
-        for key in LauncherConfig.sync_keys_list:
-            value = LauncherConfig.get(key)
-            message = "__config {0} {1}".format(key, value)
-            channel.privmsg(message)
-        # Send end-of-config protocol message
-        self.irc.handle_command(f"/me has sent all configuration settings.")
-        channel.privmsg("__endconfig")
-        # Broadcast to all users that config has been sent
+        self.game_info("checking the game's config again")
+        self.session.recheck()
 
     def require_game_channel(self, channel):
         if not self.irc.running:
@@ -416,27 +508,16 @@ class Netplay:
         channel = self.irc.active_channel()
         if not self.require_game_channel(channel):
             return
-
+        # A host's reset reaches the others as its next config version.
         channel.info("config reset by request")
-        # send resetconfig command to other players first
-        if channel.is_op():
-            channel.privmsg("__resetconfig")
-        # then reset own config, so config changes are applied after
-        # other players have reset their configs
         self.reset_config()
 
     def parse_server_args(self, args, default_port):
         if len(args) == 0:
             return None
-        host = args.pop(0)
-        if ":" in host:
-            host, port = host.split(":", 1)
-            port = int(port)
-        else:
-            port = default_port
+        host, port = parse_lobby(args.pop(0), default_port)
         if len(args) > 0:
-            players = args.pop(0)
-            players = int(players)
+            players = int(args.pop(0))
         else:
             players = len(self.players)
         if len(args) > 0:
@@ -456,10 +537,10 @@ class Netplay:
         channel = self.irc.active_channel()
         if not self.require_game_channel(channel):
             return
-        result = self.parse_server_args(args, 25101)
+        result = self.parse_server_args(args, HOST_PORT)
         if not result:
             self.irc.warning(
-                "usage: /startgame <host>[:<port>] " "[<players>] [<password>]"
+                "usage: /startgame <host>[:<port>] [<players>] [<password>]"
             )
             return
         host, port, players, password = result
@@ -467,50 +548,14 @@ class Netplay:
         if not channel.is_op():
             self.irc.warning("startgame: you need to be an operator")
             return
-
-        url = "http://{0}:{1}/game/create".format(host, port)
-        try:
-            # params= escapes the password; the timeout matters because this
-            # runs on the UI thread and an unreachable lobby would hang it.
-            r = requests.get(
-                url,
-                params={"players": players, "password": password},
-                timeout=10,
-            )
-            r.raise_for_status()
-        except Exception:
-            channel.warning(
-                "Problem starting game server: {0}".format(
-                    traceback.format_exc()
-                )
-            )
-        else:
-            result = r.text
-            print(result)
-            # keep_blank_values: otherwise an empty "password=" is dropped
-            # and the lookup below raises KeyError.
-            result_dict = parse_qs(result, keep_blank_values=True)
-            print(result_dict)
-            game_id = result_dict["id"][0]
-            game_password = result_dict["password"][0]
-            game_port = result_dict["port"][0]
-            game_addresses = result_dict["addresses"][0]
-            LauncherConfig.set_multiple(
-                [
-                    ("__netplay_game", game_id),
-                    ("__netplay_password", game_password),
-                    ("__netplay_players", str(players)),
-                    ("__netplay_port", game_port),
-                    ("__netplay_host", ""),
-                    ("__netplay_addresses", game_addresses),
-                ]
-            )
-            channel.info(
-                "started game id: {0} password: {1} "
-                "server: {2} port: {3}".format(
-                    game_id, game_password, game_addresses, game_port
-                )
-            )
+        self.end_session()
+        self.create_session(
+            channel,
+            LobbyClient(host, port),
+            players,
+            password,
+            format_lobby(host, port),
+        )
 
     def command_hostgame(self, args):
         channel = self.irc.active_channel()
@@ -528,21 +573,27 @@ class Netplay:
         if not channel.is_op():
             self.irc.warning("hostgame: you need to be an operator")
             return
+        # Before binding: ending a game we host stops its lobby, which
+        # frees the port.
+        self.end_session()
 
-        # No pre-check of the port: only the server's own bind can answer
-        # it. A test bind from here would refuse a port still in TIME_WAIT
-        # after the previous game, which the server's listener accepts.
-        server = Server(port, players, password)
+        # A local lobby, so the game is created and run exactly as against
+        # a remote one. A lobby game always has a password: with none
+        # given, the lobby generates one, which reaches every player in
+        # the config.
+        server = Server(
+            port, players, password, lobby=True, public_addresses=addresses
+        )
         try:
             server.start()
         except PortInUseError:
-            # Waiting would not help: the Go server exits as soon as its
-            # game ends, so a port in use now is held by something still
-            # running, most likely a lobby or another hosted game.
+            # Waiting would not help: something still running holds it,
+            # most likely a lobby or another hosted game.
             channel.privmsg(
                 f"ERROR: port {port} is in use. Is a netplay lobby or another "
                 f"game running on this machine? Close it, or use "
-                f"/hostgame <address>:<port> to pick another port."
+                f"/hostgame <address>:<port> to pick another port. If a "
+                f"lobby is running here, /startgame localhost:{port} uses it."
             )
             return
         except ServerError as e:
@@ -553,64 +604,34 @@ class Netplay:
                 "The host's netplay output has details and repair instructions."
             )
             return
-        game_id = str(uuid.uuid4())
+        # The launcher reaches its own lobby on loopback; players are told
+        # the first public address, as the lobby tells them the rest.
+        first = addresses.split(",")[0].strip()
+        if not self.create_session(
+            channel,
+            LobbyClient("127.0.0.1", server.port),
+            players,
+            password,
+            format_lobby(first, server.port),
+        ):
+            server.stop()
+            return
         channel_name = self.irc.get_active_channel()
         self.game_window = self.parent.create_server_view(
-            self.parent, server, game_id, port, channel_name
+            self.parent, server, self.session.game_id, server.port, channel_name
         )
         self.game_window.show()
-        LauncherConfig.set_multiple(
-            [
-                ("__netplay_game", game_id),
-                ("__netplay_password", password),
-                ("__netplay_players", str(players)),
-                ("__netplay_port", str(port)),
-                ("__netplay_host", ""),
-                ("__netplay_addresses", addresses),
-            ]
-        )
-        channel.info(
-            f"started game id: {game_id} password: {password} "
-            f"server: {addresses} port: {port}"
-        )
 
     # noinspection SpellCheckingInspection
-    def command_setserver(self, args):
-        return self.command_customgame(args)
-
-    # noinspection SpellCheckingInspection
-    def command_customgame(self, args):
+    def command_joingame(self, args):
+        """Join a lobby game by hand, when the announcement was missed."""
         channel = self.irc.active_channel()
         if not self.require_game_channel(channel):
             return
-        result = self.parse_server_args(args, 25100)
-        if not result:
-            self.irc.warning(
-                "usage: /customgame <address>[,<address2>][:<port>] "
-                "[<players>] [<password>]"
-            )
+        if len(args) != 2:
+            self.irc.warning("usage: /joingame <host>[:<port>] <game-id>")
             return
-        addresses, port, players, password = result
-
-        if not channel.is_op():
-            self.irc.warning("customgame: you need to be an operator")
-            return
-
-        game_id = str(uuid.uuid4())
-        LauncherConfig.set_multiple(
-            [
-                ("__netplay_game", game_id),
-                ("__netplay_password", password),
-                ("__netplay_players", str(players)),
-                ("__netplay_port", str(port)),
-                ("__netplay_host", ""),
-                ("__netplay_addresses", addresses),
-            ]
-        )
-        channel.info(
-            "started game id: {0} password: {1} "
-            "server: {2} port: {3}".format(game_id, password, addresses, port)
-        )
+        self.on_session_announce(self.irc.my_nick, " ".join(args))
 
     def command_set(self, args):
         channel = self.irc.active_channel()
@@ -620,145 +641,11 @@ class Netplay:
             self.irc.warning("usage: /set <key> [<value>]")
             return
         if not channel.is_op():
-            self.irc.warning("hostgame: you need to be an operator")
+            self.irc.warning("set: you need to be an operator")
             return
 
         key = args[0]
         value = " ".join(args[1:])
-        print("config, setting", key, "to", value)
         channel.action('set option {0} to "{1}"'.format(key, value))
+        # A host's change reaches the others as its next config version.
         LauncherConfig.set(key, value)
-
-    # noinspection SpellCheckingInspection
-    def handle_game_instruction(self, nick, message):
-        channel = self.irc.channel(self.game_channel)
-
-        # if Netplay.game_channel != self.name:
-        #     self.warning(self, "ignored command in "
-        #             "non-active game: {0}".format(command), IRCColor.WARNING)
-        #     return
-        words = message.split(" ")
-        command = words[0]
-        arg = " ".join(words[1:])
-        if command == "__config":
-            if channel.is_op(nick):
-                args = arg.split(" ", 1)
-                key = args[0]
-                value = ""
-                if len(args) > 1:
-                    value = args[1]
-                self.set_config(key.strip(), value.strip())
-        elif command == "__prestart":
-            if channel.is_op(nick):
-                seq, config_hash = arg.split(" ")
-                my_config_hash = self.get_config_hash()
-                if my_config_hash != config_hash:
-                    channel.privmsg("not the same config hash")
-                    channel.privmsg(f"op hash: {my_config_hash}")
-                    channel.privmsg(f"received hash: {config_hash}")
-                    return
-                if LauncherConfig.get("__netplay_ready") != "1":
-                    channel.privmsg(
-                        "(op tried to start game, " "but I am not ready)"
-                    )
-                    return
-                channel.privmsg(
-                    "__ackstart {0} {1}".format(seq, my_config_hash)
-                )
-        elif command == "__ackstart":
-            start_sequence, config_hash = arg.split(" ")
-            self.player(nick).set("start_sequence", start_sequence)
-            self.player(nick).set("config_hash", config_hash)
-            self.on_ackstart()
-            # FIXME: check start sequence?
-        elif command == "__start":
-            if channel.is_op(nick):
-                start_sequence, config_hash = arg.split(" ")
-                my_config_hash = self.get_config_hash()
-                if my_config_hash != config_hash:
-                    channel.action(
-                        "could not start game " "(mismatching config hash)"
-                    )
-                    return
-                self.do_start_game()
-        elif command == "__resetconfig":
-            if channel.is_op(nick):
-                channel.info("config reset by op")
-                self.reset_config()
-        elif command == "__check":
-            if channel.is_op(nick):
-                args = arg.split(" ")
-                key = args[0]
-                value = " ".join(args[1:])
-                my_value = LauncherConfig.get(key)
-                self.print_check_request(nick, key, value)
-                self.print_check_response(
-                    self.irc.my_nick, key, my_value, value
-                )
-                channel.privmsg("__ackcheck {0} {1}".format(key, my_value))
-        elif command == "__beginverify":
-            if channel.is_op(nick):
-                self.print_verify_request(nick)
-        elif command == "__verify":
-            if channel.is_op(nick):
-                args = arg.split(" ")
-                key = args[0]
-                value = " ".join(args[1:])
-                if LauncherConfig.get(key) != value:
-                    self.print_verify_response(
-                        self.irc.my_nick, key, LauncherConfig.get(key)
-                    )
-                    channel.privmsg(
-                        "__ackverify {0} {1}".format(
-                            key, LauncherConfig.get(key)
-                        )
-                    )
-        elif command == "__endverify":
-            pass
-        elif command == "__ackcheck":
-            args = arg.split(" ")
-            key = args[0]
-            value = " ".join(args[1:])
-            my_value = LauncherConfig.get(key)
-            self.print_check_response(nick, key, value, my_value)
-        elif command == "__ackverify":
-            args = arg.split(" ", 1)
-            self.print_verify_response(nick, args[0], " ".join(args[1:]))
-        elif command == "__endconfig":
-            # All config received, confirm or trigger any logic you need
-            self.irc.handle_command(f"/me has received all configuration settings from {nick}")
-        else:
-            channel.warning("unknown command received: {0}".format(command))
-
-    def print_check_request(self, nick, key, value):
-        self.irc.channel(self.game_channel).info(
-            "* {0} requested check of {1} ({2})".format(nick, key, value)
-        )
-
-    def print_check_response(self, nick, key, value, check_value):
-        if value == check_value:
-            color = IRCColor.INFO
-        else:
-            color = IRCColor.WARNING
-        self.irc.channel(self.game_channel).message(
-            "{0} = {1} ({2})".format(key, value, nick), color
-        )
-
-    def print_verify_request(self, nick):
-        self.irc.channel(self.game_channel).info(
-            "* {0} requested automatic config verification".format(nick)
-        )
-
-    def print_verify_response(self, nick, key, value):
-        self.irc.channel(self.game_channel).warning(
-            "{0} = {1} ({2})".format(key, value, nick)
-        )
-
-    def set_config(self, key, value):
-        # this config was received from a game channel operator
-        print("received config", key, value)
-        missing = apply_config({key: value})
-        channel = self.irc.channel(self.game_channel)
-        for sha1_key, sha1 in missing.items():
-            what = sha1_key.removeprefix("x_").removesuffix("_sha1")
-            channel.action("could not find {0} for {1!r}".format(what, sha1))
