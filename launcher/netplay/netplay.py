@@ -163,7 +163,9 @@ class Netplay:
         self.notify_session()
 
     def end_session(self):
-        """Leave the current game; a host ends it, and its local lobby."""
+        """Leave the current game: a host ends one that hasn't started (see
+        NetplaySession.leave). A /hostgame lobby is stopped either way,
+        which ends its game, running or not."""
         session, self.session = self.session, None
         self.session_lobby = None
         self.session_generation += 1

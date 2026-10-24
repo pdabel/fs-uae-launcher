@@ -305,6 +305,20 @@ def test_leave(host, call):
     assert h.session.ended
 
 
+@pytest.mark.parametrize("host", [True, False])
+def test_leaving_a_running_game_keeps_it_running(host):
+    # The host joining another channel or starting another game must
+    # not end the one its players are in.
+    h = Harness(host=host)
+    h.session.start()
+    h.see("running")
+    calls = len(h.client.calls)
+    h.session.leave()
+    h.executor.run_all()
+    assert h.client.calls[calls:] == []
+    assert h.session.ended and h.watcher.stopped
+
+
 def test_lost_lobby_is_reported_once():
     h = Harness()
     h.session.start()

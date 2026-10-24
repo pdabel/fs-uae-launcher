@@ -191,6 +191,34 @@ def test_host_and_player_start_together(lobby_port, ui, launchers):
     ]
 
 
+def test_host_moving_on_keeps_a_running_game(lobby_port, ui, launchers):
+    host = launchers("HST", ops={"HST"})
+    player = launchers("PL2", ops={"HST"})
+    announce = hosted_game(host, lobby_port)
+    first = host.session.game_id
+    player.on_irc(
+        "privmsg", {"channel": CHANNEL, "nick": "HST", "message": announce}
+    )
+    ui.pump_until(
+        lambda: player.session is not None
+        and host.session.state == "ready"
+        and player.session.state == "ready"
+    )
+    host.start_netplay_game()
+    ui.pump_until(lambda: host.launched and player.launched)
+
+    # The op opens a new game channel and starts a second game there.
+    host.on_irc("joined", {"channel": "#second-game"})
+    assert host.session is None
+    host.irc.active_channel_name = "#second-game"
+    host.handle_command(f"/startgame 127.0.0.1:{lobby_port} 2")
+    assert host.session.game_id != first
+
+    lobby = LobbyClient("127.0.0.1", lobby_port)
+    time.sleep(0.2)  # let a stray end request reach the lobby
+    assert lobby.game(first)["state"] == "running"
+
+
 def test_host_change_clears_ready_until_reapplied(lobby_port, ui, launchers):
     host = launchers("HST", ops={"HST"})
     host.create_session(
