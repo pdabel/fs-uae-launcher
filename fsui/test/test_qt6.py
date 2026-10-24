@@ -518,6 +518,68 @@ class TestLaunchAndNetplay(WidgetTestCase):
                         netplay.disconnect()
                     view.deleteLater()
 
+    def test_hosted_lobby_outlives_a_running_game_left_in_it(self):
+        from launcher.netplay.netplay import Netplay
+        from launcher.netplay.server_details import ServerDetails
+
+        for started in (True, False):
+            with self.subTest(started=started):
+                view = ServerDetails()
+                netplay = Netplay(parent=Mock(create_server_view=view.present))
+                netplay.irc.active_channel_name = "#first-game"
+                channel = Mock()
+                channel.is_op.return_value = True
+                netplay.irc.active_channel = Mock(return_value=channel)
+                try:
+                    with patch.object(netplay, "require_game_channel", return_value=True), \
+                            patch("launcher.netplay.netplay.LobbyClient") as client_class, \
+                            patch("launcher.netplay.netplay.NetplaySession") as session_class, \
+                            patch("launcher.netplay.netplay.Server") as server_class, \
+                            patch("launcher.netplay.netplay.LauncherConfig.set_multiple"):
+                        client = client_class.return_value
+                        client.create_game.return_value = CREATED
+                        session_class.return_value.game_id = CREATED["id"]
+                        session_class.return_value.started = started
+                        server = server_class.return_value
+                        server.players = 2
+                        server.port = 25101
+                        server.public_addresses = "127.0.0.1"
+                        server.process.poll.return_value = None
+
+                        netplay.command_hostgame(["127.0.0.1:25101", "2"])
+                        # What joining another game channel does.
+                        netplay.end_session()
+                        if not started:
+                            # Its game never ran: the lobby goes with it.
+                            server.stop.assert_called_once_with()
+                            self.assertIsNone(view.server)
+                            continue
+                        server.stop.assert_not_called()
+                        self.assertIs(view.server, server)
+
+                        # Another port or address would need a new lobby,
+                        # which would end the game still in this one.
+                        netplay.command_hostgame(["127.0.0.1:25200", "2"])
+                        self.assertIn("still running", channel.warning.call_args.args[0])
+                        self.assertEqual(client.create_game.call_count, 1)
+
+                        netplay.irc.active_channel_name = "#second-game"
+                        netplay.command_hostgame(["127.0.0.1:25101", "3"])
+                        server_class.assert_called_once()
+                        server.start.assert_called_once_with()
+                        self.assertEqual(client.create_game.call_count, 2)
+                        server.stop.assert_not_called()
+                        self.assertIs(view.server, server)
+                        self.assertEqual(view.fields["players"].text(), "3")
+                        self.assertEqual(view.fields["channel"].text(), "#second-game")
+
+                        netplay.command_reset([])
+                        server.stop.assert_called_once_with()
+                finally:
+                    if Netplay.current() is netplay:
+                        netplay.disconnect()
+                    view.deleteLater()
+
     def test_hostgame_runs_a_local_lobby_and_announces_the_game(self):
         from launcher.launcher_config import LauncherConfig
         from launcher.netplay.netplay import HOST_PORT, Netplay

@@ -84,6 +84,11 @@ class Netplay:
         # in flight can tell it was overtaken; and that join's game id.
         self.session_generation = 0
         self.joining = None
+        # Whether the session's game is in this launcher's /hostgame
+        # lobby, and whether a game was left running there: then the
+        # lobby stays up for it, as nothing follows it to say when it ends.
+        self.session_hosted = False
+        self.hosted_game_left_running = False
         # Called with the session (or None) whenever it changes.
         self.session_listeners = []
 
@@ -163,16 +168,20 @@ class Netplay:
         self.notify_session()
 
     def end_session(self):
-        """Leave the current game: a host ends one that hasn't started (see
-        NetplaySession.leave). A /hostgame lobby is stopped either way,
-        which ends its game, running or not."""
+        """Leave the current game. One that hasn't started is ended — by a
+        host, for everyone — along with the /hostgame lobby it was made
+        in. A running game carries on, and its lobby with it: it belongs
+        to the players' FS-UAE now (see NetplaySession.leave)."""
         session, self.session = self.session, None
         self.session_lobby = None
         self.session_generation += 1
         self.joining = None
         if session is not None:
+            if self.session_hosted and session.started:
+                self.hosted_game_left_running = True
+            self.session_hosted = False
             session.leave()
-            self.stop_hosted_server()
+            self.release_hosted_server()
             self.notify_session()
 
     def on_session_change(self, session):
@@ -181,7 +190,8 @@ class Netplay:
         if session.ended:
             self.session = None
             self.session_lobby = None
-            self.stop_hosted_server()
+            self.session_hosted = False
+            self.release_hosted_server()
             if not session.launched:
                 self.reset_netplay_config()
         self.notify_session(session)
@@ -199,6 +209,19 @@ class Netplay:
     def stop_hosted_server(self):
         if self.game_window is not None:
             self.game_window.stop_server()
+
+    def release_hosted_server(self):
+        """Stop the /hostgame lobby, unless a game left running is in it."""
+        if not self.hosted_game_left_running:
+            self.stop_hosted_server()
+
+    def running_hosted_server(self):
+        server = getattr(self.game_window, "server", None)
+        if server is None or server.process is None:
+            return None
+        if server.process.poll() is not None:
+            return None
+        return server
 
     def launch_session_game(self, snapshot):
         listed = snapshot["config"].get("__netplay_addresses", "")
@@ -480,6 +503,7 @@ class Netplay:
         if self.game_window:
             self.game_window.close()
             self.game_window = None
+        self.hosted_game_left_running = False
         self.reset_netplay_config()
         self.connection_tester = None
 
@@ -575,17 +599,64 @@ class Netplay:
         if not channel.is_op():
             self.irc.warning("hostgame: you need to be an operator")
             return
-        # Before binding: ending a game we host stops its lobby, which
-        # frees the port.
+        # Before binding: ending a game we host that hasn't started stops
+        # its lobby, which frees the port.
         self.end_session()
 
-        # A local lobby, so the game is created and run exactly as against
-        # a remote one. A lobby game always has a password: with none
-        # given, the lobby generates one, which reaches every player in
-        # the config.
-        server = Server(
-            port, players, password, lobby=True, public_addresses=addresses
+        server = self.running_hosted_server()
+        if server is not None and (
+            server.port != port or server.public_addresses != addresses
+        ):
+            # The players' addresses are the lobby's, set when it started;
+            # restarting it would end the game still running there.
+            channel.warning(
+                f"a game hosted on port {server.port} is still running. "
+                f"/hostgame {server.public_addresses}:{server.port} hosts "
+                f"another game alongside it; Stop server ends it"
+            )
+            return
+        if server is not None:
+            # Host this game in the same lobby, as /startgame would in a
+            # remote one.
+            server.players, server.password = players, password
+            started = False
+        else:
+            # A local lobby, so the game is created and run exactly as
+            # against a remote one. A lobby game always has a password:
+            # with none given, the lobby generates one, which reaches
+            # every player in the config.
+            server = Server(
+                port,
+                players,
+                password,
+                lobby=True,
+                public_addresses=addresses,
+            )
+            started = self.start_hosted_server(server, channel, port)
+            if not started:
+                return
+        # The launcher reaches its own lobby on loopback; players are told
+        # the first public address, as the lobby tells them the rest.
+        first = addresses.split(",")[0].strip()
+        if not self.create_session(
+            channel,
+            LobbyClient("127.0.0.1", server.port),
+            players,
+            password,
+            format_lobby(first, server.port),
+        ):
+            if started:
+                server.stop()
+            return
+        self.session_hosted = True
+        channel_name = self.irc.get_active_channel()
+        self.game_window = self.parent.create_server_view(
+            self.parent, server, self.session.game_id, server.port, channel_name
         )
+        self.game_window.show()
+
+    def start_hosted_server(self, server, channel, port):
+        """Start a /hostgame lobby; False, having said why, if it can't."""
         try:
             server.start()
         except PortInUseError:
@@ -597,7 +668,7 @@ class Netplay:
                 f"/hostgame <address>:<port> to pick another port. If a "
                 f"lobby is running here, /startgame localhost:{port} uses it."
             )
-            return
+            return False
         except ServerError as e:
             # Paths and build guidance can exceed IRC's line limit.
             channel.warning(f"ERROR: could not start the netplay server: {e}")
@@ -605,24 +676,10 @@ class Netplay:
                 "ERROR: could not start the netplay server. "
                 "The host's netplay output has details and repair instructions."
             )
-            return
-        # The launcher reaches its own lobby on loopback; players are told
-        # the first public address, as the lobby tells them the rest.
-        first = addresses.split(",")[0].strip()
-        if not self.create_session(
-            channel,
-            LobbyClient("127.0.0.1", server.port),
-            players,
-            password,
-            format_lobby(first, server.port),
-        ):
-            server.stop()
-            return
-        channel_name = self.irc.get_active_channel()
-        self.game_window = self.parent.create_server_view(
-            self.parent, server, self.session.game_id, server.port, channel_name
-        )
-        self.game_window.show()
+            return False
+        # A new lobby: no game has been left running in it.
+        self.hosted_game_left_running = False
+        return True
 
     # noinspection SpellCheckingInspection
     def command_joingame(self, args):
