@@ -110,6 +110,22 @@ command and packaging tests (10 skipped), plus 39 offscreen Qt tests and
 
 ## Modern Dark Workspace
 
+ROM & memory, Expansions, and Advanced use aligned label columns and evenly
+expanding value controls, following Overview's form layout. ROM picker rows
+share label and selector widths; memory options use the same single-column
+layout as the other forms, keeping controls usable in narrower workspaces.
+This is presentation-only: defaults, overrides, and configuration values are
+unchanged across all four workspace themes.
+
+Form regression tests check all four themes at 540, 900, and 1500 pixel form
+widths, including ROM-row alignment and override/value interactions.
+
+Settings pages share aligned label/warning columns and expanding text fields,
+dropdowns, and numeric inputs, with help buttons kept at the right edge.
+Configuration override labels have extra spacing before their value fields,
+including the long Empty Floppy Drive Volume label. Setting values, defaults,
+and compact quick-setting rows retain their existing behavior.
+
 Modern Dark is the default when no launcher theme has been selected. The
 launcher opens maximized on its current display, with a 1080p-oriented
 workspace, a labeled navigation rail, a searchable configuration library,
@@ -152,8 +168,8 @@ icon family as the navigation rail in Modern Dark.
 
 ### Quick Theme Switching
 Choose a theme in Settings > FS-UAE Launcher, then click Restart Launcher
-beside the theme selector. After confirmation, preferences are saved and the
-launcher reopens with the selected theme and font. The current base directory
+below the theme and font selectors. After confirmation, preferences are saved
+and the launcher reopens with the selected theme and font. The current base directory
 is preserved; old theme overrides and game/disk command-line arguments are
 not repeated. Active netplay sessions and hosted servers are stopped. Save
 configuration edits before restarting. Cancelling leaves the launcher open.

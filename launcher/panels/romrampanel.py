@@ -37,6 +37,7 @@ class KickstartGroup(fsui.Panel):
         self.layout.add(hori_layout, fill=True)
 
         label = fsui.Label(self, gettext("Kickstart ROM") + ":")
+        kickstart_label = label
         hori_layout.add(label, margin_left=10, margin_right=10)
 
         kickstart_types = [
@@ -59,11 +60,20 @@ class KickstartGroup(fsui.Panel):
         self.layout.add(hori_layout, fill=True)
 
         label = fsui.Label(self, gettext("Extended ROM") + ":")
+        label_width = max(kickstart_label.get_min_width(), label.get_min_width())
+        kickstart_label.set_min_width(label_width)
+        label.set_min_width(label_width)
         hori_layout.add(label, margin_left=10, margin_right=10)
         # self.layout.add_spacer(0)
 
         kickstart_types = [gettext("Default"), gettext("Custom")]
         self.ext_rom_type_choice = fsui.Choice(self, kickstart_types)
+        choice_width = max(
+            self.kickstart_type_choice.get_min_width(),
+            self.ext_rom_type_choice.get_min_width(),
+        )
+        self.kickstart_type_choice.set_min_width(choice_width)
+        self.ext_rom_type_choice.set_min_width(choice_width)
         hori_layout.add(self.ext_rom_type_choice, margin_right=10)
 
         self.ext_text_field = fsui.TextField(self, "", read_only=True)
@@ -196,9 +206,7 @@ class MemoryGroup(fsui.Panel):
         fsui.Panel.__init__(self, parent)
         AmigaEnableBehavior(self)
         self.layout = fsui.VerticalLayout()
-        self.hori_layout = None
-        self.hori_counter = 0
-        config_widget_factory = ConfigWidgetFactory()
+        config_widget_factory = ConfigWidgetFactory(expand=True)
         self.add_widget(config_widget_factory.create(self, Option.CHIP_MEMORY))
         self.add_widget(
             config_widget_factory.create(self, Option.MOTHERBOARD_RAM)
@@ -211,18 +219,9 @@ class MemoryGroup(fsui.Panel):
         self.add_widget(
             config_widget_factory.create(self, Option.ACCELERATOR_MEMORY)
         )
-        self.add_widget(fsui.Label(self, ""))
         self.add_widget(
             config_widget_factory.create(self, Option.GRAPHICS_MEMORY)
         )
 
     def add_widget(self, widget):
-        if self.hori_counter % 2 == 0:
-            self.hori_layout = fsui.HorizontalLayout()
-            self.layout.add(self.hori_layout, fill=True)
-        self.hori_layout.add(
-            widget, fill=True, expand=-1, margin=10, margin_bottom=0
-        )
-        if self.hori_counter % 2 == 0:
-            self.hori_layout.add_spacer(10)
-        self.hori_counter += 1
+        self.layout.add(widget, fill=True, margin=10, margin_bottom=0)

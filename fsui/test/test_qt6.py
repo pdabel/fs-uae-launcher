@@ -906,6 +906,143 @@ class TestLaunchAndNetplay(WidgetTestCase):
 
 
 class TestDashboard(WidgetTestCase):
+    def test_aligned_settings_preserve_values_and_defaults(self):
+        from launcher.option import Option
+        from launcher.settings.settings_page import SettingsPage
+
+        self.setup_dialog()
+        with patch("launcher.settings.option_ui.LauncherSettings.get", return_value=""):
+            with patch("launcher.settings.option_ui.app", Mock(qapplication=self.application)):
+                with patch("launcher.settings.option_ui.OverrideWarning", side_effect=lambda parent, name: fsui.Label(parent, "")):
+                    page = SettingsPage(self.dialog)
+                    text_group = page.add_option("irc_nick")
+                    choice_group = page.add_option(Option.LOW_LATENCY_VSYNC)
+                    integer_group = page.add_option(Option.LAUNCHER_FONT_SIZE)
+        with patch("launcher.settings.option_ui.LauncherSettings.set") as set_value:
+            text_group.value_control.set_text("  Player  ")
+            set_value.reset_mock()
+            text_group.value_control.on_changed()
+            set_value.assert_called_once_with("irc_nick", "Player")
+            choice_group.value_control.set_index(1)
+            set_value.reset_mock()
+            choice_group.value_control.on_changed()
+            set_value.assert_called_once_with(Option.LOW_LATENCY_VSYNC, "1")
+            self.assertFalse(integer_group.value_control.is_enabled())
+            integer_group.default_checkbox.check(False)
+            self.assertTrue(integer_group.value_control.is_enabled())
+            integer_group.value_control.set_value(14)
+            set_value.reset_mock()
+            integer_group.value_control.on_changed()
+            set_value.assert_called_once_with(Option.LAUNCHER_FONT_SIZE, "14")
+            integer_group.default_checkbox.check()
+            self.assertFalse(integer_group.value_control.is_enabled())
+            self.assertEqual(integer_group.value_control.get_value(), Option.get(Option.LAUNCHER_FONT_SIZE)["default"])
+            self.assertEqual(set_value.call_args.args, (Option.LAUNCHER_FONT_SIZE, ""))
+        with patch("launcher.settings.settings_page.LauncherSettings.set") as reset:
+            page.reset_to_defaults()
+            self.assertEqual(
+                {call.args for call in reset.call_args_list},
+                {("irc_nick", ""), (Option.LOW_LATENCY_VSYNC, ""),
+                 (Option.LAUNCHER_FONT_SIZE, "")},
+            )
+        self.run_dialog()
+
+    def test_expanding_options_preserve_overrides(self):
+        from launcher.option import Option
+        from launcher.ui.options import ConfigWidgetFactory
+
+        self.setup_dialog()
+        factory = ConfigWidgetFactory(expand=True)
+        options = Mock()
+        options.get.return_value = ""
+        factory.options = options
+        with patch("launcher.ui.options.OptionsBehavior"):
+            for key in (Option.JIT_COMPILER, Option.FLOPPY_DRIVE_SPEED,
+                        Option.FLOPPY_DRIVE_VOLUME_EMPTY):
+                with self.subTest(option=key):
+                    group = factory.create(self.dialog, key)
+                    checkbox = group.option_label
+                    control = group.layout.children[-1].element
+                    control.on_explicit_option("")
+                    self.assertFalse(control.is_enabled())
+                    checkbox.check()
+                    options.set.reset_mock()
+                    checkbox.on_changed()
+                    value = Option.get(key)["default"]
+                    options.set.assert_called_once_with(key, value)
+                    control.on_explicit_option(value)
+                    self.assertTrue(control.is_enabled())
+                    if hasattr(control, "choice_values"):
+                        control.set_index(1)
+                        expected = control.choice_values[1]
+                    else:
+                        control.set_value(30)
+                        expected = "30"
+                    options.set.reset_mock()
+                    control.on_changed()
+                    options.set.assert_called_once_with(key, expected)
+                    checkbox.check(False)
+                    options.set.reset_mock()
+                    checkbox.on_changed()
+                    options.set.assert_called_once_with(key, "")
+        self.run_dialog()
+
+    def test_configuration_form_control_widths(self):
+        from fsui.qt import QComboBox, QSpinBox
+        from fsui.qt.modern_theme import apply_modern_theme
+        from fsui.qt.retro_theme import apply_retro_theme
+        from launcher.panels.additionalconfigpanel import AdditionalConfigPanel
+        from launcher.panels.expansionspanel import ExpansionsPanel
+        from launcher.panels.romrampanel import RomRamPanel
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        try:
+            for variant in ("modern", "plain", "windows311", "workbench"):
+                self.application.setStyleSheet("")
+                self.application.setPalette(self.application.style().standardPalette())
+                self.application.setFont(font)
+                if variant == "modern":
+                    apply_modern_theme(self.application)
+                elif variant != "plain":
+                    apply_retro_theme(self.application, variant)
+                for panel_type in (RomRamPanel, ExpansionsPanel, AdditionalConfigPanel):
+                    with self.subTest(theme=variant, panel=panel_type.__name__), patch.object(fsui, "theme_variant", variant):
+                        self.setup_dialog()
+                        self.dialog.layout = fsui.VerticalLayout()
+                        panel = panel_type(self.dialog)
+                        self.dialog.layout.add(panel, fill=True, expand=True)
+                        self.dialog.show()
+                        try:
+                            for width in (540, 900, 1500):
+                                with self.subTest(width=width):
+                                    self.dialog.set_size((width, 700))
+                                    self.application.processEvents()
+                                    group = panel.memory_group if isinstance(panel, RomRamPanel) else panel
+                                    choices = group.widget().findChildren(QComboBox)
+                                    self.assertGreater(len(choices), 1)
+                                    widths = [choice.width() for choice in choices]
+                                    self.assertLessEqual(max(widths) - min(widths), 1)
+                                    self.assertGreater(min(widths), 75)
+                                    controls = choices + group.widget().findChildren(QSpinBox)
+                                    for control in controls:
+                                        self.assertEqual(control.width(), choices[0].width())
+                                        self.assertGreaterEqual(control.x(), 0)
+                                        self.assertLessEqual(control.geometry().right(), control.parentWidget().width())
+                                        checkbox = control.parentWidget().findChild(fsui.qt.QCheckBox)
+                                        self.assertGreaterEqual(control.x() - checkbox.geometry().right() - 1, 20)
+                                    if isinstance(panel, RomRamPanel):
+                                        roms = panel.kickstart_group
+                                        self.assertEqual(roms.text_field.x(), roms.ext_text_field.x())
+                                        self.assertEqual(roms.kickstart_type_choice.width(), roms.ext_rom_type_choice.width())
+                        finally:
+                            self.run_dialog()
+        finally:
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+
     def test_restart_button_confirmation(self):
         from fsui.qt import QMessageBox
         from launcher.settings.launchersettingspage import LauncherSettingsPage
@@ -981,6 +1118,30 @@ class TestDashboard(WidgetTestCase):
                             self.assertFalse(item.icon().isNull())
                             expected_height = 42 if fsui.theme_variant == "modern" else 44
                             self.assertEqual(item.sizeHint().height(), expected_height)
+                        for width in (1000, 1280):
+                            window.set_size((width, 760))
+                            for index in range(len(window.pages)):
+                                title = window.get_page_title(index)
+                                with self.subTest(theme=fsui.theme_variant, page=title, width=width):
+                                    window.set_page_by_title(title)
+                                    self.application.processEvents()
+                                    groups = getattr(window.page, "option_groups", [])
+                                    fields = []
+                                    help_positions = []
+                                    for group in groups:
+                                        control = group.value_control
+                                        control = getattr(control, "_widget", control)
+                                        self.assertGreater(control.width(), 60)
+                                        self.assertLessEqual(control.geometry().right(), control.parentWidget().width())
+                                        help_button = group.help_button.widget()
+                                        self.assertLess(control.geometry().right(), help_button.x())
+                                        help_positions.append(help_button.x())
+                                        if not hasattr(group, "default_checkbox"):
+                                            fields.append((control.x(), control.width()))
+                                        if hasattr(group, "label_layout"):
+                                            self.assertGreaterEqual(control.x() - group.label_layout.get_min_width(), 20)
+                                    self.assertLessEqual(len(set(fields)), 1)
+                                    self.assertLessEqual(len(set(help_positions)), 1)
                         colors = {
                             "modern": "#9bcce2", "windows311": "#183867",
                             "workbench": "#0055aa", "plain": "#000000",

@@ -18,6 +18,14 @@ The stack is based on main at `615cb4d2`, with one commit per branch:
 | `stack/03-command-standardisation` | Two synchronous command helpers; shell and persistent processes retained | 13 focused tests; 121 core tests, 10 skipped; Ruff and whitespace pass |
 | `stack/04-python-api-standardisation` | Removed/deprecated APIs and invalid escapes | 136 core/API/command tests, 10 skipped; 39 Qt tests, 65 subtests; strict compilation, Ruff and whitespace pass |
 | `stack/05-python-support-standardisation` | Python/platform metadata, generator, Pipenv, Debian, docs and build matrices | 138 core/API/command/support tests, 10 skipped; 39 Qt tests, 65 subtests; Ruff, strict compilation, lock verification and whitespace pass |
+| `stack/06-form-layout-consistency` | Cosmetic alignment for configuration and Settings forms; single-column memory rows; clear override-label spacing; restart command below theme/font selectors | 138 core tests, 10 skipped; 42 Qt tests, 236 subtests; configuration and Settings previews inspected; Ruff, strict compilation and whitespace pass |
+
+The cosmetic layer visits every Settings page in all four themes at 1000 and
+1280 pixel window widths. It checks aligned fields and help buttons, text and
+choice updates, numeric default toggles, and Reset to Defaults. Configuration
+form checks also require a 20 pixel gap after override labels, including Empty
+Floppy Drive Volume. Existing deleted-listener Qt teardown diagnostics still
+print after some Settings tests; they are not resolved by this layout-only pass.
 
 The initial strict-compilation failures in layers 01-03 were three existing
 invalid escapes, resolved in layer 04. The server readiness test in
