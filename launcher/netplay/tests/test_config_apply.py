@@ -71,6 +71,16 @@ def test_kickstart_missing_leaves_config_alone():
     )
 
 
+def test_empty_kickstart_clears_it():
+    updates, missing = resolve({"x_kickstart_file_sha1": ""})
+    assert updates == [
+        ("kickstart_file", ""),
+        ("x_kickstart_file", ""),
+        ("x_kickstart_file_sha1", ""),
+    ]
+    assert missing == {}
+
+
 def test_empty_ext_kickstart_clears_it():
     updates, missing = resolve({"x_kickstart_ext_file_sha1": ""})
     assert updates == [
