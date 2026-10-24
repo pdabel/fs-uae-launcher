@@ -43,9 +43,7 @@ class ConnectionTester:
 
     def set_host(self, host, last_error):
         if last_error:
-            last_error = "attempt {1} {0}".format(
-                last_error, self.connection_attempt
-            )
+            last_error = f"attempt {self.connection_attempt} {last_error}"
         values = [
             ("__netplay_host", host),
             ("__netplay_host_last_error", last_error),

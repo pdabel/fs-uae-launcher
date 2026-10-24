@@ -115,7 +115,7 @@ class ADFCreatorWindow(fsui.Window):
         k = 1
         while True:
             if k > 1:
-                name = "New Disk {0}.adf".format(k)
+                name = f"New Disk {k}.adf"
             else:
                 name = "New Disk.adf"
             if not os.path.exists(os.path.join(self.path, name)):

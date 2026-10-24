@@ -128,14 +128,14 @@ class RootBlock(Block):
   def dump(self):
     Block.dump(self, "Root")
     print(" hash size: %d" % self.hash_size)
-    print(' hash table:{!s}'.format(self.hash_table))
-    print(" bmp flag:  0x{:08x}".format(self.bitmap_flag))
-    print(' bmp ptrs:  {!s}'.format(self.bitmap_ptrs))
+    print(f' hash table:{self.hash_table!s}')
+    print(f" bmp flag:  0x{self.bitmap_flag:08x}")
+    print(f' bmp ptrs:  {self.bitmap_ptrs!s}')
     print(" bmp ext:   %d" % self.bitmap_ext_blk)
-    print(' mod_ts:    {!s}'.format(self.mod_ts))
-    print(' disk_ts:   {!s}'.format(self.disk_ts))
-    print(' create_ts: {!s}'.format(self.create_ts))
-    print(' disk name: {!s}'.format(self.name))
-    print(' extension: {!s}'.format(self.extension))
+    print(f' mod_ts:    {self.mod_ts!s}')
+    print(f' disk_ts:   {self.disk_ts!s}')
+    print(f' create_ts: {self.create_ts!s}')
+    print(f' disk name: {self.name!s}')
+    print(f' extension: {self.extension!s}')
 
      

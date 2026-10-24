@@ -19,7 +19,7 @@ class ROMManager(object):
         try:
             st = os.stat(path)
         except:
-            log_function("Error stat-ing file {0}".format(repr(path)))
+            log_function(f"Error stat-ing file {repr(path)}")
             return
         size = st.st_size
         mtime = int(st.st_mtime)

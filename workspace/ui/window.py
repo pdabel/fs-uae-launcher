@@ -330,23 +330,23 @@ class WindowButton(fsui.Panel):
         if parent.background_color.to_hsl().l >= 0.6:
             # FIXME: static resources / share between instances
             self.image = fsui.Image(
-                "pkg://workspace.ui/data/window-{}.png".format(name)
+                f"pkg://workspace.ui/data/window-{name}.png"
             )
             self.image_hover = fsui.Image(
-                "pkg://workspace.ui/data/window-{}-hover.png".format(name)
+                f"pkg://workspace.ui/data/window-{name}-hover.png"
             )
             self.image_pressed = fsui.Image(
-                "pkg://workspace.ui/data/window-{}-pressed.png".format(name)
+                f"pkg://workspace.ui/data/window-{name}-pressed.png"
             )
         else:
             self.image = fsui.Image(
-                "pkg://workspace.ui/data/window-{}-dark.png".format(name)
+                f"pkg://workspace.ui/data/window-{name}-dark.png"
             )
             self.image_hover = fsui.Image(
-                "pkg://workspace.ui/data/window-{}-hover.png".format(name)
+                f"pkg://workspace.ui/data/window-{name}-hover.png"
             )
             self.image_pressed = fsui.Image(
-                "pkg://workspace.ui/data/window-{}-pressed.png".format(name)
+                f"pkg://workspace.ui/data/window-{name}-pressed.png"
             )
 
     def on_paint(self):

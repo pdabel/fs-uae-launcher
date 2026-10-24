@@ -174,17 +174,12 @@ def notarizeApp(pathToNotarize: str, bundleId: str) -> str:
 
     result = shell(
         "xcrun altool --notarize-app -t osx "
-        "-f {pathToNotarize} "
-        "--primary-bundle-id {bundleId} "
-        "-u {appleIdUser} "
+        f"-f {pathToNotarize} "
+        f"--primary-bundle-id {bundleId} "
+        f"-u {getNotarizationUserName()} "
         "-p @env:NOTARIZATION_PASSWORD "
-        "-itc_provider {itcProvider} "
-        "--output-format xml".format(
-            appleIdUser=getNotarizationUserName(),
-            bundleId=bundleId,
-            itcProvider=getNotarizationItcProvider(),
-            pathToNotarize=pathToNotarize,
-        )
+        f"-itc_provider {getNotarizationItcProvider()} "
+        "--output-format xml"
     )
     print(result)
     root = ET.fromstring(result)
@@ -324,7 +319,7 @@ def updateConfigureAc(version: Version, commit: str = "") -> None:
                     k = "FSBUILD_VERSION"
                     v = str(version)
                     d = "Full version"
-                line = "m4_define([{}], [{}])\n".format(k.lower(), v)
+                line = f"m4_define([{k.lower()}], [{v}])\n"
             # if line.startswith("AC_DEFINE_UNQUOTED([FSBUILD_VERSION"):
             #     if "_MAJOR" in line:
             #         k = "FSBUILD_VERSION_MAJOR"
@@ -374,9 +369,7 @@ def updateDebianChangelog(version: Version) -> None:
                 first_line = False
                 deb_package = line.split(" ", 1)[0]
                 lines.append(
-                    "{} ({}-0) unstable; urgency=low\n".format(
-                        deb_package, deb_version
-                    )
+                    f"{deb_package} ({deb_version}-0) unstable; urgency=low\n"
                 )
                 if lines[-1] != line:
                     first_line_changed = True
@@ -386,7 +379,7 @@ def updateDebianChangelog(version: Version) -> None:
                 date = datetime.datetime.utcnow().strftime(
                     "%a, %d %b %Y %H:%M:%S +0000"
                 )
-                lines.append("{}  {}\n".format(author, date))
+                lines.append(f"{author}  {date}\n")
             else:
                 lines.append(line)
     with open("debian/changelog", "w", encoding="UTF-8") as f:
@@ -407,7 +400,7 @@ def updateSpecFile(path: str, version: Version) -> None:
         for line in f:
             if line.startswith("%define fsbuild_version "):
                 lines.append(
-                    "%define fsbuild_version {}\n".format(rpm_version)
+                    f"%define fsbuild_version {rpm_version}\n"
                 )
             # elif line.startswith("%define unmangled_version "):
             #     lines.append("%define unmangled_version {0}\n".format(version))
@@ -645,8 +638,8 @@ def notarizeDmg():
     requestUuid = notarizeApp(dmgPath, bundleId)
     checkNotarizationResult(requestUuid)
 
-    print('xcrun stapler staple "{}"'.format(dmgPath))
-    assert os.system('xcrun stapler staple "{}"'.format(dmgPath)) == 0
+    print(f'xcrun stapler staple "{dmgPath}"')
+    assert os.system(f'xcrun stapler staple "{dmgPath}"') == 0
 
     print("-" * 80)
     print(f"[FSBUILD] Notarized {dmgPath}")

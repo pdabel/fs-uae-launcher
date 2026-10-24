@@ -122,13 +122,11 @@ class Server:
         """
         exe_file = find_server_executable()
         if exe_file is None:
-            message = "Could not find the {0} executable".format(
-                EXECUTABLE_NAME
-            )
+            message = f"Could not find the {EXECUTABLE_NAME} executable"
             if fsboot.development():
                 # Running from a checkout: the binary is not built yet. Say
                 # what to run rather than leaving it to be looked up.
-                message += ". Build it with: {0}".format(BUILD_HINT)
+                message += f". Build it with: {BUILD_HINT}"
             else:
                 message += (
                     ". Reinstall the netplay server or the launcher package "
@@ -137,7 +135,7 @@ class Server:
             raise ServerError(message)
         args = [
             exe_file,
-            "--port={0}".format(self.port),
+            f"--port={self.port}",
             # Stop the server if the launcher goes away without closing it.
             "--exit-on-stdin-close",
         ]
@@ -145,15 +143,15 @@ class Server:
             args.append("--lobby")
             if self.public_addresses:
                 args.append(
-                    "--public-addresses={0}".format(self.public_addresses)
+                    f"--public-addresses={self.public_addresses}"
                 )
         else:
-            args.append("--players={0}".format(self.players))
+            args.append(f"--players={self.players}")
             if self.password:
-                args.append("--password={0}".format(self.password))
+                args.append(f"--password={self.password}")
         log_file = log_file_path()
         if log_file:
-            args.append("--log-file={0}".format(log_file))
+            args.append(f"--log-file={log_file}")
             print("Netplay server log:", log_file)
         print("Starting netplay server, args =", args)
         # The server logs to stderr, which is inherited so its output shows
@@ -167,9 +165,7 @@ class Server:
                 close_fds=True,
             )
         except OSError as e:
-            message = "Could not launch netplay server {0!r}: {1}.".format(
-                exe_file, e
-            )
+            message = f"Could not launch netplay server {exe_file!r}: {e}."
             if e.errno in (errno.EACCES, errno.EPERM):
                 message += (
                     " Check that this is a server executable file, that you "
@@ -193,9 +189,7 @@ class Server:
                     "reinstall the server."
                 )
             if fsboot.development():
-                message += " To build it from this checkout: {0}".format(
-                    BUILD_HINT
-                )
+                message += f" To build it from this checkout: {BUILD_HINT}"
             raise ServerError(message) from e
         atexit.register(self.stop)
         self.__wait_until_listening()
@@ -207,7 +201,7 @@ class Server:
         except ValueError:
             self.stop()
             raise ServerError(
-                "Unexpected output from netplay server: {0!r}".format(line)
+                f"Unexpected output from netplay server: {line!r}"
             )
         if event.get("event") == "error":
             # The server could not listen and has exited; it says why.
@@ -216,12 +210,12 @@ class Server:
             if event.get("reason") == "address_in_use":
                 raise PortInUseError(self.port, message)
             raise ServerError(
-                "Netplay server could not start: {0}".format(message)
+                f"Netplay server could not start: {message}"
             )
         if event.get("event") != "listening":
             self.stop()
             raise ServerError(
-                "Netplay server did not start listening: {0!r}".format(line)
+                f"Netplay server did not start listening: {line!r}"
             )
         # With an explicit port the server either binds it or fails, so this
         # is a consistency check rather than a lookup. It does matter if
@@ -256,12 +250,12 @@ class Server:
             self.stop()
             raise ServerError(
                 "Netplay server did not report that it was listening "
-                "within {0:g} seconds".format(READY_TIMEOUT)
+                f"within {READY_TIMEOUT:g} seconds"
             )
         if isinstance(line, Exception):
             self.stop()
             raise ServerError(
-                "Could not read from netplay server: {0}".format(line)
+                f"Could not read from netplay server: {line}"
             )
         if not line:
             # EOF on stdout: the server exited instead of starting up. Its
@@ -269,7 +263,7 @@ class Server:
             returncode = self.process.wait(timeout=STOP_TIMEOUT)
             self.process = None
             raise ServerError(
-                "Netplay server exited with code {0}".format(returncode)
+                f"Netplay server exited with code {returncode}"
             )
         return line.decode("UTF-8", "replace").strip()
 

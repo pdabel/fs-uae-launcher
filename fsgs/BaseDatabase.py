@@ -136,7 +136,7 @@ class BaseDatabase(object):
     def update_database(self, old, new):
         for i in range(old + 1, new + 1):
             print("upgrading database to version", i)
-            getattr(self, "update_database_to_version_{0}".format(i))()
+            getattr(self, f"update_database_to_version_{i}")()
             cursor = self.create_cursor()
             cursor.execute("UPDATE metadata SET version = ?", (i,))
             self.commit()

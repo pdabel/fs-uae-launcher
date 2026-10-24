@@ -43,7 +43,7 @@ class RomSplitter:
 
   def print_rom(self, out, show_entries=False):
     rom = self.remus_rom
-    out('@{:08x}  +{:08x}  sum={:08x}  sum_off={:08x}  {!s}'.format(rom.base_addr, rom.size, rom.chk_sum, rom.sum_off, rom.name))
+    out(f'@{rom.base_addr:08x}  +{rom.size:08x}  sum={rom.chk_sum:08x}  sum_off={rom.sum_off:08x}  {rom.name!s}')
     if show_entries:
       for e in rom.entries:
         self.print_entry(out, e)
@@ -81,7 +81,7 @@ class RomSplitter:
     for off in relocs:
       addr = struct.unpack_from(">I", data, off)[0]
       if addr < base_addr:
-        raise ValueError("Invalid relocatable address: {:08x}".format(addr))
+        raise ValueError(f"Invalid relocatable address: {addr:08x}")
       addr -= base_addr
       struct.pack_into(">I", data, off, addr)
     return data

@@ -97,7 +97,7 @@ class InputDevice(object):
                 getattr(self, method_name)(name, sclist=sclist)
             else:
                 print(
-                    "{0} does not support platform {1}".format(name, platform)
+                    f"{name} does not support platform {platform}"
                 )
                 raise MissingPlatformSupportException(
                     "No input device support for platform"
@@ -116,7 +116,7 @@ class InputDevice(object):
         else:
             number_str = "1"
         if number_str != "1":
-            self.name = "{0} #{1}".format(self.name, number_str)
+            self.name = f"{self.name} #{number_str}"
 
     def is_joystick(self):
         return self.get_type() == "TYPE_JOYSTICK"
@@ -336,9 +336,7 @@ class InputDevice(object):
             host_platform = "linux"
         else:
             host_platform = "other"
-        config_name = "{0}_{1}_{2}_{3}_{4}_{5}".format(
-            name, self.buttons, self.axes, self.hats, self.balls, host_platform
-        )
+        config_name = f"{name}_{self.buttons}_{self.axes}_{self.hats}_{self.balls}_{host_platform}"
 
         config = {}
         try:

@@ -45,6 +45,13 @@ integer coercions and legacy fixed-width diagnostics remain unchanged. Explicit
 string conversions preserve `%s` behavior for objects with custom formatting.
 Lazy logging arguments and formatting after gettext remain intact.
 
+Ordinary literal `.format()` calls use f-strings. Translated templates keep
+their placeholders and are formatted after gettext. Ruff's UP032 rule guards
+this convention locally and in CI, without enabling unrelated legacy rules:
+
+  venv/bin/python -m pip install ruff==0.17.2
+  venv/bin/pipenv run ruff check
+
 Run the core regression slice with:
 
   venv/bin/python -m pytest fsbc fstd fspy launcher/netplay launcher/server/tests

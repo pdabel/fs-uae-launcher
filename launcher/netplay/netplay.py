@@ -705,6 +705,6 @@ class Netplay:
 
         key = args[0]
         value = " ".join(args[1:])
-        channel.action('set option {0} to "{1}"'.format(key, value))
+        channel.action(f'set option {key} to "{value}"')
         # A host's change reaches the others as its next config version.
         LauncherConfig.set(key, value)

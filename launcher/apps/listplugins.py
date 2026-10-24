@@ -11,14 +11,14 @@ def app_main():
     provides = plugin_manager.provides()
 
     for plugin in plugins:
-        print("# {} ({})".format(plugin.name, type(plugin).__name__))
+        print(f"# {plugin.name} ({type(plugin).__name__})")
         print(plugin.path)
         print("")
 
     print("# Provides:")
     for name in sorted(provides):
         plugin = provides[name]
-        print("# {} ({})".format(name, plugin.name))
+        print(f"# {name} ({plugin.name})")
         # print("", plugin.provides()[name])
 
     print("")

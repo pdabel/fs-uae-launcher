@@ -208,7 +208,7 @@ class SaveHandler(object):
                 # This is the default behavior, create a clean state
                 # dir for the net play session.
                 if self._netplay_game:
-                    config_name = "Net Play ({0})".format(self._netplay_game)
+                    config_name = f"Net Play ({self._netplay_game})"
 
         # Convert the config name to a name which can be represented on
         # the file system (really all/most filesystems).

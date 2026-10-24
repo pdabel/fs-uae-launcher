@@ -118,7 +118,7 @@ class IRC:
     def irc_main(self):
         def func():
             self.message(
-                "connecting to {0}...".format(self.get_irc_server_host())
+                f"connecting to {self.get_irc_server_host()}..."
             )
 
         call_after(func)
@@ -141,7 +141,7 @@ class IRC:
 
     def connect_callback(self, client):
         def func():
-            self.message("connected to {0}".format(self.get_irc_server_host()))
+            self.message(f"connected to {self.get_irc_server_host()}")
 
         call_after(func)
 
@@ -180,7 +180,7 @@ class IRC:
         helpers.msg(self.client, destination, message)
 
     def notice(self, destination, message):
-        self.client.send("notice {0} :{1}".format(destination, message))
+        self.client.send(f"notice {destination} :{message}")
 
     def generate_nick(self, reset=False):
         if reset:
@@ -252,7 +252,7 @@ class IRC:
             # self.channel(channel).privmsg(message)
             # self.channel(channel).message("<{0}> {1}".format(self.my_nick,
             #        message), IRCColor.MY_MESSAGE)
-            self.client.send("privmsg {0} :{1}".format(channel, message))
+            self.client.send(f"privmsg {channel} :{message}")
         else:
             self.warning("usage: /msg <nick|channel> <message>")
 
@@ -261,22 +261,20 @@ class IRC:
             channel = args[0]
             message = " ".join(args[1:])
             # self.channel(channel).notice(message)
-            self.client.send("notice {0} :{1}".format(channel, message))
+            self.client.send(f"notice {channel} :{message}")
         else:
             self.warning("usage: /notice <nick|channel> <message>")
 
     # noinspection SpellCheckingInspection
     def command_oper(self, args):
         if len(args) == 2:
-            self.client.send("oper {0} {1}".format(args[0], args[1]))
+            self.client.send(f"oper {args[0]} {args[1]}")
         else:
             self.warning("usage: /oper <user> <password>")
 
     def command_slap(self, args):
         if len(args) == 1:
-            message = "slaps {0} around a bit with a large trout".format(
-                args[0]
-            )
+            message = f"slaps {args[0]} around a bit with a large trout"
             self.channel(self.active_channel_name).action(message)
         else:
             self.warning("usage: /slap <nick>")
@@ -304,7 +302,7 @@ class IRC:
             self.warning("usage: /kick <nick> [<message>]")
 
     def kick(self, channel, nick, message="kicked"):
-        self.client.send("KICK", channel, nick, ":{0}".format(message))
+        self.client.send("KICK", channel, nick, f":{message}")
 
     def command_join(self, args):
         if len(args) == 1:
@@ -357,7 +355,7 @@ class IRC:
 
         password = LauncherSettings.get_irc_nickserv_pass()
         if password:
-            self.privmsg("nickserv", "identify {0}".format(password))
+            self.privmsg("nickserv", f"identify {password}")
 
         self.join(LOBBY_CHANNEL)
 

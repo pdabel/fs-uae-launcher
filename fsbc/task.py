@@ -46,7 +46,7 @@ class Task(object):
     def start(self):
         threading.Thread(
             target=self.__run,
-            name="TaskThread({0})".format(self.get_task_name()),
+            name=f"TaskThread({self.get_task_name()})",
         ).start()
 
     def __run(self):
@@ -65,10 +65,8 @@ class Task(object):
                 print(self, "failed", repr(str(e)))
                 traceback.print_exc()
                 self.failed(
-                    "Task: {}\nError: {}\nMessage: {}\n\n"
-                    "See the log file for more details.".format(
-                        self.get_task_name(), type(e).__name__, str(e)
-                    )
+                    f"Task: {self.get_task_name()}\nError: {type(e).__name__}\nMessage: {str(e)}\n\n"
+                    "See the log file for more details."
                 )
             else:
                 print(self, "succeeded")
@@ -85,7 +83,7 @@ class Task(object):
         raise NotImplementedError("Task.run is not implemented")
 
     def __repr__(self):
-        return '<Task "{0}">'.format(self.get_task_name())
+        return f'<Task "{self.get_task_name()}">'
 
 
 class CurrentTaskProxy(object):

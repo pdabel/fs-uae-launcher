@@ -19,8 +19,8 @@ class AmigaContext(BaseContext):
 
     def eject_floppy(self, drive):
         values = [
-            ("floppy_drive_{0}".format(drive), ""),
-            ("x_floppy_drive_{0}_sha1".format(drive), ""),
+            (f"floppy_drive_{drive}", ""),
+            (f"x_floppy_drive_{drive}_sha1", ""),
         ]
         self.set_config(values)
 
@@ -30,14 +30,14 @@ class AmigaContext(BaseContext):
     def clear_floppy_list(self):
         values = []
         for i in range(Amiga.MAX_FLOPPY_IMAGES):
-            values.append(("floppy_image_{0}".format(i), ""))
-            values.append(("x_floppy_image_{0}_sha1".format(i), ""))
+            values.append((f"floppy_image_{i}", ""))
+            values.append((f"x_floppy_image_{i}_sha1", ""))
         self.set_config(values)
 
     def insert_floppy_in_free_drive(self, path, sha1=None):
         # FIXME: max floppy drives
         for i in range(4):
-            if not self.config.get("floppy_drive_{0}".format(i)):
+            if not self.config.get(f"floppy_drive_{i}"):
                 self.insert_floppy(i, path, sha1=sha1)
                 return True
         return False
@@ -49,8 +49,8 @@ class AmigaContext(BaseContext):
         path = Paths.contract_path(path, default_dir)
         self.set_config(
             [
-                ("floppy_drive_{0}".format(drive), path),
-                ("x_floppy_drive_{0}_sha1".format(drive), sha1),
+                (f"floppy_drive_{drive}", path),
+                (f"x_floppy_drive_{drive}_sha1", sha1),
             ]
         )
 
@@ -62,8 +62,8 @@ class AmigaContext(BaseContext):
         path = Paths.contract_path(path, default_dir)
         self.set_config(
             [
-                ("cdrom_drive_{0}".format(drive), path),
-                ("x_cdrom_drive_{0}_sha1".format(drive), sha1),
+                (f"cdrom_drive_{drive}", path),
+                (f"x_cdrom_drive_{drive}_sha1", sha1),
             ]
         )
 
@@ -98,14 +98,14 @@ class AmigaContext(BaseContext):
             if i < 4:
                 self.set_config(
                     [
-                        ("floppy_drive_{0}".format(i), path),
-                        ("x_floppy_drive_{0}_sha1".format(i), sha1),
+                        (f"floppy_drive_{i}", path),
+                        (f"x_floppy_drive_{i}_sha1", sha1),
                     ]
                 )
             self.set_config(
                 [
-                    ("floppy_image_{0}".format(i), path),
-                    ("x_floppy_image_{0}_sha1".format(i), sha1),
+                    (f"floppy_image_{i}", path),
+                    (f"x_floppy_image_{i}_sha1", sha1),
                 ]
             )
 
@@ -113,16 +113,16 @@ class AmigaContext(BaseContext):
         for i in range(len(paths), 4):
             self.set_config(
                 [
-                    ("floppy_drive_{0}".format(i), ""),
-                    ("x_floppy_drive_{0}_sha1".format(i), ""),
+                    (f"floppy_drive_{i}", ""),
+                    (f"x_floppy_drive_{i}_sha1", ""),
                 ]
             )
         # blank the rest of the image list
         for i in range(len(paths), 20):
             self.set_config(
                 [
-                    ("floppy_image_{0}".format(i), ""),
-                    ("x_floppy_image_{0}_sha1".format(i), ""),
+                    (f"floppy_image_{i}", ""),
+                    (f"x_floppy_image_{i}_sha1", ""),
                 ]
             )
 

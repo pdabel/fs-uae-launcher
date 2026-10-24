@@ -633,7 +633,7 @@ class BitmapCmd(Command):
           vol.bitmap.print_draw_bitmap(bm, brief)
           return 0
         else:
-          print("Node '{!s}' not found!".format(self.opts[1]))
+          print(f"Node '{self.opts[1]!s}' not found!")
           return 2
       else:
         print("Need node path!")
@@ -754,7 +754,7 @@ class BootCmd(Command):
         return 1
       path = os.path.join(bc_dir, name + ".bin")
       if not os.path.exists:
-        print("Boot code '{!s}' not found!".format(path))
+        print(f"Boot code '{path!s}' not found!")
         return 1
       # read data
       f = open(path,"rb")

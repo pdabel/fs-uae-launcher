@@ -57,19 +57,19 @@ class Channel:
         return sorted(nicks)
 
     def action(self, message):
-        message = "\u0001ACTION {0}\u0001".format(message)
+        message = f"\u0001ACTION {message}\u0001"
         self.privmsg(message)
 
     def privmsg(self, message, notice=False, echo=True):
         if echo and not message.startswith("__"):
             if notice:
-                text = "-{0}- {1}".format(self.irc.my_nick, message)
+                text = f"-{self.irc.my_nick}- {message}"
             elif message.startswith("[*] "):
-                text = "* {0} {1}".format(self.irc.my_nick, message[4:])
+                text = f"* {self.irc.my_nick} {message[4:]}"
             elif message.startswith("\u0001ACTION"):
-                text = "* {0} {1}".format(self.irc.my_nick, message[8:-1])
+                text = f"* {self.irc.my_nick} {message[8:-1]}"
             else:
-                text = "<{0}> {1}".format(self.irc.my_nick, message)
+                text = f"<{self.irc.my_nick}> {message}"
             self.message(text, IRCColor.MY_MESSAGE)
         if notice:
             self.irc.notice(self.name, message)
@@ -110,14 +110,14 @@ class Channel:
         else:
             color = IRCColor.MESSAGE
             if notice:
-                text = "-{0}- {1}".format(nick, message)
+                text = f"-{nick}- {message}"
                 color = IRCColor.NOTICE
             elif message.startswith("[*] "):
-                text = "* {0} {1}".format(nick, message[4:])
+                text = f"* {nick} {message[4:]}"
             elif message.startswith("\u0001ACTION"):
-                text = "* {0} {1}".format(nick, message[8:-1])
+                text = f"* {nick} {message[8:-1]}"
             else:
-                text = "<{0}> {1}".format(nick, message)
+                text = f"<{nick}> {message}"
             self.message(text, color)
 
     def on_notice(self, nick, message):
@@ -125,7 +125,7 @@ class Channel:
 
     # noinspection SpellCheckingInspection
     def on_currenttopic(self, topic):
-        self.message("{0}".format(topic), IRCColor.TOPIC)
+        self.message(f"{topic}", IRCColor.TOPIC)
 
     def on_join(self, nick):
         from launcher.netplay.irc import LOBBY_CHANNEL
@@ -170,7 +170,7 @@ class Channel:
     # noinspection SpellCheckingInspection
     def on_kick(self, kicker, kickee, reason):
         self.message(
-            "* {0} kicked {1} ({2})".format(kicker, kickee, reason),
+            f"* {kicker} kicked {kickee} ({reason})",
             IRCColor.KICK,
         )
         if self.irc.me(kickee):
@@ -178,7 +178,7 @@ class Channel:
 
     def on_topic(self, who, topic):
         self.message(
-            "* {0} changed topic to:\n{1} ".format(who, topic), IRCColor.TOPIC
+            f"* {who} changed topic to:\n{topic} ", IRCColor.TOPIC
         )
 
     def on_mode(self, who, args):
@@ -232,7 +232,7 @@ class Channel:
             self.handle_leave_channel()
         else:
             self.message(
-                "* {0} left {1}".format(nick, self.name), IRCColor.PART
+                f"* {nick} left {self.name}", IRCColor.PART
             )
             self.remove_nick(nick)
         IRCBroadcaster.broadcast("nick_list", {"channel": self.name})
@@ -240,6 +240,6 @@ class Channel:
     def on_quit(self, nick, reason):
         if nick in self.nicks or self.name == nick or not self.name:
             self.message(
-                "* {0} quit ({1}) ".format(nick, reason), IRCColor.PART
+                f"* {nick} quit ({reason}) ", IRCColor.PART
             )
         self.remove_nick(nick)

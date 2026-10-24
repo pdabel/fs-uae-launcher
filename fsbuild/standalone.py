@@ -91,15 +91,15 @@ def fix_linux_binary(path: str):
             changes += 1
     if strip:
         # strip does not work after patchelf has been run
-        command = "strip '{}'".format(path)
+        command = f"strip '{path}'"
         print(command)
         os.system(command)
     if rpath:
-        command = "patchelf --set-rpath '{}' '{}'".format(rpath, path)
+        command = f"patchelf --set-rpath '{rpath}' '{path}'"
         print(command)
         assert os.system(command) == 0
     # to make sure strip is not run again
-    os.system("touch '{}.standalone'".format(path))
+    os.system(f"touch '{path}.standalone'")
     return changes
 
 
@@ -304,9 +304,9 @@ def fix_macos_binary(path: str, frameworks_dir: str):
         assert p.wait() == 0
     if strip:
         if path.endswith(".dylib") or path.endswith(".so"):
-            command = "strip -x '{}'".format(path)
+            command = f"strip -x '{path}'"
         else:
-            command = "strip '{}'".format(path)
+            command = f"strip '{path}'"
         print(command)
         os.system(command)
     return changes
@@ -493,11 +493,11 @@ def fix_windows_binary(path: str, app_dir: str):
                 os.chmod(dst, 0o644)
                 changes += 1
     if strip:
-        command = 'strip "{}"'.format(path)
+        command = f'strip "{path}"'
         print(command)
         os.system(command)
     # Make deterministic exe/dll
-    command = 'ducible "{}"'.format(path)
+    command = f'ducible "{path}"'
     print(command)
     os.system(command)
     return changes

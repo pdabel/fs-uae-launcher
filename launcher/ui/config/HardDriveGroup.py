@@ -18,8 +18,8 @@ class HardDriveGroup(fsui.Panel):
         self.layout = fsui.VerticalLayout()
 
         self.index = index
-        self.config_key = "hard_drive_{0}".format(index)
-        self.config_key_sha1 = "x_hard_drive_{0}_sha1".format(index)
+        self.config_key = f"hard_drive_{index}"
+        self.config_key_sha1 = f"x_hard_drive_{index}_sha1"
 
         # if index == 0:
         #     # heading_label = fsui.HeadingLabel(self,
@@ -66,7 +66,7 @@ class HardDriveGroup(fsui.Panel):
             return
         dir_path, name = os.path.split(value)
         if dir_path:
-            path = "{0} ({1})".format(name, dir_path)
+            path = f"{name} ({dir_path})"
         else:
             path = name
         self.text_field.set_text(path)

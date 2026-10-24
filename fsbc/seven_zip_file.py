@@ -64,4 +64,4 @@ class SevenZipFile:
     def getinfo(self, name):
         if name in self.names:
             return {"name:": name}
-        raise KeyError("{0} not found in archive".format(name))
+        raise KeyError(f"{name} not found in archive")

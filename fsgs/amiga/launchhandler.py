@@ -223,9 +223,7 @@ class LaunchHandler(object):
                 raise TaskFailure(
                     gettext(
                         "Did not find required Kickstart or "
-                        "ROM for {}. Wanted one of these files: {}".format(
-                            config_key, repr(default_roms)
-                        )
+                        f"ROM for {config_key}. Wanted one of these files: {repr(default_roms)}"
                     )
                 )
 
@@ -286,7 +284,7 @@ class LaunchHandler(object):
                     raise TaskFailure(
                         gettext(
                             "Cannot find required ROM "
-                            "file: {name}".format(name=repr(org_src))
+                            f"file: {repr(org_src)}"
                         )
                     )
             # Determine dest from final src. If basename is empty (src
@@ -317,9 +315,7 @@ class LaunchHandler(object):
                             entries_preview = []
                         raise TaskFailure(
                             gettext(
-                                "Cannot determine file name inside directory: {0}. Contents (up to 20): {1}".format(
-                                    src, repr(entries_preview)
-                                )
+                                f"Cannot determine file name inside directory: {src}. Contents (up to 20): {repr(entries_preview)}"
                             )
                         )
                 else:
@@ -330,7 +326,7 @@ class LaunchHandler(object):
 
             with open(dest, "wb") as f:
                 if stream:
-                    print("[ROM] From stream => {}".format(dest))
+                    print(f"[ROM] From stream => {dest}")
                     rom = {}
                     rom["data"] = stream.read()
                     rom["sha1"] = hashlib.sha1(rom["data"]).hexdigest()
@@ -397,23 +393,23 @@ class LaunchHandler(object):
 
         floppies = []
         for i in range(Amiga.MAX_FLOPPY_DRIVES):
-            key = "floppy_drive_{0}".format(i)
+            key = f"floppy_drive_{i}"
             if self.config.get(key, ""):
                 floppies.append(self.config[key])
             self.prepare_floppy(key)
 
         for i in range(Amiga.MAX_FLOPPY_IMAGES):
-            key = "floppy_image_{0}".format(i)
+            key = f"floppy_image_{i}"
             if self.config.get(key, ""):
                 break
         else:
             print("floppy image list is empty")
             for j, floppy in enumerate(floppies):
-                self.config["floppy_image_{0}".format(j)] = floppy
+                self.config[f"floppy_image_{j}"] = floppy
 
         max_image = -1
         for i in range(Amiga.MAX_FLOPPY_IMAGES):
-            key = "floppy_image_{0}".format(i)
+            key = f"floppy_image_{i}"
             self.prepare_floppy(key)
             if self.config.get(key, ""):
                 max_image = i
@@ -427,7 +423,7 @@ class LaunchHandler(object):
             save_disk = os.path.join(self.temp_dir, "Save Disk.adf")
             with open(save_disk, "wb") as f:
                 f.write(data)
-            key = "floppy_image_{0}".format(save_image)
+            key = f"floppy_image_{save_image}"
             self.config[key] = "Save Disk.adf"
 
     def prepare_cdroms(self):
@@ -465,7 +461,7 @@ class LaunchHandler(object):
                     f.write(cue_sheet["data"].encode("UTF-8"))
 
             for i in range(Amiga.MAX_CDROM_DRIVES):
-                key = "cdrom_drive_{0}".format(i)
+                key = f"cdrom_drive_{i}"
                 value = self.config.get(key, "")
                 if value:
                     self.config[key] = os.path.join(
@@ -473,7 +469,7 @@ class LaunchHandler(object):
                     )
 
             for i in range(Amiga.MAX_CDROM_IMAGES):
-                key = "cdrom_image_{0}".format(i)
+                key = f"cdrom_image_{i}"
                 value = self.config.get(key, "")
                 if value:
                     self.config[key] = os.path.join(
@@ -482,18 +478,18 @@ class LaunchHandler(object):
 
         cdroms = []
         for i in range(Amiga.MAX_CDROM_DRIVES):
-            key = "cdrom_drive_{0}".format(i)
+            key = f"cdrom_drive_{i}"
             if self.config.get(key, ""):
                 cdroms.append(self.config[key])
 
         for i in range(Amiga.MAX_CDROM_IMAGES):
-            key = "cdrom_image_{0}".format(i)
+            key = f"cdrom_image_{i}"
             if self.config.get(key, ""):
                 break
         else:
             print("CD-ROM image list is empty")
             for j, cdrom in enumerate(cdroms):
-                self.config["cdrom_image_{0}".format(j)] = cdrom
+                self.config[f"cdrom_image_{j}"] = cdrom
 
     def prepare_hard_drives(self):
         print("LaunchHandler.prepare_hard_drives")
@@ -503,7 +499,7 @@ class LaunchHandler(object):
             self.prepare_hard_drive(i)
 
     def prepare_hard_drive(self, index):
-        key = "hard_drive_{}".format(index)
+        key = f"hard_drive_{index}"
         src = self.config.get(key, "")
         dummy, ext = os.path.splitext(src)
         ext = ext.lower()
@@ -511,7 +507,7 @@ class LaunchHandler(object):
         if is_http_url(src):
             name = src.rsplit("/", 1)[-1]
             name = unquote(name)
-            self.on_progress(gettext("Downloading {0}...".format(name)))
+            self.on_progress(gettext(f"Downloading {name}..."))
             dest = os.path.join(self.temp_dir, name)
             Downloader.install_file_from_url(src, dest)
             src = dest
@@ -588,7 +584,7 @@ class LaunchHandler(object):
                 "Did not found pre-configured hard drive " + repr(workbench)
             )
 
-        self.config["hard_drive_{0}".format(i)] = dir_path
+        self.config[f"hard_drive_{i}"] = dir_path
 
     def prepare_empty_hard_drive(self, i, src):
         dir_name = src.rsplit("/", 1)[-1]
@@ -596,7 +592,7 @@ class LaunchHandler(object):
         dir_path = os.path.join(self.temp_dir, dir_name)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
-        self.config["hard_drive_{0}".format(i)] = dir_path
+        self.config[f"hard_drive_{i}"] = dir_path
 
     def get_file_list_for_game_uuid(self, game_uuid):
         # FIXME: This is an ugly hack, we should already be told what
@@ -641,7 +637,7 @@ class LaunchHandler(object):
             file_list = self.get_file_list_for_game_uuid(game_uuid)
 
         drive_prefix = drive + "/"
-        dir_name = "DH{0}".format(drive_index)
+        dir_name = f"DH{drive_index}"
         dir_path = os.path.join(self.temp_dir, dir_name)
 
         for file_entry in file_list:
@@ -677,7 +673,7 @@ class LaunchHandler(object):
 
             # current_task.set_progress(os.path.basename(dst_file))
             current_task.set_progress(amiga_rel_path)
-            self.fsgs.file.copy_game_file("sha1://{0}".format(sha1), dst_file)
+            self.fsgs.file.copy_game_file(f"sha1://{sha1}", dst_file)
 
             # src_file = self.fsgs.file.find_by_sha1(sha1)
             # if not os.path.exists(os.path.dirname(dst_file)):
@@ -705,9 +701,9 @@ class LaunchHandler(object):
                 out_file.write("".join(metadata).encode("UTF-8"))
 
         if self.use_relative_paths:
-            self.config["hard_drive_{0}".format(drive_index)] = dir_name
+            self.config[f"hard_drive_{drive_index}"] = dir_name
         else:
-            self.config["hard_drive_{0}".format(drive_index)] = dir_path
+            self.config[f"hard_drive_{drive_index}"] = dir_path
 
     @staticmethod
     def encode_file_comment(comment):
@@ -722,7 +718,7 @@ class LaunchHandler(object):
             #     raw = raw - 1
             # else:
             #     result.append("%{0:x}".format(ord(c)))
-            result.append("%{0:x}".format(ord(c)))
+            result.append(f"%{ord(c):x}")
         return "".join(result)
 
     def unpack_hard_drive(self, i, src):
@@ -730,11 +726,11 @@ class LaunchHandler(object):
             src, self.fsgs.amiga.get_hard_drives_dir()
         )
 
-        dir_name = "DH{0}".format(i)
+        dir_name = f"DH{i}"
         dir_path = os.path.join(self.temp_dir, dir_name)
 
         self.unpack_archive(src, dir_path)
-        self.config["hard_drive_{0}".format(i)] = dir_path
+        self.config[f"hard_drive_{i}"] = dir_path
 
     # def create_devs_dir(self):
     #     devs_dir = os.path.join(dest_dir, "Devs")
@@ -898,8 +894,8 @@ class LaunchHandler(object):
                 break
         if not found_slave:
             raise Exception(
-                "Did not find the specified WHDLoad slave {}. "
-                "Check the WHDLoad arguments".format(repr(slave_original_name))
+                f"Did not find the specified WHDLoad slave {repr(slave_original_name)}. "
+                "Check the WHDLoad arguments"
             )
         print("[WHDLOAD] Slave directory:", repr(whdload_dir))
         print("[WHDLOAD] Slave arguments:", whdload_args)
@@ -982,11 +978,9 @@ class LaunchHandler(object):
             create_slave_icon(icon_path, whdload_args)
             self.write_startup_sequence(
                 s_dir,
-                'cd "{0}"\n'
-                "kgiconload {1}\n"
-                "uae-configuration SPC_QUIT 1\n".format(
-                    whdload_dir, os.path.basename(icon)
-                ),
+                f'cd "{whdload_dir}"\n'
+                f"kgiconload {os.path.basename(icon)}\n"
+                "uae-configuration SPC_QUIT 1\n",
             )
         else:
             self.write_startup_sequence(
@@ -1028,7 +1022,7 @@ class LaunchHandler(object):
     def install_whdload_file(self, sha1, dest_dir, rel_path):
         abs_path = os.path.join(dest_dir, rel_path)
         name = os.path.basename(rel_path)
-        self.on_progress(gettext("Downloading {0}...".format(name)))
+        self.on_progress(gettext(f"Downloading {name}..."))
         Downloader.install_file_by_sha1(sha1, name, abs_path)
 
     def copy_setpatch(self, base_dir):
@@ -1334,7 +1328,7 @@ def amiga_filename_to_host_filename(amiga_name, ascii_only=False):
             replace = True
 
         if replace:
-            filename += "%" + "{:02x}".format(ord(c))
+            filename += "%" + f"{ord(c):02x}"
         else:
             filename += c
 

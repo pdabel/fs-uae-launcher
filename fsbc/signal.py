@@ -16,7 +16,7 @@ def new_signal_id():
 
 class Listener(object):
     def __init__(self, signal, listener):
-        self.description = "<Listener {0}>".format(listener)
+        self.description = f"<Listener {listener}>"
 
         if signal == "config":
             # FIXME: temporary hack for legacy code

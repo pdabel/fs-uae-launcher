@@ -30,8 +30,8 @@ class FloppyManager(object):
     def clear_floppy_list(cls):
         values = []
         for i in range(Amiga.MAX_FLOPPY_IMAGES):
-            values.append(("floppy_image_{0}".format(i), ""))
-            values.append(("x_floppy_image_{0}_sha1".format(i), ""))
+            values.append((f"floppy_image_{i}", ""))
+            values.append((f"x_floppy_image_{i}_sha1", ""))
         LauncherConfig.set_multiple(values)
 
     @classmethod
@@ -79,14 +79,14 @@ class FloppyManager(object):
             if i < 4:
                 LauncherConfig.set_multiple(
                     [
-                        ("floppy_drive_{0}".format(i), path),
-                        ("x_floppy_drive_{0}_sha1".format(i), sha1),
+                        (f"floppy_drive_{i}", path),
+                        (f"x_floppy_drive_{i}_sha1", sha1),
                     ]
                 )
             LauncherConfig.set_multiple(
                 [
-                    ("floppy_image_{0}".format(i), path),
-                    ("x_floppy_image_{0}_sha1".format(i), sha1),
+                    (f"floppy_image_{i}", path),
+                    (f"x_floppy_image_{i}_sha1", sha1),
                 ]
             )
 
@@ -94,16 +94,16 @@ class FloppyManager(object):
         for i in range(len(paths), 4):
             LauncherConfig.set_multiple(
                 [
-                    ("floppy_drive_{0}".format(i), ""),
-                    ("x_floppy_drive_{0}_sha1".format(i), ""),
+                    (f"floppy_drive_{i}", ""),
+                    (f"x_floppy_drive_{i}_sha1", ""),
                 ]
             )
         # blank the rest of the image list
         for i in range(len(paths), 20):
             LauncherConfig.set_multiple(
                 [
-                    ("floppy_image_{0}".format(i), ""),
-                    ("x_floppy_image_{0}_sha1".format(i), ""),
+                    (f"floppy_image_{i}", ""),
+                    (f"x_floppy_image_{i}_sha1", ""),
                 ]
             )
             # dialog.destroy()
