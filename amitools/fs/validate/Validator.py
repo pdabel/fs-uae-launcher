@@ -40,7 +40,7 @@ class Validator:
       # give a warning if checksum is not correct
       if not boot.valid_chksum:
         self.log.msg(Log.INFO,"invalid boot block checksum",0)
-      self.log.msg(Log.INFO,"dos type is '%s'" % DosType.get_dos_type_str(self.dos_type))
+      self.log.msg(Log.INFO,"dos type is '{!s}'".format(DosType.get_dos_type_str(self.dos_type)))
       return (True, boot.valid_chksum)
     else:
       self.log.msg(Log.ERROR,"invalid boot block dos type",0)

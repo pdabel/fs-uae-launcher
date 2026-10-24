@@ -48,4 +48,4 @@ class LoadSegBlock(Block):
     
     print(" size:           %d" % self.size)
     print(" host_id:        %d" % self.host_id)
-    print(" next:           %s" % self._dump_ptr(self.next))
+    print(' next:           {!s}'.format(self._dump_ptr(self.next)))

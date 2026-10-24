@@ -37,6 +37,23 @@ See [the Python and dependency modernization TODO](docs/python-dependency-modern
 for the reviewed packaging, supported-Python, dependency, and code-quality
 work items.
 
+## Python Consistency Checks
+
+Literal percent interpolation is modernized only where output equivalence is
+clear. Numeric widths, precision, and hexadecimal case are retained; ambiguous
+integer coercions and legacy fixed-width diagnostics remain unchanged. Explicit
+string conversions preserve `%s` behavior for objects with custom formatting.
+Lazy logging arguments and formatting after gettext remain intact.
+
+Run the core regression slice with:
+
+  venv/bin/python -m pytest fsbc fstd fspy launcher/netplay launcher/server/tests
+
+On the stack's main baseline (615cb4d2), the server readiness test has an
+unrelated argument-order expectation failure. The initial percent-format layer
+passes its focused output checks; full-tree lint findings and three invalid
+escape warnings predate it and are not silently treated as passing checks.
+
 ## Modern Dark Workspace
 
 Modern Dark is the default when no launcher theme has been selected. The
