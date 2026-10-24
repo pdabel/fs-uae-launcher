@@ -1,6 +1,8 @@
 import fsui
 from launcher.i18n import gettext
-from launcher.netplay.irc import LOBBY_CHANNEL
+from launcher.launcher_settings import LauncherSettings
+from launcher.option import Option
+from launcher.netplay.irc import LOBBY_CHANNEL, is_game_channel
 from launcher.netplay.irc_broadcaster import IRCBroadcaster
 from launcher.netplay.netplay import Netplay
 from launcher.ui.skin import Skin
@@ -131,10 +133,22 @@ class NetplayPanel(fsui.Panel):
         button_layout = fsui.VerticalLayout() if self.columns else fsui.HorizontalLayout()
         parent.layout.add(button_layout, fill=True, margin=10)
         self.join_channel_button = JoinChannelButton(self.channel_panel, self.netplay.irc)
+        self.private_game_checkbox = fsui.CheckBox(
+            self.channel_panel, gettext("Private")
+        )
+        self.private_game_checkbox.set_tooltip(gettext(
+            "Do not announce this game channel in the lobby. "
+            "This does not restrict IRC channel access."
+        ))
+        self.join_channel_button.private_checkbox = self.private_game_checkbox
         if self.columns:
-            self.channel_panel.layout.add(self.join_channel_button, fill=True, margin=10)
+            join_layout = fsui.HorizontalLayout()
+            self.channel_panel.layout.add(join_layout, fill=True, margin=10)
+            join_layout.add(self.join_channel_button, expand=True)
+            join_layout.add(self.private_game_checkbox, margin_left=10)
         else:
             button_layout.add(self.join_channel_button, fill=True, margin_left=0)
+            button_layout.add(self.private_game_checkbox, margin_left=10)
  
          # Add a spacer before the Start Game button and store a reference
         self.action_spacer_pre = button_layout.add_spacer(0, expand=not self.columns)
@@ -219,7 +233,7 @@ class NetplayPanel(fsui.Panel):
         self.nick_list.set_items(items)
 
     def update_action_buttons_visibility(self):
-        in_game_channel = self.active_channel and self.active_channel.endswith('-game')
+        in_game_channel = is_game_channel(self.active_channel)
         is_op = self.netplay.is_op()
 
         # Master list of all action buttons
@@ -305,13 +319,13 @@ class NetplayPanel(fsui.Panel):
 
 
 class SimpleTextInputDialog(fsui.Dialog):
-    def __init__(self, parent, title, label_text):
+    def __init__(self, parent, title, label_text, default_text="new"):
         super().__init__(parent, title)
         self.layout = fsui.VerticalLayout()
         self.label = fsui.Label(self, label_text)
         self.layout.add(self.label, margin=10)
         self.text_field = fsui.TextField(self)
-        self.text_field.set_text("new")
+        self.text_field.set_text(default_text)
         self.text_field.select_all()
         self.layout.add(self.text_field, fill=True, margin=10)
         button_row = fsui.HorizontalLayout()
@@ -330,8 +344,10 @@ class SimpleTextInputDialog(fsui.Dialog):
         self.accept()
 
     @staticmethod
-    def get_text(parent, title, label_text):
-        dialog = SimpleTextInputDialog(parent, title, label_text)
+    def get_text(parent, title, label_text, default_text="new"):
+        dialog = SimpleTextInputDialog(
+            parent, title, label_text, default_text=default_text
+        )
         if dialog.exec():
             return dialog.result_text
         return None
@@ -340,15 +356,24 @@ class JoinChannelButton(fsui.Button):
     def __init__(self, parent, irc):
         super().__init__(parent, gettext("Join Game Channel"))
         self.irc = irc
+        self.private_checkbox = None
 
     def on_activated(self):
-        game_name = SimpleTextInputDialog.get_text(self, gettext("Enter Game Name"), gettext("Game Name:"))
+        default_name = LauncherSettings.get(Option.CONFIG_NAME).strip() or "new"
+        game_name = SimpleTextInputDialog.get_text(
+            self, gettext("Enter Game Name"), gettext("Game Name:"),
+            default_text=default_name,
+        )
         if game_name:
             game_name = game_name.replace(" ", "-").lower()
-            # Broadcast the command as a message in the IRC channel
-            self.irc.handle_command(f"/me ran the following command:")
-            self.irc.handle_command(f"/me /join #{game_name}-game")
-            self.irc.handle_command(f"/join #{game_name}-game")
+            tag = LauncherSettings.get(Option.NETPLAY_TAG).strip().lower()
+            tag = "".join(character for character in tag if character.isascii() and character.isalnum())[:3]
+            tag = tag or Option.get(Option.NETPLAY_TAG)["default"].lower()
+            private = (
+                self.private_checkbox is not None
+                and self.private_checkbox.is_checked()
+            )
+            self.irc.join(f"#{game_name}-{tag}", private=private)
 
 class HostGameButton(fsui.Button):
     def __init__(self, parent, netplay, panel, irc):
