@@ -447,6 +447,8 @@ A missing file is also a hash mismatch: `resolve_config` clears a slot it can't 
 
 #### The Sync Config limits go
 
+> **Done** — see Rollout step 10.
+
 **Design goal: netplay settings don't change how a game loads or launches.** Phase three removes the Sync Config dialog and its limits, and restores the fixed `Amiga.MAX_*` hardware maximums (4 floppy drives, 20 floppy images, 4 CD-ROM drives, 20 CD-ROM images, 4 hard drives) everywhere.
 
 The limits — Default (the `Amiga.MAX_*` values), Fast (4 floppy drives, 4 floppy images, no CD-ROM or hard drives) or Custom (0–20 each), set per user in `launcher/sync_settings.py` — were added in #23 to shorten the IRC sync, which sends one message per key. Once the config is one `PUT` to the lobby there's nothing left for them to speed up. They also reach well beyond netplay: #23 replaced `Amiga.MAX_*` with `sync_settings.MAX_*` in the code that loads, prepares and launches *every* game, so a netplay setting decides how many media slots a single-player game gets:
@@ -593,8 +595,9 @@ For development mode, `fsnp-server/Makefile` builds the binary where `Server.py`
     - **`/hostgame` on a local lobby.** `Server(lobby=True, public_addresses=…)`.
     - **The launcher uses it.** `/startgame` and `/hostgame` create a lobby game and announce it; players join on the announcement or `/joingame`; Start asks the lobby; the panel lists each slot as ready, missing (naming the files) or config differs, and enables Start only when the lobby would accept it. Deleted: `handle_game_instruction` and the whole `__` command set, `send_config`, `/ready`, `/notready`, `/check`, `/verify`, `/sendconfig` and `/customgame`; added `/recheck` and `/joingame`. `test_netplay_flow.py` runs a host and a player through to both launching, against a real lobby.
 
+    - **Sync Config limits removed.** `sync_settings.py`, `SyncConfigDialog` and its button, and `LauncherConfig.refresh_keys()` are gone; `Amiga.MAX_*` is back in `build_cfg`, the reset values, the launch handler, the config writer and loader, `AmigaContext` and the media list. That also fixes the class-level reset values, which had put the hard-drive keys inside the CD-ROM images loop. Old `max_*` and `mode` entries in a user's settings file are now ignored.
+
     Remaining:
-    - **Remove the Sync Config limits:** delete `sync_settings.py`, `SyncConfigDialog` and `refresh_keys()`, and restore `Amiga.MAX_*` in the launch, load, config-writer and media-list code (see [The Sync Config limits go](#the-sync-config-limits-go)). Same change as taking config off IRC, so the IRC sync never runs with the full key set.
     - **Verify in real sessions** — two launchers, two FS-UAE instances — with one player missing a disk, which the IRC path reports only as a bare hash mismatch; and, single-player, that a CD-ROM game and a game with more than four floppy images load and launch with every disc and image — the cases the limits affected.
 11. **Phase four: rejoin. — not started, redesigned; nice to have.** Rejoin by relaunch and replay from frame 0, pausing the others meanwhile — no client change, see [Rejoin](#rejoin-phase-four). First task: find out whether `fs-uae` consumes a backlog of frame words faster than real time, which decides whether the rest is worth building. Test by quitting one emulator mid-game and relaunching it with the same password.
 
@@ -611,7 +614,7 @@ For development mode, `fsnp-server/Makefile` builds the binary where `Server.py`
 - **Distribution.** The launcher is PyInstaller-packaged; a Go toolchain enters the build — one `go build` per platform, no cgo, and `fsbuild/build.sh` fails loudly rather than shipping a bundle without the server. Contributors who only touch the Python side need no Go install: `fsnp-server/Makefile` falls back to a `golang` container.
 - **Protocol v2 temptation.** Single-port multiplexing, TLS and explicit frame numbers on checksum words are all worthwhile, but each needs the emulator to change. Ship v1 in Go and run real sessions first.
 - **Phase-three scope.** Moving config into the session is the change that deletes the most fragile Python, which made it tempting to pull forward; it waited until the lobby existed and real sessions had run on the Go server, and both are now true. What remains is that it's a rewrite of the launcher's netplay command layer and panel, not a patch — scope it as such. The apply step it keeps is already extracted and tested (`config_apply.py`), so the rewrite has a fixed point to build around.
-- **The Sync Config limits leak out of netplay.** They were meant to shorten the IRC sync, but they also set how many media slots *every* game gets at load and launch — Fast mode's CD-ROM limit of 0 reaches the CD-ROM preparation at launch, and images past the floppy limit aren't prepared at launch. Between players, different limits mean different checksum key lists: the hashes can never match, and `resolve_config` silently drops the host's extra media slots. Phase three removes the limits ([The Sync Config limits go](#the-sync-config-limits-go)); until then, players need matching Sync Config modes, and Default is the only mode that doesn't affect single-player games.
+- **The Sync Config limits leaked out of netplay. — fixed in phase three.** They were meant to shorten the IRC sync, but also set how many media slots *every* game got at launch and in the media list, and between players with different limits the checksum key lists differed, so hashes could never match. Phase three removed them ([The Sync Config limits go](#the-sync-config-limits-go)), and the document's key lists guard against the same thing between launcher versions.
 
 ---
 
