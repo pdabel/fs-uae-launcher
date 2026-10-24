@@ -36,12 +36,12 @@ class CommandError(Exception):
 
 class NoSuchCommandError(CommandError):
     def __str__(self):
-        return 'No such command "%s"' % ".".join(self.cmd)
+        return 'No such command "{!s}"'.format(".".join(self.cmd))
 
 
 class ProtectedCommandError(CommandError):
     def __str__(self):
-        return 'Command "%s" is protected' % ".".join(self.cmd)
+        return 'Command "{!s}" is protected'.format(".".join(self.cmd))
 
 
 class CommandHandler(object):
@@ -87,7 +87,7 @@ class CommandHandler(object):
     @protected
     def run(self, command, *args):
         """ finds and runs a command """
-        logging.debug("processCommand %s(%s)" % (command, args))
+        logging.debug('processCommand {!s}({!s})'.format(command, args))
         # print(command, args)
 
         try:
@@ -96,12 +96,12 @@ class CommandHandler(object):
             self.__unhandled__(command, *args)
             return
 
-        logging.debug('f %s' % f)
+        logging.debug('f {!s}'.format(f))
 
         try:
             f(*args)
         except Exception as e:
-            logging.error('command raised %s' % e)
+            logging.error('command raised {!s}'.format(e))
             logging.error(traceback.format_exc())
             raise CommandError(command)
 
@@ -110,7 +110,7 @@ class CommandHandler(object):
         """The default handler for commands. Override this method to
         apply custom behavior (example, printing) unhandled commands.
         """
-        logging.debug('unhandled command %s(%s)' % (cmd, args))
+        logging.debug('unhandled command {!s}({!s})'.format(cmd, args))
 
 
 class DefaultCommandHandler(CommandHandler):
@@ -138,12 +138,12 @@ class DefaultBotCommandHandler(CommandHandler):
 
     def help(self, sender, dest, arg=None):
         """list all available commands or get help on a specific command"""
-        logging.info('help sender=%s dest=%s arg=%s' % (sender, dest, arg))
+        logging.info('help sender={!s} dest={!s} arg={!s}'.format(sender, dest, arg))
         if not arg:
             commands = self.getVisibleCommands()
             commands.sort()
             helpers.msg(self.client, dest,
-                        "available commands: %s" % " ".join(commands))
+                        'available commands: {!s}'.format(" ".join(commands)))
         else:
             try:
                 f = self.get(arg)
@@ -156,9 +156,9 @@ class DefaultBotCommandHandler(CommandHandler):
             if not inspect.ismethod(f):
                 sub_commands = self.getVisibleCommands(f)
                 if sub_commands:
-                    doc += " [sub commands: %s]" % " ".join(sub_commands)
+                    doc += ' [sub commands: {!s}]'.format(" ".join(sub_commands))
 
-            helpers.msg(self.client, dest, "%s: %s" % (arg, doc))
+            helpers.msg(self.client, dest, '{!s}: {!s}'.format(arg, doc))
 
 
 # noinspection PyPep8Naming
@@ -178,7 +178,7 @@ class BotCommandHandler(DefaultCommandHandler):
         and calls self.processBotCommand(cmd, sender) if its is.
         """
 
-        logging.debug("tryBotCommand('%s' '%s' '%s')" % (prefix, dest, msg))
+        logging.debug("tryBotCommand('{!s}' '{!s}' '{!s}')".format(prefix, dest, msg))
 
         if dest == self.client.nick:
             dest = parse_nick(prefix)[0]

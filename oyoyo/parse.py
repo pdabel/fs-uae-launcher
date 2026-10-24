@@ -55,7 +55,7 @@ def parse_raw_irc_command(element):
         try:
             command = numeric_events[command]
         except KeyError:
-            logging.warning('unknown numeric event %s' % command)
+            logging.warning('unknown numeric event {!s}'.format(command))
     command = command.lower()
 
     if args[0].startswith(":"):

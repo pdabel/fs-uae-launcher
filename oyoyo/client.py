@@ -107,11 +107,10 @@ class IRCClient:
             elif type(arg).__name__ == 'unicode':
                 bargs.append(arg.encode(encoding))
             else:
-                raise IRCClientError('Refusing to send one of the args from provided: %s'
-                                     % repr([(type(arg), arg) for arg in args]))
+                raise IRCClientError('Refusing to send one of the args from provided: {!s}'.format(repr([(type(arg), arg) for arg in args])))
 
         msg = bytes(" ", "ascii").join(bargs)
-        logging.info('---> send "%s"' % msg)
+        logging.info('---> send "{!s}"'.format(msg))
         self.socket.send(msg + bytes("\r\n", "ascii"))
 
     def connect(self):
@@ -125,8 +124,8 @@ class IRCClient:
 
         """
         try:
-            logging.info('connecting to %s:%s' % (self.host, self.port))
-            self.socket.connect(("%s" % self.host, self.port))
+            logging.info('connecting to {!s}:{!s}'.format(self.host, self.port))
+            self.socket.connect(('{!s}'.format(self.host), self.port))
             if self.blocking:
                 # this also overrides default timeout
                 self.socket.setblocking(1)
@@ -197,7 +196,7 @@ class IRCApp:
 
         warning: if you add a client that has blocking set to true,
         timers will no longer function properly """
-        logging.info('added client %s (ar=%s)' % (client, autoreconnect))
+        logging.info('added client {!s} (ar={!s})'.format(client, autoreconnect))
         self._clients[client] = self._ClientDesc(autoreconnect=autoreconnect)
 
     def addTimer(self, seconds, cb):
@@ -206,7 +205,7 @@ class IRCApp:
         ( the only advantage to these timers is they dont use threads )
         """
         assert callable(cb)
-        logging.info('added timer to call %s in %ss' % (cb, seconds))
+        logging.info('added timer to call {!s} in {!s}s'.format(cb, seconds))
         self._timers.append((time.time() + seconds, cb))
 
     def run(self):
@@ -223,7 +222,7 @@ class IRCApp:
                 try:
                     clientdesc.con.next()
                 except Exception as e:
-                    logging.error('client error %s' % e)
+                    logging.error('client error {!s}'.format(e))
                     logging.error(traceback.format_exc())
                     if clientdesc.autoreconnect:
                         clientdesc.con = None
@@ -244,7 +243,7 @@ class IRCApp:
             self._timers = []
             for target_time, cb in timers:
                 if now > target_time:
-                    logging.info('calling timer cb %s' % cb)
+                    logging.info('calling timer cb {!s}'.format(cb))
                     cb()
                 else:
                     self._timers.append((target_time, cb))

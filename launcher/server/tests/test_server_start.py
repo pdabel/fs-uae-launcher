@@ -155,7 +155,7 @@ def test_server_reported_error_is_preserved(monkeypatch, reason, exception):
     monkeypatch.setattr(server_module, "log_file_path", lambda: None)
     process = Mock()
     process.stdout.readline.return_value = (
-        '{"event":"error","reason":"%s","message":"cannot listen"}\n' % reason
+        '{{"event":"error","reason":"{!s}","message":"cannot listen"}}\n'.format(reason)
     ).encode("utf-8")
     process.poll.return_value = 1
     monkeypatch.setattr(

@@ -99,11 +99,11 @@ class FSCommandQueue(CommandQueue):
       # main command loop
       exit_code = CommandQueue.run(self)
     except FSError as e:
-      cmd = "'%s'" % " ".join(self.cmd_line)
+      cmd = "'{!s}'".format(" ".join(self.cmd_line))
       print(cmd, "FSError:", e)
       exit_code = 3
     except IOError as e:
-      cmd = "'%s'" % " ".join(self.cmd_line)
+      cmd = "'{!s}'".format(" ".join(self.cmd_line))
       print(cmd, "IOError:", e)
       exit_code = 4
     finally:
@@ -633,7 +633,7 @@ class BitmapCmd(Command):
           vol.bitmap.print_draw_bitmap(bm, brief)
           return 0
         else:
-          print("Node '%s' not found!" % self.opts[1])
+          print("Node '{!s}' not found!".format(self.opts[1]))
           return 2
       else:
         print("Need node path!")
@@ -754,7 +754,7 @@ class BootCmd(Command):
         return 1
       path = os.path.join(bc_dir, name + ".bin")
       if not os.path.exists:
-        print("Boot code '%s' not found!" % path)
+        print("Boot code '{!s}' not found!".format(path))
         return 1
       # read data
       f = open(path,"rb")

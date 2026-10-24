@@ -37,11 +37,11 @@ def nick(client, nick):
 
 def msg(cli, user, msg):
     for line in msg.split('\n'):
-        cli.send("PRIVMSG", user, ":%s" % line)
+        cli.send("PRIVMSG", user, ':{!s}'.format(line))
 
 
 def msgrandom(cli, choices, dest, user=None):
-    o = "%s: " % user if user else ""
+    o = '{!s}: '.format(user) if user else ""
     o += random.choice(choices)
     msg(cli, dest, o)
 
@@ -65,11 +65,11 @@ def cs(cli, *args):
 
 
 def identify(cli, passwd, authuser="NickServ"):
-    msg(cli, authuser, "IDENTIFY %s" % passwd)
+    msg(cli, authuser, 'IDENTIFY {!s}'.format(passwd))
 
 
 def quit(cli, msg='gone'):
-    cli.send("QUIT :%s" % msg)
+    cli.send('QUIT :{!s}'.format(msg))
     cli._end = 1
 
 

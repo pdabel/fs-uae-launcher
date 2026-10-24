@@ -156,15 +156,14 @@ class BootBlock(Block):
   
   def dump(self):
     print("BootBlock(%d):" % self.blk_num)
-    print(" dos_type:  0x%08x %s (valid: %s) is_ffs=%s is_intl=%s is_dircache=%s" \
-      % (self.dos_type, DosType.num_to_tag_str(self.dos_type), 
+    print(' dos_type:  0x{:08x} {!s} (valid: {!s}) is_ffs={!s} is_intl={!s} is_dircache={!s}'.format(self.dos_type, DosType.num_to_tag_str(self.dos_type),
          self.valid_dos_type, 
          DosType.is_ffs(self.dos_type), 
          DosType.is_intl(self.dos_type),
          DosType.is_dircache(self.dos_type)))
     print(" root_blk:  %d (got %d)" % (self.calc_root_blk, self.got_root_blk))
-    print(" chksum:    0x%08x (got) 0x%08x (calc) -> bootable: %s" % (self.got_chksum, self.calc_chksum, self.valid_chksum))
-    print(" valid:     %s" % self.valid)
+    print(' chksum:    0x{:08x} (got) 0x{:08x} (calc) -> bootable: {!s}'.format(self.got_chksum, self.calc_chksum, self.valid_chksum))
+    print(' valid:     {!s}'.format(self.valid))
     if self.boot_code != None:
         print(" boot_code: %d bytes" % len(self.boot_code))
 
