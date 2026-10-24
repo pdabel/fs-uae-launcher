@@ -197,13 +197,9 @@ def notarizeApp(pathToNotarize: str, bundleId: str) -> str:
 
 def run(args: List[str]) -> str:
     print(quoteArgs(args))
-    # p = subprocess.Popen(args, stdout = subprocess.PIPE)
-    # assert p.wait() == 0
-    # assert p.stdout
-    # output = p.stdout.read().decode("UTF-8")
-    # assert p.wait() == 0
-    # return output
-    return subprocess.check_output(args).decode("UTF-8")
+    return subprocess.run(
+        args, check=True, stdout=subprocess.PIPE
+    ).stdout.decode("UTF-8")
 
 
 def runCodeSign(args: List[str]) -> None:
