@@ -1,40 +1,35 @@
-from types import SimpleNamespace
-
 from fsgs.amiga.amiga import Amiga
-from launcher.netplay.config_apply import file_keys, resolve_config
-
-DEFAULT = SimpleNamespace(
-    MAX_FLOPPY_DRIVES=4,
-    MAX_FLOPPY_IMAGES=20,
-    MAX_CDROM_DRIVES=4,
-    MAX_CDROM_IMAGES=20,
-    MAX_HARD_DRIVES=4,
-)
-FAST = SimpleNamespace(
-    MAX_FLOPPY_DRIVES=4,
-    MAX_FLOPPY_IMAGES=4,
-    MAX_CDROM_DRIVES=0,
-    MAX_CDROM_IMAGES=0,
-    MAX_HARD_DRIVES=0,
-)
+from launcher.netplay.config_apply import media_path_key, resolve_config
 
 KICK = "a" * 40
 DISK = "b" * 40
 FILES = {KICK: "/roms/kick.rom", DISK: "/disks/game.adf"}
 
+SYNC_KEYS = {
+    "amiga_model",
+    "x_kickstart_file_sha1",
+    "x_kickstart_ext_file_sha1",
+    "x_floppy_drive_0_sha1",
+    "x_floppy_drive_1_sha1",
+    "x_floppy_drive_2_sha1",
+    "x_floppy_image_0_sha1",
+    "x_floppy_image_19_sha1",
+    "x_cdrom_drive_0_sha1",
+}
 
-def resolve(document, limits=DEFAULT):
-    sync_keys = {"amiga_model", "x_kickstart_file_sha1"}
-    sync_keys.add("x_kickstart_ext_file_sha1")
-    sync_keys.update(file_keys(limits))
-    return resolve_config(document, limits, sync_keys, FILES.get)
+
+def resolve(document, sync_keys=SYNC_KEYS):
+    return resolve_config(document, sync_keys, FILES.get)
 
 
-def test_file_keys_follow_limits():
-    assert "x_floppy_image_5_sha1" in file_keys(DEFAULT)
-    assert "x_floppy_image_5_sha1" not in file_keys(FAST)
-    assert "x_cdrom_drive_0_sha1" not in file_keys(FAST)
-    assert file_keys(FAST)["x_floppy_drive_3_sha1"] == "floppy_drive_3"
+def test_media_path_key():
+    assert media_path_key("x_floppy_drive_3_sha1") == "floppy_drive_3"
+    assert media_path_key("x_floppy_image_19_sha1") == "floppy_image_19"
+    assert media_path_key("x_cdrom_image_0_sha1") == "cdrom_image_0"
+    assert media_path_key("x_hard_drive_2_sha1") == "hard_drive_2"
+    assert media_path_key("x_kickstart_file_sha1") is None
+    assert media_path_key("floppy_drive_0") is None
+    assert media_path_key("x_floppy_drive_sha1") is None
 
 
 def test_plain_sync_key_is_set():
@@ -121,10 +116,25 @@ def test_url_is_used_as_path():
     assert missing == {}
 
 
-def test_image_above_old_limit_is_resolved():
-    # The stale-table bug: Fast at startup, Default now.
-    updates, _ = resolve({"x_floppy_image_5_sha1": DISK}, DEFAULT)
-    assert ("floppy_image_5", "/disks/game.adf") in updates
+def test_media_slot_is_resolved_whatever_the_local_limits():
+    # Matched by name: a slot beyond what Fast mode would list (images past
+    # 4, any CD-ROM) still resolves to a path when the document has it.
+    for key, path_key in [
+        ("x_floppy_image_19_sha1", "floppy_image_19"),
+        ("x_cdrom_drive_0_sha1", "cdrom_drive_0"),
+    ]:
+        updates, _ = resolve({key: DISK})
+        assert (path_key, "/disks/game.adf") in updates
+
+
+def test_document_sync_keys_decide_what_is_applied():
+    document = {"amiga_model": "A1200", "chip_memory": "2048"}
+    assert resolve(document, {"amiga_model"}) == (
+        [("amiga_model", "A1200")],
+        {},
+    )
+    updates, _ = resolve(document, {"amiga_model", "chip_memory"})
+    assert ("chip_memory", "2048") in updates
 
 
 def test_whole_document_reports_every_missing_file():

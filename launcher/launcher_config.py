@@ -276,9 +276,16 @@ class LauncherConfig(object):
         return cls.checksum_config(fsgs.config.copy())
 
     @classmethod
-    def checksum_config(cls, config):
+    def checksum_config(cls, config, keys=None):
+        """SHA-1 over config's values for keys, in order.
+
+        keys defaults to this launcher's checksum list; a lobby game
+        passes the document's, which every player hashes alike. A key
+        missing from config raises KeyError, as fsnp-server's
+        game.ConfigHash refuses one.
+        """
         s = hashlib.sha1()
-        for key in cls.checksum_keys:
+        for key in cls.checksum_keys if keys is None else keys:
             value = config[key]
             s.update(str(value).encode("UTF-8"))
         return s.hexdigest()
