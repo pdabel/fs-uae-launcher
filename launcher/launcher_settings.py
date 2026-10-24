@@ -79,6 +79,7 @@ class LauncherSettings(object):
         Option.NES_DATABASE: "",
         "netplay_feature": "1",
         "netplay_tag": "",
+        "netplay_column_sizes": "",
         "parent_uuid": "",
         Option.PLATFORMS_FEATURE: "",
         "primary_joystick": "",

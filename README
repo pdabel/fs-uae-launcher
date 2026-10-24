@@ -211,6 +211,14 @@ They can also be selected for a single launch:
 
 ### Integrated Netplay
 
+Netplay uses three resizable columns: channels and players on the left,
+chat/logs and command input in the centre, and server/game controls on the
+right. Columns initially use 25/40/35 percent of the available width. Divider
+adjustments are saved in launcher preferences and restored on the next launch.
+Port and player-count inputs use aligned labels and matching expanding fields.
+The fields and spaced game-action buttons sit at the bottom of the server
+column, directly above Stop server; server and game details remain at the top.
+
 In all four themes, Net play is a page inside the main window rather than a
 separate window. The navigation button and Tools
 menu open the same page. The retro themes retain their own colours and controls.
@@ -220,7 +228,9 @@ netplay page, which uses its own host/start controls.
 
 Hosting displays the game ID, channel, port, player count, and server status
 alongside the chat. The Stop server button stops hosting without closing
-the page. Reset and closing the main window also stop the owned server.
+the page. Closing the main window also stops the owned server. There is no
+Reset button in the netplay interface; the manual `/reset` command remains
+available.
 The details update if the server process exits. The panes are resizable;
 the chat controls scroll when the window is too narrow to fit them.
 
@@ -266,7 +276,7 @@ rather than converting it to an incorrect row index under PySide6.
 Launch regression tests exercise Start-button dispatch and construction of
 the launch task dialog with and without a netplay session. Netplay tests
 cover lobby/game-channel and operator/player transitions, button geometry,
-and host/send-config/reset/ready/start dispatch without opening a network
+and host/re-check/start dispatch without opening a network
 connection or launching an emulator. Visibility changes immediately relayout
 the netplay controls; no manual resize is required to reveal host buttons.
 Real IRC JOIN/NAMES/MODE replay tests cover operator recognition, nick-list

@@ -725,6 +725,149 @@ class TestLaunchAndNetplay(WidgetTestCase):
         self.assertIsNone(view.server)
         view.deleteLater()
 
+    def test_netplay_column_sizes_and_persistence(self):
+        import json
+        from fsui.qt import QEvent
+        from launcher.netplay.netplay import Netplay
+        from launcher.netplay.netplay_page import NetplayPage
+
+        with patch.object(Netplay, "_current", None), patch.object(Netplay, "connect"):
+            with patch("launcher.netplay.netplay_page.LauncherSettings.get", return_value=""), patch("launcher.netplay.netplay_page.LauncherSettings.set") as save:
+                window = fsui.Window(None, title="Netplay columns")
+                window.layout = fsui.VerticalLayout()
+                page = NetplayPage(window)
+                window.layout.add(page, fill=True, expand=True)
+                window.set_size((1500, 850))
+                window.show()
+                self.application.processEvents()
+                try:
+                    self.assertEqual(page.splitter.count(), 3)
+                    sizes = page.splitter.sizes()
+                    for actual, expected in zip(sizes, (0.25, 0.4, 0.35)):
+                        self.assertAlmostEqual(actual / sum(sizes), expected, delta=0.02)
+                    self.assertIs(page.channel_area.widget(), page.panel.channel_panel.widget())
+                    self.assertIs(page.chat_area.widget(), page.panel.widget())
+                    self.assertIs(page.details_area.widget(), page.server_details)
+                    page.splitter.moveSplitter(450, 1)
+                    self.application.processEvents()
+                    save.assert_called()
+                    self.assertEqual(save.call_args.args[0], "netplay_column_sizes")
+                    saved = json.loads(save.call_args.args[1])
+                    self.assertEqual(saved, page.splitter.sizes())
+                    page._column_sizes = saved
+                    window.set_size((1200, 800))
+                    self.application.processEvents()
+                    page._restore_column_sizes()
+                    sizes = page.splitter.sizes()
+                    for actual, expected in zip(sizes, saved):
+                        self.assertAlmostEqual(actual / sum(sizes), expected / sum(saved), delta=0.03)
+                finally:
+                    page.shutdown()
+                    window.close()
+                    self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+
+    def test_netplay_saved_column_sizes(self):
+        from fsui.qt import QEvent
+        from launcher.netplay.netplay import Netplay
+        from launcher.netplay.netplay_page import NetplayPage
+
+        cases = (
+            ("[300, 500, 400]", [300, 500, 400]),
+            ("", [25, 40, 35]),
+            ("invalid", [25, 40, 35]),
+            ("[0, 40, 35]", [25, 40, 35]),
+            ("[true, 40, 35]", [25, 40, 35]),
+            ("[25, 40]", [25, 40, 35]),
+            ("[25, 40, 1000001]", [25, 40, 35]),
+        )
+        for stored, expected in cases:
+            with self.subTest(stored=stored), patch.object(Netplay, "_current", None), patch.object(Netplay, "connect"):
+                with patch("launcher.netplay.netplay_page.LauncherSettings.get", return_value=stored), patch("launcher.netplay.netplay_page.LauncherSettings.set") as save:
+                    window = fsui.Window(None, title="Saved netplay columns")
+                    window.layout = fsui.VerticalLayout()
+                    page = NetplayPage(window)
+                    window.layout.add(page, fill=True, expand=True)
+                    window.set_size((1500, 850))
+                    window.show()
+                    self.application.processEvents()
+                    try:
+                        self.assertEqual(page._column_sizes, expected)
+                        sizes = page.splitter.sizes()
+                        for actual, weight in zip(sizes, expected):
+                            self.assertAlmostEqual(actual / sum(sizes), weight / sum(expected), delta=0.02)
+                        save.assert_not_called()
+                    finally:
+                        page.shutdown()
+                        window.close()
+                        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+
+    def test_netplay_columns_role_geometry(self):
+        from fsui.qt import QEvent
+        from fsui.qt.modern_theme import apply_modern_theme
+        from fsui.qt.retro_theme import apply_retro_theme
+        from launcher.netplay.irc import LOBBY_CHANNEL
+        from launcher.netplay.netplay import Netplay
+        from launcher.netplay.netplay_page import NetplayPage
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        try:
+            for variant in ("modern", "plain", "windows311", "workbench"):
+                self.application.setStyleSheet("")
+                self.application.setPalette(self.application.style().standardPalette())
+                self.application.setFont(font)
+                if variant == "modern":
+                    apply_modern_theme(self.application)
+                elif variant != "plain":
+                    apply_retro_theme(self.application, variant)
+                with self.subTest(theme=variant), patch.object(fsui, "theme_variant", variant), patch.object(Netplay, "_current", None), patch.object(Netplay, "connect"):
+                    with patch("launcher.netplay.netplay_page.LauncherSettings.get", return_value=""):
+                        window = fsui.Window(None, title="Netplay role layout")
+                        window.layout = fsui.VerticalLayout()
+                        page = NetplayPage(window)
+                        window.layout.add(page, fill=True, expand=True)
+                        window.show()
+                        try:
+                            for width in (800, 1000, 1500):
+                                window.set_size((width, 850))
+                                for channel, operator in ((LOBBY_CHANNEL, False), ("#layout-game", False), ("#layout-game", True)):
+                                    with self.subTest(width=width, channel=channel, operator=operator), patch.object(page.panel.netplay, "is_op", return_value=operator):
+                                        page.panel.active_channel = channel
+                                        page.panel.update_action_buttons_visibility()
+                                        self.application.processEvents()
+                                        self.assertEqual(page.channel_area.horizontalScrollBar().maximum(), 0)
+                                        self.assertTrue(page.channel_area.widget().isAncestorOf(page.panel.join_channel_button.widget()))
+                                        self.assertTrue(page.details_area.widget().isAncestorOf(page.panel.host_game_button.widget()))
+                                        self.assertTrue(page.chat_area.widget().isAncestorOf(page.panel.input_field))
+                                        self.assertFalse(hasattr(page.panel, "reset_button"))
+                                        controls_geometry = page.panel.game_panel.widget().geometry()
+                                        stop_geometry = page.server_details.stop_button.geometry()
+                                        self.assertGreaterEqual(stop_geometry.top() - controls_geometry.bottom() - 1, 10)
+                                        self.assertLessEqual(stop_geometry.top() - controls_geometry.bottom() - 1, 12)
+                                        if operator:
+                                            self.assertEqual(page.panel.port_field.x(), page.panel.player_count_field.x())
+                                            self.assertEqual(page.panel.port_field.width(), page.panel.player_count_field.width())
+                                            self.assertGreaterEqual(page.panel.port_field.x() - page.panel.port_label.geometry().right() - 1, 20)
+                                        previous = None
+                                        for control in (page.panel.host_game_button, page.panel.start_button, page.panel.recheck_button):
+                                            if control.visible():
+                                                geometry = control.widget().geometry()
+                                                self.assertGreater(geometry.width(), 0)
+                                                self.assertLessEqual(geometry.right(), page.panel.game_panel.widget().width())
+                                                if previous is not None:
+                                                    self.assertFalse(previous.intersects(geometry))
+                                                    self.assertGreaterEqual(geometry.top() - previous.bottom() - 1, 10)
+                                                previous = geometry
+                        finally:
+                            page.shutdown()
+                            window.close()
+                            self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+        finally:
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+
     def test_irc_names_reply_updates_operator_controls(self):
         from launcher.netplay.irc import LOBBY_CHANNEL
         from launcher.netplay.irc_broadcaster import IRCBroadcaster
@@ -762,7 +905,7 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     self.assertEqual(panel.nick_list.get_item(0), "@ReplayUser")
                     self.assertIn("You are the Operator", panel.text_area.get_text())
                     for control in (
-                        panel.host_game_button, panel.reset_button,
+                        panel.host_game_button,
                         panel.start_button, panel.recheck_button,
                     ):
                         self.assertTrue(control.visible())
@@ -834,6 +977,7 @@ class TestLaunchAndNetplay(WidgetTestCase):
             window.layout = fsui.VerticalLayout()
             panel = NetplayPanel(window, header=False)
             window.layout.add(panel, fill=True, expand=True)
+            self.assertFalse(hasattr(panel, "reset_button"))
             self.assertTrue(panel.host_game_button.explicitly_hidden())
             self.assertTrue(panel.start_button.explicitly_hidden())
             window.set_size((800, 600))
@@ -844,7 +988,7 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 self.application.processEvents()
                 previous = None
                 for control in (
-                    panel.host_game_button, panel.reset_button,
+                    panel.host_game_button,
                     panel.start_button, panel.recheck_button,
                 ):
                     self.assertTrue(control.visible())
@@ -888,8 +1032,6 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 self.assertTrue(panel.start_button.widget().isEnabled())
                 panel.recheck_button.widget().click()
                 netplay.handle_command.assert_called_with("/recheck")
-                panel.reset_button.widget().click()
-                netplay.handle_command.assert_called_with("/reset")
                 with patch("launcher.launcherapp.LauncherApp.start_game") as start:
                     panel.start_button.widget().click()
                     start.assert_called_once_with()

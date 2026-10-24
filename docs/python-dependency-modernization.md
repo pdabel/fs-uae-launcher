@@ -19,6 +19,7 @@ The stack is based on main at `615cb4d2`, with one commit per branch:
 | `stack/04-python-api-standardisation` | Removed/deprecated APIs and invalid escapes | 136 core/API/command tests, 10 skipped; 39 Qt tests, 65 subtests; strict compilation, Ruff and whitespace pass |
 | `stack/05-python-support-standardisation` | Python/platform metadata, generator, Pipenv, Debian, docs and build matrices | 138 core/API/command/support tests, 10 skipped; 39 Qt tests, 65 subtests; Ruff, strict compilation, lock verification and whitespace pass |
 | `stack/06-form-layout-consistency` | Cosmetic alignment for configuration and Settings forms; single-column memory rows; clear override-label spacing; restart command below theme/font selectors | 138 core tests, 10 skipped; 42 Qt tests, 236 subtests; configuration and Settings previews inspected; Ruff, strict compilation and whitespace pass |
+| `stack/07-netplay-column-layout` | Resizable channel/player, chat, and server/game columns; 25/40/35 initial proportions; saved divider adjustments | 138 core tests, 10 skipped; 45 Qt tests, 283 subtests; 12 nonblank netplay previews; Ruff, strict compilation and whitespace pass |
 
 The cosmetic layer visits every Settings page in all four themes at 1000 and
 1280 pixel window widths. It checks aligned fields and help buttons, text and
