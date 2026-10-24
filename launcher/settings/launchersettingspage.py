@@ -26,8 +26,8 @@ class LauncherSettingsPage(SettingsPage):
         ))
         self.restart_button.set_tooltip(gettext("Restart to apply the selected theme and font"))
         self.restart_button.activated.connect(self.on_restart_button)
-        theme_group.layout.add(self.restart_button, margin_left=10)
         self.add_option(Option.LAUNCHER_FONT_SIZE)
+        self.layout.add(self.restart_button, margin_bottom=10)
 
         self.add_option(Option.LAUNCHER_CLOSE_BUTTONS)
 

@@ -10,7 +10,8 @@ from launcher.ui.HelpButton import HelpButton
 class OptionUI(object):
     @classmethod
     def create_group(
-        cls, parent, name, description=None, help_button=True, thin=False
+        cls, parent, name, description=None, help_button=True, thin=False,
+        expand=False,
     ):
         group = fsui.Group(parent)
         group.layout = fsui.HorizontalLayout()
@@ -22,8 +23,14 @@ class OptionUI(object):
             description = gettext(option["description"])
         if description:
             group.label = fsui.Label(group, description + ":")
-            group.layout.add(group.label, margin_right=10)
-            group.layout.add(OverrideWarning(group, name), margin_right=10)
+            if expand and not thin:
+                group.label_layout = fsui.HorizontalLayout()
+                group.label_layout.add(group.label, margin_right=10)
+                group.label_layout.add(OverrideWarning(group, name))
+                group.layout.add(group.label_layout, margin_right=20)
+            else:
+                group.layout.add(group.label, margin_right=10)
+                group.layout.add(OverrideWarning(group, name), margin_right=10)
 
         if thin:
             group.layout = fsui.HorizontalLayout()
@@ -76,6 +83,7 @@ class OptionUI(object):
             text_field.set_text(LauncherSettings.get(name))
             text_field.on_changed = on_changed
             group.layout.add(text_field, expand=True)
+            group.value_control = text_field
 
         elif (
             option["type"].lower() == "integer"
@@ -121,9 +129,12 @@ class OptionUI(object):
                 LauncherSettings.set(name, str(val))
 
             spin_ctrl.on_changed = on_spin
-            group.layout.add_spacer(0, expand=True)
+            if not expand:
+                group.layout.add_spacer(0, expand=True)
             group.layout.add(check_box)
-            group.layout.add(spin_ctrl, margin_left=10)
+            group.layout.add(spin_ctrl, expand=expand, margin_left=10)
+            group.value_control = spin_ctrl
+            group.default_checkbox = check_box
 
         if choice_values:
 
@@ -139,12 +150,13 @@ class OptionUI(object):
                     choice.set_index(i)
                     break
             choice.on_changed = on_changed
-            if thin:
+            if thin or expand:
                 group.layout.add(choice, expand=True)
             else:
                 group.layout.add_spacer(0, expand=True)
                 group.layout.add(choice)
             group.widget = choice
+            group.value_control = choice
 
         if help_button:
             option_url = "https://fs-uae.net/docs/options/" + name.replace(
