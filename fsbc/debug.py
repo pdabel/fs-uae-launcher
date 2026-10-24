@@ -86,7 +86,7 @@ def _handle_exception(exc_type, exc_value, exc_traceback):
     except:
         pass
     filename = os.path.basename(filename)
-    thread = threading.currentThread()
+    thread = threading.current_thread()
     error_id = f"{exc_type.__name__}:{filename}:{function}:{line}"
 
     # QtGui.QMessageBox.critical(None, "Error",
@@ -102,7 +102,7 @@ def _handle_exception(exc_type, exc_value, exc_traceback):
         traceback.format_exception(exc_type, exc_value, exc_traceback)
     )
 
-    message = f"\nUnhandled exception detected in thread {thread.getName()}:\n  {error_id}\n"
+    message = f"\nUnhandled exception detected in thread {thread.name}:\n  {error_id}\n"
 
     print(message)
     print(backtrace_string)
