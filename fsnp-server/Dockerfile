@@ -24,8 +24,9 @@ RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
 # settings (LOBBY, PORT, MAX_GAMES, ...) from the environment itself.
 FROM scratch AS base
 
-# A lobby: HTTP GET /game/create (what the launcher's /startgame calls) and
-# every game it creates share port 25101, so it is the only port to publish.
+# A lobby: the HTTP API (GET /game/create, what the launcher's /startgame
+# calls, and the POST /game session API) and every game it creates share
+# port 25101, so it is the only port to publish.
 # -e LOBBY=false runs one fixed game instead, as this image did before,
 # configured by PLAYERS and PASSWORD. See README.md.
 ENV LOBBY=true
