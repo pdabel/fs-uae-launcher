@@ -58,6 +58,14 @@ archive readers, persistent emulator/server processes, and shell commands that
 rely on expansion or quoting retain their existing process APIs. Command
 regressions can be run with `pipenv run python -m pytest fsbuild/tests`.
 
+Compatibility code uses supported executable lookup, timezone-aware UTC,
+thread accessors, and importlib plugin loading. Locale discovery preserves
+environment precedence without changing the process locale. Legacy Amiga
+scan progress uses `process_time()`, retaining POSIX `time.clock()` CPU-time
+semantics. Invalid-escape fixes preserve the original string values.
+
+  QT_QPA_PLATFORM=offscreen pipenv run python -m pytest launcher/tests/test_python_compatibility.py
+
 Run the core regression slice with:
 
   venv/bin/python -m pytest fsbc fstd fspy launcher/netplay launcher/server/tests
