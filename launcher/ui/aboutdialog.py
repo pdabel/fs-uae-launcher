@@ -13,7 +13,7 @@ class AboutDialog(fsui.Window):
             app_name = "OpenRetro Launcher"
         else:
             app_name = "FS-UAE Launcher"
-        title = "{} - {}".format(gettext("About"), app_name)
+        title = f"{gettext('About')} - {app_name}"
         super().__init__(parent, title, minimizable=False, maximizable=False)
         self.theme = LauncherTheme.get()
         self.layout = fsui.VerticalLayout()

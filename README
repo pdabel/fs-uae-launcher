@@ -99,11 +99,24 @@ string conversions preserve `%s` behavior for objects with custom formatting.
 Lazy logging arguments and formatting after gettext remain intact.
 
 Ordinary literal `.format()` calls use f-strings. Translated templates keep
-their placeholders and are formatted after gettext. Ruff's UP032 rule guards
-this convention locally and in CI, without enabling unrelated legacy rules:
+their placeholders and are formatted after gettext. Dynamic templates (such
+as media keys, WHDLoad scripts, and SQL debug output) retain `.format()`;
+they cannot be replaced by literal f-strings. Logging uses lazy arguments.
+Ruff's UP032 rule checks eligible conversions locally and in CI, without
+enabling unrelated legacy rules:
 
   venv/bin/python -m pip install ruff==0.17.2
   venv/bin/pipenv run ruff check
+
+The tracked-source regression check includes extensionless Python scripts and
+rejects literal `.format()` calls that Ruff leaves unchanged, including calls
+with joins or dictionary lookups. The bootstrap uses f-strings while retaining
+its generated setup and Makefile contents.
+Output tests cover IRC commands, lazy WHDLoad logging, packaging templates,
+and formatting after translation. Run these
+checks and strict source compilation with:
+
+  pipenv run python -m pytest fsbuild/tests/test_python_support.py
 
 Simple synchronous command helpers use argument lists and `subprocess.run()`;
 their existing output decoding and failure handling are retained. Streaming

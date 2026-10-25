@@ -353,12 +353,8 @@ class Netplay:
         )
         self.session_lobby = announce
         channel.info(
-            "started game id: {0} password: {1} server: {2} port: {3}".format(
-                created["id"],
-                created["password"],
-                ",".join(created["addresses"]),
-                created["port"],
-            )
+            f"started game id: {created['id']} password: {created['password']} "
+            f"server: {','.join(created['addresses'])} port: {created['port']}"
         )
         self.announce_session()
         return True

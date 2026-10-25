@@ -4,7 +4,7 @@ import config as project
 
 f = open("setup.py", "w", newline="\n")
 f.write(
-    """\
+    f"""\
 import os
 import sys
 if sys.argv[1] == "build_exe":
@@ -17,15 +17,13 @@ if "install" in sys.argv:
         if arg.startswith("--install-lib="):
             break
     else:
-        print("ERROR: You should not install {title} to the default ")
+        print("ERROR: You should not install {project.title} to the default ")
         print("python library location. Instead, use --install-lib to ")
         print("install to a custom location, e.g.:")
-        print("python3 setup.py --install-lib=/usr/share/{name} install")
+        print("python3 setup.py --install-lib=/usr/share/{project.name} install")
         sys.exit(1)
 
-""".format(
-        title=project.title, name=project.name
-    )
+"""
 )
 
 with open("config.py", "r") as pf:
@@ -50,7 +48,7 @@ res_dirs = []
 )
 
 for name in sorted(project.packages):
-    f.write("res_dirs.append({0})\n".format(repr(name + "/res")))
+    f.write(f"res_dirs.append({name + '/res'!r})\n")
 
 f.write(
     """
@@ -189,33 +187,29 @@ def write(data):
 
 
 write(
-    """\
+    f"""\
 version := $(strip $(shell cat VERSION.FS))
 build_dir := "."
-dist_name = {tar_name}-$(version)
+dist_name = {project.tar_name}-$(version)
 dist_dir := $(build_dir)/$(dist_name)
 
 DESTDIR :=
 prefix := /usr/local
 
-""".format(
-        tar_name=project.tar_name
-    )
+"""
 )
 
 
 for name, dir_name in sorted(project.package_map.items()):
     write(
-        """\
-ifeq ($(wildcard {0}),)
-    {0}_dir := "{1}"
+        f"""\
+ifeq ($(wildcard {name}),)
+    {name}_dir := "{dir_name}"
 else
-    {0}_dir := "."
+    {name}_dir := "."
 endif
 
-""".format(
-            name, dir_name
-        )
+"""
     )
 
 
@@ -226,71 +220,63 @@ for name in os.listdir("po"):
         locales.append(locale)
 locales.sort()
 
+catalogs = " \\\n".join(
+    f"    share/locale/{locale}/LC_MESSAGES/{project.tar_name}.mo"
+    for locale in locales
+)
 
 write(
-    """\
+    f"""\
 all: mo
 
-share/locale/%/LC_MESSAGES/{0}.mo: po/%.po
+share/locale/%/LC_MESSAGES/{project.tar_name}.mo: po/%.po
     mkdir -p share/locale/$*/LC_MESSAGES
     msgfmt --verbose $< -o $@
 
 catalogs = \\
-{1}
+{catalogs}
 
 mo: $(catalogs)
 
-""".format(
-        project.tar_name,
-        " \\\n".join(
-            [
-                "    share/locale/{0}/LC_MESSAGES/{1}.mo".format(
-                    x, project.tar_name
-                )
-                for x in locales
-            ]
-        ),
-    )
+"""
 )
 
 
 write(
-    """\
+    f"""\
 
 install-program:
 ifeq ($(DESTDIR),)
     python3 setup.py install \
-    --install-lib=$(prefix)/share/{project} \
-    --install-scripts=$(prefix)/share/{project}
+    --install-lib=$(prefix)/share/{project.tar_name} \
+    --install-scripts=$(prefix)/share/{project.tar_name}
     install -d $(DESTDIR)$(prefix)/bin
-    rm -f $(DESTDIR)$(prefix)/bin/{project}
-    ln -s ../share/{project}/{project} \
-    $(DESTDIR)$(prefix)/bin/{project}
+    rm -f $(DESTDIR)$(prefix)/bin/{project.tar_name}
+    ln -s ../share/{project.tar_name}/{project.tar_name} \
+    $(DESTDIR)$(prefix)/bin/{project.tar_name}
 else
     python3 setup.py install \
     --root=$(DESTDIR) \
-    --install-lib=$(prefix)/share/{project} \
-    --install-scripts=$(prefix)/share/{project}
+    --install-lib=$(prefix)/share/{project.tar_name} \
+    --install-scripts=$(prefix)/share/{project.tar_name}
     install -d $(DESTDIR)$(prefix)/bin
-    rm -f $(DESTDIR)$(prefix)/bin/{project}
-    ln -s ../share/{project}/{project} \
-    $(DESTDIR)$(prefix)/bin/{project}
+    rm -f $(DESTDIR)$(prefix)/bin/{project.tar_name}
+    ln -s ../share/{project.tar_name}/{project.tar_name} \
+    $(DESTDIR)$(prefix)/bin/{project.tar_name}
 endif
 
 install-data: mo
     mkdir -p $(DESTDIR)$(prefix)/share
     cp -a share/* $(DESTDIR)$(prefix)/share
 
-    mkdir -p $(DESTDIR)$(prefix)/share/doc/{project}
-    cp -a README COPYING $(DESTDIR)$(prefix)/share/doc/{project}
+    mkdir -p $(DESTDIR)$(prefix)/share/doc/{project.tar_name}
+    cp -a README COPYING $(DESTDIR)$(prefix)/share/doc/{project.tar_name}
 
 install: install-data install-program
 
-dist_dir := {project}-$(version)
+dist_dir := {project.tar_name}-$(version)
 
-""".format(
-        project=project.tar_name
-    )
+"""
 )
 
 
@@ -306,11 +292,9 @@ distdir:
 
 for name, dir_name in sorted(project.package_map.items()):
     write(
-        """\
-    cp -a $({0}_dir)/{0} $(dist_dir)/
-""".format(
-            name
-        )
+        f"""\
+    cp -a $({name}_dir)/{name} $(dist_dir)/
+"""
     )
 
 
@@ -332,10 +316,10 @@ copy_files = [
     "debian/links",
     "po-update.py",
     "extra_imports.py",
-    "icon/{0}.ico".format(project.tar_name),
-    "icon/{0}.icns".format(project.tar_name),
-    "{0}.spec".format(project.tar_name),
-    "{0}".format(project.tar_name),
+    f"icon/{project.tar_name}.ico",
+    f"icon/{project.tar_name}.icns",
+    f"{project.tar_name}.spec",
+    f"{project.tar_name}",
     "dist/arch.py",
     "dist/linux/build.py",
     "dist/linux/Makefile",
@@ -350,10 +334,10 @@ copy_files = [
     "dist/windows/iscc.py",
     "dist/windows/Makefile",
     "dist/windows/sign.py",
-    "dist/windows/{0}.iss".format(project.tar_name),
+    f"dist/windows/{project.tar_name}.iss",
 ]
 for locale in locales:
-    copy_files.append("po/{0}.po".format(locale))
+    copy_files.append(f"po/{locale}.po")
 copy_files.sort()
 
 
@@ -379,30 +363,24 @@ for copy_file in copy_files:
     if "/" in copy_file:
         if not os.path.dirname(copy_file) in created_dirs:
             write(
-                "    mkdir -p $(dist_dir)/{0}\n".format(
-                    os.path.dirname(copy_file)
-                )
+                f"    mkdir -p $(dist_dir)/{os.path.dirname(copy_file)}\n"
             )
             created_dirs.add(os.path.dirname(copy_file))
     write(
-        "    cp {0} $(dist_dir)/{1}\n".format(
-            copy_file, os.path.dirname(copy_file)
-        )
+        f"    cp {copy_file} $(dist_dir)/{os.path.dirname(copy_file)}\n"
     )
 
 
 write(
-    """\
+    f"""\
     cd $(dist_dir) && ./update-version setup.py --strict
     cd $(dist_dir) && ./update-version debian/changelog --deb
     cd $(dist_dir) && ./update-version dist/macos/Info.plist --strict
     cd $(dist_dir) && ./update-version launcher/version.py
-    cd $(dist_dir) && ./update-version {project}
-    cd $(dist_dir) && ./update-version {project}.spec --rpm
+    cd $(dist_dir) && ./update-version {project.tar_name}
+    cd $(dist_dir) && ./update-version {project.tar_name}.spec --rpm
 
-""".format(
-        project=project.tar_name
-    )
+"""
 )
 
 write(
@@ -420,20 +398,20 @@ dist-xz: distdir
 
 
 write(
-    """\
+    f"""\
 windows-dist: distdir
     cd $(dist_dir)/dist/windows && make
-    mv $(dist_dir)/{project}_*windows* .
+    mv $(dist_dir)/{project.tar_name}_*windows* .
     rm -Rf $(dist_dir)
 
 macos-dist: distdir
     cd $(dist_dir)/dist/macos && make
-    mv $(dist_dir)/{project}_*macos* .
+    mv $(dist_dir)/{project.tar_name}_*macos* .
     rm -Rf $(dist_dir)
 
 clean-dist:
-    rm -Rf {project}-* {project}_*
-    rm -Rf debian/{project}*
+    rm -Rf {project.tar_name}-* {project.tar_name}_*
+    rm -Rf debian/{project.tar_name}*
 
 clean:
     rm -Rf build
@@ -456,7 +434,5 @@ bindist-x86: distdir
     mv $(dist_dir)/fs-uae-launcher_*linux* .
     rm -Rf $(dist_dir)
 
-""".format(
-        project=project.tar_name
-    )
+"""
 )

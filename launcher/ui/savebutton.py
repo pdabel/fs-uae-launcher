@@ -51,9 +51,7 @@ class SaveButton(IconButton):
         with io.open(path, "w", encoding="UTF-8") as f:
             f.write("# FS-UAE configuration saved by FS-UAE Launcher\n")
             f.write(
-                "# Last saved: {0}\n".format(
-                    datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S")
-                )
+                f"# Last saved: {datetime.datetime.today():%Y-%m-%d %H:%M:%S}\n"
             )
             f.write("\n[fs-uae]\n")
             keys = sorted(fsgs.config.values.keys())

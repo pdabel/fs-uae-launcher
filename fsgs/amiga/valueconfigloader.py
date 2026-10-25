@@ -164,7 +164,7 @@ class ValueConfigLoader(object):
         if variant_name:
             parts.append(variant_name)
         if game_name and variant_name:
-            config_name = "{0} ({1})".format(game_name, ", ".join(parts))
+            config_name = f"{game_name} ({', '.join(parts)})"
             self.config["__config_name"] = config_name
         else:
             self.config["__config_name"] = self.values.get("config_name", "")
@@ -424,7 +424,7 @@ class ValueConfigLoader(object):
             name, sha1 = item.split(":")
             name = name.strip()
             sha1 = sha1.strip()
-            path = "sha1://{0}/{1}/{2}".format(sha1, "", name)
+            path = f"sha1://{sha1}//{name}"
             media_list.append((path, sha1))
         return media_list
 
@@ -455,7 +455,7 @@ class ValueConfigLoader(object):
     def cdrom_sha1_to_uri(self, sha1):
         for file_item in self.get_file_list():
             if file_item["sha1"] == sha1:
-                return "game://{}/{}".format(self.uuid, file_item["name"])
+                return f"game://{self.uuid}/{file_item['name']}"
         raise Exception("cdrom_sha1_to_uri: could not find " + sha1)
 
     def load_cdroms(self):
@@ -491,7 +491,7 @@ class ValueConfigLoader(object):
 
     def load_cdroms_from_cue_sheets(self, cue_sheets):
         for i, item in enumerate(cue_sheets):
-            path = "game://{}/{}".format(self.uuid, item["name"])
+            path = f"game://{self.uuid}/{item['name']}"
             if i < 1:
                 self.config[f"cdrom_drive_{i}"] = path
             self.config[f"cdrom_image_{i}"] = path
