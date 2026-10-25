@@ -18,7 +18,10 @@ if windows:
     EDS_RAWMODE = 2
 elif macosx:
     # noinspection PyUnresolvedReferences
-    import Quartz
+    try:
+        import Quartz
+    except ImportError:
+        Quartz = None
 
 
 class RefreshRateTool(object):
@@ -167,24 +170,25 @@ class RefreshRateTool(object):
                 bpp = int(settings.BitsPerPel)
                 flags = int(settings.DisplayFlags)
         elif macosx:
-            main_display = Quartz.CGMainDisplayID()
-            current_display = Quartz.CGDisplayPrimaryDisplay(main_display)
-            current_mode = Quartz.CGDisplayCopyDisplayMode(current_display)
-            width = Quartz.CGDisplayModeGetWidth(current_mode)
-            height = Quartz.CGDisplayModeGetHeight(current_mode)
-            refresh = Quartz.CGDisplayModeGetRefreshRate(current_mode)
-            if not refresh:
-                print("WARNING: returned refresh rate was 0. assuming 60 Hz")
-                refresh = 60
-            # A bit weird that it crashes, since this is supposed to be a
-            # copy of the mode...?
-            print(
-                "FIXME: Not calling Quartz.CGDisplayModeRelease("
-                "current_mode), seems to crash pygame on exit..."
-            )
-            # Quartz.CGDisplayModeRelease(current_mode)
-            flags = 0
-            bpp = None
+            if Quartz:
+                main_display = Quartz.CGMainDisplayID()
+                current_display = Quartz.CGDisplayPrimaryDisplay(main_display)
+                current_mode = Quartz.CGDisplayCopyDisplayMode(current_display)
+                width = Quartz.CGDisplayModeGetWidth(current_mode)
+                height = Quartz.CGDisplayModeGetHeight(current_mode)
+                refresh = Quartz.CGDisplayModeGetRefreshRate(current_mode)
+                if not refresh:
+                    print("WARNING: returned refresh rate was 0. assuming 60 Hz")
+                    refresh = 60
+                # A bit weird that it crashes, since this is supposed to be a
+                # copy of the mode...?
+                print(
+                    "FIXME: Not calling Quartz.CGDisplayModeRelease("
+                    "current_mode), seems to crash pygame on exit..."
+                )
+                # Quartz.CGDisplayModeRelease(current_mode)
+                flags = 0
+                bpp = None
         else:
             return self._get_current_mode_x()
 
