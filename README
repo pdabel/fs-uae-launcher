@@ -46,10 +46,25 @@ releases supported by your Python version:
   python -m pip install --upgrade PySide6 QtPy QtAwesome requests
 
 The Pipfile also declares these UI dependencies for Pipenv installations.
-An existing virtual environment can be updated in place; recreating it is
-not necessary:
+An existing virtual environment can be updated in place when its Python
+minor version has not changed:
 
   venv/bin/python -m pip install --upgrade PySide6 QtPy QtAwesome requests
+
+After an Ubuntu upgrade changes the Python minor version, create a fresh
+environment instead. An old venv can follow the system Python symlink to the
+new interpreter while its packages remain under the old version's directory,
+causing errors such as `ModuleNotFoundError: No module named 'qtpy'`.
+Keep the old environment until the replacement has been verified:
+
+  python3 -m venv .venv
+  .venv/bin/python -m pip install PySide6 QtPy QtAwesome requests pillow pyopengl macholib pefile pywin32-ctypes sentry-sdk typing-extensions
+  .venv/bin/python fs-uae-launcher
+
+If venv creation reports that ensurepip is unavailable, install Ubuntu's
+`python3-venv` package first. Use the new environment's Python explicitly
+when launching, including in any desktop shortcut. This repairs dependency
+installation; Python 3.14 remains outside the separately validated CI matrix.
 
 The UI selects PySide6 by default. Use a clean process without another Qt
 binding already imported; PyQt5 and PySide6 must not be mixed. Qt 6 handles
