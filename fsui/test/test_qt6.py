@@ -1,6 +1,6 @@
 import os
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import fsui
 from fsui.qt import QDialog, QFontMetrics, QImage, QPainter, QTimer
@@ -972,14 +972,14 @@ class TestLaunchAndNetplay(WidgetTestCase):
         irc = Mock()
         button = JoinChannelButton(self.dialog, irc)
         cases = (
-            ("Barbarian", "DAF", "Barbarian", "Barbarian", "/join #barbarian-daf"),
-            ("  Shadow of the Beast  ", " PL2 ", "My Game", "Shadow of the Beast", "/join #my-game-pl2"),
-            ("Lotus Turbo Challenge", "", "Lotus Turbo Challenge", "Lotus Turbo Challenge", "/join #lotus-turbo-challenge-unk"),
-            ("Barbarian", " # D_AF! ", "Barbarian", "Barbarian", "/join #barbarian-daf"),
-            ("Barbarian", "ABCD", "Barbarian", "Barbarian", "/join #barbarian-abc"),
-            ("Barbarian", "!!!", "Barbarian", "Barbarian", "/join #barbarian-unk"),
-            ("", "DAF", None, "new", None),
-            ("   ", "DAF", "", "new", None),
+            ("Barbarian", "DAF", "#barbarian-daf", "#barbarian-daf", "/join #barbarian-daf"),
+            ("  Shadow of the Beast  ", " PL2 ", "#my-game-pl2", "#shadow-of-the-beast-pl2", "/join #my-game-pl2"),
+            ("Lotus Turbo Challenge", "", "#lotus-turbo-challenge-unk", "#lotus-turbo-challenge-unk", "/join #lotus-turbo-challenge-unk"),
+            ("Barbarian", " # D_AF! ", "#barbarian-daf", "#barbarian-daf", "/join #barbarian-daf"),
+            ("Barbarian", "ABCD", "#barbarian-abc", "#barbarian-abc", "/join #barbarian-abc"),
+            ("Barbarian", "!!!", "#barbarian-unk", "#barbarian-unk", "/join #barbarian-unk"),
+            ("", "DAF", None, "#new-daf", None),
+            ("   ", "DAF", "", "#new-daf", None),
         )
         for title, tag, response, expected_default, expected_command in cases:
             settings = {Option.CONFIG_NAME: title, Option.NETPLAY_TAG: tag}
@@ -992,7 +992,13 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     irc.handle_command.assert_not_called()
                     if expected_command is None:
                         irc.join.assert_not_called()
-                        get_setting.assert_called_once_with(Option.CONFIG_NAME)
+                        self.assertEqual(
+                            get_setting.call_args_list,
+                            [
+                                call(Option.CONFIG_NAME),
+                                call(Option.NETPLAY_TAG),
+                            ],
+                        )
                     else:
                         irc.join.assert_called_once_with(expected_command.removeprefix("/join "), private=False)
                         self.assertEqual(get_setting.call_args_list[1].args, (Option.NETPLAY_TAG,))
