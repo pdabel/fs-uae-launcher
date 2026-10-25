@@ -22,7 +22,7 @@ class ADFSFile(ADFSNode):
     self.total_blks = 0
   
   def __repr__(self):
-    return "[File(%d)'%s':%d]" % (self.block.blk_num, self.block.name, self.block.byte_size)
+    return f"[File({self.block.blk_num})'{self.block.name}':{self.block.byte_size}]"
   
   def blocks_create_old(self, anon_blk):
     # create file header block
@@ -52,13 +52,13 @@ class ADFSFile(ADFSNode):
     self.num_ext_blks = self.calc_number_of_list_blks()
     my_num_ext_blks = len(self.ext_blks)
     if my_num_ext_blks != self.num_ext_blks:
-      raise FSError(FILE_LIST_BLOCK_COUNT_MISMATCH, node=self, extra="got=%d want=%d" % (my_num_ext_blks, self.num_ext_blks))
+      raise FSError(FILE_LIST_BLOCK_COUNT_MISMATCH, node=self, extra=f"got={my_num_ext_blks} want={self.num_ext_blks}")
 
     # now check number of data blocks
     self.num_data_blks = self.calc_number_of_data_blks()
     my_num_data_blks = len(self.data_blk_nums)
     if my_num_data_blks != self.num_data_blks:
-      raise FSError(FILE_DATA_BLOCK_COUNT_MISMATCH, node=self, extra="got=%d want=%d" % (my_num_data_blks, self.num_data_blks))
+      raise FSError(FILE_DATA_BLOCK_COUNT_MISMATCH, node=self, extra=f"got={my_num_data_blks} want={self.num_data_blks}")
 
     # calc number of total blocks occupied by this file
     self.total_blks = 1 + my_num_ext_blks + my_num_data_blks
@@ -94,7 +94,7 @@ class ADFSFile(ADFSNode):
           raise FSError(INVALID_FILE_DATA_BLOCK, block=dat_blk, node=self)
         # check sequence number
         if dat_blk.seq_num != want_seq_num:
-          raise FSError(INVALID_SEQ_NUM, block=dat_blk, node=self, extra="got=%d wanted=%d" % (dat_blk.seq_num, want_seq_num))
+          raise FSError(INVALID_SEQ_NUM, block=dat_blk, node=self, extra=f"got={dat_blk.seq_num} wanted={want_seq_num}")
         # store data blocks
         self.data_blks.append(dat_blk)
         total_size += dat_blk.data_size
@@ -106,7 +106,7 @@ class ADFSFile(ADFSNode):
     got_size = len(data)
     want_size = self.block.byte_size
     if got_size != want_size:
-      raise FSError(INTERNAL_ERROR, block=self.block, node=self, extra="file size mismatch: got=%d want=%d" % (got_size, want_size))
+      raise FSError(INTERNAL_ERROR, block=self.block, node=self, extra=f"file size mismatch: got={got_size} want={want_size}")
   
   def get_file_data(self):
     if self.data != None:
@@ -272,10 +272,10 @@ class ADFSFile(ADFSNode):
     return self.data_size
   
   def get_size_str(self):
-    return "%8d" % self.data_size
+    return f"{self.data_size:8d}"
 
   def get_detail_str(self):
-    return "data=%d ext=%d" % (len(self.data_blk_nums), len(self.ext_blk_nums)) 
+    return f"data={len(self.data_blk_nums)} ext={len(self.ext_blk_nums)}" 
 
   def get_block_usage(self, all=False, first=True):
     return (len(self.data_blk_nums), len(self.ext_blk_nums) + 1)

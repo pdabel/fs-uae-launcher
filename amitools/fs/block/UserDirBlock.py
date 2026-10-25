@@ -77,13 +77,13 @@ class UserDirBlock(EntryBlock):
   
   def dump(self):
     Block.dump(self,"UserDir")
-    print(" own_key:    %d" % (self.own_key))
+    print(f" own_key:    {self.own_key}")
     pf = ProtectFlags(self.protect)
     print(f' protect:    0x{self.protect:x} 0b{pf.bin_str()!s} {pf!s}')
     print(f" comment:    '{self.comment!s}'")
     print(f' mod_ts:     {self.mod_ts!s}')
     print(f" name:       '{self.name!s}'")
-    print(" hash_chain: %d" % self.hash_chain)
-    print(" parent:     %d" % self.parent)
+    print(f" hash_chain: {self.hash_chain}")
+    print(f" parent:     {self.parent}")
     print(f' extension:  {self.extension!s}')
 

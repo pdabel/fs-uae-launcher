@@ -77,7 +77,7 @@ class BootConRomPatch(RomPatch):
       con_new = args['name']
       con_new_len = len(con_new)
       if con_new_len > con_old_len:
-        logging.error("new console name is too long (>%d)!" % con_len)
+        logging.error(f"new console name is too long (>{con_len})!")
         return False
       # pad and write to rom
       pad_len = con_old_len - con_new_len + 1

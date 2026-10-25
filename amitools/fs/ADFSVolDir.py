@@ -12,7 +12,7 @@ class ADFSVolDir(ADFSDir):
     self._init_name_hash()
   
   def __repr__(self):
-    return "[VolDir(%d)'%s':%s]" % (self.block.blk_num, self.block.name, self.entries)
+    return f"[VolDir({self.block.blk_num})'{self.block.name}':{self.entries}]"
   
   def draw_on_bitmap(self, bm, show_all=False, first=True):
     blk_num = self.block.blk_num

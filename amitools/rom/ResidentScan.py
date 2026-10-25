@@ -43,10 +43,8 @@ class Resident:
     self.skip_off = skip_off
 
   def __repr__(self):
-    return "Resident(@off=%08x,flags=%02x,version=%d,node_type=%d,pri=%d," \
-           "name=%s,id_string=%s,init_off=%08x,skip_off=%08x)" % \
-      (self.off, self.flags, self.version, self.node_type, self.pri,
-       self.name, self.id_string, self.init_off, self.skip_off)
+    return f"Resident(@off={self.off:08x},flags={self.flags:02x},version={self.version},node_type={self.node_type},pri={self.pri}," \
+           f"name={self.name},id_string={self.id_string},init_off={self.init_off:08x},skip_off={self.skip_off:08x})"
 
   def get_flags_strings(self):
     f = self.flags

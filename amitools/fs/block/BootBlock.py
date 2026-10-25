@@ -155,13 +155,13 @@ class BootBlock(Block):
     self.data[12:12+n] = boot_code    
   
   def dump(self):
-    print("BootBlock(%d):" % self.blk_num)
+    print(f"BootBlock({self.blk_num}):")
     print(f' dos_type:  0x{self.dos_type:08x} {DosType.num_to_tag_str(self.dos_type)!s} (valid: {self.valid_dos_type!s}) is_ffs={DosType.is_ffs(self.dos_type)!s} is_intl={DosType.is_intl(self.dos_type)!s} is_dircache={DosType.is_dircache(self.dos_type)!s}')
-    print(" root_blk:  %d (got %d)" % (self.calc_root_blk, self.got_root_blk))
+    print(f" root_blk:  {self.calc_root_blk} (got {self.got_root_blk})")
     print(f' chksum:    0x{self.got_chksum:08x} (got) 0x{self.calc_chksum:08x} (calc) -> bootable: {self.valid_chksum!s}')
     print(f' valid:     {self.valid!s}')
     if self.boot_code != None:
-        print(" boot_code: %d bytes" % len(self.boot_code))
+        print(f" boot_code: {len(self.boot_code)} bytes")
 
   def get_boot_code_dir(self):
     my_dir = os.path.dirname(__file__)

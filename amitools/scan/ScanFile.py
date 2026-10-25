@@ -18,9 +18,7 @@ class ScanFile:
     self.file_based = file_based
 
   def __str__(self):
-    return "[%s:%d, seekable=%s, file_based=%s, fobj=%s]" % \
-           (self.get_path(), self.size, self.seekable, self.file_based,
-            self.fobj.__class__.__name__)
+    return f"[{self.get_path()}:{self.size}, seekable={self.seekable}, file_based={self.file_based}, fobj={self.fobj.__class__.__name__}]"
 
   def __repr__(self):
     return self.__str__()

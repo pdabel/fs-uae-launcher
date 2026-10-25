@@ -19,7 +19,7 @@ def to_byte_size_str(size, kibi_units=True):
     unit = 1000
     marker = ''
   if size < 1000:
-    return "%3dB%s" % (size, marker)
+    return f"{int(size):3d}B{marker}"
   else:
     # run through scales
     for scale in "KMGT":
@@ -30,7 +30,7 @@ def to_byte_size_str(size, kibi_units=True):
           frac = 9.9
         return f'{frac:3.1f}{scale!s}{marker!s}'
       elif next < 1000:
-        return "%3d%s%s" % (next, scale, marker)
+        return f"{int(next):3d}{scale}{marker}"
       size = next
     return f'NaNB{marker!s}'
 

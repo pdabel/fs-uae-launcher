@@ -49,9 +49,7 @@ class RomSplitter:
         self.print_entry(out, e)
 
   def print_entry(self, out, entry):
-    out("  @%06x  +%06x  =%06x  relocs=#%5d  %s" % \
-        (entry.offset, entry.size, entry.offset+entry.size,
-         len(entry.relocs), entry.name))
+    out(f"  @{entry.offset:06x}  +{entry.size:06x}  ={entry.offset+entry.size:06x}  relocs=#{len(entry.relocs):5d}  {entry.name}")
 
   def print_entries(self, out, entries):
     for e in entries:

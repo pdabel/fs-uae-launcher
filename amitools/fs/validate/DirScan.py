@@ -30,8 +30,7 @@ class DirChainEntry:
       l.append("end")
     if self.orphaned:
       l.append("orphaned")
-    return "[DCE @%d '%s': %s]" % \
-      (self.blk_info.blk_num, self.blk_info.name, " ".join(l))
+    return f"[DCE @{self.blk_info.blk_num} '{self.blk_info.name}': {' '.join(l)}]"
 
 
 class DirChain:
@@ -47,7 +46,7 @@ class DirChain:
     return self.chain
   
   def __str__(self):
-    return "{DirChain +%d: #%d}" % (self.hash_val, len(self.chain))
+    return f"{{DirChain +{self.hash_val}: #{len(self.chain)}}}"
     
 
 class DirInfo:
@@ -77,7 +76,7 @@ class DirInfo:
     blk_num = bi.blk_num
     name = bi.name
     parent_blk = bi.parent_blk
-    return "<DirInfo @%d '%s' #%d parent:%d child:#%d>" % (blk_num, name, len(self.chains), parent_blk, len(self.children))
+    return f"<DirInfo @{blk_num} '{name}' #{len(self.chains)} parent:{parent_blk} child:#{len(self.children)}>"
 
 
 class DirScan:
@@ -149,33 +148,33 @@ class DirScan:
 
     # block already used?
     if block_used:
-      self.log.msg(Log.ERROR, "dir block already used in chain #%d of dir '%s (%d)" % (hash_val, dir_name, dir_blk_num), blk_num)
+      self.log.msg(Log.ERROR, f"dir block already used in chain #{hash_val} of dir '{dir_name} ({dir_blk_num})", blk_num)
       dce.end = True
       return
 
     # self reference?
     if blk_num == dir_blk_num:
-      self.log.msg(Log.ERROR, "dir block in its own chain #%d of dir '%s' (%d)" % (hash_val, dir_name, dir_blk_num), blk_num)
+      self.log.msg(Log.ERROR, f"dir block in its own chain #{hash_val} of dir '{dir_name}' ({dir_blk_num})", blk_num)
       dce.end = True
       return
     
     # not a block in range
     if blk_info == None:
-      self.log.msg(Log.ERROR, "out-of-range block terminates chain #%d of dir '%s' (%d)" % (hash_val, dir_name, dir_blk_num), blk_num)
+      self.log.msg(Log.ERROR, f"out-of-range block terminates chain #{hash_val} of dir '{dir_name}' ({dir_blk_num})", blk_num)
       dce.end = True
       return
     
     # check type of entry block
     b_type = blk_info.blk_type
     if b_type not in (BlockScan.BT_DIR, BlockScan.BT_FILE_HDR):
-      self.log.msg(Log.ERROR, "invalid block terminates chain #%d of dir '%s' (%d)" % (hash_val, dir_name, dir_blk_num), blk_num)
+      self.log.msg(Log.ERROR, f"invalid block terminates chain #{hash_val} of dir '{dir_name}' ({dir_blk_num})", blk_num)
       dce.end = True
       return 
     
     # check referenceed block type in chain
     blk_type = blk_info.blk_type
     if blk_type in (BlockScan.BT_ROOT, BlockScan.BT_FILE_LIST, BlockScan.BT_FILE_DATA):
-      self.log.msg(Log.ERROR, "invalid block type %d terminates chain #%d of dir '%s' (%d)" % (blk_type, hash_val, dir_name, dir_blk_num), blk_num)
+      self.log.msg(Log.ERROR, f"invalid block type {blk_type} terminates chain #{hash_val} of dir '{dir_name}' ({dir_blk_num})", blk_num)
       dce.end = True
       return
 
@@ -186,14 +185,14 @@ class DirScan:
     name = blk_info.name
     dce.parent_ok = (blk_info.parent_blk == dir_blk_num)
     if not dce.parent_ok:
-      self.log.msg(Log.ERROR, "invalid parent in '%s' chain #%d of dir '%s' (%d)" % (name, hash_val, dir_name, dir_blk_num), blk_num)
+      self.log.msg(Log.ERROR, f"invalid parent in '{name}' chain #{hash_val} of dir '{dir_name}' ({dir_blk_num})", blk_num)
 
     # check name hash
     fn = FileName(name, self.intl)
     fn_hash = fn.hash()
     dce.fn_hash_ok = (fn_hash == hash_val)
     if not dce.fn_hash_ok:
-      self.log.msg(Log.ERROR, "invalid name hash in '%s' chain #%d of dir '%s' (%d)" % (name, hash_val, dir_name, dir_blk_num), blk_num)      
+      self.log.msg(Log.ERROR, f"invalid name hash in '{name}' chain #{hash_val} of dir '{dir_name}' ({dir_blk_num})", blk_num)      
 
     # recurse into dir?
     if blk_type == BlockScan.BT_DIR:

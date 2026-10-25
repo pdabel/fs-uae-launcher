@@ -51,7 +51,7 @@ class ImageFile:
 
   def read_blk(self, blk_num):
     if blk_num >= self.num_blocks:
-      raise IOError("Invalid image file block num: got %d but max is %d" % (blk_num, self.num_blocks))
+      raise IOError(f"Invalid image file block num: got {blk_num} but max is {self.num_blocks}")
     off = blk_num * self.block_bytes
     if off != self.fh.tell():
       self.fh.seek(off, os.SEEK_SET)
@@ -63,9 +63,9 @@ class ImageFile:
     if self.read_only:
       raise IOError("Can't write block: image file is read-only")
     if blk_num >= self.num_blocks:
-      raise IOError("Invalid image file block num: got %d but max is %d" % (blk_num, self.num_blocks))
+      raise IOError(f"Invalid image file block num: got {blk_num} but max is {self.num_blocks}")
     if len(data) != self.block_bytes:
-      raise IOError("Invalid block size written: got %d but size is %d" % (len(data), self.block_bytes))
+      raise IOError(f"Invalid block size written: got {len(data)} but size is {self.block_bytes}")
     off = blk_num * self.block_bytes
     if off != self.fh.tell():
       self.fh.seek(off, os.SEEK_SET)

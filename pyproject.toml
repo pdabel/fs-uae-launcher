@@ -7,7 +7,3 @@ line-length = 79
 
 [tool.ruff.lint]
 select = ["UP031", "UP032"]
-
-[tool.ruff.lint.per-file-ignores]
-# FIXME: convert amitools percent formatting, then drop this ignore.
-"amitools/**" = ["UP031"]

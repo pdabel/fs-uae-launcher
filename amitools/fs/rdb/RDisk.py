@@ -87,16 +87,14 @@ class RDisk:
     pd = self.rdb.phy_drv
     total_blks = self.get_total_blocks()
     total_bytes = self.get_total_bytes()
-    extra="heads=%d sectors=%d" % (pd.heads, pd.secs)
-    res.append("PhysicalDisk:        %8d %8d  %10d  %s  %s" \
-      % (0, pd.cyls-1, total_blks, ByteSize.to_byte_size_str(total_bytes), extra))
+    extra=f"heads={pd.heads} sectors={pd.secs}"
+    res.append(f"PhysicalDisk:        {0:8d} {pd.cyls-1:8d}  {total_blks:10d}  {ByteSize.to_byte_size_str(total_bytes)}  {extra}")
     # logical disk info
     ld = self.rdb.log_drv
-    extra="rdb_blks=[%d:%d,#%d] used=[hi=%d,#%d] cyl_blks=%d" % (ld.rdb_blk_lo, ld.rdb_blk_hi, self.max_blks, ld.high_rdsk_blk, len(self.used_blks), ld.cyl_blks)
+    extra=f"rdb_blks=[{ld.rdb_blk_lo}:{ld.rdb_blk_hi},#{self.max_blks}] used=[hi={ld.high_rdsk_blk},#{len(self.used_blks)}] cyl_blks={ld.cyl_blks}"
     logic_blks = self.get_logical_blocks()
     logic_bytes = self.get_logical_bytes()
-    res.append("LogicalDisk:         %8d %8d  %10d  %s  %s" \
-      % (ld.lo_cyl, ld.hi_cyl, logic_blks, ByteSize.to_byte_size_str(logic_bytes), extra))
+    res.append(f"LogicalDisk:         {ld.lo_cyl:8d} {ld.hi_cyl:8d}  {logic_blks:10d}  {ByteSize.to_byte_size_str(logic_bytes)}  {extra}")
     # add partitions
     for p in self.parts:
       res.append(p.get_info(logic_blks))
@@ -115,13 +113,13 @@ class RDisk:
       else:
         for p in self.parts:
           if i == p.get_blk_num():
-            blk = 'P%d' % p.num
+            blk = f'P{p.num}'
             break
         if blk == None:
           # check file systems
           for f in self.fs:
             if i in f.get_blk_nums():
-              blk = 'F%d' % f.num
+              blk = f'F{f.num}'
               break
         if blk == None:
           blk = '--'

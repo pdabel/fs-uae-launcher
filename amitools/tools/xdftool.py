@@ -271,7 +271,7 @@ class PackCmd(Command):
     self.imager.pack_root(self.in_path, volume)
     self.imager.pack_end(self.in_path, volume)
     if self.args.verbose:
-      print("Packed %d bytes" % (self.imager.get_total_bytes()))
+      print(f"Packed {self.imager.get_total_bytes()} bytes")
     return 0
 
 class UnpackCmd(Command):
@@ -285,7 +285,7 @@ class UnpackCmd(Command):
       img = Imager()
       img.unpack(vol, out_path)
       if self.args.verbose:
-        print("Unpacked %d bytes" % (img.get_total_bytes()))
+        print(f"Unpacked {img.get_total_bytes()} bytes")
       return 0
 
 class RepackCmd(Command):
@@ -591,10 +591,10 @@ class BitmapCmd(Command):
         num = int(self.opts[1])
         blk_nums = vol.bitmap.find_n_free(num)
         if blk_nums == None:
-          print("No %d free blocks found" % num)
+          print(f"No {num} free blocks found")
           return 100
         else:
-          print("Free %d blocks:" % num, blk_nums)
+          print(f"Free {num} blocks:", blk_nums)
           return 0
       else:
         blk_num = vol.bitmap.find_free()

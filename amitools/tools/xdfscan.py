@@ -29,18 +29,18 @@ class MyProgress(Progress):
     # update display every 250ms
     if delta > 250:
       self.clk = clk
-      print("%s: %d\r" % (self.msg, self.num)),
+      print(f"{self.msg}: {self.num}\r"),
       sys.stdout.flush()
 
 def pre_log_path(path, msg):
-  print("%20s  %s  \r" % (msg, path)),
+  print(f"{msg!s:>20}  {path}  \r"),
   sys.stdout.flush()
 
 def log_path(path, msg):
-  print("%20s  %s  " % (msg, path))
+  print(f"{msg!s:>20}  {path}  ")
 
 def print_block(percent):
-  print("%3.1f%%\r" % (percent / 10.0)),
+  print(f"{percent / 10.0:3.1f}%\r"),
   sys.stdout.flush()
 
 # ----- scanner -----
@@ -116,9 +116,9 @@ def scan_file(path, args):
         # summary
         e, w = v.get_summary()
         if w > 0:
-          res.append("w%03d" % w)
+          res.append(f"w{w:03d}")
         if e > 0:
-          res.append("E%03d" % e)
+          res.append(f"E{e:03d}")
         else:
           res.append("    ")
         # disk is bootable

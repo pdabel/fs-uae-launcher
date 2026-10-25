@@ -40,12 +40,12 @@ class PartBlockDevice(BlockDevice):
 
   def read_block(self, blk_num):
     if blk_num >= self.num_blocks:
-      raise ValueError("Invalid Part block num: got %d but max is %d" % (blk_num, self.num_blocks))
+      raise ValueError(f"Invalid Part block num: got {blk_num} but max is {self.num_blocks}")
     return self.raw_blkdev.read_block(self.blk_off + blk_num)
 
   def write_block(self, blk_num, data):
     if blk_num >= self.num_blocks:
-      raise ValueError("Invalid Part block num: got %d but max is %d" % (blk_num, self.num_blocks))
+      raise ValueError(f"Invalid Part block num: got {blk_num} but max is {self.num_blocks}")
     if len(data) != self.block_bytes:
-      raise ValueError("Invalid Part block size written: got %d but size is %d" % (len(data), self.block_bytes))
+      raise ValueError(f"Invalid Part block size written: got {len(data)} but size is {self.block_bytes}")
     self.raw_blkdev.write_block(self.blk_off + blk_num, data)

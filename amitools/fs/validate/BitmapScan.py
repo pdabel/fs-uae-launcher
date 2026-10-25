@@ -23,8 +23,8 @@ class BitmapScan:
     block_longs = self.block_scan.blkdev.block_longs - 1 # all longs are available for bitmap
     self.num_bm_lwords = int((num_blks + 31) / 32) # 32 blocks fit in a long word
     self.num_bm_blocks = int((self.num_bm_lwords + block_longs - 1) / block_longs)
-    self.log.msg(Log.DEBUG,"Total Bitmap DWORDs: %d  (block %d)" % (self.num_bm_lwords, block_longs))
-    self.log.msg(Log.DEBUG,"Number of Bitmap Blocks: %d" % self.num_bm_blocks)
+    self.log.msg(Log.DEBUG,f"Total Bitmap DWORDs: {self.num_bm_lwords}  (block {block_longs})")
+    self.log.msg(Log.DEBUG,f"Number of Bitmap Blocks: {self.num_bm_blocks}")
     # calc the bitmask in the last word
     last_filled_bits = self.num_bm_lwords * 32 - num_blks
     if last_filled_bits == 32:
@@ -35,10 +35,10 @@ class BitmapScan:
     # now scan bitmap blocks and build list of all bitmap blocks
     self.read_bitmap_ptrs_and_blocks(root)
     found_blocks = len(self.bm_blocks)
-    self.log.msg(Log.DEBUG,"Found Bitmap Blocks: %d" % found_blocks)
+    self.log.msg(Log.DEBUG,f"Found Bitmap Blocks: {found_blocks}")
     # check number of blocks
     if found_blocks != self.num_bm_blocks:
-      self.log.msg(Log.ERROR,"Invalid number of Bitmap Blocks: found=%d expected=%d" % (found_blocks, self.num_bm_blocks), root.blk_num)
+      self.log.msg(Log.ERROR,f"Invalid number of Bitmap Blocks: found={found_blocks} expected={self.num_bm_blocks}", root.blk_num)
     else:
       # check bits in bitmap
       self.check_bits()
@@ -60,8 +60,7 @@ class BitmapScan:
       got = struct.unpack_from(">I",cur_data,cur_pos)[0]
       expect = self.calc_lword(blk_num)
       if got != expect:
-        self.log.msg(Log.ERROR,"Invalid bitmap allocation (@%d: #%d+%d) blks [%d...%d] got=%08x expect=%08x" \
-          % (lw, bm_blk, cur_pos/4, blk_num, blk_num+31, got, expect))
+        self.log.msg(Log.ERROR,f"Invalid bitmap allocation (@{lw}: #{bm_blk}+{cur_pos // 4}) blks [{blk_num}...{blk_num+31}] got={got:08x} expect={expect:08x}")
       lw += 1
       blk_num += 32
       # fetch next bitmap data block
@@ -74,8 +73,7 @@ class BitmapScan:
     got = struct.unpack_from(">I",cur_data,cur_pos)[0] & self.last_mask
     expect = self.calc_lword(blk_num) & self.last_mask
     if got != expect:
-      self.log.msg(Log.ERROR,"Invalid bitmap allocation (last) (@%d: #%d+%d) blks [%d...%d] got=%08x expect=%08x" \
-        % (lw, bm_blk, cur_pos/4, blk_num, blkdev.num_blocks-1, got, expect))
+      self.log.msg(Log.ERROR,f"Invalid bitmap allocation (last) (@{lw}: #{bm_blk}+{cur_pos // 4}) blks [{blk_num}...{blkdev.num_blocks-1}] got={got:08x} expect={expect:08x}")
     
   def calc_lword(self, blk_num):
     """calcuate the bitmap lword"""
@@ -98,11 +96,11 @@ class BitmapScan:
     while bm_ext != 0:
       # check ext block
       if self.block_scan.is_block_available(bm_ext):
-        self.log.msg(Log.ERROR,"Bitmap ext block @%d already used?" % bm_block, cur_blk_num)
+        self.log.msg(Log.ERROR,f"Bitmap ext block @{bm_block} already used?", cur_blk_num)
       else:
         bi = self.block_scan.read_block(bm_ext, is_bm_ext=True)
         if bi == None:
-          self.log.msg(Log.ERROR,"Error reading bitmap ext block @%d" % bm_ext, cur_blk_num)
+          self.log.msg(Log.ERROR,f"Error reading bitmap ext block @{bm_ext}", cur_blk_num)
           break
         else:
           self.read_bm_list(bi.bitmap_ptrs, bm_ext)
@@ -118,12 +116,12 @@ class BitmapScan:
         if bm_block != 0:
           # make sure bitmap block was not used already
           if self.block_scan.is_block_available(bm_block):
-            self.log.msg(Log.ERROR,"Bitmap block @%d already used?" % bm_block, blk_num)
+            self.log.msg(Log.ERROR,f"Bitmap block @{bm_block} already used?", blk_num)
           else:
             # read bitmap block
             bi = self.block_scan.read_block(bm_block, is_bm=True)
             if bi == None:
-              self.log.msg(Log.ERROR,"Error reading bitmap block @%d" % bm_block, blk_num)
+              self.log.msg(Log.ERROR,f"Error reading bitmap block @{bm_block}", blk_num)
             else:
               self.bm_blocks.append(bi)
         else:
@@ -131,4 +129,4 @@ class BitmapScan:
       else:
         # make sure no blocks are referenced
         if bm_block != 0:
-          self.log.msg(Log.ERROR,"Referenced bitmap block @%d beyond end of list" % bm_block, blk_num)
+          self.log.msg(Log.ERROR,f"Referenced bitmap block @{bm_block} beyond end of list", blk_num)

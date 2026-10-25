@@ -6,7 +6,7 @@ from __future__ import print_function
 def _get_vis_char(d):
   v = ord(d)
   if v >= 32 and v < 127:
-    return "%c" % d
+    return d
   else:
     return "."
 

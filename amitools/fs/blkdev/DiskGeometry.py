@@ -8,7 +8,7 @@ class DiskGeometry:
   
   def __str__(self):
     size = self.get_num_bytes()
-    return "chs=%d,%d,%d size=%d/%s" % (self.cyls, self.heads, self.secs, size, ByteSize.to_byte_size_str(size))
+    return f"chs={self.cyls},{self.heads},{self.secs} size={size}/{ByteSize.to_byte_size_str(size)}"
   
   def get_num_blocks(self):
     """return the number of block allocated by geometry"""

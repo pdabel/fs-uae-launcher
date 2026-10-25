@@ -23,7 +23,7 @@ class ADFSNode:
     self.meta_info = None
   
   def __str__(self):
-    return "%s:'%s'(@%d)" % (self.__class__.__name__, self.get_node_path_name(), self.block.blk_num)
+    return f"{self.__class__.__name__}:'{self.get_node_path_name()}'(@{self.block.blk_num})"
   
   def set_block(self, block):  
     self.block = block
@@ -147,7 +147,7 @@ class ADFSNode:
       extra = self.get_detail_str()
     else:
       extra = self.meta_info.get_str_line()
-    return u'%-40s       %8s  %s' % (istr + self.name.get_unicode_name(), self.get_size_str(), extra)
+    return f'{istr + self.name.get_unicode_name()!s:<40}       {self.get_size_str()!s:>8}  {extra}'
     
   def list(self, indent=0, all=False, detail=False, encoding="UTF-8"):
     print(self.get_list_str(indent=indent, all=all, detail=detail).encode(encoding))
@@ -211,7 +211,7 @@ class ADFSNode:
     prc_data = 10000 * data / total
     prc_fs = 10000 - prc_data
     res = []
-    res.append("sum:    %10d  %s  %12d" % (total, ByteSize.to_byte_size_str(btotal), btotal))
-    res.append("data:   %10d  %s  %12d  %5.2f%%" % (data, ByteSize.to_byte_size_str(bdata), bdata, prc_data / 100.0))
-    res.append("fs:     %10d  %s  %12d  %5.2f%%" % (fs, ByteSize.to_byte_size_str(bfs), bfs, prc_fs / 100.0))
+    res.append(f"sum:    {total:10d}  {ByteSize.to_byte_size_str(btotal)}  {btotal:12d}")
+    res.append(f"data:   {data:10d}  {ByteSize.to_byte_size_str(bdata)}  {bdata:12d}  {prc_data / 100.0:5.2f}%")
+    res.append(f"fs:     {fs:10d}  {ByteSize.to_byte_size_str(bfs)}  {bfs:12d}  {prc_fs / 100.0:5.2f}%")
     return res

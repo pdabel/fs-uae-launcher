@@ -122,10 +122,7 @@ class RemusSplitFile(RemusFile):
 
   def dump(self):
     for rom in self.roms:
-      print("#%04x  @%08x  +%08x  %08x: %08x  %-24s  %s" %
-            (len(rom.entries), rom.base_addr, rom.size,
-             rom.sum_off, rom.chk_sum,
-             rom.short_name, rom.name))
+      print(f"#{len(rom.entries):04x}  @{rom.base_addr:08x}  +{rom.size:08x}  {rom.sum_off:08x}: {rom.chk_sum:08x}  {rom.short_name!s:<24}  {rom.name}")
 
   def find_rom(self, rom_data, chk_sum):
     rom_size = len(rom_data)

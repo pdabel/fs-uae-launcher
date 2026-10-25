@@ -127,9 +127,9 @@ class ADFSVolume:
     bused  = used * bb
     prc_free = 10000 * free / total
     prc_used = 10000 - prc_free
-    res.append("total:  %10d  %s  %12d" % (total, ByteSize.to_byte_size_str(btotal), btotal))
-    res.append("used:   %10d  %s  %12d  %5.2f%%" % (used, ByteSize.to_byte_size_str(bused), bused, prc_used / 100.0))
-    res.append("free:   %10d  %s  %12d  %5.2f%%" % (free, ByteSize.to_byte_size_str(bfree), bfree, prc_free / 100.0))
+    res.append(f"total:  {total:10d}  {ByteSize.to_byte_size_str(btotal)}  {btotal:12d}")
+    res.append(f"used:   {used:10d}  {ByteSize.to_byte_size_str(bused)}  {bused:12d}  {prc_used / 100.0:5.2f}%")
+    res.append(f"free:   {free:10d}  {ByteSize.to_byte_size_str(bfree)}  {bfree:12d}  {prc_free / 100.0:5.2f}%")
     return res
 
   # ----- Path Queries -----

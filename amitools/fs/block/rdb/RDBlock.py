@@ -24,14 +24,14 @@ class RDBPhysicalDrive:
   
   def dump(self):
     print("PhysicalDrive")
-    print(" cyls:           %d" % self.cyls)
-    print(" heads:          %d" % self.heads)
-    print(" secs:           %d" % self.secs)
-    print(" interleave:     %d" % self.interleave)
-    print(" parking_zone:   %d" % self.parking_zone)
-    print(" write_pre_comp: %d" % self.write_pre_comp)
-    print(" reduced_write:  %d" % self.reduced_write)
-    print(" step_rate:      %d" % self.step_rate)
+    print(f" cyls:           {self.cyls}")
+    print(f" heads:          {self.heads}")
+    print(f" secs:           {self.secs}")
+    print(f" interleave:     {self.interleave}")
+    print(f" parking_zone:   {self.parking_zone}")
+    print(f" write_pre_comp: {self.write_pre_comp}")
+    print(f" reduced_write:  {self.reduced_write}")
+    print(f" step_rate:      {self.step_rate}")
   
   def read(self, blk):
     self.cyls = blk._get_long(16)
@@ -69,13 +69,13 @@ class RDBLogicalDrive:
 
   def dump(self):
     print("LogicalDrive")
-    print(" rdb_blk_lo:     %d" % self.rdb_blk_lo)
-    print(" rdb_blk_hi:     %d" % self.rdb_blk_hi)
-    print(" lo_cyl:         %d" % self.lo_cyl)
-    print(" hi_cyl:         %d" % self.hi_cyl)
-    print(" cyl_blks:       %d" % self.cyl_blks)
-    print(" high_rdsk_blk:  %d" % self.high_rdsk_blk)
-    print(" auto_park_secs: %d" % self.auto_park_secs)
+    print(f" rdb_blk_lo:     {self.rdb_blk_lo}")
+    print(f" rdb_blk_hi:     {self.rdb_blk_hi}")
+    print(f" lo_cyl:         {self.lo_cyl}")
+    print(f" hi_cyl:         {self.hi_cyl}")
+    print(f" cyl_blks:       {self.cyl_blks}")
+    print(f" high_rdsk_blk:  {self.high_rdsk_blk}")
+    print(f" auto_park_secs: {self.auto_park_secs}")
 
   def read(self, blk):
     self.rdb_blk_lo = blk._get_long(32)
@@ -202,9 +202,9 @@ class RDBlock(Block):
   def dump(self):
     Block.dump(self, "RigidDisk")
     
-    print(" size:           %d" % self.size)
-    print(" host_id:        %d" % self.host_id)
-    print(" block_size:     %d" % self.block_size)
+    print(f" size:           {self.size}")
+    print(f" host_id:        {self.host_id}")
+    print(f" block_size:     {self.block_size}")
     print(f" flags:          0x{self.flags:08x}")
     print(f' badblk_list:    {self._dump_ptr(self.badblk_list)!s}')
     print(f' part_list:      {self._dump_ptr(self.part_list)!s}')

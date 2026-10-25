@@ -172,7 +172,8 @@ class FSHeaderBlock(Block):
     return ((self.version >> 16),(self.version & 0xffff))
 
   def get_version_string(self):
-    return "%d.%d" % self.get_version_tuple()
+    major, minor = self.get_version_tuple()
+    return f"{major}.{minor}"
 
   def get_flags(self):
     return self.dev_node.get_flags(self.patch_flags)
@@ -183,8 +184,8 @@ class FSHeaderBlock(Block):
   def dump(self):
     Block.dump(self, "FSHeader")
 
-    print(" size:           %d" % self.size)
-    print(" host_id:        %d" % self.host_id)
+    print(f" size:           {self.size}")
+    print(f" host_id:        {self.host_id}")
     print(f' next:           {self._dump_ptr(self.next)!s}')
     print(f" flags:          0x{self.flags:08x}")
     print(f' dos_type:       0x{self.dos_type:08x} = {DosType.num_to_tag_str(self.dos_type)!s}')

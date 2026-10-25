@@ -64,7 +64,7 @@ class DirCacheRecord:
     return off + self.get_size()
     
   def dump(self):
-    print("DirCacheRecord(%s)(size=%d)" % (self.offset, self.get_size()))
+    print(f"DirCacheRecord({self.offset})(size={self.get_size()})")
     print(f'\tentry:      {self.entry!s}')
     print(f'\tsize:       {self.size!s}')
     pf = ProtectFlags(self.protect)
@@ -169,9 +169,9 @@ class DirCacheBlock(Block):
   
   def dump(self):
     Block.dump(self,"DirCache")
-    print(" own_key:    %d" % (self.own_key))
-    print(" parent:     %d" % (self.parent))
-    print(" num_records:%d" % (self.num_records))
-    print(" next_cache: %d" % (self.next_cache))
+    print(f" own_key:    {self.own_key}")
+    print(f" parent:     {self.parent}")
+    print(f" num_records:{self.num_records}")
+    print(f" next_cache: {self.next_cache}")
     for r in self.records:
       r.dump()

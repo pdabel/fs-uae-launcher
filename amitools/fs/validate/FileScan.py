@@ -40,7 +40,7 @@ class FileScan:
     fi = FileInfo(bi)
     self.infos.append(fi)
     
-    info = "'%s' (@%d)" % (bi.name, bi.blk_num)
+    info = f"'{bi.name}' (@{bi.blk_num})"
     
     # scan for data blocks
     linked_data_blocks = bi.data_blocks
@@ -52,7 +52,7 @@ class FileScan:
     while sbi.extension != 0 and sbi.extension < self.block_scan.blkdev.num_blocks:
       # check usage of block
       if self.block_scan.is_block_available(sbi.extension):
-        self.log.msg(Log.ERROR, "File ext block #%d of %s already used" % (num, info), sbi.extension)
+        self.log.msg(Log.ERROR, f"File ext block #{num} of {info} already used", sbi.extension)
         aborted = True
         break
       # get block
@@ -62,16 +62,16 @@ class FileScan:
         break
       # check block type
       if ebi.blk_type != BlockScan.BT_FILE_LIST:
-        self.log.msg(Log.ERROR, "File ext block #%d of %s is no ext block" % (num, info), ebi.blk_num)
+        self.log.msg(Log.ERROR, f"File ext block #{num} of {info} is no ext block", ebi.blk_num)
         aborted = True
         break
       # check for parent link
       if ebi.parent_blk != blk_num:
-        self.log.msg(Log.ERROR, "File ext block #%d of %s has invalid parent: got %d != expect %d" % (num, info, ebi.parent_blk, blk_num), ebi.blk_num)
+        self.log.msg(Log.ERROR, f"File ext block #{num} of {info} has invalid parent: got {ebi.parent_blk} != expect {blk_num}", ebi.blk_num)
       # warn if data blocks is not full
       ndb = len(ebi.data_blocks)
       if ebi.extension != 0 and ndb != self.block_scan.blkdev.block_longs - 56:
-        self.log.msg(Log.WARN, "File ext block #%d of %s has incomplete data refs: got %d" % (num, info, ndb), ebi.blk_num)
+        self.log.msg(Log.WARN, f"File ext block #{num} of {info} has incomplete data refs: got {ndb}", ebi.blk_num)
       # add data blocks
       linked_data_blocks += ebi.data_blocks
       sbi = ebi
@@ -89,23 +89,23 @@ class FileScan:
       # check usage of block
       # is block available
       if dbi == None:
-        self.log.msg(Log.ERROR, "File data block #%d of %s not found" % (seq_num,info), data_blk)
+        self.log.msg(Log.ERROR, f"File data block #{seq_num} of {info} not found", data_blk)
       if block_used:
-        self.log.msg(Log.ERROR, "File data block #%d of %s already used" % (seq_num,info), data_blk)
+        self.log.msg(Log.ERROR, f"File data block #{seq_num} of {info} already used", data_blk)
         fd.bi = None
       # in ofs check data blocks
       if not self.ffs:
         # check block type
         if dbi.blk_type != BlockScan.BT_FILE_DATA:
-          self.log.msg(Log.ERROR, "File data block #%d of %s is no data block" % (seq_num,info), data_blk)
+          self.log.msg(Log.ERROR, f"File data block #{seq_num} of {info} is no data block", data_blk)
           fd.bi = None
         else:
           # check header ref: must point to file header
           if dbi.hdr_key != blk_num:
-            self.log.msg(Log.ERROR, "File data block #%d of %s does not ref header: got %d != expect %d" % (seq_num,info,dbi.hdr_key, blk_num), data_blk)          
+            self.log.msg(Log.ERROR, f"File data block #{seq_num} of {info} does not ref header: got {dbi.hdr_key} != expect {blk_num}", data_blk)          
           # check sequence number
           if dbi.seq_num != seq_num:
-            self.log.msg(Log.ERROR, "File data block #%d of %s seq num mismatch: got %d" % (seq_num,info,dbi.seq_num), data_blk)
+            self.log.msg(Log.ERROR, f"File data block #{seq_num} of {info} seq num mismatch: got {dbi.seq_num}", data_blk)
       seq_num += 1
     
     # check size of file in bytes
@@ -115,7 +115,7 @@ class FileScan:
     file_est_blocks = (bi.byte_size + block_data_bytes - 1) / block_data_bytes
     num_data_blocks = len(linked_data_blocks)
     if file_est_blocks != num_data_blocks:
-      self.log.msg(Log.ERROR, "File %s with %d bytes has wrong number of data blocks: got %d != expect %d" % (info, bi.byte_size, num_data_blocks, file_est_blocks), bi.blk_num)
+      self.log.msg(Log.ERROR, f"File {info} with {bi.byte_size} bytes has wrong number of data blocks: got {num_data_blocks} != expect {file_est_blocks}", bi.blk_num)
     
     return fi
   

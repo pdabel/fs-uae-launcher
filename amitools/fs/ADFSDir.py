@@ -23,7 +23,7 @@ class ADFSDir(ADFSNode):
     
   def __repr__(self):
     if self.block != None:
-      return "[Dir(%d)'%s':%s]" % (self.block.blk_num, self.block.name, self.entries)
+      return f"[Dir({self.block.blk_num})'{self.block.name}':{self.entries}]"
     else:
       return "[Dir]"
   
@@ -170,7 +170,7 @@ class ADFSDir(ADFSNode):
     # try to find free blocks
     free_blks = self.volume.bitmap.alloc_n(num_blks)
     if free_blks == None:
-      raise FSError(NO_FREE_BLOCKS, node=self, file_name=name, extra="want %d" % num_blks)
+      raise FSError(NO_FREE_BLOCKS, node=self, file_name=name, extra=f"want {num_blks}")
       
     # now create the blocks for this node
     new_blk = node.blocks_create_new(free_blks, name, hash_chain_blk, self.block.blk_num, meta_info)
@@ -370,11 +370,11 @@ class ADFSDir(ADFSNode):
   def get_detail_str(self):
     self.ensure_entries()
     if self.entries != None:
-      s = "entries=%d" % len(self.entries)
+      s = f"entries={len(self.entries)}"
     else:
       s = ""
     if self.dcache_blks != None:
-      s += " dcache=%d" % len(self.dcache_blks)
+      s += f" dcache={len(self.dcache_blks)}"
     return s
 
   # ----- dir cache -----

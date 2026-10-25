@@ -262,7 +262,7 @@ class MapCommand(Command):
     off = 0
     for i in bm:
       if num == 0:
-        print("%06d: " % off, end="")
+        print(f"{off:06d}: ", end="")
       print(i, end="")
       off += 1
       num += 1
@@ -307,7 +307,7 @@ class PartEditCommand(Command):
     elif empty:
       drv_name = None
     else:
-      drv_name = "%s%d" % (self.args.drive_prefix, self.rdisk.get_num_partitions())
+      drv_name = f"{self.args.drive_prefix}{self.rdisk.get_num_partitions()}"
     return drv_name
 
   def get_bootable(self, empty=False):

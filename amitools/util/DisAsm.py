@@ -59,4 +59,4 @@ class DisAsm:
   def dump(self, code):
     for line in code:
       ops = map(lambda x : f"{x:04x}", line[1])
-      print("%08x:  %-20s  %s" % (line[0]," ".join(ops),line[2]))
+      print(f"{line[0]:08x}:  {' '.join(ops):<20}  {line[2]}")

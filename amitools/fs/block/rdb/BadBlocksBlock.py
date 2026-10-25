@@ -51,11 +51,11 @@ class BadBlockBlock(Block):
   def dump(self):
     Block.dump(self, "RDBlock")
     
-    print(" size:           %d" % self.size)
-    print(" host_id:        %d" % self.host_id)
+    print(f" size:           {self.size}")
+    print(f" host_id:        {self.host_id}")
     print(f' next:           {self._dump_ptr(self.next)!s}')
     n = len(self.block_pairs) / 2
     o = 0
     for i in xrange(n):
-      print(" bad=%d good=%d" % (self.block_pairs[o], self.block_pairs[o+1]))
+      print(f" bad={self.block_pairs[o]} good={self.block_pairs[o+1]}")
       o += 2

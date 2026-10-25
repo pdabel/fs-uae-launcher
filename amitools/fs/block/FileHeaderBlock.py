@@ -98,18 +98,18 @@ class FileHeaderBlock(EntryBlock):
     
   def dump(self):
     Block.dump(self,"FileHeader")
-    print(" own_key:    %d" % self.own_key)
-    print(" blk_cnt:    %d" % self.block_count)
-    print(" first_data: %d" % self.first_data)
+    print(f" own_key:    {self.own_key}")
+    print(f" blk_cnt:    {self.block_count}")
+    print(f" first_data: {self.first_data}")
     if self.data_blocks != None:
-      print(" data blks:  %s #%d" % (self.data_blocks, len(self.data_blocks)))
+      print(f" data blks:  {self.data_blocks} #{len(self.data_blocks)}")
     pf = ProtectFlags(self.protect)
     print(f' protect:    0x{self.protect:x} 0b{pf.bin_str()!s} {pf!s}')
-    print(" byte_size:  %d" % self.byte_size)
+    print(f" byte_size:  {self.byte_size}")
     print(f" comment:    '{self.comment!s}'")
     print(f' mod_ts:     {self.mod_ts!s}')
     print(f" name:       '{self.name!s}'")
-    print(" hash_chain: %d" % self.hash_chain)
-    print(" parent:     %d" % self.parent)
-    print(" extension:  %d" % self.extension)
+    print(f" hash_chain: {self.hash_chain}")
+    print(f" parent:     {self.parent}")
+    print(f" extension:  {self.extension}")
   

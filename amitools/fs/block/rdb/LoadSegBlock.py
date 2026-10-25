@@ -46,6 +46,6 @@ class LoadSegBlock(Block):
   def dump(self):
     Block.dump(self, "RDBlock")
     
-    print(" size:           %d" % self.size)
-    print(" host_id:        %d" % self.host_id)
+    print(f" size:           {self.size}")
+    print(f" host_id:        {self.host_id}")
     print(f' next:           {self._dump_ptr(self.next)!s}')

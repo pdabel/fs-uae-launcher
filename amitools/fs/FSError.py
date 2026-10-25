@@ -71,6 +71,6 @@ class FSError(Exception):
       srcs.append(u"file_name=" + self.file_name.get_unicode())
     if self.extra != None:
       srcs.append(unicode(self.extra))
-    return u"%s(%d):%s" % (code_str, self.code, ",".join(srcs))
+    return f"{code_str}({self.code}):{','.join(srcs)}"
 
     

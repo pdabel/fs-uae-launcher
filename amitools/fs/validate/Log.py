@@ -13,7 +13,7 @@ class LogEntry:
     if self.blk_num == -1:
       return '{!s}{!s}:{!s}'.format(" "*8, self.names[self.level], self.msg)
     else:
-      return "@%06d:%s:%s" % (self.blk_num, self.names[self.level], self.msg)
+      return f"@{self.blk_num:06d}:{self.names[self.level]}:{self.msg}"
 
 class Log:
   """Store a log of entries"""

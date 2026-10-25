@@ -57,11 +57,11 @@ class Validator:
       # check root block number
       if root_blk_num == 0:
         new_root = self.blkdev.num_blocks / 2
-        self.log.msg(Log.INFO,"Boot contains not Root blk. Using default: %d" % new_root,root_blk_num)
+        self.log.msg(Log.INFO,f"Boot contains not Root blk. Using default: {new_root}",root_blk_num)
         root_blk_num = new_root      
       elif root_blk_num < self.blkdev.reserved or root_blk_num > self.blkdev.num_blocks:
         new_root = self.blkdev.num_blocks / 2
-        self.log.msg(Log.INFO,"Invalid root block number: given %d using guess %d" % (root_blk_num, new_root),root_blk_num)
+        self.log.msg(Log.INFO,f"Invalid root block number: given {root_blk_num} using guess {new_root}",root_blk_num)
         root_blk_num = new_root
     else:
       # guess root block number
@@ -84,7 +84,7 @@ class Validator:
     self.block_scan = BlockScan(self.blkdev, self.log, self.dos_type)
     self.dir_scan = DirScan(self.block_scan, self.log)
     ok = self.dir_scan.scan_tree(self.root.blk_num, progress=self.progress)
-    self.log.msg(Log.INFO,"Scanned %d directories" % len(self.dir_scan.get_all_dir_infos()))
+    self.log.msg(Log.INFO,f"Scanned {len(self.dir_scan.get_all_dir_infos())} directories")
     if self.debug:
       self.dir_scan.dump()
           
@@ -92,7 +92,7 @@ class Validator:
     """Step 4: scan through all found files"""
     self.file_scan = FileScan(self.block_scan, self.log, self.dos_type)
     all_files = self.dir_scan.get_all_file_hdr_blk_infos()
-    self.log.msg(Log.INFO,"Scanning %d files" % len(all_files))
+    self.log.msg(Log.INFO,f"Scanning {len(all_files)} files")
     self.file_scan.scan_all_files(all_files, progress=self.progress)
     if self.debug:
       self.file_scan.dump()

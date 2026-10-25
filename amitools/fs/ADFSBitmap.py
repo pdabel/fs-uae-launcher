@@ -151,9 +151,9 @@ class ADFSBitmap:
     num_bm_blks = len(self.bitmap_blks)
     num_bytes = self.bitmap_blk_bytes * num_bm_blks
     if num_bytes != len(bitmap_data):
-      raise FSError(BITMAP_SIZE_MISMATCH, node=self, extra="got=%d want=%d" % (len(bitmap_data), num_bytes))
+      raise FSError(BITMAP_SIZE_MISMATCH, node=self, extra=f"got={len(bitmap_data)} want={num_bytes}")
     if num_bm_blks != self.bitmap_num_blks:
-      raise FSError(BITMAP_BLOCK_COUNT_MISMATCH, node=self, extra="got=%d want=%d" % (self.bitmap_num_blks, num_bm_blks))
+      raise FSError(BITMAP_BLOCK_COUNT_MISMATCH, node=self, extra=f"got={self.bitmap_num_blks} want={num_bm_blks}")
 
     # create a modyfiable bitmap
     self.bitmap_data = ctypes.create_string_buffer(bitmap_data)
@@ -318,7 +318,7 @@ class ADFSBitmap:
         line += " "
       if i % blk_cyl == blk_cyl - 1:
         if not brief or found:
-          print("%8d: %s" % (blk,line))
+          print(f"{blk:8d}: {line}")
         blk += blk_cyl
         line = ""
         found = False

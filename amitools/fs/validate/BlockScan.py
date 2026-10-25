@@ -70,7 +70,7 @@ class BlockScan:
     # range to scan
     begin_blk = self.blkdev.reserved
     num_blk = self.blkdev.num_blocks - self.blkdev.reserved
-    self.log.msg(Log.DEBUG,"block: checking range: +%d num=%d" % (begin_blk, num_blk))
+    self.log.msg(Log.DEBUG,f"block: checking range: +{begin_blk} num={num_blk}")
 
     # scan all blocks
     for n in range(num_blk):
@@ -83,18 +83,18 @@ class BlockScan:
       if bi != None:
         if bi.blk_status == self.BS_TYPE:
           if bi.own_key != None and bi.own_key != blk_num:
-            self.log.msg(Log.ERROR, "Own key is invalid: %d type: %d" % (bi.own_key, bi.blk_type), blk_num)
+            self.log.msg(Log.ERROR, f"Own key is invalid: {bi.own_key} type: {bi.blk_type}", blk_num)
         
       # first summary after block scan
       num_error_blocks = len(self.map_status[self.BS_READ_ERROR])
       if num_error_blocks > 0:
-        self.log.msg(Log.ERROR, "%d unreadable error blocks found" % num_error_blocks)
+        self.log.msg(Log.ERROR, f"{num_error_blocks} unreadable error blocks found")
       num_valid_blocks = len(self.map_status[self.BS_VALID])
       if num_valid_blocks > 0:
-        self.log.msg(Log.INFO, "%d valid but unknown blocks found" % num_valid_blocks)
+        self.log.msg(Log.INFO, f"{num_valid_blocks} valid but unknown blocks found")
       num_invalid_blocks = len(self.map_status[self.BS_INVALID])
       if num_invalid_blocks > 0:
-        self.log.msg(Log.INFO, "%d invalid blocks found" % num_invalid_blocks)      
+        self.log.msg(Log.INFO, f"{num_invalid_blocks} invalid blocks found")      
       
   def read_block(self, blk_num, is_bm=False, is_bm_ext=False):
     """read block from device, decode it, and return block info instance"""
@@ -141,7 +141,7 @@ class BlockScan:
             self.log.msg(Log.ERROR, "Root block hash table size mismatch", blk_num)
           eht = self.blkdev.block_longs - 56
           if nht != eht:
-            self.log.msg(Log.WARN, "Root block does not have normal hash size: %d != %d" % (nht, eht), blk_num)
+            self.log.msg(Log.WARN, f"Root block does not have normal hash size: {nht} != {eht}", blk_num)
         # --- user dir block ---
         elif blk.is_user_dir_block():
           bi.blk_type = self.BT_DIR

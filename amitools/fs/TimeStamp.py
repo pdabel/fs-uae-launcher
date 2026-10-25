@@ -17,7 +17,7 @@ class TimeStamp:
   def __str__(self):
     t = time.localtime(self.secs)
     ts = time.strftime(ts_format, t)
-    return "%s t%02d" % (ts, self.sub_secs)
+    return f"{ts} t{self.sub_secs:02d}"
     
   def get_secsf(self):
     return self.secs + self.sub_secs / 50.0

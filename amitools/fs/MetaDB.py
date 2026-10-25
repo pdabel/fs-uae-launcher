@@ -133,7 +133,7 @@ class MetaDB:
     # header
     mi = self.vol_meta
     num = self.dos_type - DosType.DOS0 + ord('0')
-    dos_type_str = "DOS%c" % num
+    dos_type_str = f"DOS{num:c}"
     vol_name = self.vol_name.encode("UTF-8")
     line = f'{vol_name!s}:{dos_type_str!s},{mi.get_create_ts()!s},{mi.get_disk_ts()!s},{mi.get_mod_ts()!s}\n'
     f.write(line)

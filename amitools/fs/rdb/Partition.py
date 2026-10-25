@@ -86,14 +86,13 @@ class Partition:
     # max transfer
     extra += f" max_transfer=0x{de.max_transfer:x}"
     extra += f" mask=0x{de.mask:x}"
-    extra += " num_buffer=%d" % de.num_buffer
+    extra += f" num_buffer={de.num_buffer}"
     # add flags
     flags = p.flags
     if flags & PartitionBlock.FLAG_BOOTABLE == PartitionBlock.FLAG_BOOTABLE:
-      extra += " bootable pri=%d" % de.boot_pri
+      extra += f" bootable pri={de.boot_pri}"
     if flags & PartitionBlock.FLAG_NO_AUTOMOUNT == PartitionBlock.FLAG_NO_AUTOMOUNT:
       extra += " no_automount"
-    return "Partition: #%d %-06s %8d %8d  %10d  %s  %s" \
-      % (self.num, name, de.low_cyl, de.high_cyl, part_blks, ByteSize.to_byte_size_str(part_bytes), extra)
+    return f"Partition: #{self.num} {name!s:<6} {de.low_cyl:8d} {de.high_cyl:8d}  {part_blks:10d}  {ByteSize.to_byte_size_str(part_bytes)}  {extra}"
 
 

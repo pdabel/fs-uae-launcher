@@ -114,7 +114,7 @@ class FileSystem:
     for ls in self.lsegs:
       ids.append(str(ls.blk_num))
     print(' lseg blks:  {!s}'.format(",".join(ids)))
-    print(" data size:  %d" % len(self.data))
+    print(f" data size:  {len(self.data)}")
     if hex_dump:
       print_hex(self.data)
 
@@ -132,7 +132,7 @@ class FileSystem:
     flags = self.get_flags_info()
     dt = self.fshd.dos_type
     dt_str = DosType.num_to_tag_str(dt)
-    return "FileSystem #%d %s/0x%04x version=%s size=%d %s" % (self.num, dt_str, dt, self.fshd.get_version_string(), len(self.data), flags)
+    return f"FileSystem #{self.num} {dt_str}/0x{dt:04x} version={self.fshd.get_version_string()} size={len(self.data)} {flags}"
 
   # ----- edit -----
 

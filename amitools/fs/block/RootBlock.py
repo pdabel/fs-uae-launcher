@@ -127,11 +127,11 @@ class RootBlock(Block):
   
   def dump(self):
     Block.dump(self, "Root")
-    print(" hash size: %d" % self.hash_size)
+    print(f" hash size: {self.hash_size}")
     print(f' hash table:{self.hash_table!s}')
     print(f" bmp flag:  0x{self.bitmap_flag:08x}")
     print(f' bmp ptrs:  {self.bitmap_ptrs!s}')
-    print(" bmp ext:   %d" % self.bitmap_ext_blk)
+    print(f" bmp ext:   {self.bitmap_ext_blk}")
     print(f' mod_ts:    {self.mod_ts!s}')
     print(f' disk_ts:   {self.disk_ts!s}')
     print(f' create_ts: {self.create_ts!s}')

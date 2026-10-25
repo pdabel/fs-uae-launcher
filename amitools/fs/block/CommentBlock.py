@@ -45,6 +45,6 @@ class CommentBlock(Block):
 
   def dump(self):
     Block.dump(self,"Comment")
-    print(" own_key:    %d" % (self.own_key))
-    print(" header_key: %d" % (self.header_key))
+    print(f" own_key:    {self.own_key}")
+    print(f" header_key: {self.header_key}")
     print(f" comment:    '{self.comment!s}'")

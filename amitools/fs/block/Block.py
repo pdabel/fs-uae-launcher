@@ -40,7 +40,7 @@ class Block:
     self.chk_loc = chk_loc
   
   def __str__(self):
-    return "%s:@%d" % (self.__class__.__name__, self.blk_num)
+    return f"{self.__class__.__name__}:@{self.blk_num}"
   
   def create(self):
     self.type = self.is_type
@@ -84,7 +84,7 @@ class Block:
   def _read_data(self):
     data = self.blkdev.read_block(self.blk_num)
     if len(data) != self.blkdev.block_bytes:
-      raise ValueError("Invalid Block Data: size=%d but expected %d" % (len(data), self.blkdev.block_bytes))
+      raise ValueError(f"Invalid Block Data: size={len(data)} but expected {self.blkdev.block_bytes}")
     self._create_data()
     self.data[:] = data
   
@@ -216,10 +216,10 @@ class Block:
     if ptr == self.no_blk:
       return "none"
     else:
-      return "%d" % ptr
+      return f"{ptr}"
   
   def dump(self, name, details=True):
-    print("%sBlock(%d):" % (name, self.blk_num))
+    print(f"{name}Block({self.blk_num}):")
     if details:
       print(f" types:     {self.type:x}/{self.sub_type:x} (valid: {self.is_type:x}/{self.is_sub_type:x})")
       print(f" chksum:    0x{self.got_chksum:08x} (got) 0x{self.calc_chksum:08x} (calc)")

@@ -46,5 +46,5 @@ class BitmapExtBlock(Block):
   def dump(self):
     Block.dump(self, "BitmapExtBlock", False)
     print(f' bmp ptrs:  {self.bitmap_ptrs!s}')
-    print(" bmp ext:   %d" % self.bitmap_ext_blk)
+    print(f" bmp ext:   {self.bitmap_ext_blk}")
   

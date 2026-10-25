@@ -52,8 +52,8 @@ class FileDataBlock(Block):
   
   def dump(self):
     Block.dump(self,"FileData")
-    print(" hdr_key:    %d" % self.hdr_key)
-    print(" seq_num:    %d" % self.seq_num)
-    print(" data size:  %d" % self.data_size)
-    print(" next_data:  %d" % self.next_data)
+    print(f" hdr_key:    {self.hdr_key}")
+    print(f" seq_num:    {self.seq_num}")
+    print(f" data size:  {self.data_size}")
+    print(f" next_data:  {self.next_data}")
   
