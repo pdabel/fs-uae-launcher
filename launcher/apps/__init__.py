@@ -18,14 +18,6 @@ def find_app(app):
 
 def main():
     app_name = ""
-    # Check deprecated/legacy app options.
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "xdftool":
-            app_name = "xdftool"
-            del sys.argv[1]
-    if "--xdftool" in sys.argv:
-        sys.argv.remove("--xdftool")
-        app_name = "xdftool"
     # Check new app option.
     for arg in sys.argv:
         if arg.startswith("--app="):
@@ -39,12 +31,6 @@ def main():
             key = key.replace("-", "_")
             if key == "fake_version":
                 launcher.version.VERSION = value
-
-    if app_name == "xdftool":
-        sys.argv[0] = "xdftool"
-        import amitools.tols.xdftool
-
-        sys.exit(amitools.tools.xdftool.main())
 
     app_main = None
     if app_main is None:

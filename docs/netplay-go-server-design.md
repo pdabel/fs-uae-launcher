@@ -502,7 +502,7 @@ A lobby slot is a launcher-side identity: who has joined, and who is ready. FSNP
 
 ## Repository layout
 
-The Go server gets its own top-level directory, sibling to `launcher/`, `fsgs/`, `fsbc/`, not nested under `launcher/server/`. This repo already treats a different toolchain as a separate top-level tree — `debian/`, `pyinstaller/`, `arcade/`, `amitools/` all sit next to the Python package tree rather than inside it — and a Go module is the same kind of thing: its own `go.mod`, its own dependency graph, no reason for `go build ./...` to know the rest of the repo exists. `launcher/server/` keeps its narrower job — the Python-side glue that spawns and supervises the binary — and shrinks once `game.py` is deleted.
+The Go server gets its own top-level directory, sibling to `launcher/`, `fsgs/`, `fsbc/`, not nested under `launcher/server/`. This repo already treats a different toolchain as a separate top-level tree — `debian/`, `pyinstaller/`, `arcade/` all sit next to the Python package tree rather than inside it — and a Go module is the same kind of thing: its own `go.mod`, its own dependency graph, no reason for `go build ./...` to know the rest of the repo exists. `launcher/server/` keeps its narrower job — the Python-side glue that spawns and supervises the binary — and shrinks once `game.py` is deleted.
 
 ```
 fsnp-server/                  new top-level dir, its own Go module
