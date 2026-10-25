@@ -135,7 +135,7 @@ class MetaDB:
     num = self.dos_type - DosType.DOS0 + ord('0')
     dos_type_str = "DOS%c" % num
     vol_name = self.vol_name.encode("UTF-8")
-    line = "%s:%s,%s,%s,%s\n" % (vol_name, dos_type_str, mi.get_create_ts(), mi.get_disk_ts(), mi.get_mod_ts())
+    line = '{!s}:{!s},{!s},{!s},{!s}\n'.format(vol_name, dos_type_str, mi.get_create_ts(), mi.get_disk_ts(), mi.get_mod_ts())
     f.write(line)
     # entries
     for path in sorted(self.metas):
@@ -144,6 +144,6 @@ class MetaDB:
       mod_time = meta_info.get_mod_time_str()
       comment = meta_info.get_comment_unicode_str().encode("UTF-8")
       path_name = path.encode("UTF-8")
-      line = "%s:%s,%s,%s\n" % (path_name, protect, mod_time, comment)
+      line = '{!s}:{!s},{!s},{!s}\n'.format(path_name, protect, mod_time, comment)
       f.write(line)
     f.close()

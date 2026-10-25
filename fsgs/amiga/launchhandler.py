@@ -1334,7 +1334,7 @@ def amiga_filename_to_host_filename(amiga_name, ascii_only=False):
             replace = True
 
         if replace:
-            filename += "%" + "%02x" % ord(c)
+            filename += "%" + "{:02x}".format(ord(c))
         else:
             filename += c
 

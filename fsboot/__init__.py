@@ -145,7 +145,7 @@ if sys.platform == "win32":
             return result
         else:
             raise WinPathsException(
-                "Failed to retrieve windows path: %s" % result
+                'Failed to retrieve windows path: {!s}'.format(result)
             )
 
     _SHGetFolderPath.restype = err_unless_zero

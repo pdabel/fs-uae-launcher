@@ -11,7 +11,7 @@ class LogEntry:
     self.msg = msg
   def __str__(self):
     if self.blk_num == -1:
-      return "%s%s:%s" % (" "*8, self.names[self.level], self.msg)
+      return '{!s}{!s}:{!s}'.format(" "*8, self.names[self.level], self.msg)
     else:
       return "@%06d:%s:%s" % (self.blk_num, self.names[self.level], self.msg)
 

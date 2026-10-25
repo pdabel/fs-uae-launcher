@@ -15,9 +15,7 @@ class RemusRom(object):
     self.entries = []
 
   def __repr__(self):
-    return "RemusRom(sum_off=%08x,chk_sum=%08x,size=%08x,base_addr=%08x," \
-           "name=%s,short_name=%s)" % \
-           (self.sum_off, self.chk_sum, self.size, self.base_addr,
+    return 'RemusRom(sum_off={:08x},chk_sum={:08x},size={:08x},base_addr={:08x},name={!s},short_name={!s})'.format(self.sum_off, self.chk_sum, self.size, self.base_addr,
             self.name, self.short_name)
 
 
@@ -30,8 +28,7 @@ class RemusRomEntry(object):
     self.relocs = []
 
   def __repr__(self):
-    return "RemusRomEntry(name=%s,offset=%08x,size=%08x,reloc_off=%08x)" % \
-           (self.name, self.offset, self.size, self.reloc_off)
+    return 'RemusRomEntry(name={!s},offset={:08x},size={:08x},reloc_off={:08x})'.format(self.name, self.offset, self.size, self.reloc_off)
 
 
 class RemusFile(object):
@@ -47,7 +44,7 @@ class RemusFile(object):
     # check header
     l = self._read_long()
     if l != self.header:
-      raise IOError("Wrong header! %08x != %08x" % (self.header, l))
+      raise IOError("Wrong header! {:08x} != {:08x}".format(self.header, l))
     # skip version
     l = self._read_long()
 
@@ -150,8 +147,7 @@ class RemusIdEntry(object):
     self.name = name
 
   def __repr__(self):
-    return "RemusIdEntry(count=%x,bogus=%08x,chk_sum=%08x,name=%s" % \
-           (self.count, self.bogus, self.chk_sum, self.name)
+    return 'RemusIdEntry(count={:x},bogus={:08x},chk_sum={:08x},name={!s}'.format(self.count, self.bogus, self.chk_sum, self.name)
 
 
 class RemusIdFile(RemusFile):
@@ -177,7 +173,7 @@ class RemusIdFile(RemusFile):
 
   def dump(self):
     for e in self.entries:
-      print("%04x  %08x  %08x  %s" % (e.count, e.bogus, e.chk_sum, e.name))
+      print('{:04x}  {:08x}  {:08x}  {!s}'.format(e.count, e.bogus, e.chk_sum, e.name))
 
 
 class RemusFileSet(object):

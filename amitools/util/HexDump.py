@@ -14,9 +14,9 @@ def get_hex_line(addr, line, indent=0, num=16):
   l = len(line)
   skip = num - l
   out = " " * indent
-  out += "%08x: " % addr
+  out += "{:08x}: ".format(addr)
   for d in line:
-    out += "%02x " % ord(d)
+    out += "{:02x} ".format(ord(d))
   for d in xrange(skip):
     out += "   "
   out += " "
@@ -40,7 +40,7 @@ def get_hex_diff_line(addr, a_line, b_line, indent=0, num=16):
   n = max(na, nb)
   skip = num - n
   out = " " * indent
-  out += "%08x: " % addr
+  out += "{:08x}: ".format(addr)
   ah = []
   ac = []
   bh = []
@@ -49,9 +49,9 @@ def get_hex_diff_line(addr, a_line, b_line, indent=0, num=16):
     av = a_line[d]
     bv = b_line[d]
     if av != bv:
-      ah.append("%02x" % ord(av))
+      ah.append("{:02x}".format(ord(av)))
       ac.append(_get_vis_char(av))
-      bh.append("%02x" % ord(bv))
+      bh.append("{:02x}".format(ord(bv)))
       bc.append(_get_vis_char(bv))
     else:
       ah.append("--")
