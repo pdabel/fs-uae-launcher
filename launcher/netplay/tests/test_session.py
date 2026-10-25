@@ -111,7 +111,7 @@ class Harness:
             if self.local.get(key) != value:
                 self.local[key] = value
                 self.session.config_changed(key)
-        return "hash-%d" % snapshot["config_version"], dict(self.missing)
+        return f"hash-{snapshot['config_version']}", dict(self.missing)
 
     def changed(self, session):
         self.changes += 1

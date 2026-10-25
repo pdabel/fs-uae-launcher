@@ -86,7 +86,7 @@ def attribute_checks(stream):
     the server's attribution rule (checks for frame f arrive before the ack
     for f, see docs/netplay-go-server-design.md)."""
     n = len(stream) // 4
-    words = struct.unpack(">%dI" % n, stream[:n * 4])
+    words = struct.unpack(f">{n}I", stream[:n * 4])
     current_frame = -1
     mem, rnd = {}, {}
     for w in words:
