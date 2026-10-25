@@ -36,17 +36,17 @@ class SynchronizerBase(object):
 
     def url(self, url):
         if not is_http_url(url):
-            url = "{0}{1}".format(self.url_prefix(), url)
+            url = f"{self.url_prefix()}{url}"
         return url
 
     def fetch_json_attempt(self, url):
-        print("[HTTP] {}".format(self.url(url)))
+        print(f"[HTTP] {self.url(url)}")
         r = requests.get(self.url(url), auth=self.auth())
         r.raise_for_status()
         return r.json()
 
     def fetch_data_attempt(self, url, accept_gzip_encoding=False):
-        print("[HTTP] {}".format(self.url(url)))
+        print(f"[HTTP] {self.url(url)}")
         r = requests.get(self.url(url), auth=self.auth())
         r.raise_for_status()
         return r.content

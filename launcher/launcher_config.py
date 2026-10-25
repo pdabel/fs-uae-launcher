@@ -194,28 +194,28 @@ class LauncherConfig(object):
 
     reset_values = {}
     for i in range(Amiga.MAX_FLOPPY_DRIVES):
-        reset_values["floppy_drive_{0}".format(i)] = (
-            "x_floppy_drive_{0}_sha1".format(i),
+        reset_values[f"floppy_drive_{i}"] = (
+            f"x_floppy_drive_{i}_sha1",
             "",
         )
     for i in range(Amiga.MAX_FLOPPY_IMAGES):
-        reset_values["floppy_image_{0}".format(i)] = (
-            "x_floppy_image_{0}_sha1".format(i),
+        reset_values[f"floppy_image_{i}"] = (
+            f"x_floppy_image_{i}_sha1",
             "",
         )
     for i in range(Amiga.MAX_CDROM_DRIVES):
-        reset_values["cdrom_drive_{0}".format(i)] = (
-            "x_cdrom_drive_{0}_sha1".format(i),
+        reset_values[f"cdrom_drive_{i}"] = (
+            f"x_cdrom_drive_{i}_sha1",
             "",
         )
     for i in range(Amiga.MAX_CDROM_IMAGES):
-        reset_values["cdrom_image_{0}".format(i)] = (
-            "x_cdrom_image_{0}_sha1".format(i),
+        reset_values[f"cdrom_image_{i}"] = (
+            f"x_cdrom_image_{i}_sha1",
             "",
         )
     for i in range(Amiga.MAX_HARD_DRIVES):
-        reset_values["hard_drive_{0}".format(i)] = (
-            "x_hard_drive_{0}_sha1".format(i),
+        reset_values[f"hard_drive_{i}"] = (
+            f"x_hard_drive_{i}_sha1",
             "",
         )
     reset_values["x_kickstart_file"] = ("x_kickstart_file_sha1", "")
@@ -585,7 +585,7 @@ class LauncherConfig(object):
             cls.load(config)
             values["__config_name"] = config.get("__config_name")
         else:
-            raise Exception("Unsupported platform: {}".format(platform_id))
+            raise Exception(f"Unsupported platform: {platform_id}")
         cls.post_load_values(values)
 
     @classmethod
@@ -676,32 +676,32 @@ class LauncherConfig(object):
 
         for i in range(Amiga.MAX_FLOPPY_DRIVES):
             fix_file_checksum(
-                "x_floppy_drive_{0}_sha1".format(i),
-                "floppy_drive_{0}".format(i),
+                f"x_floppy_drive_{i}_sha1",
+                f"floppy_drive_{i}",
                 FSGSDirectories.get_floppies_dir(),
             )
         for i in range(Amiga.MAX_FLOPPY_IMAGES):
             fix_file_checksum(
-                "x_floppy_image_{0}_sha1".format(i),
-                "floppy_image_{0}".format(i),
+                f"x_floppy_image_{i}_sha1",
+                f"floppy_image_{i}",
                 FSGSDirectories.get_floppies_dir(),
             )
         for i in range(Amiga.MAX_CDROM_DRIVES):
             fix_file_checksum(
-                "x_cdrom_drive_{0}_sha1".format(i),
-                "cdrom_drive_{0}".format(i),
+                f"x_cdrom_drive_{i}_sha1",
+                f"cdrom_drive_{i}",
                 FSGSDirectories.get_cdroms_dir(),
             )
         for i in range(Amiga.MAX_CDROM_IMAGES):
             fix_file_checksum(
-                "x_cdrom_image_{0}_sha1".format(i),
-                "cdrom_image_{0}".format(i),
+                f"x_cdrom_image_{i}_sha1",
+                f"cdrom_image_{i}",
                 FSGSDirectories.get_cdroms_dir(),
             )
         for i in range(Amiga.MAX_HARD_DRIVES):
             fix_file_checksum(
-                "x_hard_drive_{0}_sha1".format(i),
-                "hard_drive_{0}".format(i),
+                f"x_hard_drive_{i}_sha1",
+                f"hard_drive_{i}",
                 FSGSDirectories.get_hard_drives_dir(),
             )
 

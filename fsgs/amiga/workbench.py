@@ -79,7 +79,7 @@ class WorkbenchExtractor(object):
                     assert result == sha1
                     return
         else:
-            raise Exception("Could not find workbench file {0}".format(sha1))
+            raise Exception(f"Could not find workbench file {sha1}")
 
     def extract_workbench_file(self, adf, name, dest):
         input_stream = adf.open(name, "r")

@@ -32,7 +32,7 @@ class GameRatingSynchronizer(GameDatabaseSynchronizer):
                 break
             last_json_data = json_data
             num_changes = len(json_data["ratings"])
-            print("  processing {0} entries".format(num_changes))
+            print(f"  processing {num_changes} entries")
             t1 = time.time()
             for update in json_data["ratings"]:
                 cursor = self.database.cursor()
@@ -64,7 +64,7 @@ class GameRatingSynchronizer(GameDatabaseSynchronizer):
                     ),
                 )
             t2 = time.time()
-            print("  {0:0.2f} seconds".format(t2 - t1))
+            print(f"  {t2 - t1:0.2f} seconds")
 
     def fetch_rating_entries(self):
         cursor = self.database.cursor()
@@ -76,9 +76,7 @@ class GameRatingSynchronizer(GameDatabaseSynchronizer):
         self.set_status(
             gettext("Fetching user game ratings ({0})").format(last_time)
         )
-        url = "{0}/api/1/user_ratings?from={1}".format(
-            self.url_prefix(), quote_plus(last_time)
-        )
+        url = f"{self.url_prefix()}/api/1/user_ratings?from={quote_plus(last_time)}"
         print(url)
         # data, json_data = self.fetch_json(url)
         json_data = self.fetch_json(url)

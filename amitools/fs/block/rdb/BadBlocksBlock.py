@@ -53,7 +53,7 @@ class BadBlockBlock(Block):
     
     print(" size:           %d" % self.size)
     print(" host_id:        %d" % self.host_id)
-    print(' next:           {!s}'.format(self._dump_ptr(self.next)))
+    print(f' next:           {self._dump_ptr(self.next)!s}')
     n = len(self.block_pairs) / 2
     o = 0
     for i in xrange(n):

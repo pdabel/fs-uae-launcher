@@ -16,8 +16,8 @@ class CDManager:
     @classmethod
     def eject(cls, drive):
         values = [
-            ("cdrom_drive_{0}".format(drive), ""),
-            ("x_cdrom_drive_{0}_sha1".format(drive), ""),
+            (f"cdrom_drive_{drive}", ""),
+            (f"x_cdrom_drive_{drive}_sha1", ""),
         ]
         LauncherConfig.set_multiple(values)
 
@@ -25,8 +25,8 @@ class CDManager:
     def clear_cdrom_list(cls):
         values = []
         for i in range(Amiga.MAX_CDROM_IMAGES):
-            values.append(("cdrom_image_{0}".format(i), ""))
-            values.append(("x_cdrom_image_{0}_sha1".format(i), ""))
+            values.append((f"cdrom_image_{i}", ""))
+            values.append((f"x_cdrom_image_{i}_sha1", ""))
         LauncherConfig.set_multiple(values)
 
     @classmethod
@@ -51,14 +51,14 @@ class CDManager:
             if i < 1:
                 LauncherConfig.set_multiple(
                     [
-                        ("cdrom_drive_{0}".format(i), path),
-                        ("x_cdrom_drive_{0}_sha1".format(i), sha1),
+                        (f"cdrom_drive_{i}", path),
+                        (f"x_cdrom_drive_{i}_sha1", sha1),
                     ]
                 )
             LauncherConfig.set_multiple(
                 [
-                    ("cdrom_image_{0}".format(i), path),
-                    ("x_cdrom_image_{0}_sha1".format(i), sha1),
+                    (f"cdrom_image_{i}", path),
+                    (f"x_cdrom_image_{i}_sha1", sha1),
                 ]
             )
 
@@ -66,8 +66,8 @@ class CDManager:
         for i in range(len(paths), 1):
             LauncherConfig.set_multiple(
                 [
-                    ("cdrom_drive_{0}".format(i), ""),
-                    ("x_cdrom_drive_{0}_sha1".format(i), ""),
+                    (f"cdrom_drive_{i}", ""),
+                    (f"x_cdrom_drive_{i}_sha1", ""),
                 ]
             )
 
@@ -77,7 +77,7 @@ class CDManager:
         for i in range(len(paths), Amiga.MAX_CDROM_IMAGES):
             LauncherConfig.set_multiple(
                 [
-                    ("cdrom_image_{0}".format(i), ""),
-                    ("x_cdrom_image_{0}_sha1".format(i), ""),
+                    (f"cdrom_image_{i}", ""),
+                    (f"x_cdrom_image_{i}_sha1", ""),
                 ]
             )

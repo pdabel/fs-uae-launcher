@@ -137,7 +137,7 @@ class LoginWindow(fsui.Window):
         self.login_button.enable(bool(email) and bool(password))
         self.reset_label.set_url(
             "https://openretro.org/user/reset?referrer=fs-uae-launcher"
-            "&email={0}".format(email)
+            f"&email={email}"
         )
 
     def on_username_activated(self):

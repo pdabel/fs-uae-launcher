@@ -30,7 +30,7 @@ class WebButton(Panel):
         variant_uuid = LauncherConfig.get("variant_uuid", "")
         if not variant_uuid:
             return
-        return "{0}/game/{1}".format(openretro_url_prefix(), variant_uuid)
+        return f"{openretro_url_prefix()}/game/{variant_uuid}"
 
     def on_left_down(self):
         url = self.get_url()

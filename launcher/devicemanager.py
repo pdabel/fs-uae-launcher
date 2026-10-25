@@ -23,7 +23,7 @@ class Device:
         return id_.lower().replace(" ", "")
 
     def __repr__(self):
-        return "<Device {}".format(self.id)
+        return f"<Device {self.id}"
 
 
 class DeviceManager:
@@ -211,7 +211,7 @@ class DeviceManager:
 
     @classmethod
     def get_calculated_port_mode(cls, config, port):
-        value = config.get("joystick_port_{0}_mode".format(port))
+        value = config.get(f"joystick_port_{port}_mode")
         if not value:
             if port == 0:
                 return "mouse"
@@ -230,7 +230,7 @@ class DeviceManager:
         for device in cls.devices:
             device.port = None
         for p in range(4):
-            key = "joystick_port_{0}".format(p)
+            key = f"joystick_port_{p}"
             value = config.get(key)
             for device in cls.devices:
                 if device.id == value:
@@ -243,10 +243,10 @@ class DeviceManager:
         # print("-")
 
         def auto_fill(port, type):
-            mode = config.get("joystick_port_{0}_mode".format(port))
+            mode = config.get(f"joystick_port_{port}_mode")
             if not mode:
                 mode = cls.get_calculated_port_mode(config, port)
-            val = config.get("joystick_port_{0}".format(port))
+            val = config.get(f"joystick_port_{port}")
             if val:
                 # specific device chosen
                 for dev in cls.devices:
@@ -314,7 +314,7 @@ class DeviceManager:
         for device in cls.devices:
             device.port = None
         for port_ in range(1, 4 + 1):
-            key = "{}_port_{}".format(platform, port_)
+            key = f"{platform}_port_{port_}"
             value = config.get(key)
             print(key, value)
             for device in cls.devices:
@@ -331,14 +331,14 @@ class DeviceManager:
         # print("-")
 
         def auto_fill(port, type):
-            mode = config.get("{}_port_{}_type".format(platform, port))
+            mode = config.get(f"{platform}_port_{port}_type")
             if not mode:
                 # FIXME: DEFAULT
                 # mode = cls.get_calculated_port_mode(config, port)
                 # mode = "gamepad"
                 try:
                     option = Option.get(
-                        "{}_port_{}_type".format(platform, port)
+                        f"{platform}_port_{port}_type"
                     )
                     mode = option["default"]
                 except KeyError:
@@ -349,7 +349,7 @@ class DeviceManager:
             if cls.is_mouse_device(mode):
                 mode = "mouse"
 
-            val = config.get("{}_port_{}".format(platform, port))
+            val = config.get(f"{platform}_port_{port}")
             if val:
                 # specific device chosen
                 for dev in cls.devices:

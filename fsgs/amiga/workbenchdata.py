@@ -732,8 +732,8 @@ def update_files():
         for floppy_data, floppy_file_set in floppy_file_sets.items():
             floppy_name, floppy_sha1 = floppy_data
             if floppy_file_set.issuperset(file_set):
-                print("    # {0}".format(floppy_name))
-                print('    "{0}",'.format(floppy_sha1))
+                print(f"    # {floppy_name}")
+                print(f'    "{floppy_sha1}",')
         print("]")
 
 
@@ -766,11 +766,11 @@ def main():
             sha1 = hashlib.sha1(data).hexdigest()
         if sha1:
             if len(name) > (80 - 4 - 2 - 1 - 2 - 2 - 40):
-                print('    "{0}":\n    "{1}",'.format(name, sha1))
+                print(f'    "{name}":\n    "{sha1}",')
             else:
-                print('    "{0}": "{1}",'.format(name, sha1))
+                print(f'    "{name}": "{sha1}",')
         else:
-            print('    "{0}": "",'.format(name))
+            print(f'    "{name}": "",')
     print("")
     print(startup_sequence)
 

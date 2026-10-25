@@ -146,7 +146,7 @@ class LockerUploaderTask(Task):
                 data = ROMManager.decrypt_archive_rom(archive, path)["data"]
             except Exception:
                 traceback.print_exc()
-                uri = "sha1://{0}".format(bytes_to_hex(sha1))
+                uri = f"sha1://{bytes_to_hex(sha1)}"
                 print(uri)
                 try:
                     input_stream = fsgs.file.open(uri)
@@ -193,7 +193,7 @@ class LockerUploaderTask(Task):
     def upload_check(self, prefix):
         self.progressed(
             gettext("Finding files eligible for OpenRetro Locker")
-            + " ({:0.0%})".format((prefix / 16.0))
+            + f" ({prefix / 16.0:0.0%})"
         )
         file_database = FileDatabase.instance()
         cursor = file_database.cursor()

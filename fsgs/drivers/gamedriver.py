@@ -96,7 +96,7 @@ class GameDriver:
         if pid_file:
             try:
                 with open(pid_file, "w") as f:
-                    f.write("{}".format(process.pid))
+                    f.write(f"{process.pid}")
             except Exception:
                 traceback.print_exc()
                 print("WARNING: Error writing emulator PID file")
@@ -383,9 +383,7 @@ class GameDriver:
         else:
             for i, screen in enumerate(qapplication.screens()):
                 print(
-                    "Screen {0} refresh rate (Qt) = {1}".format(
-                        i, screen.refreshRate()
-                    )
+                    f"Screen {i} refresh rate (Qt) = {screen.refreshRate()}"
                 )
             index = cls.screen_index_for_monitor(monitor)
             screen = qapplication.screens()[index]
@@ -417,7 +415,7 @@ class GameDriver:
         for i, s in enumerate(cls._screens()):
             if rect == (s[2].x(), s[2].y(), s[2].width(), s[2].height()):
                 return i
-        raise Exception("Could not find screen at position {}".format(rect))
+        raise Exception(f"Could not find screen at position {rect}")
 
     def screen_index(self):
         monitor = self.options[Option.MONITOR]
@@ -463,11 +461,7 @@ class GameDriver:
         # return "{0} ({1}, {2})".format(
         #     self.get_game_name(), self.get_platform_name(),
         #     self.get_variant_name())
-        return "{0} ({1}, {2})".format(
-            self.fsgc.game.name,
-            self.fsgc.game.platform.name,
-            self.fsgc.game.variant.name,
-        )
+        return f"{self.fsgc.game.name} ({self.fsgc.game.platform.name}, {self.fsgc.game.variant.name})"
 
     def save_dir(self, create=False):
         """Uses the new saves layout."""
@@ -567,7 +561,7 @@ class GameDriver:
             # the existing values...
             print("using existing fullscreen rect")
         else:
-            env["FSGS_FULLSCREEN_RECT"] = "{0},{1},{2},{3}".format(x, y, w, h)
+            env["FSGS_FULLSCREEN_RECT"] = f"{x},{y},{w},{h}"
 
         if self.use_fullscreen():
             fullscreen_mode = self.options[Option.FULLSCREEN_MODE]
@@ -585,7 +579,7 @@ class GameDriver:
                     pass
                     print("using existing fullscreen window rect")
                 else:
-                    env[key] = "{0},{1},{2},{3}".format(x, y, w, h)
+                    env[key] = f"{x},{y},{w},{h}"
             print("fullscreen rect:", env.get("FSGS_GEOMETRY", ""))
             # SDL 1.2 multi-display support. Hopefully, SDL's display
             # enumeration is the same as QT's.
@@ -698,12 +692,10 @@ class GameDriver:
         env["FSGS_WINDOW_Y"] = str(y)
 
         # FIXME: REMOVE
-        env["SDL_VIDEO_WINDOW_POS"] = str("{0},{1}".format(x, y))
-        env["FSGS_WINDOW_POS"] = str("{0},{1}".format(x, y))
+        env["SDL_VIDEO_WINDOW_POS"] = str(f"{x},{y}")
+        env["FSGS_WINDOW_POS"] = str(f"{x},{y}")
 
-        env["FSGS_WINDOW_CENTER"] = "{0},{1}".format(
-            main_x + main_w // 2, main_y + main_h // 2
-        )
+        env["FSGS_WINDOW_CENTER"] = f"{main_x + main_w // 2},{main_y + main_h // 2}"
 
         # args.append("--window-x={0}".format(x))
         # args.append("--window-y={0}".format(y))
@@ -808,7 +800,7 @@ class GameDriver:
             kwargs["close_fds"] = True
         # print(" ".join(args))
         current_task.set_progress(
-            "Starting {emulator}".format(emulator=emulator)
+            f"Starting {emulator}"
         )
         # import subprocess
         # return subprocess.Popen(["strace", emulator.path] + args, **kwargs)
@@ -883,8 +875,8 @@ class GameDriver:
                 return None
             return exe
 
-        if os.path.exists("/opt/{0}/bin/{1}".format(package, name)):
-            return "/opt/{0}/bin/{1}".format(package, name)
+        if os.path.exists(f"/opt/{package}/bin/{name}"):
+            return f"/opt/{package}/bin/{name}"
 
         if package == name:
             for directory in os.environ["PATH"].split(":"):

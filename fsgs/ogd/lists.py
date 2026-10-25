@@ -12,7 +12,7 @@ class ListsSynchronizer(SynchronizerBase):
         cursor = database.cursor()
         # cursor.execute("DELETE FROM game_list_game WHERE list_uuid = ?",
         #                (list_uuid,))
-        doc = self.fetch_json("/api/list-sync/1/{0}".format(list_uuid))
+        doc = self.fetch_json(f"/api/list-sync/1/{list_uuid}")
         for game_info in doc["games"]:
             game_uuid = game_info["uuid"]
             variant_uuid = game_info.get("variant", None)
@@ -60,7 +60,7 @@ class ListsSynchronizer(SynchronizerBase):
 
         for list_uuid, list_info in self.context.meta["lists"].items():
             if list_info["sync"] == existing_syncs.get(list_uuid, None):
-                print("[SYNC] List {} already synced".format(list_uuid))
+                print(f"[SYNC] List {list_uuid} already synced")
             else:
                 self.set_status(
                     gettext("Updating list '{0}'...".format(list_info["name"]))
@@ -74,7 +74,7 @@ class ListsSynchronizer(SynchronizerBase):
             else:
                 # this old list should be removed
                 self.set_status(
-                    gettext("Removing list {0}".format(existing_list_uuid))
+                    gettext(f"Removing list {existing_list_uuid}")
                 )
                 self.remove_list(database, existing_list_uuid)
 

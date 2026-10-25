@@ -87,7 +87,7 @@ class LauncherWindow(WindowWithTabs):
             app_name = "OpenRetro Launcher"
         else:
             app_name = "FS-UAE Launcher"
-        title = "{} {}".format(app_name, Application.instance().version)
+        title = f"{app_name} {Application.instance().version}"
 
         WindowWithTabs.__init__(self, None, title, border=border, menu=False)
         icon = self.find_icon()
@@ -309,9 +309,7 @@ class LauncherWindow(WindowWithTabs):
             app_name = "OpenRetro Launcher"
         else:
             app_name = "FS-UAE Launcher"
-        title = "{} {} ({})".format(
-            app_name, Application.instance().version, login_info
-        )
+        title = f"{app_name} {Application.instance().version} ({login_info})"
         self.set_title(title)
 
     def on_setting(self, key, value):
@@ -604,7 +602,7 @@ class LauncherWindow(WindowWithTabs):
     def _add_page(self, book, instance, icon_name, title, tooltip):
         book.add_page(instance)
         if icon_name:
-            icon = fsui.Image("launcher:res/{0}.png".format(icon_name))
+            icon = fsui.Image(f"launcher:res/{icon_name}.png")
         else:
             icon = None
 

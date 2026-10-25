@@ -239,9 +239,7 @@ class JoystickConfigWindow(fsui.Window):
                 if not name.endswith("_"):
                     name += "_"
         name = name.strip("_")
-        return "{0}_{1}_{2}_{3}_{4}_{5}".format(
-            name, buttons, axes, hats, balls, platform
-        )
+        return f"{name}_{buttons}_{axes}_{hats}_{balls}_{platform}"
 
     def get_joystick_guid(self):
         return DeviceManager.joystick_guid(self.device_name)
@@ -279,20 +277,20 @@ class JoystickConfigWindow(fsui.Window):
         balls = DeviceManager.joystick_balls(self.device_name)
         config = [
             "[fs-uae-controller]",
-            "name = {}".format(device_name),
-            "platform = {}".format(platform),
+            f"name = {device_name}",
+            f"platform = {platform}",
             "",
             "[device]",
-            "make = {}".format(device_make),
-            "model = {}".format(device_model),
-            "type = {}".format(device_type),
+            f"make = {device_make}",
+            f"model = {device_model}",
+            f"type = {device_type}",
             "",
             "[sdl]",
-            "guid = {}".format(guid),
-            "buttons = {}".format(buttons),
-            "hats = {}".format(hats),
-            "axes = {}".format(axes),
-            "balls = {}".format(balls),
+            f"guid = {guid}",
+            f"buttons = {buttons}",
+            f"hats = {hats}",
+            f"axes = {axes}",
+            f"balls = {balls}",
             "",
             "[default]",
             "include = universal_gamepad",
@@ -302,7 +300,7 @@ class JoystickConfigWindow(fsui.Window):
             panel = self.button_panels[i]
             if panel.event_name:
                 button_config.append(
-                    "{0} = {1}".format(panel.event_name, button[3])
+                    f"{panel.event_name} = {button[3]}"
                 )
         config.extend(sorted(button_config))
         with open(
@@ -393,7 +391,7 @@ def event_thread(device_name, window_ref):
         if type_ == "buttons":
             for i, state in enumerate(states):
                 state = int(state)
-                update["button_{0}".format(i)] = state
+                update[f"button_{i}"] = state
 
         elif type_ == "axes":
             for i, state in enumerate(states):

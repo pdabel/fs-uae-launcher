@@ -298,7 +298,7 @@ class VariantsBrowser(fsui.ItemChoice):
         self, variant_uuid, database_name, personal_rating, have
     ):
         if LauncherConfig.get("variant_uuid") == variant_uuid:
-            print("Variant {} is already loaded".format(variant_uuid))
+            print(f"Variant {variant_uuid} is already loaded")
         game_database = fsgs.game_database(database_name)
 
         # game_database_client = GameDatabaseClient(game_database)

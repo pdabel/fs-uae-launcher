@@ -22,7 +22,7 @@ class AboutDialog(fsui.Window):
         self.icon_header = IconHeader(
             self,
             fsui.Icon("fs-uae-launcher", "pkg:launcher"),
-            "{name} {version}".format(name=app_name, version=app.version),
+            f"{app_name} {app.version}",
             "Copyright © 2012-2017 Frode Solheim",
         )
         self.layout.add(self.icon_header, fill=True, margin_bottom=20)

@@ -60,9 +60,7 @@ class Device(object):
         else:
             host_platform = "other"
 
-        config_name = "{0}_{1}_{2}_{3}_{4}_{5}".format(
-            name, self.buttons, self.axes, self.hats, self.balls, host_platform
-        )
+        config_name = f"{name}_{self.buttons}_{self.axes}_{self.hats}_{self.balls}_{host_platform}"
         return config_name
 
     def configure(self, system, multiple=True):
@@ -91,9 +89,7 @@ class Device(object):
             config = device.get_config()
         except Exception as e:
             print(
-                "error initializing device {0} for {1}".format(
-                    self.name, system
-                )
+                f"error initializing device {self.name} for {system}"
             )
             print(repr(e))
             # return {}
@@ -106,4 +102,4 @@ class Device(object):
         return config
 
     def __repr__(self):
-        return "<Device '{0}'>".format(self.id)
+        return f"<Device '{self.id}'>"

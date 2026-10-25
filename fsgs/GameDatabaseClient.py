@@ -35,7 +35,7 @@ class GameDatabaseClient(object):
         )
         row = cursor.fetchone()
         if row is None:
-            raise Exception("game {0} not found".format(game_uuid))
+            raise Exception(f"game {game_uuid} not found")
         return row[0]
 
     def get_ancestor_game_id(self, game_uuid):
@@ -46,7 +46,7 @@ class GameDatabaseClient(object):
         )
         row = cursor.fetchone()
         if row is None:
-            raise Exception("game {0} not found".format(game_uuid))
+            raise Exception(f"game {game_uuid} not found")
         return row[1] or row[0]
 
     def get_or_create_user_id(self, username):
@@ -282,14 +282,14 @@ class GameDatabaseClient(object):
 
         files = 1 if values.get("file_list", "") else 0
         if game and variant:
-            name = "{0} ({1})".format(game, variant)
+            name = f"{game} ({variant})"
         else:
             name = x_name or game or variant
 
         if not sort_key:
             sort_key = game
         if sort_key and variant:
-            sort_key = "{0} ({1})".format(sort_key, variant)
+            sort_key = f"{sort_key} ({variant})"
         else:
             sort_key = x_name or sort_key or variant
         sort_key = sort_key.lower()

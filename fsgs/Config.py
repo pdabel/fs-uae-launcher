@@ -98,9 +98,7 @@ class Config(ContextAware):
                 return
             if self.log_config:
                 print(
-                    "[CONFIG] set {0} to {1}".format(
-                        changed_key, changed_value
-                    )
+                    f"[CONFIG] set {changed_key} to {changed_value}"
                 )
             # if changed_key == "__changed" and changed_value == "1":
             #     print("Stack trace for event causing __changed = 1:")

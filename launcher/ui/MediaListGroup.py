@@ -137,7 +137,7 @@ class MediaListGroup(fsui.Group):
         for path, sha1 in self.create_list():
             dir_path, name = os.path.split(path)
             if dir_path:
-                label = "{0} ({1})".format(name, dir_path)
+                label = f"{name} ({dir_path})"
             else:
                 label = path
             self.list_view.add_item(label, self.default_icon)

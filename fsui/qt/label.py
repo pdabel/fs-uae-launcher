@@ -56,7 +56,7 @@ class URLLabel(Label):
 
     def _fix_label(self):
         url = unquote_plus(self._url)
-        return '<a href="{0}">{1}</a>'.format(url, self._label)
+        return f'<a href="{url}">{self._label}</a>'
 
     def get_min_height(self):
         # because the underline seems to be cut off otherwise...

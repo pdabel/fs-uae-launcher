@@ -95,7 +95,7 @@ class Item:
         self.children.append(child)
 
     def __str__(self):
-        return " + {0}".format(self.text)
+        return f" + {self.text}"
 
 
 class ContainerItem(Item):
@@ -113,7 +113,7 @@ class InactiveItem(Item):
         super().__init__(text, active=False)
 
     def __str__(self):
-        return " ( {0} )".format(self.text)
+        return f" ( {self.text} )"
 
 
 class Model:
@@ -156,11 +156,11 @@ def normalize(value):
 
 def create_joystick_port_item(c, num: int) -> Item:
     # FIXME: retrieve uae_ option
-    mode = c.get("joystick_port_{0}_mode".format(num))
+    mode = c.get(f"joystick_port_{num}_mode")
     if mode == "nothing":
-        item = InactiveItem("Joystick Port {0}".format(num))
+        item = InactiveItem(f"Joystick Port {num}")
     else:
-        item = Item("Joystick Port {0}".format(num))
+        item = Item(f"Joystick Port {num}")
         # if mode == "joystick":
         #     device_text = "[J]"
         # elif mode == "mouse":
@@ -191,7 +191,7 @@ def create_slirp_item(c):
         name = "QEMU"
     else:
         name = implementation
-    slirp_item = Item("Slirp ({})".format(name))
+    slirp_item = Item(f"Slirp ({name})")
 
     if c.uae_slirp_ports:
         slirp_ports_item = Item("Ports: " + c.uae_slirp_ports)
@@ -215,7 +215,7 @@ def create_model(c, show_all=False):
 
     text = c.int_chipset_name
     if c.uae_chipset_compatible != "-":
-        text += " ({0})".format(c.uae_chipset_compatible)
+        text += f" ({c.uae_chipset_compatible})"
     if c.ntsc_mode:
         text += " NTSC"
     else:
@@ -268,9 +268,7 @@ def create_model(c, show_all=False):
     # else:
     #     kickstart_item = Item("Default Kickstart [FIXME]")
     kickstart_item = Item(
-        "Kickstart {} Rev {}".format(
-            c.int_kickstart_version, c.int_kickstart_revision
-        )
+        f"Kickstart {c.int_kickstart_version} Rev {c.int_kickstart_revision}"
     )
     model.add(kickstart_item)
 
@@ -294,7 +292,7 @@ def create_model(c, show_all=False):
     cpu_item.represents = ["cpu", "uae_cpu_model"]  # FIXME: uae_cpu_type
 
     if c.int_accelerator_name:
-        item = Item("{0}".format(c.int_accelerator_name))
+        item = Item(f"{c.int_accelerator_name}")
         accelerator_item = model.add(item)
     else:
         accelerator_item = InactiveItem("No Accelerator")
@@ -308,7 +306,7 @@ def create_model(c, show_all=False):
 
     if accelerator_item.active:
         if c.int_ppc_model:
-            item = Item("PowerPC {0}".format(c.int_ppc_model))
+            item = Item(f"PowerPC {c.int_ppc_model}")
             accelerator_item.add(item)
 
         # model.remove(cpu_item)
@@ -316,10 +314,8 @@ def create_model(c, show_all=False):
         # model.add(cpu_item)
 
         if c.int_cpuboardmem1_size:
-            size = "{0} MB".format(
-                int(c.int_cpuboardmem1_size) // (1024 * 1024)
-            )
-            item = Item("{0} RAM".format(size))
+            size = f"{int(c.int_cpuboardmem1_size) // (1024 * 1024)} MB"
+            item = Item(f"{size} RAM")
             item.represents = ["uae_cpuboard1mem_size"]
             accelerator_item.add(item)
 
@@ -333,14 +329,14 @@ def create_model(c, show_all=False):
             accelerator_item.add(accelerator_scsi_item)
 
     if int(c.uae_mmu_model):
-        mmu_item = Item("{0} MMU".format(c.uae_mmu_model))
+        mmu_item = Item(f"{c.uae_mmu_model} MMU")
     else:
         mmu_item = InactiveItem("No MMU")
     cpu_item.represents = ["mmu_model"]
     cpu_item.add(mmu_item)
 
     if int(c.uae_fpu_model):
-        fpu_item = Item("{0} FPU".format(c.uae_fpu_model))
+        fpu_item = Item(f"{c.uae_fpu_model} FPU")
     else:
         fpu_item = InactiveItem("No FPU")
         # fpu_item.set_parent(cpu_item)
@@ -351,16 +347,16 @@ def create_model(c, show_all=False):
         model.add(fpu_item)
 
     if int(c.int_chipmem_size) % (1024 * 1024) == 0:
-        size = "{0} MB".format(int(c.int_chipmem_size) // (1024 * 1024))
+        size = f"{int(c.int_chipmem_size) // (1024 * 1024)} MB"
     else:
-        size = "{0} KB".format(int(c.int_chipmem_size) // 1024)
-    chipmem_item = Item("{0} Chip RAM".format(size))
+        size = f"{int(c.int_chipmem_size) // 1024} KB"
+    chipmem_item = Item(f"{size} Chip RAM")
     chipmem_item.represents = ["chip_memory", "uae_chipmem_size"]
     model.add(chipmem_item)
 
     if int(c.int_mbresmem_low_size):
-        size = "{0} MB".format(int(c.int_mbresmem_low_size) // (1024 * 1024))
-        item = Item("{0} Fast RAM".format(size))
+        size = f"{int(c.int_mbresmem_low_size) // (1024 * 1024)} MB"
+        item = Item(f"{size} Fast RAM")
     else:
         item = InactiveItem("No Fast RAM")
     item.extra = "Motherboard"
@@ -375,10 +371,10 @@ def create_model(c, show_all=False):
 
     if int(c.int_bogomem_size):
         if int(c.int_bogomem_size) % (1024 * 1024) == 0:
-            size = "{0} MB".format(int(c.int_bogomem_size) // (1024 * 1024))
+            size = f"{int(c.int_bogomem_size) // (1024 * 1024)} MB"
         else:
-            size = "{0} KB".format(int(c.int_bogomem_size) // 1024)
-        bogomem_item = Item("{0} Slow RAM".format(size))
+            size = f"{int(c.int_bogomem_size) // 1024} KB"
+        bogomem_item = Item(f"{size} Slow RAM")
     else:
         bogomem_item = InactiveItem("No Slow RAM")
     bogomem_item.represents = ["slow_memory", "uae_bogomem_size"]
@@ -390,11 +386,11 @@ def create_model(c, show_all=False):
 
     if int(c.int_fastmem_size):
         if int(c.int_fastmem_size) % (1024 * 1024) == 0:
-            size = "{0} MB".format(int(c.int_fastmem_size) // (1024 * 1024))
+            size = f"{int(c.int_fastmem_size) // (1024 * 1024)} MB"
         else:
-            size = "{0} KB".format(int(c.int_fastmem_size) // 1024)
+            size = f"{int(c.int_fastmem_size) // 1024} KB"
         # fastmem_item = Item("{0} Zorro II Fast RAM".format(size))
-        fastmem_item = Item("{0} Fast RAM".format(size))
+        fastmem_item = Item(f"{size} Fast RAM")
     else:
         fastmem_item = InactiveItem("No Zorro II Fast RAM")
     fastmem_item.represents = ["fast_memory", "uae_fastmem_size"]
@@ -405,9 +401,9 @@ def create_model(c, show_all=False):
         zorro_ii_item.add(fastmem_item)
 
     if int(c.int_z3fastmem_size):
-        size = "{0} MB".format(int(c.int_z3fastmem_size) // (1024 * 1024))
+        size = f"{int(c.int_z3fastmem_size) // (1024 * 1024)} MB"
         # z3fastmem_item = Item("{0} Zorro III Fast RAM".format(size))
-        z3fastmem_item = Item("{0} Fast RAM".format(size))
+        z3fastmem_item = Item(f"{size} Fast RAM")
     else:
         z3fastmem_item = InactiveItem("No Zorro III Fast RAM")
     z3fastmem_item.represents = ["zorro_iii_memory", "uae_z3mem_size"]
@@ -418,7 +414,7 @@ def create_model(c, show_all=False):
         zorro_iii_item.add(z3fastmem_item)
 
     if c.uae_rtc != "none":
-        rtc_item = Item("{0} RTC".format(c.uae_rtc))
+        rtc_item = Item(f"{c.uae_rtc} RTC")
     else:
         rtc_item = InactiveItem("No Real Time Clock")
     rtc_item.represents = ["uae_rtc"]
@@ -489,7 +485,7 @@ def create_model(c, show_all=False):
 
     if c.uae_gfxcard_type:
         graphics_card_item = Item(
-            "{} {} MB".format(c.int_graphics_card_name, c.uae_gfxcard_size)
+            f"{c.int_graphics_card_name} {c.uae_gfxcard_size} MB"
         )
         if flatten:
             if c.int_graphics_card_bus == "zorro-ii":
@@ -541,7 +537,7 @@ def create_model(c, show_all=False):
         model.add(parallel_port_item)
 
     for i in range(4):
-        drive_type = getattr(c, "uae_floppy{0}type".format(i))
+        drive_type = getattr(c, f"uae_floppy{i}type")
         if drive_type == "0":
             description = '3.5" DD'
         elif drive_type == "1":
@@ -554,13 +550,13 @@ def create_model(c, show_all=False):
             description = None
         if description:
             drive_item = Item(
-                "{0} Floppy Drive [DF{1}]".format(description, i)
+                f"{description} Floppy Drive [DF{i}]"
             )
         else:
-            drive_item = InactiveItem("No Floppy Drive [DF{0}]".format(i))
+            drive_item = InactiveItem(f"No Floppy Drive [DF{i}]")
         drive_item.represents = [
-            "floppy_drive_{0}".format(i),
-            "uae_df{0}type".format(i),
+            f"floppy_drive_{i}",
+            f"uae_df{i}type",
         ]
         model.add(drive_item)
         # path = getattr(c, "uae_floppy{0}".format(i))

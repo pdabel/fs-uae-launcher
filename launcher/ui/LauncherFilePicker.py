@@ -20,7 +20,7 @@ class LauncherFilePicker(object):
         self.title = title
         self.result = None
         self.dir_mode = dir_mode
-        self.settings_key = "last_{0}_dir".format(media_type)
+        self.settings_key = f"last_{media_type}_dir"
         self.directory = ""
         if last_path and last_path not in ["internal"]:
             print("last_path", repr(last_path))

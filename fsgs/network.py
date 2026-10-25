@@ -23,7 +23,7 @@ def default_openretro_server():
 
 
 def fs_uae_url_from_sha1_and_name(sha1, name):
-    return "https://fs-uae.net/s/sha1/{0}/{1}".format(sha1, name)
+    return f"https://fs-uae.net/s/sha1/{sha1}/{name}"
 
 
 def openretro_server():
@@ -48,7 +48,7 @@ def openretro_scheme():
 
 def openretro_url_prefix():
     scheme, host = openretro_server()
-    return "{}://{}".format(scheme, host)
+    return f"{scheme}://{host}"
 
 
 def is_http_url(url):

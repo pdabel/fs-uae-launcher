@@ -134,7 +134,7 @@ class BlockScan:
           bi.name = FSString(root.name)
           bi.hash_table = root.hash_table
           bi.parent_blk = 0
-          self.log.msg(Log.DEBUG, "Found Root: '{!s}'".format(bi.name), blk_num)
+          self.log.msg(Log.DEBUG, f"Found Root: '{bi.name!s}'", blk_num)
           # chech hash size
           nht = len(root.hash_table)
           if root.hash_size != nht:
@@ -153,7 +153,7 @@ class BlockScan:
           bi.next_blk = user.hash_chain
           bi.hash_table = user.hash_table
           bi.own_key = user.own_key
-          self.log.msg(Log.DEBUG, "Found Dir : '{!s}'".format(bi.name), blk_num)
+          self.log.msg(Log.DEBUG, f"Found Dir : '{bi.name!s}'", blk_num)
         # --- filter header block ---
         elif blk.is_file_header_block():
           bi.blk_type = self.BT_FILE_HDR
@@ -167,7 +167,7 @@ class BlockScan:
           bi.byte_size = fh.byte_size
           bi.data_blocks = fh.data_blocks
           bi.extension = fh.extension
-          self.log.msg(Log.DEBUG, "Found File: '{!s}'".format(bi.name), blk_num)
+          self.log.msg(Log.DEBUG, f"Found File: '{bi.name!s}'", blk_num)
         # --- file list block ---
         elif blk.is_file_list_block():
           bi.blk_type = self.BT_FILE_LIST

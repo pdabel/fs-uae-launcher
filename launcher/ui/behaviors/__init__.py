@@ -34,5 +34,5 @@ class OptionsBehavior:
     def on_option(self, key, value):
         if key in self._names:
             widget = self._parent()
-            func = getattr(widget, "on_{0}_option".format(key))
+            func = getattr(widget, f"on_{key}_option")
             func(value)

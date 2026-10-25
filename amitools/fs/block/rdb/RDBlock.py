@@ -108,12 +108,12 @@ class RDBDriveID:
     
   def dump(self):
     print("DriveID")
-    print(" disk_vendor:    '{!s}'".format(self.disk_vendor))
-    print(" disk_product:   '{!s}'".format(self.disk_product))
-    print(" disk_revision:  '{!s}'".format(self.disk_revision))
-    print(" ctrl_vendor:    '{!s}'".format(self.ctrl_vendor))
-    print(" ctrl_product:   '{!s}'".format(self.ctrl_product))
-    print(" ctrl_revision:  '{!s}'".format(self.ctrl_revision))
+    print(f" disk_vendor:    '{self.disk_vendor!s}'")
+    print(f" disk_product:   '{self.disk_product!s}'")
+    print(f" disk_revision:  '{self.disk_revision!s}'")
+    print(f" ctrl_vendor:    '{self.ctrl_vendor!s}'")
+    print(f" ctrl_product:   '{self.ctrl_product!s}'")
+    print(f" ctrl_revision:  '{self.ctrl_revision!s}'")
     
   def read(self, blk):
     self.disk_vendor = blk._get_cstr(40, 8)
@@ -205,11 +205,11 @@ class RDBlock(Block):
     print(" size:           %d" % self.size)
     print(" host_id:        %d" % self.host_id)
     print(" block_size:     %d" % self.block_size)
-    print(" flags:          0x{:08x}".format(self.flags))
-    print(' badblk_list:    {!s}'.format(self._dump_ptr(self.badblk_list)))
-    print(' part_list:      {!s}'.format(self._dump_ptr(self.part_list)))
-    print(' fs_list:        {!s}'.format(self._dump_ptr(self.fs_list)))
-    print(' init_code:      {!s}'.format(self._dump_ptr(self.init_code)))
+    print(f" flags:          0x{self.flags:08x}")
+    print(f' badblk_list:    {self._dump_ptr(self.badblk_list)!s}')
+    print(f' part_list:      {self._dump_ptr(self.part_list)!s}')
+    print(f' fs_list:        {self._dump_ptr(self.fs_list)!s}')
+    print(f' init_code:      {self._dump_ptr(self.init_code)!s}')
     
     self.phy_drv.dump()
     self.log_drv.dump()

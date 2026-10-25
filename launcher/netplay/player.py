@@ -13,4 +13,4 @@ class Player:
         self.values[key] = value
 
     def __str__(self):
-        return "<Player {0}>".format(self.nick)
+        return f"<Player {self.nick}>"

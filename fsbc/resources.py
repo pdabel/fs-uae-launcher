@@ -52,4 +52,4 @@ class Resources(object):
         except Exception:
             pass
 
-        raise LookupError("Cannot find resource {0}".format(repr(resource)))
+        raise LookupError(f"Cannot find resource {repr(resource)}")

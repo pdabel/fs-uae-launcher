@@ -87,7 +87,7 @@ class CommandHandler(object):
     @protected
     def run(self, command, *args):
         """ finds and runs a command """
-        logging.debug('processCommand {!s}({!s})'.format(command, args))
+        logging.debug(f'processCommand {command!s}({args!s})')
         # print(command, args)
 
         try:
@@ -96,12 +96,12 @@ class CommandHandler(object):
             self.__unhandled__(command, *args)
             return
 
-        logging.debug('f {!s}'.format(f))
+        logging.debug(f'f {f!s}')
 
         try:
             f(*args)
         except Exception as e:
-            logging.error('command raised {!s}'.format(e))
+            logging.error(f'command raised {e!s}')
             logging.error(traceback.format_exc())
             raise CommandError(command)
 
@@ -110,7 +110,7 @@ class CommandHandler(object):
         """The default handler for commands. Override this method to
         apply custom behavior (example, printing) unhandled commands.
         """
-        logging.debug('unhandled command {!s}({!s})'.format(cmd, args))
+        logging.debug(f'unhandled command {cmd!s}({args!s})')
 
 
 class DefaultCommandHandler(CommandHandler):
@@ -138,7 +138,7 @@ class DefaultBotCommandHandler(CommandHandler):
 
     def help(self, sender, dest, arg=None):
         """list all available commands or get help on a specific command"""
-        logging.info('help sender={!s} dest={!s} arg={!s}'.format(sender, dest, arg))
+        logging.info(f'help sender={sender!s} dest={dest!s} arg={arg!s}')
         if not arg:
             commands = self.getVisibleCommands()
             commands.sort()
@@ -158,7 +158,7 @@ class DefaultBotCommandHandler(CommandHandler):
                 if sub_commands:
                     doc += ' [sub commands: {!s}]'.format(" ".join(sub_commands))
 
-            helpers.msg(self.client, dest, '{!s}: {!s}'.format(arg, doc))
+            helpers.msg(self.client, dest, f'{arg!s}: {doc!s}')
 
 
 # noinspection PyPep8Naming
@@ -178,7 +178,7 @@ class BotCommandHandler(DefaultCommandHandler):
         and calls self.processBotCommand(cmd, sender) if its is.
         """
 
-        logging.debug("tryBotCommand('{!s}' '{!s}' '{!s}')".format(prefix, dest, msg))
+        logging.debug(f"tryBotCommand('{prefix!s}' '{dest!s}' '{msg!s}')")
 
         if dest == self.client.nick:
             dest = parse_nick(prefix)[0]
