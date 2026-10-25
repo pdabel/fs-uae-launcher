@@ -18,6 +18,39 @@ generated package metadata specifies `>=3.12` without an upper bound. For
 3.15 validation, explicitly create a separate environment with
 `pipenv --python /path/to/python3.15` before syncing the same lockfile.
 
+### Side-by-side Python 3.15 On Ubuntu
+
+Do not replace Ubuntu's `/usr/bin/python3` or reuse a virtual environment
+created for another Python minor version. With the user-local
+[uv installer](https://docs.astral.sh/uv/getting-started/installation/), create
+an isolated compatibility-test environment from the repository root:
+
+    curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh
+    ~/.local/bin/uv python install 3.15
+    ~/.local/bin/uv venv --python 3.15 --seed .venv-3.15
+    .venv-3.15/bin/python --version
+
+This leaves the system interpreter and existing environments unchanged.
+Activate it with `source .venv-3.15/bin/activate`; `python3 --version` then
+reports the test interpreter only in that shell. Use `deactivate` to return.
+Installing the interpreter alone does not validate launcher dependencies or
+establish Python 3.15 support. Install the same locked dependencies into this
+environment without regenerating the lockfile:
+
+    ~/.local/bin/uv tool install --python 3.15 pipenv
+    VIRTUAL_ENV="$PWD/.venv-3.15" PIPENV_IGNORE_VIRTUALENVS=0 ~/.local/bin/pipenv sync --dev
+    QT_QPA_PLATFORM=offscreen .venv-3.15/bin/python -Wd -m pytest launcher/tests/test_python_compatibility.py
+    .venv-3.15/bin/python fs-uae-launcher
+
+Pipenv warns about the manifest's Python 3.12 development default; keep that
+default unchanged for this separate test environment. Pipenv is installed in
+its own tool environment to avoid conflicts with the launcher's locked packages.
+Local Ubuntu validation
+on Python 3.15.1 installed the locked dependencies, passed all 10 focused Python
+compatibility tests, and constructed an offscreen PySide6/Qt 6.12 application.
+The test run emitted one subprocess ResourceWarning. These checks do not
+validate the full test suite, native desktop behavior, or frozen builds.
+
 Frozen builds use PyInstaller through `fsbuild/build`, `fsbuild/bundle`, and
 `fsbuild/archive`, as shown in the platform workflows under `.github/workflows`.
 Go (see `fsnp-server/go.mod`) is needed for the bundled netplay server. The

@@ -37,6 +37,15 @@ manifest's 3.12 value is the development default, not a package upper bound.
 This stack's lock regeneration adds Ruff and interpreter metadata without
 upgrading any existing locked dependency versions.
 
+For a side-by-side Python 3.15 installation on Ubuntu without changing the
+system Python, see [the isolated test environment instructions](docs/compiling.md#side-by-side-python-315-on-ubuntu).
+Use a fresh environment for each Python minor version; an interpreter install
+alone does not establish launcher compatibility.
+Local Ubuntu checks on Python 3.15.1 installed the existing locked dependencies,
+passed 10 focused Python compatibility tests (one subprocess ResourceWarning),
+and initialized Qt 6.12 offscreen. Full-suite, native desktop, and frozen-build
+validation on 3.15 remain pending.
+
 ## Requirements
 
 FS-UAE Launcher uses Qt 6 through `PySide6`, the `QtPy` compatibility
