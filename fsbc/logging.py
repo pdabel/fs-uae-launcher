@@ -56,7 +56,7 @@ class FileOutput(object):
 
         if self.new_line:
             elapsed = time.perf_counter() - fsboot.perf_counter_epoch
-            self.file.write("{:0.3f} ".format(elapsed).encode("ASCII"))
+            self.file.write(f"{elapsed:0.3f} ".encode("ASCII"))
 
         self.file.write(msg)
         self.new_line = msg.endswith(b"\n")

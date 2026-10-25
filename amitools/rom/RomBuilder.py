@@ -91,7 +91,7 @@ class RomBuilder:
   def _add_entry(self, entry):
     n = entry.get_size()
     if not self.does_fit(n):
-      self.error = "module '%s' does not fit into ROM!" % (entry.name)
+      self.error = f"module '{entry.name!s}' does not fit into ROM!"
       return None
     # add entry
     self.modules.append(entry)

@@ -83,15 +83,13 @@ class RefreshRateTool(object):
         allowable_neg_diff = 1.01
         if debug:
             print(
-                "REFRESH RATE TOOL: game refresh: {0} vs "
-                "display refresh: {1}".format(game_refresh, display_refresh)
+                f"REFRESH RATE TOOL: game refresh: {game_refresh} vs "
+                f"display refresh: {display_refresh}"
             )
             print(
-                "REFRESH RATE TOOL: allow +{0}/-{1}".format(
-                    allowable_pos_diff, allowable_neg_diff
-                )
+                f"REFRESH RATE TOOL: allow +{allowable_pos_diff}/-{allowable_neg_diff}"
             )
-            print("REFRESH RATE TOOL: diff: {0}".format(diff))
+            print(f"REFRESH RATE TOOL: diff: {diff}")
         if allowable_pos_diff > diff > -allowable_neg_diff:
             if debug:
                 print("REFRESH RATE TOOL: allow vsync")
@@ -482,7 +480,7 @@ DP1 disconnected (normal left inverted right x axis y axis)
 DP2 disconnected (normal left inverted right x axis y axis)
 DP3 disconnected (normal left inverted right x axis y axis)
 HDMI1 connected primary 1920x1080+0+0 (normal left inverted right x \
-axis y axis)\ 531mm x 298mm
+axis y axis)\\ 531mm x 298mm
    1920x1080     60.00*+
    Amiga         50.02
    1680x1050     59.88

@@ -7,7 +7,7 @@ from fsgs.filedatabase import FileDatabase
 from fsgs.network import openretro_url_prefix
 from fsgs.option import Option
 from fsgs.amiga import whdload
-from launcher.sync_settings import sync_settings
+from fsgs.amiga.amiga import Amiga
 
 class ValueConfigLoader(object):
     DB_VERSION_MAX = 1
@@ -21,9 +21,7 @@ class ValueConfigLoader(object):
         self._file_list = None
         self._cue_sheets = None
         if uuid:
-            self.options["database_url"] = "{0}/game/{1}".format(
-                openretro_url_prefix(), uuid
-            )
+            self.options["database_url"] = f"{openretro_url_prefix()}/game/{uuid}"
 
     def get_config(self):
         return self.config.copy()
@@ -156,16 +154,16 @@ class ValueConfigLoader(object):
                 )
 
         default_dir = fsgs.amiga.get_floppies_dir()
-        for i in range(sync_settings.MAX_FLOPPY_DRIVES):
-            fix("floppy_drive_{0}".format(i))
-        for i in range(sync_settings.MAX_FLOPPY_IMAGES):
-            fix("floppy_image_{0}".format(i))
+        for i in range(Amiga.MAX_FLOPPY_DRIVES):
+            fix(f"floppy_drive_{i}")
+        for i in range(Amiga.MAX_FLOPPY_IMAGES):
+            fix(f"floppy_image_{i}")
 
         default_dir = fsgs.amiga.get_cdroms_dir()
-        for i in range(sync_settings.MAX_CDROM_DRIVES):
-            fix("cdrom_drive_{0}".format(i))
-        for i in range(sync_settings.MAX_CDROM_IMAGES):
-            fix("cdrom_image_{0}".format(i))
+        for i in range(Amiga.MAX_CDROM_DRIVES):
+            fix(f"cdrom_drive_{i}")
+        for i in range(Amiga.MAX_CDROM_IMAGES):
+            fix(f"cdrom_image_{i}")
 
     def set_name_and_uuid(self):
         # self.config["x_config_uuid"] = self.root.get("uuid", "")
@@ -379,7 +377,7 @@ class ValueConfigLoader(object):
             v = v.strip()
             if not v.startswith("action_"):
                 v = "action_" + v
-            k = "joystick_port_{0}_{1}".format(port, k)
+            k = f"joystick_port_{port}_{k}"
             self.options[k] = v
 
     def get_file_list(self):
@@ -480,10 +478,10 @@ class ValueConfigLoader(object):
         for i, values in enumerate(media_list):
             path, sha1 = values
             if i < floppy_drive_count:
-                self.config["floppy_drive_{0}".format(i)] = path
-                self.config["x_floppy_drive_{0}_sha1".format(i)] = sha1
-            self.config["floppy_image_{0}".format(i)] = path
-            self.config["x_floppy_image_{0}_sha1".format(i)] = sha1
+                self.config[f"floppy_drive_{i}"] = path
+                self.config[f"x_floppy_drive_{i}_sha1"] = sha1
+            self.config[f"floppy_image_{i}"] = path
+            self.config[f"x_floppy_image_{i}_sha1"] = sha1
         if floppy_drive_count < 4:
             self.config["floppy_drive_count"] = floppy_drive_count
 
@@ -523,22 +521,22 @@ class ValueConfigLoader(object):
             path, sha1 = values
             path = self.cdrom_sha1_to_uri(sha1)
             if i < 1:
-                self.config["cdrom_drive_{0}".format(i)] = path
-                self.config["x_cdrom_drive_{0}_sha1".format(i)] = sha1
-            self.config["cdrom_image_{0}".format(i)] = path
-            self.config["x_cdrom_image_{0}_sha1".format(i)] = sha1
+                self.config[f"cdrom_drive_{i}"] = path
+                self.config[f"x_cdrom_drive_{i}_sha1"] = sha1
+            self.config[f"cdrom_image_{i}"] = path
+            self.config[f"x_cdrom_image_{i}_sha1"] = sha1
 
     def load_cdroms_from_cue_sheets(self, cue_sheets):
         for i, item in enumerate(cue_sheets):
             path = "game://{}/{}".format(self.uuid, item["name"])
             if i < 1:
-                self.config["cdrom_drive_{0}".format(i)] = path
-            self.config["cdrom_image_{0}".format(i)] = path
+                self.config[f"cdrom_drive_{i}"] = path
+            self.config[f"cdrom_image_{i}"] = path
 
     def load_hard_drives(self):
         media_list = self.build_media_list(hds=True)
         print(media_list)
         for i, values in enumerate(media_list):
             path, sha1 = values
-            self.config["hard_drive_{0}".format(i)] = path
-            self.config["x_hard_drive_{0}_sha1".format(i)] = sha1
+            self.config[f"hard_drive_{i}"] = path
+            self.config[f"x_hard_drive_{i}_sha1"] = sha1

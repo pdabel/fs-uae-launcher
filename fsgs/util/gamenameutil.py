@@ -137,7 +137,7 @@ class GameNameUtil(object):
     @classmethod
     def find_disk_count(cls, name):
         for i in range(20):
-            if "of {0})".format(i) in name:
+            if f"of {i})" in name:
                 return i
         return 0
 
@@ -284,7 +284,7 @@ class GameNameUtil(object):
         else:
             secondary = ""
         # if secondary:
-        return "{0}{1}{2}".format(base_name, primary, secondary)
+        return f"{base_name}{primary}{secondary}"
         # return "{0}{1}".format(base_name, primary)
 
     @classmethod

@@ -113,7 +113,7 @@ class FileSystem:
     ids = []
     for ls in self.lsegs:
       ids.append(str(ls.blk_num))
-    print(" lseg blks:  %s" % ",".join(ids))
+    print(' lseg blks:  {!s}'.format(",".join(ids)))
     print(" data size:  %d" % len(self.data))
     if hex_dump:
       print_hex(self.data)
@@ -122,7 +122,7 @@ class FileSystem:
     flags = self.fshd.get_flags()
     res = []
     for f in flags:
-      res.append("%s=0x%x" % f)
+      res.append('{!s}=0x{:x}'.format(*f))
     return " ".join(res)
 
   def get_valid_flag_names(self):

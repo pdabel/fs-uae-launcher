@@ -1,24 +1,82 @@
 # Python and Dependency Modernization TODO
 
-Review date: 2026-10-18
+Review date: 2026-10-24
 
-This is an implementation queue, not a claim that the proposed versions have
-already been tested. Python 3.15 is the latest stable release on the review
-date. Validate the GUI, freezer, and platform packaging stack on it before
-declaring support.
+This is an implementation queue, not a claim that configured jobs have passed.
+The target is Python 3.12+ on Ubuntu 24.04+ and macOS. Windows packaging is
+outside this target. Python 3.15 remains a validation candidate, not a support
+claim, until dependency installation, tests, and platform builds pass in CI.
+
+## Stacked Consistency Pass
+
+The stack is based on main at `615cb4d2`, with one commit per branch:
+
+| Branch | Scope | Local checks on Python 3.12 |
+| --- | --- | --- |
+| `stack/01-printf-standardisation` | 159 percent-format conversions; explicit string coercion and numeric formats retained | 1,064 template comparisons; 8 focused tests; broad baseline failures recorded |
+| `stack/02-format-standardisation` | 606 literal format conversions; UP032 and CI gate | 121 core tests, 10 skipped; 39 Qt tests, 65 subtests; Ruff and whitespace pass |
+| `stack/03-command-standardisation` | Two synchronous command helpers; shell and persistent processes retained | 13 focused tests; 121 core tests, 10 skipped; Ruff and whitespace pass |
+| `stack/04-python-api-standardisation` | Removed/deprecated APIs and invalid escapes | 136 core/API/command tests, 10 skipped; 39 Qt tests, 65 subtests; strict compilation, Ruff and whitespace pass |
+| `stack/05-python-support-standardisation` | Python/platform metadata, generator, Pipenv, Debian, docs and build matrices | 138 core/API/command/support tests, 10 skipped; 39 Qt tests, 65 subtests; Ruff, strict compilation, lock verification and whitespace pass |
+| `stack/06-form-layout-consistency` | Cosmetic alignment for configuration and Settings forms; single-column memory rows; clear override-label spacing; restart command below theme/font selectors | 138 core tests, 10 skipped; 42 Qt tests, 236 subtests; configuration and Settings previews inspected; Ruff, strict compilation and whitespace pass |
+| `stack/07-netplay-column-layout` | Resizable channel/player, chat, and server/game columns; 25/40/35 initial proportions; saved divider adjustments | 138 core tests, 10 skipped; 45 Qt tests, 283 subtests; 12 nonblank netplay previews; Ruff, strict compilation and whitespace pass |
+| `stack/08-netplay-channel-default` | Game-title/operator-tag channel defaults; tagged/legacy recognition; Private join checkbox and confirmed public lobby announcements | 160 core tests, 10 skipped; 48 Qt tests, 320 subtests; Ruff, strict compilation and whitespace pass |
+
+The cosmetic layer visits every Settings page in all four themes at 1000 and
+1280 pixel window widths. It checks aligned fields and help buttons, text and
+choice updates, numeric default toggles, and Reset to Defaults. Configuration
+form checks also require a 20 pixel gap after override labels, including Empty
+Floppy Drive Volume. Existing deleted-listener Qt teardown diagnostics still
+print after some Settings tests; they are not resolved by this layout-only pass.
+
+The initial strict-compilation failures in layers 01-03 were three existing
+invalid escapes, resolved in layer 04. The server readiness test in
+`launcher/server/tests/test_server_start.py` has an existing argument-order
+expectation failure reproducible on unchanged main; it is not silently skipped
+or rewritten. CI retains its existing core/netplay slice and adds command/API
+tests, rather than claiming the entire repository test suite passes.
+
+Remaining exceptions: 196 UP031 findings, principally legacy Amiga diagnostic
+formats and type-sensitive integer coercions; formatting after gettext; shell
+commands with expansion/quoting or untested platform semantics; streaming and
+long-lived subprocesses; historical Windows packaging.
+
+Porting guidance reviewed: Python's official What's New pages for
+[3.13](https://docs.python.org/3.13/whatsnew/3.13.html),
+[3.14](https://docs.python.org/3.14/whatsnew/3.14.html), and
+[3.15](https://docs.python.org/3.15/whatsnew/3.15.html). New interpreter behavior
+and dependency/freezer compatibility still require the actual CI results.
+The locale replacement deliberately retains the Python 3.12 environment lookup
+semantics; 3.15's documentation now undeprecates `getdefaultlocale()`.
+
+### Validation Status
+
+| Platform | Python 3.12 | Python 3.15 |
+| --- | --- | --- |
+| Local Ubuntu/Linux | 138 core/API/command/support tests, 10 skipped; 39 Qt tests, 65 subtests; not a frozen-build certification | Interpreter unavailable locally; not run |
+| Ubuntu 24.04 CI | Configured, not run for this stack | Configured, not run; support pending |
+| macOS 15 Intel CI | Configured, not run for this stack | Configured, not run; support pending |
+
+The manifest uses Python 3.12 as Pipenv's default. CI explicitly selects each
+matrix interpreter before syncing. All pre-existing locked package versions
+are retained; Ruff is added, setuptools is declared explicitly as a development
+dependency, and the lock interpreter/hash metadata is regenerated by Pipenv.
+Python 3.13/3.14, macOS ARM, native desktop interaction, Debian package builds,
+and frozen artifacts have not been certified by these local checks.
 
 ## Priority 0: Make Dependency Installation Reproducible
 
-- [ ] Reconcile `Pipfile` and `Pipfile.lock`. `Pipfile` declares PySide6,
-  QtPy, and QtAwesome, while the lockfile contains PyQt5 and does not contain
-  those three Qt 6 packages. CI runs `pipenv sync --dev`, so CI and a fresh
-  development install do not currently get the UI dependencies documented in
-  `README`.
-- [ ] Choose one supported Qt binding and version family. The current GUI
-  documentation and recent UI work use Qt 6/PySide6, but `debian/control`,
-  `docs/compiling.md`, `fsbuild/fix-pyqt5.py`, and the bundle scripts still
-  describe or manipulate Qt 5/PyQt5. Update or explicitly retire each
-  distribution path; do not mix bindings in one environment.
+- [x] Reconcile `Pipfile` and `Pipfile.lock`. `Pipfile` declares PySide6,
+  QtPy, and QtAwesome, while the lockfile contained PyQt5 and none of those
+  three Qt 6 packages. The lock now has them and no PyQt5, and CI runs the
+  Qt tests from a clean `pipenv sync --dev`.
+- [ ] Choose one supported Qt binding and version family. Qt 6/PySide6 it
+  is: `fsbuild/fix-qt.py` (was `fix-pyqt5.py`), `fsbuild/build.sh`,
+  `debian/control`, the RPM spec, and the Linux and macOS sections of
+  `docs/compiling.md` now use it. Still Qt 5/PyQt5: the Windows section of
+  `docs/compiling.md` and `fsbuild/bundle-clean-*.sh`, which `bundle.sh` no
+  longer calls. Update or explicitly retire each; do not mix bindings in one
+  environment.
 - [ ] Regenerate the lockfile from the agreed manifest with the supported
   Python version(s), then verify a clean `pipenv sync --dev` and the CI build.
   Do not hand-edit generated lock data.
@@ -29,33 +87,26 @@ declaring support.
 
 ## Priority 1: Set a Supported Python Policy
 
-- [ ] Declare the actual minimum and tested Python versions consistently.
-  `Pipfile` only says Python `3`; `setup.py` has no Python requirement;
-  Debian metadata claims `>= 3.2`; and CI currently builds on Python 3.12.
-- [ ] Validate Python 3.15 first against PySide6, QtPy, QtAwesome,
-  PyInstaller, and the Linux/macOS packaging workflows. If any essential
-  dependency or platform build is not ready, use Python 3.14 as the immediate
-  supported baseline and keep 3.15 as an explicit follow-up, rather than
-  claiming unverified support.
-- [ ] Pick a support window (recommended: test the oldest supported Python
-  plus the latest stable Python) and encode it in CI. Preserve the oldest
-  version only while its OS packages and all required dependencies remain
-  supported. The current Python 3.12 CI baseline is still in CPython security
-  support, but does not test newer versions.
-- [ ] Set matching `requires-python`/`python_requires`, Python classifiers,
-  Pipenv requirements, Debian package constraints, developer setup docs, and
-  release-build interpreters. Update these together when the support window
-  changes.
+- [x] Set a Python 3.12 floor in the tracked packaging generator's
+  `python_requires`, Pipenv's default, Debian constraints, Ruff and docs.
+  No unvalidated version classifiers are added.
+- [x] Configure Python 3.12 and 3.15 test/build matrices on Ubuntu 24.04 and
+  macOS 15 Intel, with unique platform/version artifact names. This checkbox
+  records configuration, not successful builds.
+- [ ] Validate Python 3.15 against PySide6, QtPy, QtAwesome, PyInstaller and
+  both platform builds. Do not promote it to supported before those pass.
 - [ ] Run the full tests and source/frozen builds on each claimed Python
   version and supported OS. Include GUI startup and offscreen tests; the
-  existing CI Python test step covers only `fsbc`, `fstd`, and `fspy`.
+  configured CI steps cover core/netplay, command/API and offscreen Qt tests.
 
 ## Priority 1: Modernize Packaging
 
-- [ ] Replace the legacy `setup.py`/`distutils` packaging path with a
-  `pyproject.toml` build configuration using a maintained backend such as
-  setuptools. `distutils` was removed from the standard library in Python
-  3.12, and the current `setup.py` still imports it for its non-freezer path.
+- [x] Replace `distutils` in the tracked `bootstrap` generator with setuptools
+  and emit `python_requires >=3.12`. Test generation in isolation; do not edit
+  or overwrite the ignored local `setup.py`.
+- [ ] Migrate the remaining legacy packaging path to a modern build backend
+  configuration. This is separate from the minimal generator compatibility
+  change; package/resource layout and Windows freezer recipes are retained.
 - [ ] Move project name, version, Python requirement, dependencies, and
   package/resource declarations into maintained packaging metadata. Keep the
   FS-UAE source/build scripts working while migrating; test Debian packaging
@@ -84,9 +135,8 @@ declaring support.
 
 ## Priority 2: Standardize Python Code Quality
 
-- [ ] Establish one formatter/linter configuration in `pyproject.toml`.
-  Consider Ruff for linting and formatting, migrating existing Black/Pylint
-  usage deliberately rather than running overlapping formatters.
+- [x] Establish a scoped Ruff UP032 consistency gate in `pyproject.toml` and
+  CI. Broader lint and formatter migration remains a separate task.
 - [ ] Add CI checks for formatting, linting, and the project's existing
   type-checking approach. Begin with changed files or a documented baseline
   so legacy findings do not obscure new regressions.

@@ -19,10 +19,10 @@ class Icon(object):
         assert self.path.startswith("pkg:")
         package = self.path[4:]
         try:
-            name = "res/{0}x{0}/{1}.png".format(size, self.name)
+            name = f"res/{size}x{size}/{self.name}.png"
             stream = Resources(package).stream(name)
         except LookupError:
-            name = "res/{0}/{1}.png".format(size, self.name)
+            name = f"res/{size}/{self.name}.png"
             stream = Resources(package).stream(name)
         return stream
 

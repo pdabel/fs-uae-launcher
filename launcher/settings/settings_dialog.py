@@ -112,7 +112,7 @@ class SettingsDialog(PagedDialog):
         #     gettext("Logging"), LoggingSettingsPage,
         #     fsui.Icon("settings", "pkg:workspace"))
         self.add_page(
-            "{} Launcher".format(fsgs.product),
+            f"{fsgs.product} Launcher",
             LauncherSettingsPage,
             fsui.Icon("fs-uae-launcher", "pkg:launcher"),
             bold=True,

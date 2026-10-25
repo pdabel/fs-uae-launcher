@@ -61,7 +61,7 @@ class ZipScanner(ArchiveScanner):
       fobj = sf.get_fobj()
       return zipfile.ZipFile(fobj, "r")
     except Exception as e:
-      scanner.warn(sf, "error reading archive: %s" % e)
+      scanner.warn(sf, f'error reading archive: {e!s}')
 
   def _create_entry_scan_file(self, arc, info, scan_file):
     name = info.filename
@@ -82,7 +82,7 @@ class LhaScanner(ArchiveScanner):
         fobj = sf.get_fobj()
         return lhafile.LhaFile(fobj, "r")
       except Exception as e:
-        scanner.warn(sf, "error reading archive: %s" % e)
+        scanner.warn(sf, f'error reading archive: {e!s}')
     else:
       scanner.warn(sf, "can't handle archive. missing 'lhafile' module.")
 

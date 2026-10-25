@@ -1,12 +1,25 @@
 import os
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import fsui
 from fsui.qt import QDialog, QFontMetrics, QImage, QPainter, QTimer
 from fsui.qt.DrawingContext import DrawingContext
 from fsui.qt.qt import configure_qt_environment
 from .WidgetTestCase import WidgetTestCase
+
+
+# What a lobby answers POST /game with, for tests that mock LobbyClient.
+CREATED = {
+    "id": "4d5211d9-2761-454c-b5aa-993264745dc4",
+    "password": "8kmzbsfq",
+    "players": 2,
+    "port": "25101",
+    "addresses": ["host.example"],
+    "host_token": "host-token",
+    "slot": 0,
+    "player_token": "player-token",
+}
 
 
 class TestQtEnvironment(unittest.TestCase):
@@ -470,12 +483,17 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 channel.is_op.return_value = True
                 netplay.irc.active_channel = Mock(return_value=channel)
                 try:
-                    with patch.object(netplay, "require_game_channel", return_value=True):
+                    with patch.object(netplay, "require_game_channel", return_value=True), \
+                            patch("launcher.netplay.netplay.LobbyClient") as client_class, \
+                            patch("launcher.netplay.netplay.NetplaySession") as session_class:
+                        client_class.return_value.create_game.return_value = CREATED
+                        session_class.return_value.game_id = CREATED["id"]
                         with patch("launcher.netplay.netplay.Server") as server_class:
                             with patch("launcher.netplay.netplay.LauncherConfig.set_multiple"):
                                 with patch.object(view, "show", wraps=view.show) as show_view:
                                     server = server_class.return_value
                                     server.players = 2
+                                    server.port = 25101
                                     server.process = None
                                     netplay.command_hostgame(["127.0.0.1:25101", "2"])
                                     server.start.assert_called_once_with()
@@ -484,7 +502,7 @@ class TestLaunchAndNetplay(WidgetTestCase):
                                     self.assertEqual(view.fields["port"].text(), "25101")
                                     self.assertEqual(view.fields["players"].text(), "2")
                                     self.assertEqual(view.fields["channel"].text(), "#embedded-game")
-                                    self.assertTrue(view.fields["game_id"].text())
+                                    self.assertEqual(view.fields["game_id"].text(), CREATED["id"])
                                     self.assertTrue(view.stop_button.isEnabled())
                                     if action == "stop":
                                         view.stop_button.click()
@@ -500,32 +518,123 @@ class TestLaunchAndNetplay(WidgetTestCase):
                         netplay.disconnect()
                     view.deleteLater()
 
-    def test_hostgame_shared_port_and_configuration(self):
+    def test_hosted_lobby_outlives_a_running_game_left_in_it(self):
+        from launcher.netplay.netplay import Netplay
+        from launcher.netplay.server_details import ServerDetails
+
+        for started in (True, False):
+            with self.subTest(started=started):
+                view = ServerDetails()
+                netplay = Netplay(parent=Mock(create_server_view=view.present))
+                netplay.irc.active_channel_name = "#first-game"
+                channel = Mock()
+                channel.is_op.return_value = True
+                netplay.irc.active_channel = Mock(return_value=channel)
+                try:
+                    with patch.object(netplay, "require_game_channel", return_value=True), \
+                            patch("launcher.netplay.netplay.LobbyClient") as client_class, \
+                            patch("launcher.netplay.netplay.NetplaySession") as session_class, \
+                            patch("launcher.netplay.netplay.Server") as server_class, \
+                            patch("launcher.netplay.netplay.LauncherConfig.set_multiple"):
+                        client = client_class.return_value
+                        client.create_game.return_value = CREATED
+                        session_class.return_value.game_id = CREATED["id"]
+                        session_class.return_value.started = started
+                        server = server_class.return_value
+                        server.players = 2
+                        server.port = 25101
+                        server.public_addresses = "127.0.0.1"
+                        server.process.poll.return_value = None
+
+                        netplay.command_hostgame(["127.0.0.1:25101", "2"])
+                        # What joining another game channel does.
+                        netplay.end_session()
+                        if not started:
+                            # Its game never ran: the lobby goes with it.
+                            server.stop.assert_called_once_with()
+                            self.assertIsNone(view.server)
+                            continue
+                        server.stop.assert_not_called()
+                        self.assertIs(view.server, server)
+
+                        # Another port or address would need a new lobby,
+                        # which would end the game still in this one.
+                        netplay.command_hostgame(["127.0.0.1:25200", "2"])
+                        self.assertIn("still running", channel.warning.call_args.args[0])
+                        self.assertEqual(client.create_game.call_count, 1)
+
+                        netplay.irc.active_channel_name = "#second-game"
+                        netplay.command_hostgame(["127.0.0.1:25101", "3"])
+                        server_class.assert_called_once()
+                        server.start.assert_called_once_with()
+                        self.assertEqual(client.create_game.call_count, 2)
+                        server.stop.assert_not_called()
+                        self.assertIs(view.server, server)
+                        self.assertEqual(view.fields["players"].text(), "3")
+                        self.assertEqual(view.fields["channel"].text(), "#second-game")
+
+                        netplay.command_reset([])
+                        server.stop.assert_called_once_with()
+                finally:
+                    if Netplay.current() is netplay:
+                        netplay.disconnect()
+                    view.deleteLater()
+
+    def test_hostgame_runs_a_local_lobby_and_announces_the_game(self):
+        from launcher.launcher_config import LauncherConfig
         from launcher.netplay.netplay import HOST_PORT, Netplay
 
         parent = Mock()
         netplay = Netplay(parent=parent)
+        netplay.irc.my_nick = "HostNick"
+        netplay.game_channel = "#shared-game"
         channel = Mock()
         channel.is_op.return_value = True
         netplay.irc.active_channel = Mock(return_value=channel)
+        netplay.irc.channel = Mock(return_value=channel)
         netplay.irc.active_channel_name = "#shared-game"
         try:
-            with patch.object(netplay, "require_game_channel", return_value=True):
+            with patch.object(netplay, "require_game_channel", return_value=True), \
+                    patch("launcher.netplay.netplay.LobbyClient") as client_class, \
+                    patch("launcher.netplay.netplay.NetplaySession") as session_class:
+                client = client_class.return_value
+                client.create_game.return_value = dict(CREATED, password="secret")
+                session_class.return_value.game_id = CREATED["id"]
+                session_class.return_value.is_host = True
                 with patch("launcher.netplay.netplay.Server") as server_class:
+                    server_class.return_value.port = HOST_PORT
                     with patch("launcher.netplay.netplay.LauncherConfig.set_multiple") as set_config:
-                        netplay.command_hostgame(["127.0.0.1", "2", "secret"])
-                        server_class.assert_called_once_with(HOST_PORT, 2, "secret")
+                        netplay.command_hostgame(["host.example", "2", "secret"])
+                        server_class.assert_called_once_with(
+                            HOST_PORT, 2, "secret", lobby=True,
+                            public_addresses="host.example",
+                        )
                         server_class.return_value.start.assert_called_once_with()
-                        parent.create_server_view.assert_called_once()
-                        netplay.game_window.show.assert_called_once_with()
+                        # The launcher reaches its own lobby on loopback.
+                        client_class.assert_called_once_with("127.0.0.1", HOST_PORT)
+                        client.create_game.assert_called_once_with(
+                            2, "secret", "HostNick",
+                            LauncherConfig.sync_keys_list,
+                            LauncherConfig.checksum_keys,
+                        )
                         self.assertEqual(dict(set_config.call_args.args[0]), {
-                            "__netplay_game": parent.create_server_view.call_args.args[2],
+                            "__netplay_game": CREATED["id"],
                             "__netplay_password": "secret",
                             "__netplay_players": "2",
                             "__netplay_port": str(HOST_PORT),
                             "__netplay_host": "",
-                            "__netplay_addresses": "127.0.0.1",
+                            "__netplay_addresses": "host.example",
                         })
+                        session_class.return_value.start.assert_called_once_with()
+                        self.assertEqual(
+                            session_class.call_args.kwargs["host_token"], "host-token"
+                        )
+                        # Players are pointed at the public address.
+                        channel.privmsg.assert_called_once_with(
+                            f"__session host.example:{HOST_PORT} {CREATED['id']}"
+                        )
+                        parent.create_server_view.assert_called_once()
+                        netplay.game_window.show.assert_called_once_with()
         finally:
             netplay.disconnect()
 
@@ -533,9 +642,15 @@ class TestLaunchAndNetplay(WidgetTestCase):
         from launcher.netplay.netplay import Netplay
         from launcher.server.Server import PortInUseError, ServerError
 
-        for error, message in (
-            (PortInUseError(25101, "Address in use"), "netplay lobby"),
-            (ServerError("Missing binary"), "Missing binary"),
+        # A server error's details can be paths and build guidance, longer
+        # than an IRC line: they stay local, and the channel gets a summary.
+        for error, message, local_only in (
+            (PortInUseError(25101, "Address in use"), "netplay lobby", None),
+            (
+                ServerError("Missing binary"),
+                "could not start the netplay server",
+                "Missing binary",
+            ),
         ):
             with self.subTest(error=type(error).__name__):
                 parent = Mock()
@@ -554,25 +669,46 @@ class TestLaunchAndNetplay(WidgetTestCase):
                                 channel.info.assert_not_called()
                                 channel.privmsg.assert_called_once()
                                 self.assertIn(message, channel.privmsg.call_args.args[0])
+                                if local_only is not None:
+                                    self.assertNotIn(local_only, channel.privmsg.call_args.args[0])
+                                    self.assertIn(local_only, channel.warning.call_args.args[0])
                                 self.assertIsNone(netplay.game_window)
                 finally:
                     netplay.disconnect()
 
-    def test_startgame_accepts_empty_password(self):
+    def test_startgame_creates_a_lobby_game(self):
         from launcher.netplay.netplay import Netplay
 
         netplay = Netplay()
+        netplay.irc.my_nick = "HostNick"
+        netplay.game_channel = "#test-game"
         channel = Mock()
         channel.is_op.return_value = True
         netplay.irc.active_channel = Mock(return_value=channel)
+        netplay.irc.channel = Mock(return_value=channel)
         try:
-            with patch.object(netplay, "require_game_channel", return_value=True):
-                with patch("launcher.netplay.netplay.requests.get") as get:
-                    get.return_value.text = "id=test-game&password=&port=25101&addresses=127.0.0.1"
-                    with patch("launcher.netplay.netplay.LauncherConfig.set_multiple") as set_config:
-                        netplay.command_startgame(["127.0.0.1:25101", "2"])
-                        self.assertEqual(dict(set_config.call_args.args[0])["__netplay_password"], "")
-                        channel.info.assert_called_once()
+            with patch.object(netplay, "require_game_channel", return_value=True), \
+                    patch("launcher.netplay.netplay.LobbyClient") as client_class, \
+                    patch("launcher.netplay.netplay.NetplaySession") as session_class:
+                client_class.return_value.create_game.return_value = CREATED
+                session_class.return_value.game_id = CREATED["id"]
+                session_class.return_value.is_host = True
+                with patch("launcher.netplay.netplay.LauncherConfig.set_multiple") as set_config:
+                    netplay.command_startgame(["lobby.example:25101", "2"])
+                    client_class.assert_called_once_with("lobby.example", 25101)
+                    # No password given: the lobby generates one, which is
+                    # what the host and every player use.
+                    self.assertEqual(
+                        client_class.return_value.create_game.call_args.args[1], ""
+                    )
+                    self.assertEqual(
+                        dict(set_config.call_args.args[0])["__netplay_password"],
+                        CREATED["password"],
+                    )
+                    channel.info.assert_called_once()
+                    channel.privmsg.assert_called_once_with(
+                        f"__session lobby.example:25101 {CREATED['id']}"
+                    )
         finally:
             netplay.disconnect()
 
@@ -588,6 +724,149 @@ class TestLaunchAndNetplay(WidgetTestCase):
         self.assertFalse(view.stop_button.isEnabled())
         self.assertIsNone(view.server)
         view.deleteLater()
+
+    def test_netplay_column_sizes_and_persistence(self):
+        import json
+        from fsui.qt import QEvent
+        from launcher.netplay.netplay import Netplay
+        from launcher.netplay.netplay_page import NetplayPage
+
+        with patch.object(Netplay, "_current", None), patch.object(Netplay, "connect"):
+            with patch("launcher.netplay.netplay_page.LauncherSettings.get", return_value=""), patch("launcher.netplay.netplay_page.LauncherSettings.set") as save:
+                window = fsui.Window(None, title="Netplay columns")
+                window.layout = fsui.VerticalLayout()
+                page = NetplayPage(window)
+                window.layout.add(page, fill=True, expand=True)
+                window.set_size((1500, 850))
+                window.show()
+                self.application.processEvents()
+                try:
+                    self.assertEqual(page.splitter.count(), 3)
+                    sizes = page.splitter.sizes()
+                    for actual, expected in zip(sizes, (0.25, 0.4, 0.35)):
+                        self.assertAlmostEqual(actual / sum(sizes), expected, delta=0.02)
+                    self.assertIs(page.channel_area.widget(), page.panel.channel_panel.widget())
+                    self.assertIs(page.chat_area.widget(), page.panel.widget())
+                    self.assertIs(page.details_area.widget(), page.server_details)
+                    page.splitter.moveSplitter(450, 1)
+                    self.application.processEvents()
+                    save.assert_called()
+                    self.assertEqual(save.call_args.args[0], "netplay_column_sizes")
+                    saved = json.loads(save.call_args.args[1])
+                    self.assertEqual(saved, page.splitter.sizes())
+                    page._column_sizes = saved
+                    window.set_size((1200, 800))
+                    self.application.processEvents()
+                    page._restore_column_sizes()
+                    sizes = page.splitter.sizes()
+                    for actual, expected in zip(sizes, saved):
+                        self.assertAlmostEqual(actual / sum(sizes), expected / sum(saved), delta=0.03)
+                finally:
+                    page.shutdown()
+                    window.close()
+                    self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+
+    def test_netplay_saved_column_sizes(self):
+        from fsui.qt import QEvent
+        from launcher.netplay.netplay import Netplay
+        from launcher.netplay.netplay_page import NetplayPage
+
+        cases = (
+            ("[300, 500, 400]", [300, 500, 400]),
+            ("", [25, 40, 35]),
+            ("invalid", [25, 40, 35]),
+            ("[0, 40, 35]", [25, 40, 35]),
+            ("[true, 40, 35]", [25, 40, 35]),
+            ("[25, 40]", [25, 40, 35]),
+            ("[25, 40, 1000001]", [25, 40, 35]),
+        )
+        for stored, expected in cases:
+            with self.subTest(stored=stored), patch.object(Netplay, "_current", None), patch.object(Netplay, "connect"):
+                with patch("launcher.netplay.netplay_page.LauncherSettings.get", return_value=stored), patch("launcher.netplay.netplay_page.LauncherSettings.set") as save:
+                    window = fsui.Window(None, title="Saved netplay columns")
+                    window.layout = fsui.VerticalLayout()
+                    page = NetplayPage(window)
+                    window.layout.add(page, fill=True, expand=True)
+                    window.set_size((1500, 850))
+                    window.show()
+                    self.application.processEvents()
+                    try:
+                        self.assertEqual(page._column_sizes, expected)
+                        sizes = page.splitter.sizes()
+                        for actual, weight in zip(sizes, expected):
+                            self.assertAlmostEqual(actual / sum(sizes), weight / sum(expected), delta=0.02)
+                        save.assert_not_called()
+                    finally:
+                        page.shutdown()
+                        window.close()
+                        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+
+    def test_netplay_columns_role_geometry(self):
+        from fsui.qt import QEvent
+        from fsui.qt.modern_theme import apply_modern_theme
+        from fsui.qt.retro_theme import apply_retro_theme
+        from launcher.netplay.irc import LOBBY_CHANNEL
+        from launcher.netplay.netplay import Netplay
+        from launcher.netplay.netplay_page import NetplayPage
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        try:
+            for variant in ("modern", "plain", "windows311", "workbench"):
+                self.application.setStyleSheet("")
+                self.application.setPalette(self.application.style().standardPalette())
+                self.application.setFont(font)
+                if variant == "modern":
+                    apply_modern_theme(self.application)
+                elif variant != "plain":
+                    apply_retro_theme(self.application, variant)
+                with self.subTest(theme=variant), patch.object(fsui, "theme_variant", variant), patch.object(Netplay, "_current", None), patch.object(Netplay, "connect"):
+                    with patch("launcher.netplay.netplay_page.LauncherSettings.get", return_value=""):
+                        window = fsui.Window(None, title="Netplay role layout")
+                        window.layout = fsui.VerticalLayout()
+                        page = NetplayPage(window)
+                        window.layout.add(page, fill=True, expand=True)
+                        window.show()
+                        try:
+                            for width in (800, 1000, 1500):
+                                window.set_size((width, 850))
+                                for channel, operator in ((LOBBY_CHANNEL, False), ("#layout-game", False), ("#layout-game", True), ("#layout-daf", False), ("#layout-daf", True)):
+                                    with self.subTest(width=width, channel=channel, operator=operator), patch.object(page.panel.netplay, "is_op", return_value=operator):
+                                        page.panel.active_channel = channel
+                                        page.panel.update_action_buttons_visibility()
+                                        self.application.processEvents()
+                                        self.assertEqual(page.channel_area.horizontalScrollBar().maximum(), 0)
+                                        self.assertTrue(page.channel_area.widget().isAncestorOf(page.panel.join_channel_button.widget()))
+                                        self.assertTrue(page.details_area.widget().isAncestorOf(page.panel.host_game_button.widget()))
+                                        self.assertTrue(page.chat_area.widget().isAncestorOf(page.panel.input_field))
+                                        self.assertFalse(hasattr(page.panel, "reset_button"))
+                                        controls_geometry = page.panel.game_panel.widget().geometry()
+                                        stop_geometry = page.server_details.stop_button.geometry()
+                                        self.assertGreaterEqual(stop_geometry.top() - controls_geometry.bottom() - 1, 10)
+                                        self.assertLessEqual(stop_geometry.top() - controls_geometry.bottom() - 1, 12)
+                                        if operator:
+                                            self.assertEqual(page.panel.port_field.x(), page.panel.player_count_field.x())
+                                            self.assertEqual(page.panel.port_field.width(), page.panel.player_count_field.width())
+                                            self.assertGreaterEqual(page.panel.port_field.x() - page.panel.port_label.geometry().right() - 1, 20)
+                                        previous = None
+                                        for control in (page.panel.host_game_button, page.panel.start_button, page.panel.recheck_button):
+                                            if control.visible():
+                                                geometry = control.widget().geometry()
+                                                self.assertGreater(geometry.width(), 0)
+                                                self.assertLessEqual(geometry.right(), page.panel.game_panel.widget().width())
+                                                if previous is not None:
+                                                    self.assertFalse(previous.intersects(geometry))
+                                                    self.assertGreaterEqual(geometry.top() - previous.bottom() - 1, 10)
+                                                previous = geometry
+                        finally:
+                            page.shutdown()
+                            window.close()
+                            self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+        finally:
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
 
     def test_irc_names_reply_updates_operator_controls(self):
         from launcher.netplay.irc import LOBBY_CHANNEL
@@ -615,10 +894,10 @@ class TestLaunchAndNetplay(WidgetTestCase):
                         "@ReplayUser",
                     )
                     self.assertEqual(panel.nick_list.get_item(0), "@ReplayUser")
-                    irc.irc_join("ReplayUser!user@localhost", "#replay-game")
+                    irc.irc_join("ReplayUser!user@localhost", "#replay-hst")
                     self.assertFalse(panel.netplay.is_op())
                     irc.irc_namreply(
-                        "server", "ReplayUser", "=", "#replay-game",
+                        "server", "ReplayUser", "=", "#replay-hst",
                         "@ReplayUser",
                     )
                     self.application.processEvents()
@@ -626,17 +905,17 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     self.assertEqual(panel.nick_list.get_item(0), "@ReplayUser")
                     self.assertIn("You are the Operator", panel.text_area.get_text())
                     for control in (
-                        panel.host_game_button, panel.send_config_button,
-                        panel.reset_button, panel.start_button,
+                        panel.host_game_button,
+                        panel.start_button, panel.recheck_button,
                     ):
                         self.assertTrue(control.visible())
                         self.assertGreater(control.widget().geometry().y(), 0)
-                    self.assertFalse(panel.ready_button.visible())
-                    irc.irc_mode("server", "#replay-game", "-o", "ReplayUser")
+                    irc.irc_mode("server", "#replay-hst", "-o", "ReplayUser")
                     self.assertFalse(panel.netplay.is_op())
                     self.assertFalse(panel.host_game_button.visible())
-                    self.assertTrue(panel.ready_button.visible())
-                    irc.irc_mode("server", "#replay-game", "+o", "ReplayUser")
+                    self.assertFalse(panel.start_button.visible())
+                    self.assertTrue(panel.recheck_button.visible())
+                    irc.irc_mode("server", "#replay-hst", "+o", "ReplayUser")
                     self.assertTrue(panel.netplay.is_op())
                     self.assertTrue(panel.host_game_button.visible())
                 finally:
@@ -685,6 +964,91 @@ class TestLaunchAndNetplay(WidgetTestCase):
                         dialog.was_closed = True
                         dialog.close()
 
+    def test_join_channel_uses_current_game_title(self):
+        from launcher.netplay.netplay_panel import JoinChannelButton
+        from launcher.option import Option
+
+        self.setup_dialog()
+        irc = Mock()
+        button = JoinChannelButton(self.dialog, irc)
+        cases = (
+            ("Barbarian", "DAF", "#barbarian-daf", "#barbarian-daf", "/join #barbarian-daf"),
+            ("  Shadow of the Beast  ", " PL2 ", "#my-game-pl2", "#shadow-of-the-beast-pl2", "/join #my-game-pl2"),
+            ("Lotus Turbo Challenge", "", "#lotus-turbo-challenge-unk", "#lotus-turbo-challenge-unk", "/join #lotus-turbo-challenge-unk"),
+            ("Barbarian", " # D_AF! ", "#barbarian-daf", "#barbarian-daf", "/join #barbarian-daf"),
+            ("Barbarian", "ABCD", "#barbarian-abc", "#barbarian-abc", "/join #barbarian-abc"),
+            ("Barbarian", "!!!", "#barbarian-unk", "#barbarian-unk", "/join #barbarian-unk"),
+            ("", "DAF", None, "#new-daf", None),
+            ("   ", "DAF", "", "#new-daf", None),
+        )
+        for title, tag, response, expected_default, expected_command in cases:
+            settings = {Option.CONFIG_NAME: title, Option.NETPLAY_TAG: tag}
+            with self.subTest(title=title, tag=tag), patch("launcher.netplay.netplay_panel.LauncherSettings.get", side_effect=settings.__getitem__) as get_setting:
+                with patch("launcher.netplay.netplay_panel.SimpleTextInputDialog.get_text", return_value=response) as prompt:
+                    irc.reset_mock()
+                    button.widget().click()
+                    self.assertEqual(get_setting.call_args_list[0].args, (Option.CONFIG_NAME,))
+                    self.assertEqual(prompt.call_args.kwargs["default_text"], expected_default)
+                    irc.handle_command.assert_not_called()
+                    if expected_command is None:
+                        irc.join.assert_not_called()
+                        self.assertEqual(
+                            get_setting.call_args_list,
+                            [
+                                call(Option.CONFIG_NAME),
+                                call(Option.NETPLAY_TAG),
+                            ],
+                        )
+                    else:
+                        irc.join.assert_called_once_with(expected_command.removeprefix("/join "), private=False)
+                        self.assertEqual(get_setting.call_args_list[1].args, (Option.NETPLAY_TAG,))
+        self.run_dialog()
+
+    def test_join_channel_private_checkbox(self):
+        from launcher.netplay.netplay_panel import NetplayPanel
+        from launcher.option import Option
+
+        self.setup_dialog()
+        with patch("launcher.netplay.netplay_panel.Netplay") as netplay_class:
+            panel = NetplayPanel(self.dialog, header=False, columns=True)
+            irc = netplay_class.return_value.irc
+            self.assertFalse(panel.private_game_checkbox.is_checked())
+            values = {Option.CONFIG_NAME: "Barbarian", Option.NETPLAY_TAG: "DAF"}
+            with patch("launcher.netplay.netplay_panel.LauncherSettings.get", side_effect=values.__getitem__):
+                with patch("launcher.netplay.netplay_panel.SimpleTextInputDialog.get_text", return_value="Barbarian"):
+                    for private in (False, True):
+                        with self.subTest(private=private):
+                            irc.reset_mock()
+                            panel.private_game_checkbox.check(private)
+                            panel.join_channel_button.widget().click()
+                            irc.join.assert_called_once_with("#barbarian-daf", private=private)
+                            irc.handle_command.assert_not_called()
+                with patch("launcher.netplay.netplay_panel.SimpleTextInputDialog.get_text", return_value=None):
+                    irc.reset_mock()
+                    panel.join_channel_button.widget().click()
+                    irc.join.assert_not_called()
+                    irc.handle_command.assert_not_called()
+            panel.on_destroy()
+        self.run_dialog()
+
+    def test_join_channel_dialog_selects_default_title(self):
+        from fsui.qt import QEvent
+        from launcher.netplay.netplay_panel import SimpleTextInputDialog
+
+        self.setup_dialog()
+        for title in ("Barbarian", "Shadow of the Beast", "new"):
+            with self.subTest(title=title):
+                dialog = SimpleTextInputDialog(
+                    self.dialog, "Enter Game Name", "Game Name:",
+                    default_text=title,
+                )
+                self.assertEqual(dialog.text_field.get_text(), title)
+                self.assertEqual(dialog.text_field.selectedText(), title)
+                dialog.reject()
+                dialog.deleteLater()
+                self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+        self.run_dialog()
+
     def test_netplay_action_transitions(self):
         from launcher.netplay.irc import LOBBY_CHANNEL
         from launcher.netplay.netplay_panel import NetplayPanel
@@ -698,6 +1062,7 @@ class TestLaunchAndNetplay(WidgetTestCase):
             window.layout = fsui.VerticalLayout()
             panel = NetplayPanel(window, header=False)
             window.layout.add(panel, fill=True, expand=True)
+            self.assertFalse(hasattr(panel, "reset_button"))
             self.assertTrue(panel.host_game_button.explicitly_hidden())
             self.assertTrue(panel.start_button.explicitly_hidden())
             window.set_size((800, 600))
@@ -708,8 +1073,8 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 self.application.processEvents()
                 previous = None
                 for control in (
-                    panel.host_game_button, panel.send_config_button,
-                    panel.reset_button, panel.start_button,
+                    panel.host_game_button,
+                    panel.start_button, panel.recheck_button,
                 ):
                     self.assertTrue(control.visible())
                     geometry = control.widget().geometry()
@@ -718,33 +1083,193 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     if previous is not None:
                         self.assertFalse(previous.intersects(geometry))
                     previous = geometry
-                self.assertFalse(panel.ready_button.visible())
                 panel.host_game_button.widget().click()
                 netplay.handle_command.assert_called_with(
                     "/hostgame 127.0.0.1:25101 2"
                 )
-                panel.send_config_button.widget().click()
-                netplay.handle_command.assert_called_with("/sendconfig")
-                panel.reset_button.widget().click()
-                netplay.handle_command.assert_called_with("/reset")
+                # With no game yet, Start and Re-check have nothing to do.
+                self.assertFalse(panel.start_button.widget().isEnabled())
+                self.assertFalse(panel.recheck_button.widget().isEnabled())
+                session = Mock(
+                    is_host=True, game_id="4d5211d9-2761", state="configuring",
+                    can_start=False,
+                )
+                session.slot_lines.return_value = [
+                    "1. HST (you) \u2014 ready", "2. PL2 \u2014 missing: floppy_drive_0",
+                ]
+                session.waiting_on.return_value = ["PL2 is missing"]
+                panel.on_session(session)
+                self.assertEqual(panel.session_list.get_item_count(), 2)
+                self.assertFalse(panel.start_button.widget().isEnabled())
+                self.assertIn("PL2 is missing", panel.start_button.widget().toolTip())
+                # Ready, but with an edit the lobby doesn't have yet.
+                session.state = "ready"
+                session.waiting_on.return_value = [
+                    "your config changes are still being sent"
+                ]
+                panel.on_session(session)
+                self.assertFalse(panel.start_button.widget().isEnabled())
+                self.assertIn(
+                    "still being sent", panel.start_button.widget().toolTip()
+                )
+                session.can_start = True
+                panel.on_session(session)
+                self.assertTrue(panel.start_button.widget().isEnabled())
+                panel.recheck_button.widget().click()
+                netplay.handle_command.assert_called_with("/recheck")
                 with patch("launcher.launcherapp.LauncherApp.start_game") as start:
                     panel.start_button.widget().click()
                     start.assert_called_once_with()
                 netplay.is_op.return_value = False
                 panel.on_irc("nick_list", {"channel": "#test-game"})
                 self.assertFalse(panel.host_game_button.visible())
-                self.assertTrue(panel.ready_button.visible())
-                self.assertGreater(panel.ready_button.widget().geometry().y(), 0)
-                panel.ready_button.widget().click()
-                netplay.handle_command.assert_called_with("/ready")
+                self.assertTrue(panel.recheck_button.visible())
+                self.assertGreater(panel.recheck_button.widget().geometry().y(), 0)
                 panel.set_active_channel(LOBBY_CHANNEL)
-                self.assertFalse(panel.ready_button.visible())
+                self.assertFalse(panel.recheck_button.visible())
                 self.assertFalse(panel.host_game_button.visible())
             finally:
                 window.close()
 
 
 class TestDashboard(WidgetTestCase):
+    def test_aligned_settings_preserve_values_and_defaults(self):
+        from launcher.option import Option
+        from launcher.settings.settings_page import SettingsPage
+
+        self.setup_dialog()
+        with patch("launcher.settings.option_ui.LauncherSettings.get", return_value=""):
+            with patch("launcher.settings.option_ui.app", Mock(qapplication=self.application)):
+                with patch("launcher.settings.option_ui.OverrideWarning", side_effect=lambda parent, name: fsui.Label(parent, "")):
+                    page = SettingsPage(self.dialog)
+                    text_group = page.add_option("irc_nick")
+                    choice_group = page.add_option(Option.LOW_LATENCY_VSYNC)
+                    integer_group = page.add_option(Option.LAUNCHER_FONT_SIZE)
+        with patch("launcher.settings.option_ui.LauncherSettings.set") as set_value:
+            text_group.value_control.set_text("  Player  ")
+            set_value.reset_mock()
+            text_group.value_control.on_changed()
+            set_value.assert_called_once_with("irc_nick", "Player")
+            choice_group.value_control.set_index(1)
+            set_value.reset_mock()
+            choice_group.value_control.on_changed()
+            set_value.assert_called_once_with(Option.LOW_LATENCY_VSYNC, "1")
+            self.assertFalse(integer_group.value_control.is_enabled())
+            integer_group.default_checkbox.check(False)
+            self.assertTrue(integer_group.value_control.is_enabled())
+            integer_group.value_control.set_value(14)
+            set_value.reset_mock()
+            integer_group.value_control.on_changed()
+            set_value.assert_called_once_with(Option.LAUNCHER_FONT_SIZE, "14")
+            integer_group.default_checkbox.check()
+            self.assertFalse(integer_group.value_control.is_enabled())
+            self.assertEqual(integer_group.value_control.get_value(), Option.get(Option.LAUNCHER_FONT_SIZE)["default"])
+            self.assertEqual(set_value.call_args.args, (Option.LAUNCHER_FONT_SIZE, ""))
+        with patch("launcher.settings.settings_page.LauncherSettings.set") as reset:
+            page.reset_to_defaults()
+            self.assertEqual(
+                {call.args for call in reset.call_args_list},
+                {("irc_nick", ""), (Option.LOW_LATENCY_VSYNC, ""),
+                 (Option.LAUNCHER_FONT_SIZE, "")},
+            )
+        self.run_dialog()
+
+    def test_expanding_options_preserve_overrides(self):
+        from launcher.option import Option
+        from launcher.ui.options import ConfigWidgetFactory
+
+        self.setup_dialog()
+        factory = ConfigWidgetFactory(expand=True)
+        options = Mock()
+        options.get.return_value = ""
+        factory.options = options
+        with patch("launcher.ui.options.OptionsBehavior"):
+            for key in (Option.JIT_COMPILER, Option.FLOPPY_DRIVE_SPEED,
+                        Option.FLOPPY_DRIVE_VOLUME_EMPTY):
+                with self.subTest(option=key):
+                    group = factory.create(self.dialog, key)
+                    checkbox = group.option_label
+                    control = group.layout.children[-1].element
+                    control.on_explicit_option("")
+                    self.assertFalse(control.is_enabled())
+                    checkbox.check()
+                    options.set.reset_mock()
+                    checkbox.on_changed()
+                    value = Option.get(key)["default"]
+                    options.set.assert_called_once_with(key, value)
+                    control.on_explicit_option(value)
+                    self.assertTrue(control.is_enabled())
+                    if hasattr(control, "choice_values"):
+                        control.set_index(1)
+                        expected = control.choice_values[1]
+                    else:
+                        control.set_value(30)
+                        expected = "30"
+                    options.set.reset_mock()
+                    control.on_changed()
+                    options.set.assert_called_once_with(key, expected)
+                    checkbox.check(False)
+                    options.set.reset_mock()
+                    checkbox.on_changed()
+                    options.set.assert_called_once_with(key, "")
+        self.run_dialog()
+
+    def test_configuration_form_control_widths(self):
+        from fsui.qt import QComboBox, QSpinBox
+        from fsui.qt.modern_theme import apply_modern_theme
+        from fsui.qt.retro_theme import apply_retro_theme
+        from launcher.panels.additionalconfigpanel import AdditionalConfigPanel
+        from launcher.panels.expansionspanel import ExpansionsPanel
+        from launcher.panels.romrampanel import RomRamPanel
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        try:
+            for variant in ("modern", "plain", "windows311", "workbench"):
+                self.application.setStyleSheet("")
+                self.application.setPalette(self.application.style().standardPalette())
+                self.application.setFont(font)
+                if variant == "modern":
+                    apply_modern_theme(self.application)
+                elif variant != "plain":
+                    apply_retro_theme(self.application, variant)
+                for panel_type in (RomRamPanel, ExpansionsPanel, AdditionalConfigPanel):
+                    with self.subTest(theme=variant, panel=panel_type.__name__), patch.object(fsui, "theme_variant", variant):
+                        self.setup_dialog()
+                        self.dialog.layout = fsui.VerticalLayout()
+                        panel = panel_type(self.dialog)
+                        self.dialog.layout.add(panel, fill=True, expand=True)
+                        self.dialog.show()
+                        try:
+                            for width in (540, 900, 1500):
+                                with self.subTest(width=width):
+                                    self.dialog.set_size((width, 700))
+                                    self.application.processEvents()
+                                    group = panel.memory_group if isinstance(panel, RomRamPanel) else panel
+                                    choices = group.widget().findChildren(QComboBox)
+                                    self.assertGreater(len(choices), 1)
+                                    widths = [choice.width() for choice in choices]
+                                    self.assertLessEqual(max(widths) - min(widths), 1)
+                                    self.assertGreater(min(widths), 75)
+                                    controls = choices + group.widget().findChildren(QSpinBox)
+                                    for control in controls:
+                                        self.assertEqual(control.width(), choices[0].width())
+                                        self.assertGreaterEqual(control.x(), 0)
+                                        self.assertLessEqual(control.geometry().right(), control.parentWidget().width())
+                                        checkbox = control.parentWidget().findChild(fsui.qt.QCheckBox)
+                                        self.assertGreaterEqual(control.x() - checkbox.geometry().right() - 1, 20)
+                                    if isinstance(panel, RomRamPanel):
+                                        roms = panel.kickstart_group
+                                        self.assertEqual(roms.text_field.x(), roms.ext_text_field.x())
+                                        self.assertEqual(roms.kickstart_type_choice.width(), roms.ext_rom_type_choice.width())
+                        finally:
+                            self.run_dialog()
+        finally:
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+
     def test_restart_button_confirmation(self):
         from fsui.qt import QMessageBox
         from launcher.settings.launchersettingspage import LauncherSettingsPage
@@ -820,6 +1345,30 @@ class TestDashboard(WidgetTestCase):
                             self.assertFalse(item.icon().isNull())
                             expected_height = 42 if fsui.theme_variant == "modern" else 44
                             self.assertEqual(item.sizeHint().height(), expected_height)
+                        for width in (1000, 1280):
+                            window.set_size((width, 760))
+                            for index in range(len(window.pages)):
+                                title = window.get_page_title(index)
+                                with self.subTest(theme=fsui.theme_variant, page=title, width=width):
+                                    window.set_page_by_title(title)
+                                    self.application.processEvents()
+                                    groups = getattr(window.page, "option_groups", [])
+                                    fields = []
+                                    help_positions = []
+                                    for group in groups:
+                                        control = group.value_control
+                                        control = getattr(control, "_widget", control)
+                                        self.assertGreater(control.width(), 60)
+                                        self.assertLessEqual(control.geometry().right(), control.parentWidget().width())
+                                        help_button = group.help_button.widget()
+                                        self.assertLess(control.geometry().right(), help_button.x())
+                                        help_positions.append(help_button.x())
+                                        if not hasattr(group, "default_checkbox"):
+                                            fields.append((control.x(), control.width()))
+                                        if hasattr(group, "label_layout"):
+                                            self.assertGreaterEqual(control.x() - group.label_layout.get_min_width(), 20)
+                                    self.assertLessEqual(len(set(fields)), 1)
+                                    self.assertLessEqual(len(set(help_positions)), 1)
                         colors = {
                             "modern": "#9bcce2", "windows311": "#183867",
                             "workbench": "#0055aa", "plain": "#000000",

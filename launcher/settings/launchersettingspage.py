@@ -15,7 +15,7 @@ class LauncherSettingsPage(SettingsPage):
     def __init__(self, parent):
         super().__init__(parent)
         icon = fsui.Icon("fs-uae-launcher", "pkg:launcher")
-        self.add_header(icon, "{} Launcher".format(fsgs.product))
+        self.add_header(icon, f"{fsgs.product} Launcher")
 
         theme_group = self.add_option(Option.LAUNCHER_THEME)
         self.theme_choice = theme_group.widget
@@ -26,8 +26,8 @@ class LauncherSettingsPage(SettingsPage):
         ))
         self.restart_button.set_tooltip(gettext("Restart to apply the selected theme and font"))
         self.restart_button.activated.connect(self.on_restart_button)
-        theme_group.layout.add(self.restart_button, margin_left=10)
         self.add_option(Option.LAUNCHER_FONT_SIZE)
+        self.layout.add(self.restart_button, margin_bottom=10)
 
         self.add_option(Option.LAUNCHER_CLOSE_BUTTONS)
 

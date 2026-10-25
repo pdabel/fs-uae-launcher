@@ -12,6 +12,20 @@ from ..launcher_settings import LauncherSettings
 LOBBY_CHANNEL = "#FS-UAE-Lobby"
 
 
+def is_game_channel(name):
+    if not name or not IRC.is_channel(name):
+        return False
+    if name.casefold() == LOBBY_CHANNEL.casefold():
+        return False
+    if name.startswith("&") or name.endswith("-game"):
+        return True
+    base, separator, tag = name.rpartition("-")
+    return bool(
+        separator and len(base) > 1 and 1 <= len(tag) <= 3
+        and tag.isascii() and tag.isalnum()
+    )
+
+
 # noinspection PyUnusedLocal
 class IRC:
     def __init__(self):
@@ -19,6 +33,8 @@ class IRC:
         self.stopping = False
         self.nick_number = 0
         self.channels = {}
+        self.private_game_channels = set()
+        self.pending_game_announcements = set()
         self.my_nick = ""
         self.client = None
         # FIXME: should not be hardcoded here
@@ -118,7 +134,7 @@ class IRC:
     def irc_main(self):
         def func():
             self.message(
-                "connecting to {0}...".format(self.get_irc_server_host())
+                f"connecting to {self.get_irc_server_host()}..."
             )
 
         call_after(func)
@@ -141,7 +157,7 @@ class IRC:
 
     def connect_callback(self, client):
         def func():
-            self.message("connected to {0}".format(self.get_irc_server_host()))
+            self.message(f"connected to {self.get_irc_server_host()}")
 
         call_after(func)
 
@@ -180,7 +196,7 @@ class IRC:
         helpers.msg(self.client, destination, message)
 
     def notice(self, destination, message):
-        self.client.send("notice {0} :{1}".format(destination, message))
+        self.client.send(f"notice {destination} :{message}")
 
     def generate_nick(self, reset=False):
         if reset:
@@ -252,7 +268,7 @@ class IRC:
             # self.channel(channel).privmsg(message)
             # self.channel(channel).message("<{0}> {1}".format(self.my_nick,
             #        message), IRCColor.MY_MESSAGE)
-            self.client.send("privmsg {0} :{1}".format(channel, message))
+            self.client.send(f"privmsg {channel} :{message}")
         else:
             self.warning("usage: /msg <nick|channel> <message>")
 
@@ -261,22 +277,20 @@ class IRC:
             channel = args[0]
             message = " ".join(args[1:])
             # self.channel(channel).notice(message)
-            self.client.send("notice {0} :{1}".format(channel, message))
+            self.client.send(f"notice {channel} :{message}")
         else:
             self.warning("usage: /notice <nick|channel> <message>")
 
     # noinspection SpellCheckingInspection
     def command_oper(self, args):
         if len(args) == 2:
-            self.client.send("oper {0} {1}".format(args[0], args[1]))
+            self.client.send(f"oper {args[0]} {args[1]}")
         else:
             self.warning("usage: /oper <user> <password>")
 
     def command_slap(self, args):
         if len(args) == 1:
-            message = "slaps {0} around a bit with a large trout".format(
-                args[0]
-            )
+            message = f"slaps {args[0]} around a bit with a large trout"
             self.channel(self.active_channel_name).action(message)
         else:
             self.warning("usage: /slap <nick>")
@@ -304,7 +318,7 @@ class IRC:
             self.warning("usage: /kick <nick> [<message>]")
 
     def kick(self, channel, nick, message="kicked"):
-        self.client.send("KICK", channel, nick, ":{0}".format(message))
+        self.client.send("KICK", channel, nick, f":{message}")
 
     def command_join(self, args):
         if len(args) == 1:
@@ -312,7 +326,13 @@ class IRC:
         else:
             self.warning("join: invalid arguments")
 
-    def join(self, channel):
+    def join(self, channel, private=False):
+        for target in channel.split(","):
+            key = target.strip().casefold()
+            if private:
+                self.private_game_channels.add(key)
+            else:
+                self.private_game_channels.discard(key)
         helpers.join(self.client, channel)
 
     def command_leave(self, args):
@@ -357,7 +377,7 @@ class IRC:
 
         password = LauncherSettings.get_irc_nickserv_pass()
         if password:
-            self.privmsg("nickserv", "identify {0}".format(password))
+            self.privmsg("nickserv", f"identify {password}")
 
         self.join(LOBBY_CHANNEL)
 
@@ -401,14 +421,35 @@ class IRC:
         self.channel(channel).on_kick(self.filter_nick(kicker), who, why)
 
     def irc_part(self, who, channel, *_):
-        self.channel(channel).on_part(self.filter_nick(who))
+        nick = self.filter_nick(who)
+        if self.me(nick):
+            self.pending_game_announcements.discard(channel.casefold())
+        self.channel(channel).on_part(nick)
 
     def irc_join(self, who, channel):
-        self.channel(channel).on_join(self.filter_nick(who))
+        nick = self.filter_nick(who)
+        self.channel(channel).on_join(nick)
+        if self.me(nick) and is_game_channel(channel):
+            key = channel.casefold()
+            if key not in self.private_game_channels:
+                self.pending_game_announcements.add(key)
 
     # noinspection SpellCheckingInspection
     def irc_endofnames(self, sender, recipient, channel, message):
-        pass
+        key = channel.casefold()
+        if key not in self.pending_game_announcements:
+            return
+        self.pending_game_announcements.discard(key)
+        if key in self.private_game_channels:
+            return
+        game_channel = self.channel(channel)
+        if game_channel.is_op(self.my_nick) and len(game_channel.nicks) == 1:
+            action = "created"
+        else:
+            action = "joined"
+        self.channel(LOBBY_CHANNEL).privmsg(
+            f"{self.my_nick} {action} game channel {channel}."
+        )
 
     # noinspection SpellCheckingInspection
     def irc_namreply(self, server, who, equals, channel, nicks):

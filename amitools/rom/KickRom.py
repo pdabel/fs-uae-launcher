@@ -223,13 +223,13 @@ if __name__ == '__main__':
   kh = KickRomAccess(ks)
   print("is_kick_rom", kh.is_kick_rom())
   print("detect_kick_rom", kh.detect_kick_rom())
-  print("pc=%08x" % kh.read_boot_pc())
+  print(f"pc={kh.read_boot_pc():08x}")
   print("ver,rev=", kh.read_rom_ver_rev())
   print("ver,rev=", kh.read_exec_ver_rev())
-  print("size %08x == %08x" % (kh.read_rom_size_field(), len(ks)))
-  print("base %08x" % kh.get_base_addr())
-  print("get chk_sum=%08x" % kh.read_check_sum())
-  print("calc chk_sum=%08x" % kh.recalc_check_sum())
+  print(f"size {kh.read_rom_size_field():08x} == {len(ks):08x}")
+  print(f"base {kh.get_base_addr():08x}")
+  print(f"get chk_sum={kh.read_check_sum():08x}")
+  print(f"calc chk_sum={kh.recalc_check_sum():08x}")
 #  with open("out.rom", "wb") as fh:
 #    fh.write(ks.get_data())
 

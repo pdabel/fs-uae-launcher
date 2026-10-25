@@ -54,9 +54,10 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) 
 		logInput      = fs.Bool("log-input", true, "log every relayed input event (sender, action, state, recipients)")
 		verbose       = fs.Bool("verbose", false, "debug logging")
 
-		lobbyMode       = fs.Bool("lobby", envBool("LOBBY", false), "host many games on --port, created over HTTP with GET /game/create")
+		lobbyMode       = fs.Bool("lobby", envBool("LOBBY", false), "host many games on --port, created over HTTP with POST /game or GET /game/create")
 		maxGames        = fs.Int("max-games", envInt("MAX_GAMES", lobby.DefaultMaxGames), "lobby: most games live at once")
 		gameTimeout     = fs.Int("game-launch-timeout", envInt("GAME_LAUNCH_TIMEOUT", int(lobby.DefaultLaunchTimeout/time.Second)), "lobby: seconds a game may wait for its players before it is reaped")
+		idleTimeout     = fs.Int("idle-timeout", envInt("IDLE_TIMEOUT", int(lobby.DefaultIdleTimeout/time.Second)), "lobby: seconds a session game may sit untouched before it starts")
 		publicAddresses = fs.String("public-addresses", envOr("PUBLIC_ADDRESSES", ""), "lobby: comma-separated addresses to tell players; empty = the host name the creator used")
 	)
 	if err := fs.Parse(args); err != nil {
@@ -95,6 +96,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) 
 		l = lobby.New(lobby.Config{
 			MaxGames:        *maxGames,
 			LaunchTimeout:   time.Duration(*gameTimeout) * time.Second,
+			IdleTimeout:     time.Duration(*idleTimeout) * time.Second,
 			PublicAddresses: splitList(*publicAddresses),
 			Logger:          log,
 			LogInput:        *logInput,
@@ -136,7 +138,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) 
 		mode = "lobby"
 		log.Info("listening", "mode", mode, "host", *host, "port", actualPort,
 			"network", listenNetwork(*host), "max_games", *maxGames,
-			"game_launch_timeout", time.Duration(*gameTimeout)*time.Second,
+			"game_launch_timeout", time.Duration(*gameTimeout)*time.Second, "idle_timeout", time.Duration(*idleTimeout)*time.Second,
 			"public_addresses", *publicAddresses, "log_input", *logInput)
 	} else {
 		log.Info("listening", "mode", mode, "host", *host, "port", actualPort, "players", *players,

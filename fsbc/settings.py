@@ -96,7 +96,7 @@ class Settings(object):
         if extra:
             extra = " " + extra
         if self.verbose:
-            print("[SETTINGS] Set {} = {}{}".format(key, value, extra))
+            print(f"[SETTINGS] Set {key} = {value}{extra}")
 
     @property
     def max_floppy_drives(self):

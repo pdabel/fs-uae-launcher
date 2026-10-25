@@ -7,6 +7,7 @@ from launcher.ui.config.configpanel import ConfigPanel
 class ExpansionsPanel(ConfigPanel):
     def __init__(self, parent):
         ConfigPanel.__init__(self, parent)
+        self.config_widget_factory.expand = True
 
         heading_label = fsui.HeadingLabel(self, gettext("Expansions"))
         self.layout.add(heading_label, margin=10)

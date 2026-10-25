@@ -86,10 +86,8 @@ def _handle_exception(exc_type, exc_value, exc_traceback):
     except:
         pass
     filename = os.path.basename(filename)
-    thread = threading.currentThread()
-    error_id = "{0}:{1}:{2}:{3}".format(
-        exc_type.__name__, filename, function, line
-    )
+    thread = threading.current_thread()
+    error_id = f"{exc_type.__name__}:{filename}:{function}:{line}"
 
     # QtGui.QMessageBox.critical(None, "Error",
     # description = "<html>A critical error has occurred.<br/> "
@@ -104,9 +102,7 @@ def _handle_exception(exc_type, exc_value, exc_traceback):
         traceback.format_exception(exc_type, exc_value, exc_traceback)
     )
 
-    message = "\nUnhandled exception detected in thread {0}:\n  {1}\n".format(
-        thread.getName(), error_id
-    )
+    message = f"\nUnhandled exception detected in thread {thread.name}:\n  {error_id}\n"
 
     print(message)
     print(backtrace_string)

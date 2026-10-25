@@ -6,7 +6,45 @@ This is the README file for FS-UAE Launcher.
 
 If you are using the source distribution, you should be able to install
 FS-UAE Launcher by running "make install". The setup procedure
-requires Python 3 and setuptools to be installed.
+requires Python 3.12+ and setuptools to be installed. The tracked `bootstrap`
+script generates the legacy setup file; do not edit the generated file.
+
+## Python And Platform Target
+
+The target is Python 3.12+ on Ubuntu 24.04+ and macOS. Pipenv's default
+development interpreter is Python 3.12; package metadata has no upper bound.
+Windows packaging is outside this support target and its legacy recipes are
+not validation evidence.
+
+CI is configured to test and build Python 3.12 and 3.15 independently on
+Ubuntu 24.04 and macOS 15 Intel, with version-specific artifact names.
+Configured jobs are not passed jobs: Python 3.15 support is pending successful
+dependency installation, tests, and frozen platform builds on both systems.
+Neither the new CI matrix nor macOS builds have been run in this local pass.
+Python 3.13/3.14 are not separately validated by this matrix; macOS ARM builds
+also remain unverified. Release publishing continues to select Python 3.12
+artifacts; Python 3.15 artifacts are for validation, not an implied promotion.
+
+For a locked source environment, install Pipenv under Python 3.12 and run:
+
+  pipenv --python 3.12
+  pipenv sync --dev
+  pipenv run python fs-uae-launcher
+
+To validate another matrix interpreter, explicitly create a separate Pipenv
+environment with `pipenv --python /path/to/python3.15` before syncing. The
+manifest's 3.12 value is the development default, not a package upper bound.
+This stack's lock regeneration adds Ruff and interpreter metadata without
+upgrading any existing locked dependency versions.
+
+For a side-by-side Python 3.15 installation on Ubuntu without changing the
+system Python, see [the isolated test environment instructions](docs/compiling.md#side-by-side-python-315-on-ubuntu).
+Use a fresh environment for each Python minor version; an interpreter install
+alone does not establish launcher compatibility.
+Local Ubuntu checks on Python 3.15.1 installed the existing locked dependencies,
+passed 10 focused Python compatibility tests (one subprocess ResourceWarning),
+and initialized Qt 6.12 offscreen. Full-suite, native desktop, and frozen-build
+validation on 3.15 remain pending.
 
 ## Requirements
 
@@ -17,10 +55,25 @@ releases supported by your Python version:
   python -m pip install --upgrade PySide6 QtPy QtAwesome requests
 
 The Pipfile also declares these UI dependencies for Pipenv installations.
-An existing virtual environment can be updated in place; recreating it is
-not necessary:
+An existing virtual environment can be updated in place when its Python
+minor version has not changed:
 
   venv/bin/python -m pip install --upgrade PySide6 QtPy QtAwesome requests
+
+After an Ubuntu upgrade changes the Python minor version, create a fresh
+environment instead. An old venv can follow the system Python symlink to the
+new interpreter while its packages remain under the old version's directory,
+causing errors such as `ModuleNotFoundError: No module named 'qtpy'`.
+Keep the old environment until the replacement has been verified:
+
+  python3 -m venv .venv
+  .venv/bin/python -m pip install PySide6 QtPy QtAwesome requests pillow pyopengl macholib pefile pywin32-ctypes sentry-sdk typing-extensions
+  .venv/bin/python fs-uae-launcher
+
+If venv creation reports that ensurepip is unavailable, install Ubuntu's
+`python3-venv` package first. Use the new environment's Python explicitly
+when launching, including in any desktop shortcut. This repairs dependency
+installation; Python 3.14 remains outside the separately validated CI matrix.
 
 The UI selects PySide6 by default. Use a clean process without another Qt
 binding already imported; PyQt5 and PySide6 must not be mixed. Qt 6 handles
@@ -29,15 +82,73 @@ theme names fall back to plain Fusion. Emulator, database, and networking
 behavior is unchanged.
 
 It can optionally use the `lhafile` python package to support .lha archives.
-The older packaging and INSTALL instructions still target Qt 5 and have not
-been migrated as part of this UI-only change. Run from source with the
-Python environment containing the Qt 6 dependencies.
+Historical INSTALL and Windows packaging recipes still mention Qt 5. For the
+current Ubuntu/macOS target, use the locked Qt 6 source environment above and
+the platform workflows described in docs/compiling.md.
 
 See [the Python and dependency modernization TODO](docs/python-dependency-modernization.md)
 for the reviewed packaging, supported-Python, dependency, and code-quality
 work items.
 
+## Python Consistency Checks
+
+Literal percent interpolation is modernized only where output equivalence is
+clear. Numeric widths, precision, and hexadecimal case are retained; ambiguous
+integer coercions and legacy fixed-width diagnostics remain unchanged. Explicit
+string conversions preserve `%s` behavior for objects with custom formatting.
+Lazy logging arguments and formatting after gettext remain intact.
+
+Ordinary literal `.format()` calls use f-strings. Translated templates keep
+their placeholders and are formatted after gettext. Ruff's UP032 rule guards
+this convention locally and in CI, without enabling unrelated legacy rules:
+
+  venv/bin/python -m pip install ruff==0.17.2
+  venv/bin/pipenv run ruff check
+
+Simple synchronous command helpers use argument lists and `subprocess.run()`;
+their existing output decoding and failure handling are retained. Streaming
+archive readers, persistent emulator/server processes, and shell commands that
+rely on expansion or quoting retain their existing process APIs. Command
+regressions can be run with `pipenv run python -m pytest fsbuild/tests`.
+
+Compatibility code uses supported executable lookup, timezone-aware UTC,
+thread accessors, and importlib plugin loading. Locale discovery preserves
+environment precedence without changing the process locale. Legacy Amiga
+scan progress uses `process_time()`, retaining POSIX `time.clock()` CPU-time
+semantics. Invalid-escape fixes preserve the original string values.
+
+  QT_QPA_PLATFORM=offscreen pipenv run python -m pytest launcher/tests/test_python_compatibility.py
+
+Run the core regression slice with:
+
+  venv/bin/python -m pytest fsbc fstd fspy launcher/netplay launcher/server/tests
+
+On the stack's main baseline (615cb4d2), the server readiness test has an
+unrelated argument-order expectation failure. It is left unchanged. The API
+layer resolves the three pre-existing invalid-escape warnings; strict tracked
+Python compilation and the scoped Ruff gate pass on local Python 3.12.
+
+The completed stack's local Python 3.12 validation passed 138 core, API,
+command and packaging tests (10 skipped), plus 39 offscreen Qt tests and
+65 subtests. This does not certify frozen builds or another platform/version.
+
 ## Modern Dark Workspace
+
+ROM & memory, Expansions, and Advanced use aligned label columns and evenly
+expanding value controls, following Overview's form layout. ROM picker rows
+share label and selector widths; memory options use the same single-column
+layout as the other forms, keeping controls usable in narrower workspaces.
+This is presentation-only: defaults, overrides, and configuration values are
+unchanged across all four workspace themes.
+
+Form regression tests check all four themes at 540, 900, and 1500 pixel form
+widths, including ROM-row alignment and override/value interactions.
+
+Settings pages share aligned label/warning columns and expanding text fields,
+dropdowns, and numeric inputs, with help buttons kept at the right edge.
+Configuration override labels have extra spacing before their value fields,
+including the long Empty Floppy Drive Volume label. Setting values, defaults,
+and compact quick-setting rows retain their existing behavior.
 
 Modern Dark is the default when no launcher theme has been selected. The
 launcher opens maximized on its current display, with a 1080p-oriented
@@ -81,8 +192,8 @@ icon family as the navigation rail in Modern Dark.
 
 ### Quick Theme Switching
 Choose a theme in Settings > FS-UAE Launcher, then click Restart Launcher
-beside the theme selector. After confirmation, preferences are saved and the
-launcher reopens with the selected theme and font. The current base directory
+below the theme and font selectors. After confirmation, preferences are saved
+and the launcher reopens with the selected theme and font. The current base directory
 is preserved; old theme overrides and game/disk command-line arguments are
 not repeated. Active netplay sessions and hosted servers are stopped. Save
 configuration edits before restarting. Cancelling leaves the launcher open.
@@ -124,6 +235,14 @@ They can also be selected for a single launch:
 
 ### Integrated Netplay
 
+Netplay uses three resizable columns: channels and players on the left,
+chat/logs and command input in the centre, and server/game controls on the
+right. Columns initially use 25/40/35 percent of the available width. Divider
+adjustments are saved in launcher preferences and restored on the next launch.
+Port and player-count inputs use aligned labels and matching expanding fields.
+The fields and spaced game-action buttons sit at the bottom of the server
+column, directly above Stop server; server and game details remain at the top.
+
 In all four themes, Net play is a page inside the main window rather than a
 separate window. The navigation button and Tools
 menu open the same page. The retro themes retain their own colours and controls.
@@ -133,7 +252,20 @@ netplay page, which uses its own host/start controls.
 
 Hosting displays the game ID, channel, port, player count, and server status
 alongside the chat. The Stop server button stops hosting without closing
-the page. Reset and closing the main window also stop the owned server.
+the page. Closing the main window also stops the owned server. There is no
+Reset button in the netplay interface; the manual `/reset` command remains
+available.
+Join Game Channel prefills a complete, editable channel using the current
+game/configuration title and the local Net play tag, for example
+`#barbarian-daf`. Players can replace it with the host's specific channel;
+their own tag is not appended to the entered channel. A missing `#` prefix is
+added automatically. A blank title falls back to `new`, and a blank or unusable
+tag falls back to `unk`. Legacy `-game` channels remain usable.
+Private beside Join Game Channel suppresses lobby announcements for that join.
+It is unchecked by default. Public joins and newly created game channels are
+announced in the lobby only after the IRC server confirms the join and member
+list, including channels joined with a manual `/join` command. Private channels
+are not advertised, but are not password-protected or hidden from IRC discovery.
 The details update if the server process exits. The panes are resizable;
 the chat controls scroll when the window is too narrow to fit them.
 
@@ -179,7 +311,7 @@ rather than converting it to an incorrect row index under PySide6.
 Launch regression tests exercise Start-button dispatch and construction of
 the launch task dialog with and without a netplay session. Netplay tests
 cover lobby/game-channel and operator/player transitions, button geometry,
-and host/send-config/reset/ready/start dispatch without opening a network
+and host/re-check/start dispatch without opening a network
 connection or launching an emulator. Visibility changes immediately relayout
 the netplay controls; no manual resize is required to reveal host buttons.
 Real IRC JOIN/NAMES/MODE replay tests cover operator recognition, nick-list

@@ -78,11 +78,11 @@ class FSCommandQueue(CommandQueue):
       # main command loop
       exit_code = CommandQueue.run(self)
     except FSError as e:
-      cmd = "'%s'" % " ".join(self.cmd_line)
+      cmd = "'{!s}'".format(" ".join(self.cmd_line))
       print(cmd, "FSError:", str(e))
       exit_code = 3
     except IOError as e:
-      cmd = "'%s'" % " ".join(self.cmd_line)
+      cmd = "'{!s}'".format(" ".join(self.cmd_line))
       print(cmd, "IOError:", str(e))
       exit_code = 4
     finally:
@@ -183,7 +183,7 @@ class OpenCommand(Command):
   def init_blkdev(self, file_name):
     # make sure image file exists
     if not os.path.exists(file_name):
-      raise IOError("Image File not found: '%s'" % file_name)
+      raise IOError(f"Image File not found: '{file_name!s}'")
     # open existing raw block device
     blkdev = RawBlockDevice(file_name, self.args.read_only)
     blkdev.open()
@@ -193,7 +193,7 @@ class OpenCommand(Command):
     block_bytes = blkdev.block_bytes
     opts = KeyValue.parse_key_value_strings(self.opts)
     if geo.detect(num_blocks * block_bytes, opts) == None:
-      raise IOError("Can't detect geometry of disk: '%s'" % file_name)
+      raise IOError(f"Can't detect geometry of disk: '{file_name!s}'")
     blkdev.geo = geo
     return blkdev
 
@@ -205,7 +205,7 @@ class CreateCommand(Command):
   def init_blkdev(self, file_name):
     # do not overwrite an existing image file
     if os.path.exists(file_name) and not self.args.force:
-      raise IOError("Image File already exists: '%s'" % file_name)
+      raise IOError(f"Image File already exists: '{file_name!s}'")
     # make sure size is given
     if len(self.opts) < 1:
       print("Usage: create ( size=<n> | chs=<c,h,s> )")
@@ -214,7 +214,7 @@ class CreateCommand(Command):
     opts = KeyValue.parse_key_value_strings(self.opts)
     geo = DiskGeometry()
     if geo.setup(opts) == None:
-      raise IOError("Can't set geometry of disk: '%s'" % file_name)
+      raise IOError(f"Can't set geometry of disk: '{file_name!s}'")
     else:
       # create new empty image file for geometry
       blkdev = RawBlockDevice(file_name)
@@ -363,7 +363,7 @@ class PartEditCommand(Command):
 
   def get_more_dos_env_info(self):
     valid_keys = PartitionDosEnv.valid_keys
-    info = map(lambda x : "[%s=<n>]" % x, valid_keys)
+    info = map(lambda x : f'[{x!s}=<n>]', valid_keys)
     return " ".join(info)
 
   def get_cyl_range(self):
@@ -430,12 +430,12 @@ class AddCommand(PartEditCommand):
     flags = self.get_flags()
     boot_pri = self.get_boot_pri()
     more_dos_env = self.get_more_dos_env()
-    print("creating: '%s' %s %s" % (drv_name, lo_hi, num_to_tag_str(dostype)))
+    print(f"creating: '{drv_name!s}' {lo_hi!s} {num_to_tag_str(dostype)!s}")
     # add partition
     if rdisk.add_partition(drv_name, lo_hi, dos_type=dostype, flags=flags, boot_pri=boot_pri, more_dos_env=more_dos_env):
       return 0
     else:
-      print("ERROR: creating partition: '%s': %s" % (drv_name, lo_hi))
+      print(f"ERROR: creating partition: '{drv_name!s}': {lo_hi!s}")
       return 1
 
 class ChangeCommand(PartEditCommand):
@@ -456,10 +456,10 @@ class ChangeCommand(PartEditCommand):
         if rdisk.change_partition(p.num, drv_name=drv_name, dos_type=dostype, flags=flags, boot_pri=boot_pri, more_dos_env=more_dos_env):
           return 0
         else:
-          print("ERROR: changing partition: '%s'" % (drv_name))
+          print(f"ERROR: changing partition: '{drv_name!s}'")
           return 1
       else:
-        print("Can't find partition: '%s'" % self.opts[0])
+        print(f"Can't find partition: '{self.opts[0]!s}'")
         return 1
 
 # --- Fill empty space with partitions ---
@@ -479,10 +479,10 @@ class FillCommand(PartEditCommand):
       if dostype == None:
         print("ERROR: invalid dostype given!")
         return 1
-      print("creating: '%s' %s %s" % (drv_name, lo_hi, num_to_tag_str(dostype)))
+      print(f"creating: '{drv_name!s}' {lo_hi!s} {num_to_tag_str(dostype)!s}")
       # add partition
       if not rdisk.add_partition(drv_name, lo_hi, dos_type=dostype):
-        print("ERROR: creating partition: '%s': %s" % (drv_name, lo_hi))
+        print(f"ERROR: creating partition: '{drv_name!s}': {lo_hi!s}")
         return 1
     return 0
 
@@ -500,12 +500,12 @@ class DeleteCommand(Command):
       p = rdisk.find_partition_by_string(self.opts[0])
       if p != None:
         if not rdisk.delete_partition(p.num):
-          print("ERROR: deleting partition: '%s'" % self.opts[0])
+          print(f"ERROR: deleting partition: '{self.opts[0]!s}'")
           return 1
         else:
           return 0
       else:
-        print("Can't find partition: '%s'" % self.opts[0])
+        print(f"Can't find partition: '{self.opts[0]!s}'")
         return 1
 
 # --- Filesystem Commands ---
@@ -549,7 +549,7 @@ class FSAddCommand(Command):
     self.parse_opts()
     valid_flags = FSHeaderDeviceNode.valid_flags
     if len(self.opts) < 1:
-      flag_info = map(lambda x : "[%s=<n>]" % x, valid_flags)
+      flag_info = map(lambda x : f'[{x!s}=<n>]', valid_flags)
       flag_info = " ".join(flag_info)
       print("Usage: fsadd <file_name> [dostype=<n|tag>] [version=<n.m>] " + flag_info)
       return 1
@@ -601,12 +601,12 @@ class FSDeleteCommand(Command):
       fs = rdisk.find_filesystem_by_string(self.opts[0])
       if fs != None:
         if not rdisk.delete_filesystem(fs.num):
-          print("ERROR deleting filesystem: '%s'" % self.opts[0])
+          print(f"ERROR deleting filesystem: '{self.opts[0]!s}'")
           return 1
         else:
           return 0
       else:
-        print("ERROR finding filesystem: '%s'" % self.opts[0])
+        print(f"ERROR finding filesystem: '{self.opts[0]!s}'")
         return 1
 
 class FSFlagsCommand(Command):
@@ -632,7 +632,7 @@ class FSFlagsCommand(Command):
         fs.set_flags(flags, clear)
         return 0
       else:
-        print("ERROR finding filesystem: '%s'" % self.opts[0])
+        print(f"ERROR finding filesystem: '{self.opts[0]!s}'")
         return 1
 
 # ----- main -----

@@ -66,7 +66,7 @@ class FileListBlock(Block):
     Block.dump(self,"FileList")
     print(" own_key:    %d" % self.own_key)
     print(" blk_cnt:    %d" % self.block_count)
-    print(" data blks:  %s" % self.data_blocks)
+    print(f' data blks:  {self.data_blocks!s}')
     print(" parent:     %d" % self.parent)
     print(" extension:  %d" % self.extension)
   

@@ -22,13 +22,13 @@ class FSHeaderDeviceNode:
 
   def dump(self):
     print("DeviceNode")
-    print(" type:           0x%08x" % self.type)
-    print(" task:           0x%08x" % self.task)
-    print(" lock:           0x%08x" % self.lock)
-    print(" handler:        0x%08x" % self.handler)
-    print(" stack_size:     0x%08x" % self.stack_size)
-    print(" seg_list_blk:   0x%08x" % self.seg_list_blk)
-    print(" global_vec:     0x%08x" % self.global_vec)
+    print(f" type:           0x{self.type:08x}")
+    print(f" task:           0x{self.task:08x}")
+    print(f" lock:           0x{self.lock:08x}")
+    print(f" handler:        0x{self.handler:08x}")
+    print(f" stack_size:     0x{self.stack_size:08x}")
+    print(f" seg_list_blk:   0x{self.seg_list_blk:08x}")
+    print(f" global_vec:     0x{self.global_vec:08x}")
 
   def get_flags(self, patch_flags = 0x1ff):
     res = []
@@ -185,11 +185,11 @@ class FSHeaderBlock(Block):
 
     print(" size:           %d" % self.size)
     print(" host_id:        %d" % self.host_id)
-    print(" next:           %s" % self._dump_ptr(self.next))
-    print(" flags:          0x%08x" % self.flags)
-    print(" dos_type:       0x%08x = %s" % (self.dos_type, DosType.num_to_tag_str(self.dos_type)))
-    print(" version:        0x%08x = %s" % (self.version, self.get_version_string()))
-    print(" patch_flags:    0x%08x" % self.patch_flags)
+    print(f' next:           {self._dump_ptr(self.next)!s}')
+    print(f" flags:          0x{self.flags:08x}")
+    print(f' dos_type:       0x{self.dos_type:08x} = {DosType.num_to_tag_str(self.dos_type)!s}')
+    print(f' version:        0x{self.version:08x} = {self.get_version_string()!s}')
+    print(f" patch_flags:    0x{self.patch_flags:08x}")
 
     self.dev_node.dump()
 

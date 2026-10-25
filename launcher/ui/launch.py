@@ -141,7 +141,7 @@ class ScreenInfoLabel(fsui.Label):
         refresh_rate = GameDriver.screen_refresh_rate_for_monitor(value)
         assume_refresh_rate = LauncherSettings.get("assume_refresh_rate")
         if assume_refresh_rate:
-            refresh_rate_override = " (OVERRIDING {})".format(refresh_rate)
+            refresh_rate_override = f" (OVERRIDING {refresh_rate})"
             try:
                 refresh_rate = float(assume_refresh_rate)
             except ValueError:
@@ -149,13 +149,11 @@ class ScreenInfoLabel(fsui.Label):
         else:
             refresh_rate_override = ""
         if x or y:
-            pos_str = " ({}, {})".format(x, y)
+            pos_str = f" ({x}, {y})"
         else:
             pos_str = ""
         self.set_text(
-            "{}x{}{} @ {}Hz{}".format(
-                w, h, pos_str, refresh_rate, refresh_rate_override
-            )
+            f"{w}x{h}{pos_str} @ {refresh_rate}Hz{refresh_rate_override}"
         )
 
 
@@ -281,7 +279,7 @@ class LaunchDialog(fsui.Window):
                 else:
                     self.sub_title_label.set_text(progress)
                 LauncherConfig.set(
-                    "__progress", "Preparing: {}".format(progress)
+                    "__progress", f"Preparing: {progress}"
                 )
 
         fsui.call_after(function)

@@ -42,9 +42,7 @@ class UpdateManager:
             platform = "linux"
         else:
             platform = "other"
-        url = "https://fs-uae.net/{0}/latest-{1}".format(
-            cls.series(), platform
-        )
+        url = f"https://fs-uae.net/{cls.series()}/latest-{platform}"
         r = requests.get(url)
         r.raise_for_status()
         version_str = r.text.strip()
@@ -53,7 +51,7 @@ class UpdateManager:
         result = compare_versions(version_str, launcher.version.VERSION)
         print("update check result: ", result)
         if result > 0 and version_str != "9.9.9":
-            web_url = "https://fs-uae.net/{0}/download/".format(cls.series())
+            web_url = f"https://fs-uae.net/{cls.series()}/download/"
             LauncherSignal.broadcast("update_available", version_str, web_url)
             # FIXME: Thread safety...
             # FIXME: Use above signal instead
@@ -62,5 +60,5 @@ class UpdateManager:
     @classmethod
     def start_update(cls, version_str):
         unused(version_str)
-        web_url = "https://fs-uae.net/{0}/download/".format(cls.series())
+        web_url = f"https://fs-uae.net/{cls.series()}/download/"
         open_url_in_browser(web_url)

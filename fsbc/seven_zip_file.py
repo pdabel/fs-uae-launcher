@@ -1,9 +1,9 @@
 import sys
 import subprocess
-from distutils.spawn import find_executable
+from shutil import which
 
 try:
-    seven_zip_exe = find_executable(str("7z"))
+    seven_zip_exe = which("7z")
 except Exception:
     seven_zip_exe = None
 
@@ -64,4 +64,4 @@ class SevenZipFile:
     def getinfo(self, name):
         if name in self.names:
             return {"name:": name}
-        raise KeyError("{0} not found in archive".format(name))
+        raise KeyError(f"{name} not found in archive")

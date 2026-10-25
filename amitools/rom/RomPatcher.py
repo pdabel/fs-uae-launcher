@@ -13,7 +13,7 @@ class RomPatch:
 
   def _ensure_arg(self, args, arg_name):
     if arg_name not in args:
-      logging.error("%s: '%s' argument missing!" % (self.name, arg_name))
+      logging.error(f"{self.name!s}: '{arg_name!s}' argument missing!")
       return False
     return True
 
@@ -71,7 +71,7 @@ class BootConRomPatch(RomPatch):
     # build old string
     con_old_len = pos - off
     con_old = data[off:pos]
-    logging.info("@%08x: +%08x  old='%s'" % (off, con_old_len, con_old))
+    logging.info(f"@{off:08x}: +{con_old_len:08x}  old='{con_old!s}'")
     # check new string
     if 'name' in args:
       con_new = args['name']
@@ -83,7 +83,7 @@ class BootConRomPatch(RomPatch):
       pad_len = con_old_len - con_new_len + 1
       con_new += chr(0) * pad_len
       data[off:pos+1] = con_new
-      logging.info("new='%s'" % (con_new_len))
+      logging.info(f"new='{con_new_len!s}'")
     return True
 
 

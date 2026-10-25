@@ -65,14 +65,14 @@ class DirCacheRecord:
     
   def dump(self):
     print("DirCacheRecord(%s)(size=%d)" % (self.offset, self.get_size()))
-    print("\tentry:      %s" % self.entry)
-    print("\tsize:       %s" % self.size)
+    print(f'\tentry:      {self.entry!s}')
+    print(f'\tsize:       {self.size!s}')
     pf = ProtectFlags(self.protect)
-    print("\tprotect:    0x%x 0b%s %s" % (self.protect, pf.bin_str(), pf))
-    print("\tmod_ts:     %s" % self.mod_ts)
-    print("\tsub_type:   0x%x" % self.sub_type)
-    print("\tname:       %s" % self.name)
-    print("\tcomment:    %s" % self.comment)
+    print(f'\tprotect:    0x{self.protect:x} 0b{pf.bin_str()!s} {pf!s}')
+    print(f'\tmod_ts:     {self.mod_ts!s}')
+    print(f"\tsub_type:   0x{self.sub_type:x}")
+    print(f'\tname:       {self.name!s}')
+    print(f'\tcomment:    {self.comment!s}')
 
 class DirCacheBlock(Block):
   def __init__(self, blkdev, blk_num):

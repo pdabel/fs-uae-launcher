@@ -11,6 +11,8 @@ pylint = "*"
 pytest = "*"
 pytest-mypy = "*"
 rope = "*"
+ruff = "==0.17.2"
+setuptools = "*"
 
 [packages]
 macholib = "*"
@@ -27,4 +29,4 @@ sentry-sdk = "*"
 typing-extensions = "*"
 
 [requires]
-python_version = "3"
+python_version = "3.12"

@@ -17,7 +17,7 @@ from launcher.ui.behaviors.platformbehavior import (
     AMIGA_PLATFORMS,
     PlatformEnableBehavior,
 )
-from launcher.sync_settings import sync_settings
+from fsgs.amiga.amiga import Amiga
 
 class MediaListGroup(fsui.Group):
     def __init__(self, parent, cd_mode):
@@ -120,9 +120,9 @@ class MediaListGroup(fsui.Group):
     def create_list(self):
         items = []
         if self.cd_mode:
-            max_items = sync_settings.MAX_CDROM_IMAGES
+            max_items = Amiga.MAX_CDROM_IMAGES
         else:
-            max_items = sync_settings.MAX_FLOPPY_IMAGES
+            max_items = Amiga.MAX_FLOPPY_IMAGES
         for i in range(max_items):
             path = LauncherConfig.get(self.file_key.format(i))
             sha1 = LauncherConfig.get(self.sha1_key.format(i))
@@ -137,7 +137,7 @@ class MediaListGroup(fsui.Group):
         for path, sha1 in self.create_list():
             dir_path, name = os.path.split(path)
             if dir_path:
-                label = "{0} ({1})".format(name, dir_path)
+                label = f"{name} ({dir_path})"
             else:
                 label = path
             self.list_view.add_item(label, self.default_icon)
@@ -198,9 +198,9 @@ class MediaListGroup(fsui.Group):
 
     def set_new_config(self, items):
         if self.cd_mode:
-            max_items = sync_settings.MAX_CDROM_IMAGES
+            max_items = Amiga.MAX_CDROM_IMAGES
         else:
-            max_items = sync_settings.MAX_FLOPPY_IMAGES
+            max_items = Amiga.MAX_FLOPPY_IMAGES
         set_list = []
         for i in range(max(max_items, len(items))):
             if i >= max_items:

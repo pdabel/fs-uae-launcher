@@ -1,22 +1,28 @@
 import fsui
 from launcher.i18n import gettext
-from launcher.netplay.irc import LOBBY_CHANNEL
+from launcher.launcher_settings import LauncherSettings
+from launcher.option import Option
+from launcher.netplay.irc import LOBBY_CHANNEL, is_game_channel
 from launcher.netplay.irc_broadcaster import IRCBroadcaster
 from launcher.netplay.netplay import Netplay
 from launcher.ui.skin import Skin
 from launcher.ui.InfoDialog import InfoDialog
 from launcher.ui.IconButton import IconButton
 from fsui.qt import QApplication
-from fsgs.amiga.amiga import Amiga
-from fsui.qt.DrawingContext import Font
-from launcher.launcher_config import LauncherConfig
 from qtpy import QtGui
-from fsbc.settings import Settings
-from launcher.sync_settings import sync_settings
+
+
+def normalize_game_channel(channel):
+    channel = channel.strip()
+    if channel and channel[0] not in "&#+!":
+        channel = f"#{channel}"
+    return channel
+
 
 class NetplayPanel(fsui.Panel):
-    def __init__(self, parent, header=True):
+    def __init__(self, parent, header=True, columns=False):
         fsui.Panel.__init__(self, parent)
+        self.columns = columns
         Skin.set_background_color(self)
         self.layout = fsui.VerticalLayout()
 
@@ -36,13 +42,22 @@ class NetplayPanel(fsui.Panel):
         
 
         ver_layout = fsui.VerticalLayout()
-        hori_layout.add(ver_layout, fill=True)
-        self.channel_list = fsui.ListView(self)
+        self.channel_panel = fsui.Panel(self) if columns else self
+        if columns:
+            self.channel_panel.layout = ver_layout
+        else:
+            hori_layout.add(ver_layout, fill=True)
+        self.channel_list = fsui.ListView(self.channel_panel)
         self.channel_list.set_min_width(212)
         self.channel_list.on_select_item = self.on_select_channel
         ver_layout.add(self.channel_list, fill=True, expand=True, margin=10)
-        self.nick_list = fsui.ListView(self)
+        self.nick_list = fsui.ListView(self.channel_panel)
         ver_layout.add(self.nick_list, fill=True, expand=True, margin=10)
+        # The lobby game, one row per slot: who is ready, and why not.
+        self.session_label = fsui.Label(self.channel_panel, gettext("No game"))
+        ver_layout.add(self.session_label, margin=10, margin_bottom=0)
+        self.session_list = fsui.ListView(self.channel_panel)
+        ver_layout.add(self.session_list, fill=True, expand=True, margin=10)
 
         self.text_area = fsui.TextArea(self, font_family="monospace")
         hori_layout.add(
@@ -51,7 +66,11 @@ class NetplayPanel(fsui.Panel):
 
         self.netplay = Netplay(parent=self)
         IRCBroadcaster.add_listener(self)
+        self.netplay.session_listeners.append(self.on_session)
 
+        self.game_panel = fsui.Panel(self) if columns else self
+        if columns:
+            self.game_panel.layout = fsui.VerticalLayout()
         self._build_netplay_game_inputs()
         self._manual_command_input()
         self._build_netplay_buttons()
@@ -68,62 +87,94 @@ class NetplayPanel(fsui.Panel):
         self.layout.add(self.input_field, fill=True, margin=10, margin_top=0)
 
     def _build_netplay_game_inputs(self):
+        parent = self.game_panel
         input_row = fsui.HorizontalLayout()
-        self.layout.add(input_row, fill=True, margin=10, margin_top=0)
+        parent.layout.add(input_row, fill=True, margin=10, margin_top=0)
 
-        self.port_label = fsui.Label(self, gettext("Port (default: 25101)"))
-        input_row.add(self.port_label, margin_right=5)
-        self.port_field = fsui.TextField(self)
+        self.port_label = fsui.Label(
+            parent, gettext("Port") + ":" if self.columns else gettext("Port (default: 25101)")
+        )
+        input_row.add(self.port_label, margin_right=20 if self.columns else 5)
+        self.port_field = fsui.TextField(parent)
         self.port_field.set_text("25101")
         self.netplay_port_validator = QtGui.QIntValidator(bottom=25100, top=25500)
         self.port_field.setValidator(self.netplay_port_validator)  # Set validator.
         self.port_field.set_min_width(75)
-        input_row.add(self.port_field, fill=False, margin_right=15)
+        input_row.add(
+            self.port_field, expand=self.columns, fill=False,
+            margin_right=0 if self.columns else 15,
+        )
 
-        self.player_count_label = fsui.Label(self, gettext("Number of Players"))
-        input_row.add(self.player_count_label, margin_right=5)
-        self.player_count_field = fsui.TextField(self)
+        if self.columns:
+            input_row = fsui.HorizontalLayout()
+            parent.layout.add(input_row, fill=True, margin=10)
+            self.port_field.setToolTip(gettext("Default port: 25101"))
+        self.player_count_label = fsui.Label(
+            parent, gettext("Players") + ":" if self.columns else gettext("Number of Players")
+        )
+        input_row.add(self.player_count_label, margin_right=20 if self.columns else 5)
+        self.player_count_field = fsui.TextField(parent)
+        if self.columns:
+            label_width = max(
+                self.port_label.get_min_width(),
+                self.player_count_label.get_min_width(),
+            )
+            self.port_label.set_min_width(label_width)
+            self.player_count_label.set_min_width(label_width)
         self.player_count_field.set_text("2")
         self.player_count_validator = QtGui.QIntValidator(bottom=2, top=6)
         self.player_count_field.setValidator(self.player_count_validator)  # Set validator.
-        input_row.add(self.player_count_field, fill=False)
+        input_row.add(self.player_count_field, expand=self.columns, fill=False)
         # Add a spacer to push the info button to the far right
-        input_row.add_spacer(0, expand=True)
+        if not self.columns:
+            input_row.add_spacer(0, expand=True)
 
-        self.config_button = ConfigButton(self)
-        input_row.add(self.config_button, margin_left=10)
-
-        info_button = InfoButton(self)
+        if self.columns:
+            input_row = fsui.HorizontalLayout()
+            parent.layout.add(input_row, fill=True, margin=10)
+            input_row.add_spacer(0, expand=True)
+        info_button = InfoButton(parent)
         input_row.add(info_button, margin_left=10)
 
     def _build_netplay_buttons(self):
-        button_layout = fsui.HorizontalLayout()
-        self.layout.add(button_layout, fill=True, margin=10)
-        self.join_channel_button = JoinChannelButton(self, self.netplay.irc)
-        button_layout.add(self.join_channel_button, fill=True, margin_left=0)
+        parent = self.game_panel
+        button_layout = fsui.VerticalLayout() if self.columns else fsui.HorizontalLayout()
+        parent.layout.add(button_layout, fill=True, margin=10)
+        self.join_channel_button = JoinChannelButton(self.channel_panel, self.netplay.irc)
+        self.private_game_checkbox = fsui.CheckBox(
+            self.channel_panel, gettext("Private")
+        )
+        self.private_game_checkbox.set_tooltip(gettext(
+            "Do not announce this game channel in the lobby. "
+            "This does not restrict IRC channel access."
+        ))
+        self.join_channel_button.private_checkbox = self.private_game_checkbox
+        if self.columns:
+            join_layout = fsui.HorizontalLayout()
+            self.channel_panel.layout.add(join_layout, fill=True, margin=10)
+            join_layout.add(self.join_channel_button, expand=True)
+            join_layout.add(self.private_game_checkbox, margin_left=10)
+        else:
+            button_layout.add(self.join_channel_button, fill=True, margin_left=0)
+            button_layout.add(self.private_game_checkbox, margin_left=10)
  
          # Add a spacer before the Start Game button and store a reference
-        self.action_spacer_pre = button_layout.add_spacer(0, expand=True)
+        self.action_spacer_pre = button_layout.add_spacer(0, expand=not self.columns)
 
         # Host Game button to host a game on the IRC channel (only shown in game channels)
-        self.host_game_button = HostGameButton(self, self.netplay, self, self.netplay.irc)
-        button_layout.add(self.host_game_button, fill=True, margin_left=10)
-        # Send Config button to send the current config to other players (only shown in game channels)
-        self.send_config_button = SendConfig(self, self.netplay, self.netplay.irc)
-        button_layout.add(self.send_config_button, fill=True, margin_left=10)
-        # Reset button to reset config (only shown in game channels)
-        self.reset_button = Reset(self, self.netplay, self.netplay.irc)
-        button_layout.add(self.reset_button, fill=True, margin_left=10)
+        self.host_game_button = HostGameButton(parent, self.netplay, self, self.netplay.irc)
+        button_layout.add(self.host_game_button, fill=True, margin_left=0 if self.columns else 10)
         # Start Game button (only shown in game channels)
-        self.start_button = StartGameButton(self, self.netplay, self.netplay.irc)
-        button_layout.add(self.start_button, fill=True, margin_left=10)
+        self.start_button = StartGameButton(parent, self.netplay, self.netplay.irc)
+        button_layout.add(self.start_button, fill=True, margin_left=0 if self.columns else 10, margin_top=10 if self.columns else 0)
 
         # Add a spacer before the Start Game button and store a reference
-        self.action_spacer_post = button_layout.add_spacer(0, expand=True)
+        self.action_spacer_post = button_layout.add_spacer(0, expand=not self.columns)
 
-        # Ready button to indicate player is ready (only shown in game channels)
-        self.ready_button = Ready(self, self.netplay, self.netplay.irc)
-        button_layout.add(self.ready_button, fill=True, margin_left=10)
+        # Re-check: apply the game's config again, after adding missing files
+        self.recheck_button = Recheck(parent, self.netplay, self.netplay.irc)
+        button_layout.add(self.recheck_button, fill=True, margin_left=0 if self.columns else 10, margin_top=10 if self.columns else 0)
+        self.on_session(None)
 
     def on_destroy(self):
         if getattr(self, "_disposed", False):
@@ -131,6 +182,8 @@ class NetplayPanel(fsui.Panel):
         self._disposed = True
         print("NetplayPanel.on_destroy")
         IRCBroadcaster.remove_listener(self)
+        if self.on_session in self.netplay.session_listeners:
+            self.netplay.session_listeners.remove(self.on_session)
         self.netplay.disconnect()
 
     def on_show(self):
@@ -188,28 +241,25 @@ class NetplayPanel(fsui.Panel):
         self.nick_list.set_items(items)
 
     def update_action_buttons_visibility(self):
-        in_game_channel = self.active_channel and self.active_channel.endswith('-game')
+        in_game_channel = is_game_channel(self.active_channel)
         is_op = self.netplay.is_op()
 
         # Master list of all action buttons
         all_buttons = [
             self.host_game_button,
-            self.send_config_button,
-            self.reset_button,
             self.start_button,
             self.player_count_field,
             self.player_count_label,
-            self.port_field,            
+            self.port_field,
             self.port_label,
-            self.ready_button,
-            self.config_button
+            self.recheck_button,
         ]
 
         # Determine which buttons should be shown
         if in_game_channel and is_op:
-            show_list = set(all_buttons) - {self.ready_button}
+            show_list = set(all_buttons)
         elif in_game_channel and not is_op:
-            show_list = {self.ready_button, self.config_button}
+            show_list = {self.recheck_button}
         else:
             show_list = set()
 
@@ -220,10 +270,40 @@ class NetplayPanel(fsui.Panel):
             else:
                 btn.hide()
         self.layout.update()
+        if self.columns:
+            self.game_panel.layout.update()
+            self.channel_panel.layout.update()
         callback = getattr(self, "on_action_layout_changed", None)
         if callback is not None:
             callback()
 
+
+    def on_session(self, session):
+        """Render the lobby game: a heading, one row per slot."""
+        if session is None:
+            self.session_label.set_text(gettext("No game"))
+            self.session_list.set_items([])
+        else:
+            role = gettext("hosting") if session.is_host else gettext("joined")
+            self.session_label.set_text(
+                "{0} {1} \u2014 {2}, {3}".format(
+                    gettext("Game"), session.game_id[:8], role, session.state
+                )
+            )
+            self.session_list.set_items(session.slot_lines())
+        # Not just "ready": an edit the lobby doesn't have yet would start
+        # the version before it.
+        can_start = session is not None and session.can_start
+        self.start_button.set_enabled(can_start)
+        if session is not None and session.is_host and not can_start:
+            self.start_button.set_tooltip(
+                gettext("Waiting: ") + "; ".join(session.waiting_on())
+            )
+        else:
+            self.start_button.set_tooltip(
+                gettext("Start the game for every player")
+            )
+        self.recheck_button.set_enabled(session is not None)
 
     def on_irc(self, key, args):
         if key == "active_channel":
@@ -247,13 +327,13 @@ class NetplayPanel(fsui.Panel):
 
 
 class SimpleTextInputDialog(fsui.Dialog):
-    def __init__(self, parent, title, label_text):
+    def __init__(self, parent, title, label_text, default_text="new"):
         super().__init__(parent, title)
         self.layout = fsui.VerticalLayout()
         self.label = fsui.Label(self, label_text)
         self.layout.add(self.label, margin=10)
         self.text_field = fsui.TextField(self)
-        self.text_field.set_text("new")
+        self.text_field.set_text(default_text)
         self.text_field.select_all()
         self.layout.add(self.text_field, fill=True, margin=10)
         button_row = fsui.HorizontalLayout()
@@ -272,8 +352,10 @@ class SimpleTextInputDialog(fsui.Dialog):
         self.accept()
 
     @staticmethod
-    def get_text(parent, title, label_text):
-        dialog = SimpleTextInputDialog(parent, title, label_text)
+    def get_text(parent, title, label_text, default_text="new"):
+        dialog = SimpleTextInputDialog(
+            parent, title, label_text, default_text=default_text
+        )
         if dialog.exec():
             return dialog.result_text
         return None
@@ -282,15 +364,25 @@ class JoinChannelButton(fsui.Button):
     def __init__(self, parent, irc):
         super().__init__(parent, gettext("Join Game Channel"))
         self.irc = irc
+        self.private_checkbox = None
 
     def on_activated(self):
-        game_name = SimpleTextInputDialog.get_text(self, gettext("Enter Game Name"), gettext("Game Name:"))
-        if game_name:
-            game_name = game_name.replace(" ", "-").lower()
-            # Broadcast the command as a message in the IRC channel
-            self.irc.handle_command(f"/me ran the following command:")
-            self.irc.handle_command(f"/me /join #{game_name}-game")
-            self.irc.handle_command(f"/join #{game_name}-game")
+        default_name = LauncherSettings.get(Option.CONFIG_NAME).strip() or "new"
+        game_name = default_name.replace(" ", "-").lower()
+        tag = LauncherSettings.get(Option.NETPLAY_TAG).strip().lower()
+        tag = "".join(character for character in tag if character.isascii() and character.isalnum())[:3]
+        tag = tag or Option.get(Option.NETPLAY_TAG)["default"].lower()
+        channel = SimpleTextInputDialog.get_text(
+            self, gettext("Join Game Channel"), gettext("Game Channel:"),
+            default_text=f"#{game_name}-{tag}",
+        )
+        channel = normalize_game_channel(channel or "")
+        if channel:
+            private = (
+                self.private_checkbox is not None
+                and self.private_checkbox.is_checked()
+            )
+            self.irc.join(channel, private=private)
 
 class HostGameButton(fsui.Button):
     def __init__(self, parent, netplay, panel, irc):
@@ -325,41 +417,20 @@ class HostGameButton(fsui.Button):
         self.irc.handle_command(f"/me {command}")
         self.netplay.handle_command(command)
 
-class SendConfig(fsui.Button):
+class Recheck(fsui.Button):
     def __init__(self, parent, netplay, irc):
-        super().__init__(parent, gettext("Send Config"))
+        super().__init__(parent, gettext("Re-check"))
         self.irc = irc
         self.netplay = netplay
+        self.set_tooltip(
+            gettext(
+                "Apply the game's config again, for example after adding "
+                "missing files"
+            )
+        )
 
     def on_activated(self):
-        command = "/sendconfig"
-        self.irc.handle_command(f"/me ran the following command:")
-        self.irc.handle_command(f"/me {command}")
-        self.netplay.handle_command(command)
-
-class Ready(fsui.Button):
-    def __init__(self, parent, netplay, irc):
-        super().__init__(parent, gettext("Ready"))
-        self.irc = irc
-        self.netplay = netplay
-
-    def on_activated(self):
-        command = "/ready"
-        self.irc.handle_command(f"/me ran the following command:")
-        self.irc.handle_command(f"/me {command}")
-        self.netplay.handle_command(command)
-
-class Reset(fsui.Button):
-    def __init__(self, parent, netplay, irc):
-        super().__init__(parent, gettext("Reset"))
-        self.irc = irc
-        self.netplay = netplay
-
-    def on_activated(self):
-        command = "/reset"
-        self.irc.handle_command(f"/me ran the following command:")
-        self.irc.handle_command(f"/me {command}")
-        self.netplay.handle_command(command)
+        self.netplay.handle_command("/recheck")
 
 class StartGameButton(fsui.Button):
     def __init__(self, parent, netplay, irc):
@@ -389,167 +460,3 @@ class InfoButton(IconButton):
         # If not open, create and show it
         info_dialog = InfoDialog(self.parent)
         info_dialog.show()
-
-class ConfigButton(IconButton):
-    def __init__(self, parent):
-        super().__init__(parent, "32/settings.png")  # Corrected path
-        self.set_tooltip(gettext("Sync Config Settings"))
-        self.parent = parent
-        self.set_size((32, 32))
-
-    def on_activated(self):
-        # Check if a Sync Config dialog is already open by window title
-        for widget in QApplication.topLevelWidgets():
-            if widget.windowTitle() == "Sync Config":
-                widget.raise_()
-                widget.activateWindow()
-                return
-        # If not open, create and show it
-        dlg = SyncConfigDialog(self.parent)
-        dlg.show()
-class SyncConfigDialog(fsui.Window):
-    def __init__(self, parent):
-        super().__init__(parent, "Sync Config", minimizable=False, maximizable=False)
-        layout = fsui.VerticalLayout()
-        layout.set_padding(20)
-
-        self.fields = {}
-        self.defaults = {
-            "Max Floppy Drives": str(Amiga.MAX_FLOPPY_DRIVES),
-            "Max Floppy Images": str(Amiga.MAX_FLOPPY_IMAGES),
-            "Max CDROM Drives": str(Amiga.MAX_CDROM_DRIVES),
-            "Max CDROM Images": str(Amiga.MAX_CDROM_IMAGES),
-            "Max Hard Drives": str(Amiga.MAX_HARD_DRIVES),
-        }
-        self.fast_values = {
-            "Max Floppy Drives": "4",
-            "Max Floppy Images": "4",
-            "Max CDROM Drives": "0",
-            "Max CDROM Images": "0",
-            "Max Hard Drives": "0",
-        }
-        LABEL_WIDTH = 160
-
-        # Load saved config if it exists
-        saved = {label: Settings.instance().get(label.lower().replace(" ", "_"), default) for label, default in self.defaults.items()}
-        saved["mode"] = Settings.instance().get("mode", "default")
-
-        for label, default in self.defaults.items():
-            row = fsui.HorizontalLayout()
-            label_widget = fsui.Label(self, label)
-            label_widget.set_min_width(LABEL_WIDTH)
-            row.add(label_widget, expand=True, margin_right=10)
-
-            field = fsui.ComboBox(self)
-            field.setEditable(False)  # Only allow selection, no manual entry
-            allowed_values = [str(i) for i in range(0, 21)]
-            field.set_items(allowed_values)
-            # Set current value if present, else default
-            current_value = saved.get(label, default)
-            index = field.findText(current_value)
-            if index != -1:
-                field.setCurrentIndex(index)
-            else:
-                field.setCurrentIndex(0)  # fallback to first item
-            field.set_min_width(40)
-            field.setEnabled(False)  # Initially read-only
-            self.fields[label] = field
-            row.add(field, fill=False, expand=False)
-            layout.add(row, margin_bottom=5)
-
-        layout.add_spacer(0, expand=True)
-
-        # Stack option buttons vertically
-        mode_col = fsui.VerticalLayout()
-        self.default_button = fsui.Button(self, "Default")
-        self.fast_button = fsui.Button(self, "Fast")
-        self.custom_button = fsui.Button(self, "Custom")
-        mode_col.add(self.default_button, fill=True, margin_bottom=5)
-        mode_col.add(self.fast_button, fill=True, margin_bottom=5)
-        mode_col.add(self.custom_button, fill=True)
-        layout.add(mode_col, fill=True, margin_bottom=10)
-
-        self.default_button.on_activated = self.on_default
-        self.fast_button.on_activated = self.on_fast
-        self.custom_button.on_activated = self.on_custom
-
-        # OK (left) and Cancel (right) row
-        button_row = fsui.HorizontalLayout()
-        self.ok_button = fsui.Button(self, "OK")
-        self.cancel_button = fsui.Button(self, "Cancel")
-        button_row.add(self.ok_button, fill=False)
-        button_row.add_spacer(0, expand=True)
-        button_row.add(self.cancel_button, fill=False)
-        layout.add(button_row, fill=True)
-
-        self.ok_button.on_activated = self.on_ok
-        self.cancel_button.on_activated = self.close
-
-        self.layout = layout
-        self.set_size((260, 360))
-
-        self.selected_mode = saved.get("mode", "default")
-
-        # Simulate clicking the correct button (this sets fields and highlights)
-        if self.selected_mode == "fast":
-            self.fast_button.on_activated()
-        elif self.selected_mode == "custom":
-            self.custom_button.on_activated()
-        else:
-            self.default_button.on_activated()
-
-    def set_fields(self, values=None, read_only=True, numbers_only=False):
-        for label, field in self.fields.items():
-            if values is not None:
-                value = values[label]
-                index = field.findText(value)
-                if index != -1:
-                    field.setCurrentIndex(index)
-            field.setEnabled(not read_only)
-
-    def on_ok(self):
-        for label, field in self.fields.items():
-            Settings.instance().set(label.lower().replace(" ", "_"), field.currentText())
-        Settings.instance().set("mode", self.selected_mode)
-        Settings.instance().save()
-        sync_settings.update()
-        LauncherConfig.refresh_keys()
-        self.close()
-
-    def on_default(self):
-        self.set_fields(self.defaults, read_only=True, numbers_only=False)
-        self.selected_mode = "default"
-        self.highlight_mode_button("default")
-
-    def on_fast(self):
-        self.set_fields(self.fast_values, read_only=True, numbers_only=False)
-        self.selected_mode = "fast"
-        self.highlight_mode_button("fast")
-
-    def on_custom(self):
-        # Get saved values from config file, or current field values if not present
-        saved_values = {label: Settings.instance().get(label.lower().replace(" ", "_"), self.fields[label].currentText()) for label in self.defaults}
-
-        # If saved values do not match default or fast, use them
-        if not (self._values_match(saved_values, self.defaults) or self._values_match(saved_values, self.fast_values)):
-            self.set_fields(saved_values, read_only=False, numbers_only=True)
-        else:
-            # Otherwise, keep current values editable
-            self.set_fields(values=None, read_only=False, numbers_only=True)
-
-        self.selected_mode = "custom"
-        self.highlight_mode_button("custom")
-
-    def highlight_mode_button(self, selected):
-        for mode, btn in [
-            ("default", self.default_button),
-            ("fast", self.fast_button),
-            ("custom", self.custom_button),
-        ]:
-            current_font = btn.font()
-            font_obj = Font(current_font.font)
-            font_obj.font.setBold(mode == selected)
-            btn.set_font(font_obj)
-
-    def _values_match(self, a, b):
-        return all(str(a[k]) == str(b[k]) for k in a)

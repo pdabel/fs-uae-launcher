@@ -44,7 +44,8 @@ Each flag can also be set through its environment variable, which is how you con
 | `--host` | `HOST` | `0.0.0.0` | address to listen on |
 | `--port` | `PORT` | `25101` | the one port, for the API and all games |
 | `--max-games` | `MAX_GAMES` | `64` | live games at once. Beyond that, `/game/create` returns `503` |
-| `--game-launch-timeout` | `GAME_LAUNCH_TIMEOUT` | `900` | seconds a game may wait for all its players before it's removed |
+| `--game-launch-timeout` | `GAME_LAUNCH_TIMEOUT` | `900` | seconds a running game may wait for all its players before it's removed. A `/game/create` game runs from creation; a `POST /game` game from its start |
+| `--idle-timeout` | `IDLE_TIMEOUT` | `600` | seconds a `POST /game` game may sit untouched (no join, config, ready or poll) before it starts |
 | `--public-addresses` | `PUBLIC_ADDRESSES` | — | comma-separated addresses to give players. Unset, they get the host name the op used in `/startgame` |
 | `--log-file` | `LOG_FILE` | — | also append the log here |
 | `--log-input` | — | `true` | log every relayed input event |
@@ -64,6 +65,23 @@ GET /game/create?players=N&password=P
   503  too many games, or shutting down
 GET /healthz
   200  ok
+```
+
+The session API, for launchers that keep the game's config on the server rather than in IRC (phase three of [the design](../docs/netplay-go-server-design.md#future-the-session-owns-the-config)). JSON in and out; calls marked *host* or *slot* need `Authorization: Bearer <token>` from the create or join reply. A `POST /game` game's password is reserved at once but reaches no emulator until `start`.
+
+```
+POST   /game                          {players, password, tag, keys:{sync, checksum}}
+  201  {id, password, players, port, addresses, host_token, slot: 0, player_token}
+GET    /game/{id}[?since=revision]    snapshot; with since, waits up to 25 s for a change
+POST   /game/{id}/players             {tag} → 201 {slot, player_token}; 409 when full
+DELETE /game/{id}/players/{n}         slot or host: free a slot
+PUT    /game/{id}/config              host: {config:{key: value}} → {config_version, hash}
+POST   /game/{id}/players/{n}/ready   slot: {config_version, hash, missing:{key: sha1}}
+POST   /game/{id}/start               host: 409 unless every slot is ready
+DELETE /game/{id}                     host: end it
+
+errors {"error": "…"}: 400 invalid, 403 wrong token, 404 no game or slot,
+       409 wrong state for the call, 503 too many games or shutting down
 ```
 
 ## Lobby and IRC together
@@ -97,3 +115,36 @@ make help     # everything else
 ```
 
 No local Go install is needed: without `go` on `PATH`, `make` runs the same commands in a `golang` container.
+
+To build directly with Go instead, install it first if needed:
+
+- **Debian/Ubuntu:** `sudo apt install golang-go`
+- **macOS with Homebrew:** `brew install go`
+- **Without a package manager:** use the installer for your operating system
+  from [the Go downloads page](https://go.dev/dl/). On macOS, choose the package
+  matching your Mac (Apple Silicon/ARM64 or Intel/x86-64).
+
+Then run the `go build` command below.
+
+### Launcher startup errors
+
+When `/hostgame` cannot find or launch the server, it reports an error without
+announcing a game:
+
+- **Executable not found:** in a source checkout, run `make` in this directory,
+  or `go build -o fsnp-server ./cmd/fsnp-server` with Go installed. This creates
+  `fsnp-server/fsnp-server` relative to the repository root. The source directory
+  itself is not an executable. For a packaged launcher, reinstall the netplay
+  server or the launcher package that includes it.
+- **Permission denied:** check the reported executable's permissions and whether
+  its filesystem allows execution. On Linux/macOS, a trusted server binary may
+  need its execute bit restored with `chmod u+x <path-to-binary>`; changing the
+  source directory's permissions will not build the binary.
+- **Missing executable/loader or invalid executable format:** rebuild or
+  reinstall the server for your operating system and CPU architecture.
+
+Detailed launch errors appear only in the host's local netplay output and
+include the executable path and the operating-system error. Source checkouts
+also show the command to build the server. The IRC channel receives only a short
+failure notification, keeping long paths and build guidance off the wire and
+within IRC's line limit.

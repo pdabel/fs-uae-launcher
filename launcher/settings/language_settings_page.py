@@ -60,7 +60,7 @@ class LanguageSettingChoice(fsui.Choice):
             self.add_item(
                 label,
                 fsui.Image(
-                    "workspace:res/16x16/flag-{0}.png".format(icon_name)
+                    f"workspace:res/16x16/flag-{icon_name}.png"
                 ),
             )
             if language_key == selected_language:

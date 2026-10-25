@@ -1,4 +1,5 @@
 import atexit
+import errno
 import json
 import queue
 import subprocess
@@ -33,7 +34,12 @@ LOG_NAME = "fsnp-server.log.txt"
 
 # What to run to produce the development-mode binary. Packaged builds get it
 # from fsbuild/build.sh, which drops it beside the launcher executable.
-BUILD_HINT = "cd fsnp-server && go build -o fsnp-server ./cmd/fsnp-server"
+BUILD_HINT = (
+    "cd fsnp-server && go build -o fsnp-server ./cmd/fsnp-server"
+    ". If Go is not installed, on Debian/Ubuntu install it first with: "
+    "sudo apt install golang-go; on macOS with Homebrew: brew install go"
+    ". Alternatively, install Go from https://go.dev/dl/"
+)
 
 
 class ServerError(Exception):
@@ -87,53 +93,104 @@ def find_server_executable():
 
 
 class Server:
-    def __init__(self, port, players, password):
+    def __init__(
+        self, port, players, password, lobby=False, public_addresses=""
+    ):
+        """A local fsnp-server.
+
+        By default it runs one game for players with password. With lobby
+        it is a lobby instead, as /hostgame uses: games are created over
+        its HTTP API on the same port, and players and password only
+        describe the game the launcher is about to create. Players are
+        told public_addresses (comma-separated) rather than the name the
+        launcher reaches the lobby by, which is this machine's loopback.
+        """
         self.port = port
         self.players = players
         self.password = password
+        self.lobby = lobby
+        self.public_addresses = public_addresses
         self.process = None
 
     def start(self):
         """Start the netplay server and wait until it is listening.
 
         Raises PortInUseError if its port is in use, and ServerError if the
-        executable cannot be found, if it exits immediately for any other
-        reason, or if it does not report that it is listening within
-        READY_TIMEOUT.
+        executable cannot be found or launched, if it exits immediately for
+        any other reason, or if it does not report that it is listening
+        within READY_TIMEOUT.
         """
         exe_file = find_server_executable()
         if exe_file is None:
-            message = "Could not find the {0} executable".format(
-                EXECUTABLE_NAME
-            )
+            message = f"Could not find the {EXECUTABLE_NAME} executable"
             if fsboot.development():
                 # Running from a checkout: the binary is not built yet. Say
                 # what to run rather than leaving it to be looked up.
-                message += ". Build it with: {0}".format(BUILD_HINT)
+                message += f". Build it with: {BUILD_HINT}"
+            else:
+                message += (
+                    ". Reinstall the netplay server or the launcher package "
+                    "that includes it"
+                )
             raise ServerError(message)
         args = [
             exe_file,
-            "--port={0}".format(self.port),
-            "--players={0}".format(self.players),
+            f"--port={self.port}",
             # Stop the server if the launcher goes away without closing it.
             "--exit-on-stdin-close",
         ]
-        if self.password:
-            args.append("--password={0}".format(self.password))
+        if self.lobby:
+            args.append("--lobby")
+            if self.public_addresses:
+                args.append(
+                    f"--public-addresses={self.public_addresses}"
+                )
+        else:
+            args.append(f"--players={self.players}")
+            if self.password:
+                args.append(f"--password={self.password}")
         log_file = log_file_path()
         if log_file:
-            args.append("--log-file={0}".format(log_file))
+            args.append(f"--log-file={log_file}")
             print("Netplay server log:", log_file)
         print("Starting netplay server, args =", args)
         # The server logs to stderr, which is inherited so its output shows
         # up alongside the launcher's own. Only the readiness line goes to
         # stdout, so this pipe cannot fill up and block the server.
-        self.process = subprocess.Popen(
-            args,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            close_fds=True,
-        )
+        try:
+            self.process = subprocess.Popen(
+                args,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                close_fds=True,
+            )
+        except OSError as e:
+            message = f"Could not launch netplay server {exe_file!r}: {e}."
+            if e.errno in (errno.EACCES, errno.EPERM):
+                message += (
+                    " Check that this is a server executable file, that you "
+                    "have permission to run it, and that its filesystem "
+                    "allows execution."
+                )
+            elif e.errno == errno.ENOENT:
+                message += (
+                    " The executable or its required loader is missing. "
+                    "Rebuild or reinstall the server for your operating "
+                    "system."
+                )
+            elif e.errno == errno.ENOEXEC:
+                message += (
+                    " Rebuild or reinstall the server for your operating "
+                    "system and CPU architecture."
+                )
+            else:
+                message += (
+                    " Check the operating-system error above and repair or "
+                    "reinstall the server."
+                )
+            if fsboot.development():
+                message += f" To build it from this checkout: {BUILD_HINT}"
+            raise ServerError(message) from e
         atexit.register(self.stop)
         self.__wait_until_listening()
 
@@ -144,7 +201,7 @@ class Server:
         except ValueError:
             self.stop()
             raise ServerError(
-                "Unexpected output from netplay server: {0!r}".format(line)
+                f"Unexpected output from netplay server: {line!r}"
             )
         if event.get("event") == "error":
             # The server could not listen and has exited; it says why.
@@ -153,12 +210,12 @@ class Server:
             if event.get("reason") == "address_in_use":
                 raise PortInUseError(self.port, message)
             raise ServerError(
-                "Netplay server could not start: {0}".format(message)
+                f"Netplay server could not start: {message}"
             )
         if event.get("event") != "listening":
             self.stop()
             raise ServerError(
-                "Netplay server did not start listening: {0!r}".format(line)
+                f"Netplay server did not start listening: {line!r}"
             )
         # With an explicit port the server either binds it or fails, so this
         # is a consistency check rather than a lookup. It does matter if
@@ -193,12 +250,12 @@ class Server:
             self.stop()
             raise ServerError(
                 "Netplay server did not report that it was listening "
-                "within {0:g} seconds".format(READY_TIMEOUT)
+                f"within {READY_TIMEOUT:g} seconds"
             )
         if isinstance(line, Exception):
             self.stop()
             raise ServerError(
-                "Could not read from netplay server: {0}".format(line)
+                f"Could not read from netplay server: {line}"
             )
         if not line:
             # EOF on stdout: the server exited instead of starting up. Its
@@ -206,7 +263,7 @@ class Server:
             returncode = self.process.wait(timeout=STOP_TIMEOUT)
             self.process = None
             raise ServerError(
-                "Netplay server exited with code {0}".format(returncode)
+                f"Netplay server exited with code {returncode}"
             )
         return line.decode("UTF-8", "replace").strip()
 

@@ -1,4 +1,6 @@
 import hashlib
+import importlib.machinery
+import importlib.util
 import os
 import sys
 import traceback
@@ -190,12 +192,12 @@ class LauncherApp(ApplicationMixin, fsui.Application):
             max_drives = int(values.get("floppy_drive_count", "4"))
             values.update(
                 {
-                    "floppy_drive_{0}".format(k): v
+                    f"floppy_drive_{k}": v
                     for k, v in enum_paths[:max_drives]
                 }
             )
             values.update(
-                {"floppy_image_{0}".format(k): v for k, v in enum_paths[:20]}
+                {f"floppy_image_{k}": v for k, v in enum_paths[:20]}
             )
             # FIXME: Generate a better config name for save dir?
             values["__config_name"] = "Default"
@@ -208,12 +210,12 @@ class LauncherApp(ApplicationMixin, fsui.Application):
             max_drives = int(values.get("cdrom_drive_count", "1"))
             values.update(
                 {
-                    "cdrom_drive_{0}".format(k): v
+                    f"cdrom_drive_{k}": v
                     for k, v in enum_paths[:max_drives]
                 }
             )
             values.update(
-                {"cdrom_image_{0}".format(k): v for k, v in enum_paths[:20]}
+                {f"cdrom_image_{k}": v for k, v in enum_paths[:20]}
             )
             # FIXME: Generate a better config name for save dir?
             values["__config_name"] = "Default"
@@ -273,12 +275,26 @@ class LauncherApp(ApplicationMixin, fsui.Application):
             print("[PLUGINS] Loading", path)
             name = "plugin_" + hashlib.sha1(path.encode("UTF-8")).hexdigest()
             print(name)
-            # noinspection PyDeprecation
-            import imp
-
             try:
-                # noinspection PyDeprecation
-                plugin = imp.load_source(name, path)
+                loader = importlib.machinery.SourceFileLoader(name, path)
+                spec = importlib.util.spec_from_file_location(
+                    name, path, loader=loader
+                )
+                if spec is None:
+                    raise ImportError(f"Cannot load plugin {path}")
+                previous = sys.modules.get(name)
+                plugin = previous
+                if plugin is None:
+                    plugin = importlib.util.module_from_spec(spec)
+                sys.modules[name] = plugin
+                try:
+                    loader.exec_module(plugin)
+                except BaseException:
+                    if previous is None:
+                        sys.modules.pop(name, None)
+                    else:
+                        sys.modules[name] = previous
+                    raise
                 print("[PLUGINS] Name:", getattr(plugin, "name", ""))
                 print("[PLUGINS] Version:", getattr(plugin, "version", ""))
                 plugin.fsgs = fsgs
@@ -526,7 +542,7 @@ class LauncherApp(ApplicationMixin, fsui.Application):
 
         devices = DeviceManager.get_devices_for_ports(config)
         for port in range(4):
-            key = "joystick_port_{0}".format(port)
+            key = f"joystick_port_{port}"
             if not config.get(key):
                 # key not set, use calculated default value
                 config[key] = devices[port].id

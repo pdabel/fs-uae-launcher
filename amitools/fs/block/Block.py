@@ -221,7 +221,7 @@ class Block:
   def dump(self, name, details=True):
     print("%sBlock(%d):" % (name, self.blk_num))
     if details:
-      print(" types:     %x/%x (valid: %x/%x)" % (self.type, self.sub_type, self.is_type, self.is_sub_type))
-      print(" chksum:    0x%08x (got) 0x%08x (calc)" % (self.got_chksum, self.calc_chksum))
-      print(" valid:     %s" % self.valid)
+      print(f" types:     {self.type:x}/{self.sub_type:x} (valid: {self.is_type:x}/{self.is_sub_type:x})")
+      print(f" chksum:    0x{self.got_chksum:08x} (got) 0x{self.calc_chksum:08x} (calc)")
+      print(f' valid:     {self.valid!s}')
     

@@ -10,6 +10,25 @@ from fsbc.settings import Settings
 _initialized = False
 
 
+def _default_language():
+    value = "C"
+    for variable in ("LC_ALL", "LC_CTYPE", "LANG", "LANGUAGE"):
+        if os.environ.get(variable):
+            value = os.environ[variable]
+            if variable == "LANGUAGE":
+                value = value.split(":", 1)[0]
+            break
+    code = locale.normalize(value)
+    code, _, modifier = code.partition("@")
+    if "." in code:
+        return code.split(".", 1)[0]
+    if modifier == "euro":
+        return code
+    if code in ("C", "UTF-8"):
+        return None
+    raise ValueError(f"unknown locale: {value}")
+
+
 def initialize_locale(language=None):
     global translations, _initialized
     _initialized = True
@@ -21,7 +40,7 @@ def initialize_locale(language=None):
     loc = language
     if not loc:
         try:
-            loc, _charset = locale.getdefaultlocale()
+            loc = _default_language()
             print("[I18N] Locale is", loc)
         except:
             print("[I18N] Exception while checking locale")

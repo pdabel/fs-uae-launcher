@@ -31,7 +31,7 @@ class BitmapScan:
       self.last_mask = 0xffffffff
     else:
       self.last_mask = (1 << last_filled_bits) - 1
-    self.log.msg(Log.DEBUG,"Last DWORD mask: %08x" % self.last_mask)    
+    self.log.msg(Log.DEBUG,f"Last DWORD mask: {self.last_mask:08x}")
     # now scan bitmap blocks and build list of all bitmap blocks
     self.read_bitmap_ptrs_and_blocks(root)
     found_blocks = len(self.bm_blocks)

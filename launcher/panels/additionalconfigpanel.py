@@ -11,6 +11,7 @@ from launcher.ui.config.configdialog import ConfigDialog
 class AdditionalConfigPanel(ConfigPanel):
     def __init__(self, parent):
         super().__init__(parent)
+        self.config_widget_factory.expand = True
         hori_layout = fsui.HorizontalLayout()
         self.layout.add(hori_layout, fill=True)
         heading_label = fsui.HeadingLabel(

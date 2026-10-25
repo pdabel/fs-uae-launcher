@@ -65,7 +65,9 @@ class ServerDetails(QFrame):
         self.monitor.timeout.connect(self._check_server)
 
     def present(self, parent, server, game_id, port, channel):
-        self.stop_server()
+        if server is not self.server:
+            # A lobby still running a game hosts the next one too.
+            self.stop_server()
         self.server = server
         self.fields["game_id"].setText(game_id)
         self.fields["channel"].setText(channel)

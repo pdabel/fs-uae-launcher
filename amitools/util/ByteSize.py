@@ -28,11 +28,11 @@ def to_byte_size_str(size, kibi_units=True):
         frac = float(size) / unit
         if frac > 9.9:
           frac = 9.9
-        return "%3.1f%s%s" % (frac, scale, marker)
+        return f'{frac:3.1f}{scale!s}{marker!s}'
       elif next < 1000:
         return "%3d%s%s" % (next, scale, marker)
       size = next
-    return "NaNB%s" % marker
+    return f'NaNB{marker!s}'
 
 def parse_byte_size_str(s):
   """parse a string to derive a byte value.

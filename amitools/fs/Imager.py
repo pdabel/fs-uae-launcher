@@ -82,7 +82,7 @@ class Imager:
       f.close()
     # save blkdev
     f = open(blkdev_path,"wb")
-    f.write("%s\n" % volume.blkdev.get_chs_str())
+    f.write(f'{volume.blkdev.get_chs_str()!s}\n')
     f.close()
 
   def unpack_root(self, volume, vol_path):

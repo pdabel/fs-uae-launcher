@@ -192,7 +192,7 @@ def arch_name() -> str:
 
 
 def check_executable(exe_file: str) -> bool:
-    if path.exists(exe_file):
+    if path.isfile(exe_file):
         print(f"  Check executable {exe_file}: YES")
         return True
     else:

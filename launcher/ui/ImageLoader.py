@@ -77,12 +77,8 @@ class ImageLoader(object):
     def get_cache_path_for_sha1(request, sha1):
         cover = request.args.get("is_cover", False)
         if cover:
-            size_arg = "?w={0}&h={1}&t=lbcover".format(
-                Constants.COVER_SIZE[0], Constants.COVER_SIZE[1]
-            )
-            cache_ext = "_{0}x{1}_lbcover.png".format(
-                Constants.COVER_SIZE[0], Constants.COVER_SIZE[1]
-            )
+            size_arg = f"?w={Constants.COVER_SIZE[0]}&h={Constants.COVER_SIZE[1]}&t=lbcover"
+            cache_ext = f"_{Constants.COVER_SIZE[0]}x{Constants.COVER_SIZE[1]}_lbcover.png"
         elif request.size:
             size_arg = "?s=1x"
             cache_ext = "_1x.png"

@@ -12,10 +12,9 @@ from fsgs.amiga.valueconfigloader import ValueConfigLoader
 from fsgs.context import fsgs
 from launcher.option import Option
 from .launcher_settings import LauncherSettings
-from .sync_settings import sync_settings
 
 
-def build_cfg(sync_settings):
+def build_cfg():
     cfg = [
         ("amiga_model", "", "checksum", "sync"),
         ("ntsc_mode", "", "checksum", "sync"),
@@ -148,19 +147,19 @@ def build_cfg(sync_settings):
         (Option.VARIANT_NAME, ""),
         (Option.ZXS_MODEL, "", "checksum", "sync"),
     ]
-    for _i in range(sync_settings.MAX_FLOPPY_DRIVES):
+    for _i in range(Amiga.MAX_FLOPPY_DRIVES):
         cfg.append((f"floppy_drive_{_i}", ""))
         cfg.append((f"x_floppy_drive_{_i}_sha1", "", "checksum", "sync", "no_save"))
-    for _i in range(sync_settings.MAX_FLOPPY_IMAGES):
+    for _i in range(Amiga.MAX_FLOPPY_IMAGES):
         cfg.append((f"floppy_image_{_i}", ""))
         cfg.append((f"x_floppy_image_{_i}_sha1", "", "checksum", "sync", "no_save"))
-    for _i in range(sync_settings.MAX_CDROM_DRIVES):
+    for _i in range(Amiga.MAX_CDROM_DRIVES):
         cfg.append((f"cdrom_drive_{_i}", ""))
         cfg.append((f"x_cdrom_drive_{_i}_sha1", "", "checksum", "sync", "no_save"))
-    for _i in range(sync_settings.MAX_CDROM_IMAGES):
+    for _i in range(Amiga.MAX_CDROM_IMAGES):
         cfg.append((f"cdrom_image_{_i}", ""))
         cfg.append((f"x_cdrom_image_{_i}_sha1", "", "checksum", "sync", "no_save"))
-    for _i in range(sync_settings.MAX_HARD_DRIVES):
+    for _i in range(Amiga.MAX_HARD_DRIVES):
         cfg.append((f"hard_drive_{_i}", ""))
         cfg.append((f"hard_drive_{_i}_label", "", "checksum", "sync", "custom"))
         cfg.append((f"hard_drive_{_i}_priority", "", "checksum", "sync", "custom"))
@@ -168,7 +167,7 @@ def build_cfg(sync_settings):
     return cfg
 
 
-cfg = build_cfg(sync_settings)
+cfg = build_cfg()
 
 
 class LauncherConfig(object):
@@ -194,28 +193,29 @@ class LauncherConfig(object):
     no_save_keys_set = set([x[0] for x in cfg if "no_save" in x])
 
     reset_values = {}
-    for i in range(sync_settings.MAX_FLOPPY_DRIVES):
-        reset_values["floppy_drive_{0}".format(i)] = (
-            "x_floppy_drive_{0}_sha1".format(i),
+    for i in range(Amiga.MAX_FLOPPY_DRIVES):
+        reset_values[f"floppy_drive_{i}"] = (
+            f"x_floppy_drive_{i}_sha1",
             "",
         )
-    for i in range(sync_settings.MAX_FLOPPY_IMAGES):
-        reset_values["floppy_image_{0}".format(i)] = (
-            "x_floppy_image_{0}_sha1".format(i),
+    for i in range(Amiga.MAX_FLOPPY_IMAGES):
+        reset_values[f"floppy_image_{i}"] = (
+            f"x_floppy_image_{i}_sha1",
             "",
         )
-    for i in range(sync_settings.MAX_CDROM_DRIVES):
-        reset_values["cdrom_drive_{0}".format(i)] = (
-            "x_cdrom_drive_{0}_sha1".format(i),
+    for i in range(Amiga.MAX_CDROM_DRIVES):
+        reset_values[f"cdrom_drive_{i}"] = (
+            f"x_cdrom_drive_{i}_sha1",
             "",
         )
-    for i in range(sync_settings.MAX_CDROM_IMAGES):
-        reset_values["cdrom_image_{0}".format(i)] = (
-            "x_cdrom_image_{0}_sha1".format(i),
+    for i in range(Amiga.MAX_CDROM_IMAGES):
+        reset_values[f"cdrom_image_{i}"] = (
+            f"x_cdrom_image_{i}_sha1",
             "",
         )
-        reset_values["hard_drive_{0}".format(i)] = (
-            "x_hard_drive_{0}_sha1".format(i),
+    for i in range(Amiga.MAX_HARD_DRIVES):
+        reset_values[f"hard_drive_{i}"] = (
+            f"x_hard_drive_{i}_sha1",
             "",
         )
     reset_values["x_kickstart_file"] = ("x_kickstart_file_sha1", "")
@@ -276,9 +276,16 @@ class LauncherConfig(object):
         return cls.checksum_config(fsgs.config.copy())
 
     @classmethod
-    def checksum_config(cls, config):
+    def checksum_config(cls, config, keys=None):
+        """SHA-1 over config's values for keys, in order.
+
+        keys defaults to this launcher's checksum list; a lobby game
+        passes the document's, which every player hashes alike. A key
+        missing from config raises KeyError, as fsnp-server's
+        game.ConfigHash refuses one.
+        """
         s = hashlib.sha1()
-        for key in cls.checksum_keys:
+        for key in cls.checksum_keys if keys is None else keys:
             value = config[key]
             s.update(str(value).encode("UTF-8"))
         return s.hexdigest()
@@ -578,7 +585,7 @@ class LauncherConfig(object):
             cls.load(config)
             values["__config_name"] = config.get("__config_name")
         else:
-            raise Exception("Unsupported platform: {}".format(platform_id))
+            raise Exception(f"Unsupported platform: {platform_id}")
         cls.post_load_values(values)
 
     @classmethod
@@ -667,34 +674,34 @@ class LauncherConfig(object):
                 sha1 = checksum_tool.checksum(path)
             config[sha1_key] = sha1
 
-        for i in range(sync_settings.MAX_FLOPPY_DRIVES):
+        for i in range(Amiga.MAX_FLOPPY_DRIVES):
             fix_file_checksum(
-                "x_floppy_drive_{0}_sha1".format(i),
-                "floppy_drive_{0}".format(i),
+                f"x_floppy_drive_{i}_sha1",
+                f"floppy_drive_{i}",
                 FSGSDirectories.get_floppies_dir(),
             )
-        for i in range(sync_settings.MAX_FLOPPY_IMAGES):
+        for i in range(Amiga.MAX_FLOPPY_IMAGES):
             fix_file_checksum(
-                "x_floppy_image_{0}_sha1".format(i),
-                "floppy_image_{0}".format(i),
+                f"x_floppy_image_{i}_sha1",
+                f"floppy_image_{i}",
                 FSGSDirectories.get_floppies_dir(),
             )
-        for i in range(sync_settings.MAX_CDROM_DRIVES):
+        for i in range(Amiga.MAX_CDROM_DRIVES):
             fix_file_checksum(
-                "x_cdrom_drive_{0}_sha1".format(i),
-                "cdrom_drive_{0}".format(i),
+                f"x_cdrom_drive_{i}_sha1",
+                f"cdrom_drive_{i}",
                 FSGSDirectories.get_cdroms_dir(),
             )
-        for i in range(sync_settings.MAX_CDROM_IMAGES):
+        for i in range(Amiga.MAX_CDROM_IMAGES):
             fix_file_checksum(
-                "x_cdrom_image_{0}_sha1".format(i),
-                "cdrom_image_{0}".format(i),
+                f"x_cdrom_image_{i}_sha1",
+                f"cdrom_image_{i}",
                 FSGSDirectories.get_cdroms_dir(),
             )
-        for i in range(sync_settings.MAX_HARD_DRIVES):
+        for i in range(Amiga.MAX_HARD_DRIVES):
             fix_file_checksum(
-                "x_hard_drive_{0}_sha1".format(i),
-                "hard_drive_{0}".format(i),
+                f"x_hard_drive_{i}_sha1",
+                f"hard_drive_{i}",
                 FSGSDirectories.get_hard_drives_dir(),
             )
 
@@ -721,30 +728,3 @@ class LauncherConfig(object):
             del config[Option.UAEGFX_CARD]
             # FIXME: Set changed!
             config["__changed"] = "1"
-
-    @classmethod
-    def refresh_keys(cls):
-        global cfg
-        cfg = build_cfg(sync_settings)
-        cls.config_keys = [x[0] for x in cfg]
-        cls.default_config = {c[0]: c[1] for c in cfg}
-        cls.key_order = [x[0] for x in cfg]
-        cls.checksum_keys = [x[0] for x in cfg if "checksum" in x]
-        cls.sync_keys_list = [x[0] for x in cfg if "sync" in x]
-        cls.sync_keys_set = set(cls.sync_keys_list)
-        cls.no_custom_config = [x[0] for x in cfg if "custom" not in x]
-        cls.no_custom_config += ["__changed", "__ready", "__config_name"]
-        cls.no_save_keys_set = set([x[0] for x in cfg if "no_save" in x])
-        cls.reset_values = {}
-        for i in range(sync_settings.MAX_FLOPPY_DRIVES):
-            cls.reset_values[f"floppy_drive_{i}"] = (f"x_floppy_drive_{i}_sha1", "")
-        for i in range(sync_settings.MAX_FLOPPY_IMAGES):
-            cls.reset_values[f"floppy_image_{i}"] = (f"x_floppy_image_{i}_sha1", "")
-        for i in range(sync_settings.MAX_CDROM_DRIVES):
-            cls.reset_values[f"cdrom_drive_{i}"] = (f"x_cdrom_drive_{i}_sha1", "")
-        for i in range(sync_settings.MAX_CDROM_IMAGES):
-            cls.reset_values[f"cdrom_image_{i}"] = (f"x_cdrom_image_{i}_sha1", "")
-        for i in range(sync_settings.MAX_HARD_DRIVES):
-            cls.reset_values[f"hard_drive_{i}"] = (f"x_hard_drive_{i}_sha1", "")
-        cls.reset_values["x_kickstart_file"] = ("x_kickstart_file_sha1", "")
-        cls.reset_values["x_kickstart_ext_file"] = ("x_kickstart_ext_file_sha1", "")
