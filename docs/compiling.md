@@ -27,20 +27,20 @@ an isolated compatibility-test environment from the repository root:
 
     curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh
     ~/.local/bin/uv python install 3.15
-    ~/.local/bin/uv venv --python 3.15 --seed .venv-3.15
-    .venv-3.15/bin/python --version
+    ~/.local/bin/uv venv --python 3.15 --seed venv-3.15
+    venv-3.15/bin/python --version
 
 This leaves the system interpreter and existing environments unchanged.
-Activate it with `source .venv-3.15/bin/activate`; `python3 --version` then
+Activate it with `source venv-3.15/bin/activate`; `python3 --version` then
 reports the test interpreter only in that shell. Use `deactivate` to return.
 Installing the interpreter alone does not validate launcher dependencies or
 establish Python 3.15 support. Install the same locked dependencies into this
 environment without regenerating the lockfile:
 
     ~/.local/bin/uv tool install --python 3.15 pipenv
-    VIRTUAL_ENV="$PWD/.venv-3.15" PIPENV_IGNORE_VIRTUALENVS=0 ~/.local/bin/pipenv sync --dev
-    QT_QPA_PLATFORM=offscreen .venv-3.15/bin/python -Wd -m pytest launcher/tests/test_python_compatibility.py
-    .venv-3.15/bin/python fs-uae-launcher
+    VIRTUAL_ENV="$PWD/venv-3.15" PIPENV_IGNORE_VIRTUALENVS=0 ~/.local/bin/pipenv sync --dev
+    QT_QPA_PLATFORM=offscreen venv-3.15/bin/python -Wd -m pytest launcher/tests/test_python_compatibility.py
+    venv-3.15/bin/python fs-uae-launcher
 
 Pipenv warns about the manifest's Python 3.12 development default; keep that
 default unchanged for this separate test environment. Pipenv is installed in
