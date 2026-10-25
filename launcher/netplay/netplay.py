@@ -4,7 +4,7 @@ import traceback
 from fsgs.context import fsgs
 from .config_apply import apply_document
 from .connection_tester import ConnectionTester
-from .irc import IRC
+from .irc import IRC, is_game_channel
 from .irc_broadcaster import IRCBroadcaster
 from .irc_color import IRCColor
 from .lobby_client import LobbyClient
@@ -395,13 +395,7 @@ class Netplay:
         self.game_message(message, IRCColor.INFO)
 
     def is_game_channel(self, name):
-        if not self.irc.is_channel(name):
-            return False
-        if name.startswith("&"):
-            return True
-        if name.endswith("-game"):
-            return True
-        return False
+        return is_game_channel(name)
 
     def on_irc(self, key, args):
         if key == "joined":

@@ -12,6 +12,20 @@ from ..launcher_settings import LauncherSettings
 LOBBY_CHANNEL = "#FS-UAE-Lobby"
 
 
+def is_game_channel(name):
+    if not name or not IRC.is_channel(name):
+        return False
+    if name.casefold() == LOBBY_CHANNEL.casefold():
+        return False
+    if name.startswith("&") or name.endswith("-game"):
+        return True
+    base, separator, tag = name.rpartition("-")
+    return bool(
+        separator and len(base) > 1 and 1 <= len(tag) <= 3
+        and tag.isascii() and tag.isalnum()
+    )
+
+
 # noinspection PyUnusedLocal
 class IRC:
     def __init__(self):
@@ -19,6 +33,8 @@ class IRC:
         self.stopping = False
         self.nick_number = 0
         self.channels = {}
+        self.private_game_channels = set()
+        self.pending_game_announcements = set()
         self.my_nick = ""
         self.client = None
         # FIXME: should not be hardcoded here
@@ -310,7 +326,13 @@ class IRC:
         else:
             self.warning("join: invalid arguments")
 
-    def join(self, channel):
+    def join(self, channel, private=False):
+        for target in channel.split(","):
+            key = target.strip().casefold()
+            if private:
+                self.private_game_channels.add(key)
+            else:
+                self.private_game_channels.discard(key)
         helpers.join(self.client, channel)
 
     def command_leave(self, args):
@@ -399,14 +421,35 @@ class IRC:
         self.channel(channel).on_kick(self.filter_nick(kicker), who, why)
 
     def irc_part(self, who, channel, *_):
-        self.channel(channel).on_part(self.filter_nick(who))
+        nick = self.filter_nick(who)
+        if self.me(nick):
+            self.pending_game_announcements.discard(channel.casefold())
+        self.channel(channel).on_part(nick)
 
     def irc_join(self, who, channel):
-        self.channel(channel).on_join(self.filter_nick(who))
+        nick = self.filter_nick(who)
+        self.channel(channel).on_join(nick)
+        if self.me(nick) and is_game_channel(channel):
+            key = channel.casefold()
+            if key not in self.private_game_channels:
+                self.pending_game_announcements.add(key)
 
     # noinspection SpellCheckingInspection
     def irc_endofnames(self, sender, recipient, channel, message):
-        pass
+        key = channel.casefold()
+        if key not in self.pending_game_announcements:
+            return
+        self.pending_game_announcements.discard(key)
+        if key in self.private_game_channels:
+            return
+        game_channel = self.channel(channel)
+        if game_channel.is_op(self.my_nick) and len(game_channel.nicks) == 1:
+            action = "created"
+        else:
+            action = "joined"
+        self.channel(LOBBY_CHANNEL).privmsg(
+            f"{self.my_nick} {action} game channel {channel}."
+        )
 
     # noinspection SpellCheckingInspection
     def irc_namreply(self, server, who, equals, channel, nicks):

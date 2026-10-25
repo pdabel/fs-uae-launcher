@@ -14,6 +14,8 @@ import pytest
 
 from fsgs.context import fsgs
 from launcher.netplay import netplay as netplay_module
+from launcher.netplay import netplay_panel
+from launcher.option import Option
 from launcher.server import Server as server_module
 from launcher.netplay.irc_color import IRCColor
 from launcher.netplay.lobby_client import LobbyClient
@@ -146,7 +148,158 @@ def warnings(netplay):
     ]
 
 
-def test_host_and_player_start_together(lobby_port, ui, launchers):
+@pytest.mark.parametrize(
+    "name,expected",
+    [("#barbarian-daf", True), ("#barbarian-HST", True),
+     ("#barbarian-p2", True), ("#barbarian-1", True),
+     ("#test-game", True), ("&development", True),
+     ("#FS-UAE-Lobby", False), ("#fs-uae-lobby", False),
+     ("#general", False), ("#game-longtag", False),
+     ("#game-", False), ("#-daf", False), (None, False)],
+)
+def test_game_channel_recognition(launchers, name, expected):
+    netplay = launchers("PL2", ops={"HST"})
+    assert netplay.is_game_channel(name) is expected
+
+
+def test_player_joins_another_operators_tagged_channel(ui, launchers):
+    netplay = launchers("PL2", ops={"HST"})
+    netplay.on_irc("joined", {"channel": "#barbarian-hst"})
+    assert netplay.game_channel == "#barbarian-hst"
+
+
+@pytest.mark.parametrize(
+    "entered,expected",
+    [("#barbarian-hst", "#barbarian-hst"), ("barbarian-hst", "#barbarian-hst")],
+)
+def test_join_game_channel_preserves_custom_channel(monkeypatch, entered, expected):
+    settings = {Option.CONFIG_NAME: "Barbarian", Option.NETPLAY_TAG: "HST"}
+    monkeypatch.setattr(
+        netplay_panel.LauncherSettings, "get", lambda key: settings[key]
+    )
+    dialog = {}
+
+    def get_text(parent, title, label_text, default_text="new"):
+        dialog["default"] = default_text
+        return entered
+
+    monkeypatch.setattr(netplay_panel.SimpleTextInputDialog, "get_text", get_text)
+    joined = []
+    button = SimpleNamespace(
+        irc=SimpleNamespace(
+            join=lambda channel, private=False: joined.append((channel, private))
+        ),
+        private_checkbox=None,
+    )
+
+    netplay_panel.JoinChannelButton.on_activated(button)
+
+    assert dialog["default"] == "#barbarian-hst"
+    assert joined == [(expected, False)]
+
+
+@pytest.mark.parametrize("private", [False, True])
+@pytest.mark.parametrize("created", [False, True])
+def test_confirmed_channel_announcements(monkeypatch, private, created):
+    from unittest.mock import Mock
+    from launcher.netplay.irc import IRC, LOBBY_CHANNEL
+
+    irc = IRC()
+    irc.client = Mock()
+    irc.my_nick = "Player"
+    monkeypatch.setattr(irc, "privmsg", Mock())
+    irc.active_channel_name = "#another-game"
+    irc.join("#barbarian-daf", private=private)
+    irc.privmsg.assert_not_called()
+    irc.irc_join("Player!user@localhost", "#barbarian-daf")
+    irc.privmsg.assert_not_called()
+    nicks = "@Player" if created else "@Host Player"
+    irc.irc_namreply("server", "Player", "=", "#barbarian-daf", nicks)
+    irc.privmsg.assert_not_called()
+    irc.irc_endofnames("server", "Player", "#barbarian-daf", "End of NAMES")
+    if private:
+        irc.privmsg.assert_not_called()
+    else:
+        action = "created" if created else "joined"
+        irc.privmsg.assert_called_once_with(
+            LOBBY_CHANNEL, f"Player {action} game channel #barbarian-daf."
+        )
+    calls = irc.privmsg.call_count
+    irc.irc_endofnames("server", "Player", "#barbarian-daf", "End of NAMES")
+    assert irc.privmsg.call_count == calls
+
+
+def test_private_multi_channel_join_does_not_announce(monkeypatch):
+    from unittest.mock import Mock
+    from launcher.netplay.irc import IRC
+
+    irc = IRC()
+    irc.client = Mock()
+    irc.my_nick = "Player"
+    monkeypatch.setattr(irc, "privmsg", Mock())
+    irc.join("#alpha-daf,#beta-hst", private=True)
+
+    for channel in ("#alpha-daf", "#beta-hst"):
+        irc.irc_join("Player!user@localhost", channel)
+        irc.irc_endofnames("server", "Player", channel, "End of NAMES")
+
+    irc.privmsg.assert_not_called()
+
+
+def test_manual_game_channel_creation_announces_in_lobby(monkeypatch):
+    from unittest.mock import Mock
+    from launcher.netplay.irc import IRC, LOBBY_CHANNEL
+
+    irc = IRC()
+    irc.client = Mock()
+    irc.my_nick = "Host"
+    monkeypatch.setattr(irc, "privmsg", Mock())
+    irc.command_join(["#manual-hst"])
+    irc.privmsg.assert_not_called()
+    irc.irc_join("Host!user@localhost", "#manual-hst")
+    irc.irc_namreply("server", "Host", "=", "#manual-hst", "@Host")
+    irc.irc_endofnames("server", "Host", "#manual-hst", "End of NAMES")
+    irc.privmsg.assert_called_once_with(
+        LOBBY_CHANNEL, "Host created game channel #manual-hst."
+    )
+
+
+def test_other_users_join_does_not_announce(monkeypatch):
+    from unittest.mock import Mock
+    from launcher.netplay.irc import IRC
+
+    irc = IRC()
+    irc.client = Mock()
+    irc.my_nick = "Player"
+    monkeypatch.setattr(irc, "privmsg", Mock())
+    irc.irc_join("Other!user@localhost", "#barbarian-daf")
+    irc.irc_endofnames("server", "Player", "#barbarian-daf", "End of NAMES")
+    irc.privmsg.assert_not_called()
+
+
+def test_private_channel_can_later_be_joined_publicly(monkeypatch):
+    from unittest.mock import Mock
+    from launcher.netplay.irc import IRC, LOBBY_CHANNEL
+
+    irc = IRC()
+    irc.client = Mock()
+    irc.my_nick = "Host"
+    monkeypatch.setattr(irc, "privmsg", Mock())
+    for private in (True, False):
+        irc.join("#barbarian-daf", private=private)
+        irc.irc_join("Host!user@localhost", "#barbarian-daf")
+        irc.irc_namreply("server", "Host", "=", "#barbarian-daf", "@Host")
+        irc.irc_endofnames("server", "Host", "#barbarian-daf", "End of NAMES")
+        if private:
+            irc.privmsg.assert_not_called()
+    irc.privmsg.assert_called_once_with(
+        LOBBY_CHANNEL, "Host created game channel #barbarian-daf."
+    )
+
+
+@pytest.mark.parametrize("channel_name", ["#test-game", "#test-hst"])
+def test_host_and_player_start_together(lobby_port, ui, launchers, monkeypatch, channel_name):
+    monkeypatch.setitem(globals(), "CHANNEL", channel_name)
     host = launchers("HST", ops={"HST"})
     player = launchers("PL2", ops={"HST"})
     lobby = format_lobby("127.0.0.1", lobby_port)

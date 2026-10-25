@@ -1,6 +1,6 @@
 import os
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import fsui
 from fsui.qt import QDialog, QFontMetrics, QImage, QPainter, QTimer
@@ -831,7 +831,7 @@ class TestLaunchAndNetplay(WidgetTestCase):
                         try:
                             for width in (800, 1000, 1500):
                                 window.set_size((width, 850))
-                                for channel, operator in ((LOBBY_CHANNEL, False), ("#layout-game", False), ("#layout-game", True)):
+                                for channel, operator in ((LOBBY_CHANNEL, False), ("#layout-game", False), ("#layout-game", True), ("#layout-daf", False), ("#layout-daf", True)):
                                     with self.subTest(width=width, channel=channel, operator=operator), patch.object(page.panel.netplay, "is_op", return_value=operator):
                                         page.panel.active_channel = channel
                                         page.panel.update_action_buttons_visibility()
@@ -894,10 +894,10 @@ class TestLaunchAndNetplay(WidgetTestCase):
                         "@ReplayUser",
                     )
                     self.assertEqual(panel.nick_list.get_item(0), "@ReplayUser")
-                    irc.irc_join("ReplayUser!user@localhost", "#replay-game")
+                    irc.irc_join("ReplayUser!user@localhost", "#replay-hst")
                     self.assertFalse(panel.netplay.is_op())
                     irc.irc_namreply(
-                        "server", "ReplayUser", "=", "#replay-game",
+                        "server", "ReplayUser", "=", "#replay-hst",
                         "@ReplayUser",
                     )
                     self.application.processEvents()
@@ -910,12 +910,12 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     ):
                         self.assertTrue(control.visible())
                         self.assertGreater(control.widget().geometry().y(), 0)
-                    irc.irc_mode("server", "#replay-game", "-o", "ReplayUser")
+                    irc.irc_mode("server", "#replay-hst", "-o", "ReplayUser")
                     self.assertFalse(panel.netplay.is_op())
                     self.assertFalse(panel.host_game_button.visible())
                     self.assertFalse(panel.start_button.visible())
                     self.assertTrue(panel.recheck_button.visible())
-                    irc.irc_mode("server", "#replay-game", "+o", "ReplayUser")
+                    irc.irc_mode("server", "#replay-hst", "+o", "ReplayUser")
                     self.assertTrue(panel.netplay.is_op())
                     self.assertTrue(panel.host_game_button.visible())
                 finally:
@@ -963,6 +963,91 @@ class TestLaunchAndNetplay(WidgetTestCase):
                         task.failed.connect.assert_called_once_with(dialog.on_error)
                         dialog.was_closed = True
                         dialog.close()
+
+    def test_join_channel_uses_current_game_title(self):
+        from launcher.netplay.netplay_panel import JoinChannelButton
+        from launcher.option import Option
+
+        self.setup_dialog()
+        irc = Mock()
+        button = JoinChannelButton(self.dialog, irc)
+        cases = (
+            ("Barbarian", "DAF", "#barbarian-daf", "#barbarian-daf", "/join #barbarian-daf"),
+            ("  Shadow of the Beast  ", " PL2 ", "#my-game-pl2", "#shadow-of-the-beast-pl2", "/join #my-game-pl2"),
+            ("Lotus Turbo Challenge", "", "#lotus-turbo-challenge-unk", "#lotus-turbo-challenge-unk", "/join #lotus-turbo-challenge-unk"),
+            ("Barbarian", " # D_AF! ", "#barbarian-daf", "#barbarian-daf", "/join #barbarian-daf"),
+            ("Barbarian", "ABCD", "#barbarian-abc", "#barbarian-abc", "/join #barbarian-abc"),
+            ("Barbarian", "!!!", "#barbarian-unk", "#barbarian-unk", "/join #barbarian-unk"),
+            ("", "DAF", None, "#new-daf", None),
+            ("   ", "DAF", "", "#new-daf", None),
+        )
+        for title, tag, response, expected_default, expected_command in cases:
+            settings = {Option.CONFIG_NAME: title, Option.NETPLAY_TAG: tag}
+            with self.subTest(title=title, tag=tag), patch("launcher.netplay.netplay_panel.LauncherSettings.get", side_effect=settings.__getitem__) as get_setting:
+                with patch("launcher.netplay.netplay_panel.SimpleTextInputDialog.get_text", return_value=response) as prompt:
+                    irc.reset_mock()
+                    button.widget().click()
+                    self.assertEqual(get_setting.call_args_list[0].args, (Option.CONFIG_NAME,))
+                    self.assertEqual(prompt.call_args.kwargs["default_text"], expected_default)
+                    irc.handle_command.assert_not_called()
+                    if expected_command is None:
+                        irc.join.assert_not_called()
+                        self.assertEqual(
+                            get_setting.call_args_list,
+                            [
+                                call(Option.CONFIG_NAME),
+                                call(Option.NETPLAY_TAG),
+                            ],
+                        )
+                    else:
+                        irc.join.assert_called_once_with(expected_command.removeprefix("/join "), private=False)
+                        self.assertEqual(get_setting.call_args_list[1].args, (Option.NETPLAY_TAG,))
+        self.run_dialog()
+
+    def test_join_channel_private_checkbox(self):
+        from launcher.netplay.netplay_panel import NetplayPanel
+        from launcher.option import Option
+
+        self.setup_dialog()
+        with patch("launcher.netplay.netplay_panel.Netplay") as netplay_class:
+            panel = NetplayPanel(self.dialog, header=False, columns=True)
+            irc = netplay_class.return_value.irc
+            self.assertFalse(panel.private_game_checkbox.is_checked())
+            values = {Option.CONFIG_NAME: "Barbarian", Option.NETPLAY_TAG: "DAF"}
+            with patch("launcher.netplay.netplay_panel.LauncherSettings.get", side_effect=values.__getitem__):
+                with patch("launcher.netplay.netplay_panel.SimpleTextInputDialog.get_text", return_value="Barbarian"):
+                    for private in (False, True):
+                        with self.subTest(private=private):
+                            irc.reset_mock()
+                            panel.private_game_checkbox.check(private)
+                            panel.join_channel_button.widget().click()
+                            irc.join.assert_called_once_with("#barbarian-daf", private=private)
+                            irc.handle_command.assert_not_called()
+                with patch("launcher.netplay.netplay_panel.SimpleTextInputDialog.get_text", return_value=None):
+                    irc.reset_mock()
+                    panel.join_channel_button.widget().click()
+                    irc.join.assert_not_called()
+                    irc.handle_command.assert_not_called()
+            panel.on_destroy()
+        self.run_dialog()
+
+    def test_join_channel_dialog_selects_default_title(self):
+        from fsui.qt import QEvent
+        from launcher.netplay.netplay_panel import SimpleTextInputDialog
+
+        self.setup_dialog()
+        for title in ("Barbarian", "Shadow of the Beast", "new"):
+            with self.subTest(title=title):
+                dialog = SimpleTextInputDialog(
+                    self.dialog, "Enter Game Name", "Game Name:",
+                    default_text=title,
+                )
+                self.assertEqual(dialog.text_field.get_text(), title)
+                self.assertEqual(dialog.text_field.selectedText(), title)
+                dialog.reject()
+                dialog.deleteLater()
+                self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+        self.run_dialog()
 
     def test_netplay_action_transitions(self):
         from launcher.netplay.irc import LOBBY_CHANNEL
