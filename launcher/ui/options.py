@@ -14,11 +14,15 @@ class OptionWidgetFactory(object):
     """Factory for creating user interface groups for options."""
 
     # noinspection PyShadowingBuiltins
-    def __init__(self, check=False, help=False, settings=False, label=True):
+    def __init__(
+        self, check=False, help=False, settings=False, label=True, expand=False
+    ):
         self.check = check
         self.help = help
         self.label_spacing = 10
         self.label = label
+        self.expand = expand
+        self.option_labels = []
         if settings:
             self.options = LauncherSettings
         else:
@@ -36,7 +40,7 @@ class OptionWidgetFactory(object):
         label=None,
     ):
         option = Option.get(name)
-        return create_option_group(
+        group = create_option_group(
             parent,
             self.options,
             option,
@@ -45,10 +49,17 @@ class OptionWidgetFactory(object):
             text if text is not None else gettext(option["description"]),
             check if check is not None else self.check,
             help if help is not None else self.help,
-            self.label_spacing,
+            self.label_spacing * 2 if self.expand else self.label_spacing,
             platforms=platforms,
             use_label=(label if label is not None else self.label),
+            expand=self.expand,
         )
+        if self.expand and group.option_label is not None:
+            self.option_labels.append(group.option_label)
+            width = max(label.get_min_width() for label in self.option_labels)
+            for label in self.option_labels:
+                label.set_min_width(width)
+        return group
 
 
 class OptionPanel(fsui.Panel):
@@ -70,40 +81,50 @@ def create_option_group(
     label_spacing,
     platforms=None,
     use_label=True,
+    expand=False,
 ):
     # group = fsui.Group(parent)
     group = OptionPanel(parent, platforms)
     group.layout = fsui.HorizontalLayout()
+    group.option_label = None
 
     if use_checkbox:
+        group.option_label = OptionCheckBox(
+            group, option_text + ":", options, key
+        )
         group.layout.add(
-            OptionCheckBox(group, option_text + ":", options, key),
+            group.option_label,
             margin_right=label_spacing,
         )
     elif use_label:
+        group.option_label = fsui.Label(group, option_text + ":")
         group.layout.add(
-            fsui.Label(group, option_text + ":"), margin_right=label_spacing
+            group.option_label, margin_right=label_spacing
         )
 
     choice_values = []
 
     if option_type == "boolean":
-        group.layout.add_spacer(0, expand=True)
+        if not expand:
+            group.layout.add_spacer(0, expand=True)
         group.layout.add(
             BooleanChoiceControl(
                 group, options, key, use_checkbox=use_checkbox
-            )
+            ),
+            expand=expand,
         )
 
     elif option_type == "choice":
-        group.layout.add_spacer(0, expand=True)
+        if not expand:
+            group.layout.add_spacer(0, expand=True)
         choices = option["values"]
         # if use_checkbox:
         #     choices,insert(("", gettext("Auto")))
         group.layout.add(
             ChoiceControl(
                 group, options, key, choices, use_checkbox=use_checkbox
-            )
+            ),
+            expand=expand,
         )
 
     elif option_type == "string":
@@ -161,8 +182,11 @@ def create_option_group(
 
         # spin_ctrl.on_changed = on_spin
         # group.layout.add(check_box)
-        group.layout.add_spacer(0, expand=True)
-        group.layout.add(spin_ctrl, margin_left=10)
+        if not expand:
+            group.layout.add_spacer(0, expand=True)
+        group.layout.add(
+            spin_ctrl, expand=expand, margin_left=0 if expand else 10
+        )
 
     if choice_values:
 
@@ -193,8 +217,8 @@ class ConfigWidgetFactory(OptionWidgetFactory):
     """Factory for creating user interface groups for config options."""
 
     # noinspection PyShadowingBuiltins
-    def __init__(self, check=True, help=False, label=True):
-        super().__init__(check=check, help=help, label=label)
+    def __init__(self, check=True, help=False, label=True, expand=False):
+        super().__init__(check=check, help=help, label=label, expand=expand)
 
 
 class SettingsWidgetFactory(OptionWidgetFactory):

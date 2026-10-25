@@ -14,13 +14,25 @@ class SettingsPage(fsui.Panel):
         self.layout.padding_right = 20
         self.icon_header = None
         self.options_on_page = set()
+        self.option_groups = []
 
     def add_header(self, icon, title, subtitle=""):
         self.icon_header = SettingsHeader(self, icon, title, subtitle)
         self.layout.add(self.icon_header, fill=True, margin_bottom=20)
 
     def add_option(self, name, description=""):
-        group = OptionUI.create_group(self, name, description=description)
+        group = OptionUI.create_group(
+            self, name, description=description, expand=True
+        )
+        self.option_groups.append(group)
+        label_layouts = [
+            item.label_layout for item in self.option_groups
+            if hasattr(item, "label_layout")
+        ]
+        if label_layouts:
+            width = max(layout.get_min_width() for layout in label_layouts)
+            for layout in label_layouts:
+                layout.min_width = width
         self.layout.add(group, fill=True, margin_top=10, margin_bottom=10)
         self.options_on_page.add(name)
         return group
