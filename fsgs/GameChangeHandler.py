@@ -101,7 +101,7 @@ class GameChangeHandler(object):
                 filepath = os.path.join(dirpath, filename)
                 checksum = self.md5file(filepath)
                 files[filepath[lpath + 1 :]] = checksum
-        print(" - found %d files (checksummed)" % len(files))
+        print(f" - found {len(files)} files (checksummed)")
         return files
 
     def md5file(self, file):

@@ -6,4 +6,4 @@ target-version = "py312"
 line-length = 79
 
 [tool.ruff.lint]
-select = ["UP032"]
+select = ["UP031", "UP032"]
