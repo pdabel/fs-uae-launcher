@@ -1015,7 +1015,8 @@ class TestLaunchAndNetplay(WidgetTestCase):
             self.assertFalse(panel.private_game_checkbox.is_checked())
             values = {Option.CONFIG_NAME: "Barbarian", Option.NETPLAY_TAG: "DAF"}
             with patch("launcher.netplay.netplay_panel.LauncherSettings.get", side_effect=values.__getitem__):
-                with patch("launcher.netplay.netplay_panel.SimpleTextInputDialog.get_text", return_value="Barbarian"):
+                accept_default = lambda *args, default_text, **kwargs: default_text
+                with patch("launcher.netplay.netplay_panel.SimpleTextInputDialog.get_text", side_effect=accept_default):
                     for private in (False, True):
                         with self.subTest(private=private):
                             irc.reset_mock()
