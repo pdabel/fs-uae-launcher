@@ -229,6 +229,23 @@ def test_confirmed_channel_announcements(monkeypatch, private, created):
     assert irc.privmsg.call_count == calls
 
 
+def test_private_multi_channel_join_does_not_announce(monkeypatch):
+    from unittest.mock import Mock
+    from launcher.netplay.irc import IRC
+
+    irc = IRC()
+    irc.client = Mock()
+    irc.my_nick = "Player"
+    monkeypatch.setattr(irc, "privmsg", Mock())
+    irc.join("#alpha-daf,#beta-hst", private=True)
+
+    for channel in ("#alpha-daf", "#beta-hst"):
+        irc.irc_join("Player!user@localhost", channel)
+        irc.irc_endofnames("server", "Player", channel, "End of NAMES")
+
+    irc.privmsg.assert_not_called()
+
+
 def test_manual_game_channel_creation_announces_in_lobby(monkeypatch):
     from unittest.mock import Mock
     from launcher.netplay.irc import IRC, LOBBY_CHANNEL

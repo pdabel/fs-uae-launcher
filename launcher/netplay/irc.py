@@ -327,11 +327,12 @@ class IRC:
             self.warning("join: invalid arguments")
 
     def join(self, channel, private=False):
-        key = channel.casefold()
-        if private:
-            self.private_game_channels.add(key)
-        else:
-            self.private_game_channels.discard(key)
+        for target in channel.split(","):
+            key = target.strip().casefold()
+            if private:
+                self.private_game_channels.add(key)
+            else:
+                self.private_game_channels.discard(key)
         helpers.join(self.client, channel)
 
     def command_leave(self, args):
