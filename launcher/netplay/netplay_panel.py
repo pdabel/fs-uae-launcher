@@ -10,8 +10,9 @@ from fsui.qt import QApplication
 from qtpy import QtGui
 
 class NetplayPanel(fsui.Panel):
-    def __init__(self, parent, header=True):
+    def __init__(self, parent, header=True, columns=False):
         fsui.Panel.__init__(self, parent)
+        self.columns = columns
         Skin.set_background_color(self)
         self.layout = fsui.VerticalLayout()
 
@@ -31,17 +32,21 @@ class NetplayPanel(fsui.Panel):
         
 
         ver_layout = fsui.VerticalLayout()
-        hori_layout.add(ver_layout, fill=True)
-        self.channel_list = fsui.ListView(self)
+        self.channel_panel = fsui.Panel(self) if columns else self
+        if columns:
+            self.channel_panel.layout = ver_layout
+        else:
+            hori_layout.add(ver_layout, fill=True)
+        self.channel_list = fsui.ListView(self.channel_panel)
         self.channel_list.set_min_width(212)
         self.channel_list.on_select_item = self.on_select_channel
         ver_layout.add(self.channel_list, fill=True, expand=True, margin=10)
-        self.nick_list = fsui.ListView(self)
+        self.nick_list = fsui.ListView(self.channel_panel)
         ver_layout.add(self.nick_list, fill=True, expand=True, margin=10)
         # The lobby game, one row per slot: who is ready, and why not.
-        self.session_label = fsui.Label(self, gettext("No game"))
+        self.session_label = fsui.Label(self.channel_panel, gettext("No game"))
         ver_layout.add(self.session_label, margin=10, margin_bottom=0)
-        self.session_list = fsui.ListView(self)
+        self.session_list = fsui.ListView(self.channel_panel)
         ver_layout.add(self.session_list, fill=True, expand=True, margin=10)
 
         self.text_area = fsui.TextArea(self, font_family="monospace")
@@ -53,6 +58,9 @@ class NetplayPanel(fsui.Panel):
         IRCBroadcaster.add_listener(self)
         self.netplay.session_listeners.append(self.on_session)
 
+        self.game_panel = fsui.Panel(self) if columns else self
+        if columns:
+            self.game_panel.layout = fsui.VerticalLayout()
         self._build_netplay_game_inputs()
         self._manual_command_input()
         self._build_netplay_buttons()
@@ -69,56 +77,81 @@ class NetplayPanel(fsui.Panel):
         self.layout.add(self.input_field, fill=True, margin=10, margin_top=0)
 
     def _build_netplay_game_inputs(self):
+        parent = self.game_panel
         input_row = fsui.HorizontalLayout()
-        self.layout.add(input_row, fill=True, margin=10, margin_top=0)
+        parent.layout.add(input_row, fill=True, margin=10, margin_top=0)
 
-        self.port_label = fsui.Label(self, gettext("Port (default: 25101)"))
-        input_row.add(self.port_label, margin_right=5)
-        self.port_field = fsui.TextField(self)
+        self.port_label = fsui.Label(
+            parent, gettext("Port") + ":" if self.columns else gettext("Port (default: 25101)")
+        )
+        input_row.add(self.port_label, margin_right=20 if self.columns else 5)
+        self.port_field = fsui.TextField(parent)
         self.port_field.set_text("25101")
         self.netplay_port_validator = QtGui.QIntValidator(bottom=25100, top=25500)
         self.port_field.setValidator(self.netplay_port_validator)  # Set validator.
         self.port_field.set_min_width(75)
-        input_row.add(self.port_field, fill=False, margin_right=15)
+        input_row.add(
+            self.port_field, expand=self.columns, fill=False,
+            margin_right=0 if self.columns else 15,
+        )
 
-        self.player_count_label = fsui.Label(self, gettext("Number of Players"))
-        input_row.add(self.player_count_label, margin_right=5)
-        self.player_count_field = fsui.TextField(self)
+        if self.columns:
+            input_row = fsui.HorizontalLayout()
+            parent.layout.add(input_row, fill=True, margin=10)
+            self.port_field.setToolTip(gettext("Default port: 25101"))
+        self.player_count_label = fsui.Label(
+            parent, gettext("Players") + ":" if self.columns else gettext("Number of Players")
+        )
+        input_row.add(self.player_count_label, margin_right=20 if self.columns else 5)
+        self.player_count_field = fsui.TextField(parent)
+        if self.columns:
+            label_width = max(
+                self.port_label.get_min_width(),
+                self.player_count_label.get_min_width(),
+            )
+            self.port_label.set_min_width(label_width)
+            self.player_count_label.set_min_width(label_width)
         self.player_count_field.set_text("2")
         self.player_count_validator = QtGui.QIntValidator(bottom=2, top=6)
         self.player_count_field.setValidator(self.player_count_validator)  # Set validator.
-        input_row.add(self.player_count_field, fill=False)
+        input_row.add(self.player_count_field, expand=self.columns, fill=False)
         # Add a spacer to push the info button to the far right
-        input_row.add_spacer(0, expand=True)
+        if not self.columns:
+            input_row.add_spacer(0, expand=True)
 
-        info_button = InfoButton(self)
+        if self.columns:
+            input_row = fsui.HorizontalLayout()
+            parent.layout.add(input_row, fill=True, margin=10)
+            input_row.add_spacer(0, expand=True)
+        info_button = InfoButton(parent)
         input_row.add(info_button, margin_left=10)
 
     def _build_netplay_buttons(self):
-        button_layout = fsui.HorizontalLayout()
-        self.layout.add(button_layout, fill=True, margin=10)
-        self.join_channel_button = JoinChannelButton(self, self.netplay.irc)
-        button_layout.add(self.join_channel_button, fill=True, margin_left=0)
+        parent = self.game_panel
+        button_layout = fsui.VerticalLayout() if self.columns else fsui.HorizontalLayout()
+        parent.layout.add(button_layout, fill=True, margin=10)
+        self.join_channel_button = JoinChannelButton(self.channel_panel, self.netplay.irc)
+        if self.columns:
+            self.channel_panel.layout.add(self.join_channel_button, fill=True, margin=10)
+        else:
+            button_layout.add(self.join_channel_button, fill=True, margin_left=0)
  
          # Add a spacer before the Start Game button and store a reference
-        self.action_spacer_pre = button_layout.add_spacer(0, expand=True)
+        self.action_spacer_pre = button_layout.add_spacer(0, expand=not self.columns)
 
         # Host Game button to host a game on the IRC channel (only shown in game channels)
-        self.host_game_button = HostGameButton(self, self.netplay, self, self.netplay.irc)
-        button_layout.add(self.host_game_button, fill=True, margin_left=10)
-        # Reset button to reset config (only shown in game channels)
-        self.reset_button = Reset(self, self.netplay, self.netplay.irc)
-        button_layout.add(self.reset_button, fill=True, margin_left=10)
+        self.host_game_button = HostGameButton(parent, self.netplay, self, self.netplay.irc)
+        button_layout.add(self.host_game_button, fill=True, margin_left=0 if self.columns else 10)
         # Start Game button (only shown in game channels)
-        self.start_button = StartGameButton(self, self.netplay, self.netplay.irc)
-        button_layout.add(self.start_button, fill=True, margin_left=10)
+        self.start_button = StartGameButton(parent, self.netplay, self.netplay.irc)
+        button_layout.add(self.start_button, fill=True, margin_left=0 if self.columns else 10, margin_top=10 if self.columns else 0)
 
         # Add a spacer before the Start Game button and store a reference
-        self.action_spacer_post = button_layout.add_spacer(0, expand=True)
+        self.action_spacer_post = button_layout.add_spacer(0, expand=not self.columns)
 
         # Re-check: apply the game's config again, after adding missing files
-        self.recheck_button = Recheck(self, self.netplay, self.netplay.irc)
-        button_layout.add(self.recheck_button, fill=True, margin_left=10)
+        self.recheck_button = Recheck(parent, self.netplay, self.netplay.irc)
+        button_layout.add(self.recheck_button, fill=True, margin_left=0 if self.columns else 10, margin_top=10 if self.columns else 0)
         self.on_session(None)
 
     def on_destroy(self):
@@ -192,7 +225,6 @@ class NetplayPanel(fsui.Panel):
         # Master list of all action buttons
         all_buttons = [
             self.host_game_button,
-            self.reset_button,
             self.start_button,
             self.player_count_field,
             self.player_count_label,
@@ -216,6 +248,9 @@ class NetplayPanel(fsui.Panel):
             else:
                 btn.hide()
         self.layout.update()
+        if self.columns:
+            self.game_panel.layout.update()
+            self.channel_panel.layout.update()
         callback = getattr(self, "on_action_layout_changed", None)
         if callback is not None:
             callback()
@@ -362,18 +397,6 @@ class Recheck(fsui.Button):
 
     def on_activated(self):
         self.netplay.handle_command("/recheck")
-
-class Reset(fsui.Button):
-    def __init__(self, parent, netplay, irc):
-        super().__init__(parent, gettext("Reset"))
-        self.irc = irc
-        self.netplay = netplay
-
-    def on_activated(self):
-        command = "/reset"
-        self.irc.handle_command(f"/me ran the following command:")
-        self.irc.handle_command(f"/me {command}")
-        self.netplay.handle_command(command)
 
 class StartGameButton(fsui.Button):
     def __init__(self, parent, netplay, irc):
