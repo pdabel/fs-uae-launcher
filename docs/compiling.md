@@ -108,66 +108,16 @@ Remember to also install FS-UAE itself.
 
 ## Windows (Historical, Outside Support Target)
 
-The following legacy notes are retained for reference only. They are not
-current support or build instructions and have not been modernized or tested.
+The former Python 3.6/PyQt5/cx_Freeze recipe is retired. It does not describe
+the current launcher and must not be used to assemble a Qt 6 environment.
+Historical instructions remain available in Git history; there is no
+supported replacement Windows build recipe in this document.
 
-The following instructions / notes assume that an MSYS2 shell has been
-installed and configured for building FS-UAE. Though the dependencies
-for FS-UAE Launcher do not depend on MSYS2 nor MINGW, the build scripts
-are run from an MSYS2 shell.
-
-FIXME: Write about dependencies for running the launcher from the source
-directory:
-
-    pacman -S mingw-w64-x86_64-python3 mingw-w64-x86_64-python3-lhafile \
-    mingw-w64-x86_64-python3-pillow mingw-w64-x86_64-python3-pyqt5 \
-    mingw-w64-x86_64-python3-requests mingw-w64-x86_64-python3-setuptools
-
-And finally, from the fs-uae-launcher source directory:
-
-    ./bootstrap
-    make
-
-This will allow you to run fs-uae-launcher from the source directory by
-executing (See also the section "Running without installing"):
-
-    ./fs-uae-launcher
-
-The following instructions must be followed in order to build the
-distributable version.
-
-Download Python 3.6.8 (or a newer _3.6.x_ version)
-
-- https://www.python.org/ftp/python/3.6.8/python-3.6.8-amd64.exe
-- Install to default path (...\AppData\Local\Programs\...)
-- Default settings, do _not_ add to PATH
-- Answer yes to increase max path limit at the end?
-
-Install Visual Studio Build Tools 2019 (vs_buildtools_xxx.yyy.exe)
-
-- FIXME: Link to download page
-- Install invidual components:
-  - MSVC v140 - VS 2015 C++ build tools (v14.00)
-  - Windows 10 SDK (10.0.18362)
-
-Start Windows cmd shell (_not_ MSYS2) and run:
-
-    SET PATH=%PATH%;C:\Program Files (x86)\Windows Kits\10\bin\10.0.18362.0\x64
-    rc.exe
-
-You might need to replace the version number `10.0.18362.0` in the PATH if you
-installed a newer version. We run rc.exe just check that it exists (verify
-thatyou do not get errors here). Then follow with:
-
-    cd %LOCALAPPDATA%\Programs\Python\Python36
-    python -m pip install --upgrade pip
-    python -m pip install lhafile requests pillow PyQt5==5.12.2
-
-In the MSYS2 MinGW 64-bit shell:
-
-    git clone git@github.com:FrodeSolheim/cx_Freeze.git
-    cd cx_Freeze
-    ./install-windows.sh
+The unused Qt 5 bundle-cleaning scripts have also been removed on all
+platforms. Supported Ubuntu/macOS bundles use `fsbuild/fix-qt.py` and the
+PySide6-specific cleanup in `fsbuild/build.sh`. Do not mix PyQt5 or another
+Qt binding into the locked PySide6 environment. Windows packaging support
+would require separate dependency, startup, and frozen-build validation.
 
 ## macOS
 

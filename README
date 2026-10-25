@@ -82,9 +82,14 @@ theme names fall back to plain Fusion. Emulator, database, and networking
 behavior is unchanged.
 
 It can optionally use the `lhafile` python package to support .lha archives.
-Historical INSTALL and Windows packaging recipes still mention Qt 5. For the
-current Ubuntu/macOS target, use the locked Qt 6 source environment above and
-the platform workflows described in docs/compiling.md.
+The old Windows Python 3.6/PyQt5/cx_Freeze instructions and unused Qt 5
+bundle-cleaning scripts are retired. Supported Ubuntu/macOS packaging uses
+Qt 6/PySide6 through `fsbuild/fix-qt.py` and `fsbuild/build.sh`; Windows
+packaging remains unsupported. Do not mix Qt bindings in one environment.
+Use the locked source environment above and the platform workflows described
+in docs/compiling.md. Packaging policy checks run with:
+
+  pipenv run python -m pytest fsbuild/tests/test_python_support.py
 
 See [the Python and dependency modernization TODO](docs/python-dependency-modernization.md)
 for the reviewed packaging, supported-Python, dependency, and code-quality
