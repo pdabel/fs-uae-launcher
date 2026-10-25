@@ -10,7 +10,7 @@ import sys
 if sys.argv[1] == "build_exe":
     from cx_Freeze import setup, Executable
 else:
-    from distutils.core import setup
+    from setuptools import setup
 
 if "install" in sys.argv:
     for arg in sys.argv:
@@ -99,6 +99,7 @@ add_packages()
 setup_kwargs = {
     "name": py_name,
     "version": version,
+    "python_requires": ">=3.12",
     "author": author,
     "author_email": author_email,
     "packages": setup_packages,
