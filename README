@@ -231,13 +231,12 @@ alongside the chat. The Stop server button stops hosting without closing
 the page. Closing the main window also stops the owned server. There is no
 Reset button in the netplay interface; the manual `/reset` command remains
 available.
-Join Game Channel prefills the current game/configuration title, selected for
-easy editing. A blank title falls back to `new`; channel-name conversion and
-cancelling the dialog keep their existing behavior.
-New channels end with the operator's Net play tag rather than `-game`, for
-example `#barbarian-daf`. Tags use up to three ASCII letters/digits in lowercase;
-a blank or unusable tag falls back to `unk`. Other players can join the same
-channel regardless of their own tag. Legacy `-game` channels remain usable.
+Join Game Channel prefills a complete, editable channel using the current
+game/configuration title and the local Net play tag, for example
+`#barbarian-daf`. Players can replace it with the host's specific channel;
+their own tag is not appended to the entered channel. A missing `#` prefix is
+added automatically. A blank title falls back to `new`, and a blank or unusable
+tag falls back to `unk`. Legacy `-game` channels remain usable.
 Private beside Join Game Channel suppresses lobby announcements for that join.
 It is unchecked by default. Public joins and newly created game channels are
 announced in the lobby only after the IRC server confirms the join and member

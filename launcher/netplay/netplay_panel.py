@@ -11,6 +11,14 @@ from launcher.ui.IconButton import IconButton
 from fsui.qt import QApplication
 from qtpy import QtGui
 
+
+def normalize_game_channel(channel):
+    channel = channel.strip()
+    if channel and channel[0] not in "&#+!":
+        channel = f"#{channel}"
+    return channel
+
+
 class NetplayPanel(fsui.Panel):
     def __init__(self, parent, header=True, columns=False):
         fsui.Panel.__init__(self, parent)
@@ -360,20 +368,21 @@ class JoinChannelButton(fsui.Button):
 
     def on_activated(self):
         default_name = LauncherSettings.get(Option.CONFIG_NAME).strip() or "new"
-        game_name = SimpleTextInputDialog.get_text(
-            self, gettext("Enter Game Name"), gettext("Game Name:"),
-            default_text=default_name,
+        game_name = default_name.replace(" ", "-").lower()
+        tag = LauncherSettings.get(Option.NETPLAY_TAG).strip().lower()
+        tag = "".join(character for character in tag if character.isascii() and character.isalnum())[:3]
+        tag = tag or Option.get(Option.NETPLAY_TAG)["default"].lower()
+        channel = SimpleTextInputDialog.get_text(
+            self, gettext("Join Game Channel"), gettext("Game Channel:"),
+            default_text=f"#{game_name}-{tag}",
         )
-        if game_name:
-            game_name = game_name.replace(" ", "-").lower()
-            tag = LauncherSettings.get(Option.NETPLAY_TAG).strip().lower()
-            tag = "".join(character for character in tag if character.isascii() and character.isalnum())[:3]
-            tag = tag or Option.get(Option.NETPLAY_TAG)["default"].lower()
+        channel = normalize_game_channel(channel or "")
+        if channel:
             private = (
                 self.private_checkbox is not None
                 and self.private_checkbox.is_checked()
             )
-            self.irc.join(f"#{game_name}-{tag}", private=private)
+            self.irc.join(channel, private=private)
 
 class HostGameButton(fsui.Button):
     def __init__(self, parent, netplay, panel, irc):

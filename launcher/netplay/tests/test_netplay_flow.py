@@ -14,6 +14,8 @@ import pytest
 
 from fsgs.context import fsgs
 from launcher.netplay import netplay as netplay_module
+from launcher.netplay import netplay_panel
+from launcher.option import Option
 from launcher.server import Server as server_module
 from launcher.netplay.irc_color import IRCColor
 from launcher.netplay.lobby_client import LobbyClient
@@ -164,6 +166,36 @@ def test_player_joins_another_operators_tagged_channel(ui, launchers):
     netplay = launchers("PL2", ops={"HST"})
     netplay.on_irc("joined", {"channel": "#barbarian-hst"})
     assert netplay.game_channel == "#barbarian-hst"
+
+
+@pytest.mark.parametrize(
+    "entered,expected",
+    [("#barbarian-hst", "#barbarian-hst"), ("barbarian-hst", "#barbarian-hst")],
+)
+def test_join_game_channel_preserves_custom_channel(monkeypatch, entered, expected):
+    settings = {Option.CONFIG_NAME: "Barbarian", Option.NETPLAY_TAG: "HST"}
+    monkeypatch.setattr(
+        netplay_panel.LauncherSettings, "get", lambda key: settings[key]
+    )
+    dialog = {}
+
+    def get_text(parent, title, label_text, default_text="new"):
+        dialog["default"] = default_text
+        return entered
+
+    monkeypatch.setattr(netplay_panel.SimpleTextInputDialog, "get_text", get_text)
+    joined = []
+    button = SimpleNamespace(
+        irc=SimpleNamespace(
+            join=lambda channel, private=False: joined.append((channel, private))
+        ),
+        private_checkbox=None,
+    )
+
+    netplay_panel.JoinChannelButton.on_activated(button)
+
+    assert dialog["default"] == "#barbarian-hst"
+    assert joined == [(expected, False)]
 
 
 @pytest.mark.parametrize("private", [False, True])
