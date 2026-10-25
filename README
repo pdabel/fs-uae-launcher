@@ -52,6 +52,12 @@ this convention locally and in CI, without enabling unrelated legacy rules:
   venv/bin/python -m pip install ruff==0.17.2
   venv/bin/pipenv run ruff check
 
+Simple synchronous command helpers use argument lists and `subprocess.run()`;
+their existing output decoding and failure handling are retained. Streaming
+archive readers, persistent emulator/server processes, and shell commands that
+rely on expansion or quoting retain their existing process APIs. Command
+regressions can be run with `pipenv run python -m pytest fsbuild/tests`.
+
 Run the core regression slice with:
 
   venv/bin/python -m pytest fsbc fstd fspy launcher/netplay launcher/server/tests
