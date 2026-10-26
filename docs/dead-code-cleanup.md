@@ -65,6 +65,7 @@ Delete these leaf-first. Removing one name can leave another unused (`fs.py`'s h
 ### 3. Python 2 leftovers
 
 - [ ] `fsbc/debug.py`: `_thread_bootstrap_2_7`, `AdditionalInfo`, and the `threading._trace_hook` import inside it. They only run when `sys.version` starts with `"2.7"`. On 3.12+, `_let_thread_exceptions_be_unhandled` just prints a warning. Reduce it to that warning, or remove the debugger hook entirely if nobody uses it.
+- [ ] `fsbc/init.py`: the `patch_unicode` parameter of `initialize_application` and its `unicode_patched` flag. It used to call `fsbc.unicode.patch_all()`, which patched `sys.argv`, `subprocess.Popen` and stdout/stderr for Python 2's byte strings, and returned early on Python 3 anyway. The module was deleted in 2.5.23dev (`38637ead`). The only caller (`launcher/apps/__init__.py`) never passes the parameter. Also drop the write-only globals `init_called`, `logging_enabled` and `exception_handler_enabled`, which nothing reads.
 - [ ] `fsgs/util/gamenameutil.py:591`: `TestGameNameUtil`, a `unittest` class inside a non-test module. pytest never collects it, and its `assertEquals` calls were removed in Python 3.12, so it would fail if it ran. Move it or delete it; see [open question 2](#open-questions).
 
 ### 4. Unused imports and variables
