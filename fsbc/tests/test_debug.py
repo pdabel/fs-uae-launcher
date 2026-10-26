@@ -1,9 +1,10 @@
 import fsbc.debug
-import pytest
 
 
 def test_mypy():
-    pytest.skip()
+    import fstd.mypy
+
+    fstd.mypy.check_module(fsbc.debug.__name__)
 
 
 def test_doctest():

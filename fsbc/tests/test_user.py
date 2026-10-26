@@ -1,9 +1,10 @@
 import fsbc.user
-import pytest
 
 
 def test_mypy():
-    pytest.skip()
+    import fstd.mypy
+
+    fstd.mypy.check_module(fsbc.user.__name__)
 
 
 def test_doctest():

@@ -1,9 +1,4 @@
 import fsbc.init
-import pytest
-
-
-def test_mypy():
-    pytest.skip()
 
 
 def test_doctest():
