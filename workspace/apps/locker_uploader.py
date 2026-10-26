@@ -70,9 +70,6 @@ class LockerUploaderWindow(fsui.DialogWindow):
         if self.task is not None:
             self.task.stop()
 
-    # def on_close_activated(self):
-    #     self.close()
-
     def on_upload_activated(self):
         if self.close_button:
             self.close_button.disable()
@@ -157,8 +154,6 @@ class LockerUploaderTask(Task):
 
             print("uploading file of size ", len(data))
 
-            # self.progressed(gettext("Verifying {name}").format(
-            #                 name=bytes_to_hex(sha1)))
             self.progressed(
                 gettext("Uploading {name}").format(name=bytes_to_hex(sha1))
             )
@@ -206,7 +201,6 @@ class LockerUploaderTask(Task):
         string_io = StringIO()
         for row in cursor:
             string_io.write(row[0])
-        # print(prefix, len(string_io.getvalue()))
         self.stop_check()
 
         retry_seconds = 1
@@ -238,6 +232,3 @@ class LockerUploaderTask(Task):
                 retry_seconds = min(retry_seconds * 2, 60 * 10)
             else:
                 return result
-
-
-# application = SimpleApplication(LockerUploaderWindow)

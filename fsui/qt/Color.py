@@ -3,7 +3,6 @@ from fsui.qt import QColor
 
 class BaseColor(object):
     def mix(self, color, opacity=0.5):
-        # print("mix", color)
         """Mixes this color with another color and returns the result.
 
         Arguments:
@@ -82,24 +81,6 @@ class Color(QColor, BaseColor):
         self.set_components(*c)
         return self
 
-    # def mix(self, color, opacity=0.5):
-    #     """Mixes this color with another color and returns the result.
-    #
-    #     Arguments:
-    #     color -- The overlay color to mix in (Color or wx.Colour)
-    #     opacity -- The opacity of the overlay color in the range [0.0, 1.0]
-    #
-    #     Returns a reference to self.
-    #     """
-    #     assert opacity >= 0.0 and opacity <= 1.0, "Invalid opacity"
-    #     iopacity = 1 - opacity
-    #     #return wx.Colour(
-    #     self.Set(
-    #             int(self.Red() * iopacity + color.Red() * opacity),
-    #             int(self.Green() * iopacity + color.Green() * opacity),
-    #             int(self.Blue() * iopacity + color.Blue() * opacity))
-    #     return self
-
     def invert(self):
         self.Set(255 - self.Red(), 255 - self.Green(), 255 - self.Blue())
         return self
@@ -176,7 +157,6 @@ class HSLColor(BaseColor):
         p = 2 * self.l - q
         hk = self.h / 360
 
-        # t = [tr, tg, tb]
         t = [hk + 1 / 3, hk, hk - 1 / 3]
 
         for i in range(3):

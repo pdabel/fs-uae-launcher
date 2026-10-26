@@ -5,9 +5,7 @@ from .Constants import Constants
 from ..option import Option
 from ..launcher_settings import LauncherSettings
 
-# LEVEL = 0xce
 LEVEL = 0xEB
-# LEVEL = 0xe4
 
 
 class LauncherTheme(object):

@@ -64,14 +64,6 @@ class GameDatabase(BaseDatabase):
 
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
     def get_license_code_for_url(self, url):
-        # cursor = self.internal_cursor()
-        # cursor.execute(
-        #     "SELECT license_code FROM file "
-        #     "WHERE external = ? LIMIT 1", (url,))
-        # row = cursor.fetchone()
-        # if not row:
-        #     return None
-        # return row[0]
         return None
 
     def add_game(self, game_id, game_uuid, game_data):
@@ -117,7 +109,6 @@ class GameDatabase(BaseDatabase):
         return result
 
     def get_game_values_for_uuid(self, game_uuid, recursive=True):
-        # print("get_game_values_for_uuid", game_uuid)
         assert game_uuid
         assert isinstance(game_uuid, str)
         return self.get_game_values(game_uuid=game_uuid, recursive=recursive)

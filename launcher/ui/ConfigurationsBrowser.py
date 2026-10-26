@@ -33,7 +33,6 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
     def on_select_item(self, index):
         if index is None:
             return
-        # self.load_configuration(self.items[index][str("uuid")])
         self.load_configuration(self.items[index])
 
     def on_activate_item(self, index):
@@ -49,13 +48,11 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
             "database_show_adult",
             "database_show_unpublished",
         ]:
-            # if key == "game_list_uuid":
             self.update_search()
             if len(self.items) > 0:
                 self.select_item(None)
                 self.select_item(0)
             else:
-                # self.select_item(None)
                 if LauncherSettings.get("parent_uuid"):
                     LauncherSettings.set("parent_uuid", "")
                     LauncherConfig.load_default_config()
@@ -99,18 +96,10 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
             platform = ""
         elif platform:
             platform = sep + PlatformHandler.get_platform_name(platform)
-            # if not extra:
-            #     sep = ""
-            # return "{0}{1}{2}{3}".format(name, sep, extra, "")
-        # else:
         text = f"{name}{extra}{platform}" or "Missing Name"
         return text
 
-        # else:
-        #     return "{0} \u00b7 {1}{2}".format(name, extra, platform)
-
     def get_item_search_text(self, index):
-        # return self.items[index][3]
         # FIXME: lower-case search string?
         return self.items[index][str("sort_key")]
 
@@ -143,10 +132,6 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
             return self.platform_icons[platform_id]
         else:
             return self.config_icon
-
-    # def on_get_item_tooltip(self, row, column):
-    #     return self.items[row][1]
-    #     #text = text.replace("\nAmiga \u00b7 ", "\n")
 
     def update_search(self):
         search = LauncherSettings.get("config_search").strip().lower()

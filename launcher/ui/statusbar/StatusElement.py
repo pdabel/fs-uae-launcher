@@ -9,7 +9,6 @@ class StatusElement(Panel):
         :type parent: fsui.Widget
         """
         Panel.__init__(self, parent, paintable=True)
-        # self.set_background_color(Color(0xd0, 0xd0, 0xd0))
         self.set_background_color(parent.get_background_color())
         self.icon = None
         self.right_icon = None
@@ -40,8 +39,6 @@ class StatusElement(Panel):
         if self.text:
             x += 6
             tw, th = self.measure_text(self.text)
-            # tw = 200
-            # th = 20
             operations.append(("text", self.text, x, (h - th) // 2))
             x += tw
         if self.right_icon:
@@ -66,7 +63,6 @@ class StatusElement(Panel):
         return operations[-1][2]
 
     def paint_element(self, dc):
-        # orig_text_color = dc.get_text_color()
         if not self.active:
             dc.set_text_color(Color(0x80, 0x80, 0x80))
         operations = self.get_draw_operations()
@@ -74,8 +70,4 @@ class StatusElement(Panel):
             if draw_type == "image":
                 dc.draw_image(draw_object, x, y)
             elif draw_type == "text":
-                # if not self.active:
-                #     dc.set_text_color(Color(0x80, 0x80, 0x80))
                 dc.draw_text(draw_object, x, y)
-                # if not self.active:
-                #     dc.set_text_color(orig_text_color)

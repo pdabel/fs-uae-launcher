@@ -67,8 +67,6 @@ class MediaListGroup(fsui.Group):
         PlatformEnableBehavior(add_button, platforms=platforms)
         hori_layout.add(add_button, margin_right=10)
 
-        # hori_layout = fsui.HorizontalLayout()
-        # self.layout.add(hori_layout, expand=True, fill=True)
         self.list_view = fsui.ListView(self)
         PlatformEnableBehavior(self.list_view, platforms=platforms)
         self.list_view.on_activate_item = self.on_activate_item
@@ -76,28 +74,9 @@ class MediaListGroup(fsui.Group):
             self.default_icon = fsui.Image("launcher:res/cdrom_16.png")
         else:
             self.default_icon = fsui.Image("launcher:res/floppy_16.png")
-        # hori_layout.add(self.list_view, expand=True, fill=True, margin=10)
         self.layout.add(
             self.list_view, expand=True, fill=True, margin=10, margin_top=0
         )
-
-        # vert_layout = fsui.VerticalLayout()
-        # hori_layout.add(vert_layout, fill=True)
-
-        # add_button = IconButton(self, "add_button.png")
-        # add_button.set_tooltip(gettext("Add Files to List"))
-        # add_button.activated.connect(self.on_add_button)
-        # vert_layout.add(add_button, margin=10)
-        #
-        # remove_button = IconButton(self, "remove_button.png")
-        # remove_button.set_tooltip(gettext("Remove Selected Files"))
-        # remove_button.activated.connect(self.on_remove_button)
-        # vert_layout.add(remove_button, margin=10)
-        #
-        # clear_button = IconButton(self, "clear_button.png")
-        # clear_button.set_tooltip(gettext("Clear List"))
-        # clear_button.activated.connect(self.on_clear_list)
-        # vert_layout.add(clear_button, margin=10)
 
         self.update_list()
         LauncherConfig.add_listener(self)
@@ -132,7 +111,6 @@ class MediaListGroup(fsui.Group):
         return items
 
     def update_list(self):
-        # items = []
         self.list_view.clear()
         for path, sha1 in self.create_list():
             dir_path, name = os.path.split(path)
@@ -141,7 +119,6 @@ class MediaListGroup(fsui.Group):
             else:
                 label = path
             self.list_view.add_item(label, self.default_icon)
-            # self.list_view.set_items(items)
 
     def on_clear_list(self):
         if self.cd_mode:

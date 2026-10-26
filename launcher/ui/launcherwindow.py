@@ -116,23 +116,16 @@ class LauncherWindow(WindowWithTabs):
             0, min_width=Skin.get_window_padding_left(), content=False
         )
         # left content
-        # if fs_uae_launcher.ui.get_screen_size()[0] > 1024:
-        #     left_width = 518
-        # else:
-        #     left_width = 400
-        # FIXME: adjust
         left_width = 462
         self.create_column(1, min_width=left_width)
 
         # right content
-        # right_width = Constants.SCREEN_SIZE[0] * 2 + 21 + 10 + 10
         extra_screenshot_width = Constants.SCREEN_SIZE[0] + 21
         need_width = 1280
 
         right_width = 518
 
         if self.is_editor_enabled():
-            # need_width += extra_screen_width
             pass
         else:
             if launcher.ui.get_screen_size()[0] >= need_width:
@@ -140,26 +133,12 @@ class LauncherWindow(WindowWithTabs):
                 right_width += extra_screenshot_width
                 pass
 
-        # right_width = 518
-
-        # if Skin.EXTRA_GROUP_MARGIN:
-        #     self.main_layout.add_spacer(Skin.EXTRA_GROUP_MARGIN)
-
         self.create_column(2, min_width=right_width, expand=True)
 
         # right border
         self.create_column(
             3, min_width=Skin.get_window_padding_right(), content=False
         )
-
-        # if self.is_editor_enabled():
-        #     from ..editor.EditorGroup import EditorGroup
-        #     editor = EditorGroup(self)
-        #     self.main_layout.add(editor, fill=True, expand=True,
-        #                          margin_right=20)
-
-        # if fs_uae_launcher.ui.get_screen_size()[1] >= 768:
-        #     right_margin = 0
 
         if launcher.ui.get_screen_size()[1] >= 720:
             self.bottom_layout = fsui.HorizontalLayout()
@@ -187,28 +166,8 @@ class LauncherWindow(WindowWithTabs):
             self.bottom_layout = None
             self.screenshots_panel = None
 
-        # right_margin = -10 - Skin.EXTRA_GROUP_MARGIN
-        #     else:
-        #         bottom_panel = None
-        #     # FIXME:
-        #     if bottom_panel is None:
-        #         layout.add_spacer(0, Skin.get_bottom_panel_height())
-        #     else:
-        #         bottom_panel.set_min_height(Skin.get_bottom_panel_height())
-        #         layout.add(bottom_panel, fill=True, margin_right=right_margin)
-        # elif column == 1:
-        #     group = LaunchGroup(self)
-        #     layout.add(group, fill=True, margin=10, margin_top=0)
-        #     layout.add_spacer(0, 10)
-
         self.realize_tabs()
-        # self._menu = self.create_menu()
         if fsui.System.macosx and fsui.toolkit == "wx":
-            # import wx
-            # self.tools_menu = self.create_menu()
-            # menu_bar = wx.MenuBar()
-            # menu_bar.Append(self.tools_menu._menu, _("Tools"))
-            # self.SetMenuBar(menu_bar)
             pass
 
         self.status_bar = StatusBar(self)
@@ -333,7 +292,6 @@ class LauncherWindow(WindowWithTabs):
             Skin.set_background_color(book)
             if column == 1:
                 margin_right = Skin.EXTRA_GROUP_MARGIN
-                # expand = False
                 expand = True
             else:
                 margin_right = 0
@@ -342,8 +300,6 @@ class LauncherWindow(WindowWithTabs):
             layout.add(
                 hor_layout, fill=True, expand=expand, margin_right=margin_right
             )
-            # hor_layout.add(
-            #     book, fill=True, expand=expand, margin_right=margin_right)
 
             vert_layout = fsui.VerticalLayout()
             hor_layout.add(
@@ -356,46 +312,14 @@ class LauncherWindow(WindowWithTabs):
             hor_layout_2 = fsui.HorizontalLayout()
             vert_layout.add(hor_layout_2, fill=True, expand=True)
 
-            # vert_layout.add(book, fill=True, expand=True)
             hor_layout_2.add(book, fill=True, expand=True)
 
-            #                        self.add_tab_panel(LaunchGroup, expand=False)
-
-            # if column == 2 and \
-            #         LauncherSettings.get(
-            #             Option.LAUNCHER_CONFIG_FEATURE) == "1":
-            #     if launcher.ui.get_screen_size()[0] >= 1280:
-            #         hor_layout.add_spacer(10)
-            #         # if not Skin.fws():
-            #         #     line_panel = fsui.Panel(self)
-            #         #     line_panel.set_background_color(
-            #         #         fsui.Color(*BORDER_COLOR))
-            #         #     line_panel.set_min_width(2)
-            #         #     hor_layout.add(
-            #         #         line_panel, fill=True, margin_top=-10,
-            #         #                    margin_bottom=-10)
-            #         self.config_browser = ConfigBrowser(self)
-            #         self.config_browser.set_min_width(CONFIG_BROWSER_WIDTH)
-            #         # if Skin.fws():
-            #         hor_layout.add(self.config_browser, fill=True,
-            #                        expand=0.5, margin=-10, margin_left=0)
-            #         # else:
-            #         #     hor_layout.add(self.config_browser, fill=True,
-            #         #                    expand=0.5, margin=10)
-
             if column == 2:
-                # hor_layout.add_spacer(10)
                 self.quick_settings_panel = QuickSettingsPanel(self, self.fsgs)
                 self.quick_settings_panel.set_min_width(QUICK_SETTINGS_WIDTH)
-                # hor_layout.add(self.quick_settings_panel, fill=True,
-                #                expand=0.5, margin=-10, margin_left=0)
-                # hor_layout.add(self.quick_settings_panel, fill=True,
-                #                expand=0.5, margin=0, margin_top=0)
 
                 # Adding to hor_layout_2 will make it appear "one level"
                 # further in.
-                # hor_layout_2.add(self.quick_settings_panel, fill=True,
-                #                  margin=0, margin_top=0)
                 if LauncherSettings.get(Option.QUICK_SETTINGS) != "1":
                     self.quick_settings_panel.hide()
 
@@ -412,34 +336,7 @@ class LauncherWindow(WindowWithTabs):
             layout.add_spacer(0, expand=True)
             self.books.append(None)
 
-        # if column == 1 and Settings.get(Option.CONFIG_FEATURE) == "1":
-        #     from fs_uae_launcher.ui.config.browser import ConfigBrowser
-        #     config_browser = ConfigBrowser(self)
-        #     config_browser.set_min_height(200)
-        #     layout.add(config_browser, fill=True, expand=True, margin=10)
-
         layout.add_spacer(0, 10 + Skin.EXTRA_GROUP_MARGIN)
-        # if fs_uae_launcher.ui.get_screen_size()[1] >= 768:
-        #     right_margin = 0
-        #     if column == 0:
-        #         bottom_panel = BottomPanel(self)
-        #     elif column == 2:
-        #         bottom_panel = GameInfoPanel(self)
-        #     elif column == 1:
-        #         bottom_panel = ScreenshotsPanel(self)
-        #         right_margin = -10 - Skin.EXTRA_GROUP_MARGIN
-        #     else:
-        #         bottom_panel = None
-        #     # FIXME:
-        #     if bottom_panel is None:
-        #         layout.add_spacer(0, Skin.get_bottom_panel_height())
-        #     else:
-        #         bottom_panel.set_min_height(Skin.get_bottom_panel_height())
-        #         layout.add(bottom_panel, fill=True, margin_right=right_margin)
-        # elif column == 1:
-        #     group = LaunchGroup(self)
-        #     layout.add(group, fill=True, margin=10, margin_top=0)
-        #     layout.add_spacer(0, 10)
 
     def add_column_content(self, column):
         default_page_index = 0
@@ -452,12 +349,7 @@ class LauncherWindow(WindowWithTabs):
                 menu_function=self.open_main_menu,
                 left_padding=5,
             )
-            # default_tab_index_offset = 1
-            # self.add_tab_spacer(60)
-            # else:
-            #    self.add_tab_spacer(10)
 
-            # page_index = 0
             self.configurations_panel = self.add_page(
                 column,
                 ConfigurationsPanel,
@@ -572,8 +464,6 @@ class LauncherWindow(WindowWithTabs):
         self.add_user_menu_content(menu)
 
         menu.add_separator()
-        # menu.add_item(
-        #         gettext("Kickstarts & ROMs"), self.on_import_kickstarts)
 
         if LauncherSettings.get(Option.LAUNCHER_SETUP_WIZARD_FEATURE):
             menu.add_item(
@@ -665,27 +555,13 @@ class LauncherWindow(WindowWithTabs):
             LauncherSettings.set(Option.QUICK_SETTINGS, "1")
         self.layout.update()
 
-    # def open_user_menu(self):
-    #     if fsui.System.windows:
-    #         if time.time() - getattr(self, "user_menu_close_time", 0) < 0.2:
-    #             return
-    #     user_menu = self.create_user_menu()
-    #     self.user_button.popup_menu(
-    #         user_menu, (0, self.user_button.get_size()[1] - 2))
-    #     if fsui.System.windows:
-    #         self.user_menu_close_time = time.time()
-
     def add_user_menu_content(self, menu):
         if LauncherSettings.get(Option.DATABASE_AUTH):
-            # menu.add_item(_("Log In / Register"), self.on_log_in)
-            # menu.add_item(gettext("Update Game Database"),
-            #               self.on_game_database_refresh)
             if is_locker_enabled():
                 menu.add_item(
                     gettext("Upload Files to OpenRetro Locker"),
                     self.on_upload_locker_files,
                 )
-                # menu.add_separator()
             menu.add_item(gettext("Log Out"), self.on_log_out)
         else:
             menu.add_item(gettext("Log In / Register"), self.on_log_in)

@@ -15,5 +15,4 @@ class NewButton(IconButton):
     @staticmethod
     def new_config():
         LauncherConfig.load_default_config()
-        # Settings.set("config_changed", "1")
         LauncherSettings.set("parent_uuid", "")

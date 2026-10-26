@@ -41,9 +41,7 @@ class CDManager:
         paths = dialog.get_paths()
         paths.sort()
 
-        # checksum_tool = ChecksumTool(parent)
         for i, path in enumerate(paths):
-            # sha1 = checksum_tool.checksum(path)
             sha1 = ""
             print("FIXME: not calculating CD checksum just yet")
             path = Paths.contract_path(path, default_dir)
@@ -71,8 +69,6 @@ class CDManager:
                 ]
             )
 
-            # Config.set("x_cdrom_drive_{0}_sha1".format(i), "")
-            # Config.set("x_cdrom_drive_{0}_name".format(i), "")
         # blank the rest of the image list
         for i in range(len(paths), Amiga.MAX_CDROM_IMAGES):
             LauncherConfig.set_multiple(

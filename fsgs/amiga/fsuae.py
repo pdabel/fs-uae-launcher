@@ -35,9 +35,6 @@ class FSUAE(object):
         print("using fs-uae executable:", exe)
         args = [exe] + args
 
-        # if "--always-on-top" in sys.argv:
-        #     args += ["--always-on-top"]
-
         print(args)
         for name in ["SDL_VIDEODRIVER", "__GL_SYNC_TO_VBLANK"]:
             if name in os.environ:
@@ -45,14 +42,11 @@ class FSUAE(object):
                 del os.environ[name]
         env = os.environ.copy()
         print(repr(env))
-        # env = None
         try:
             cls.center_window(args, env)
         except Exception:
             traceback.print_exc()
         cls.add_environment_from_settings(env)
-        # env[str("SDL_VIDEO_WINDOW_POS")] = "0,0"
-        # args += ["--fullscreen-mode", "desktop"]
         if windows:
             p = subprocess.Popen(
                 args, cwd=cwd, env=env, close_fds=True, **kwargs
@@ -109,13 +103,6 @@ class FSUAE(object):
         x = main_x + (main_w - width) // 2
         y = main_y + (main_h - height) // 2
 
-        # FIXME: re-implement without wx
-        # if windows:
-        #     import wx
-        #    y += wx.SystemSettings_GetMetric(wx.SYS_CAPTION_Y)
-
         env[str("SDL_VIDEO_WINDOW_POS")] = str(f"{x},{y}")
         args.append(f"--window-x={x}")
         args.append(f"--window-y={y}")
-        # print("window position", env["SDL_VIDEO_WINDOW_POS"])
-        # os.environ["SDL_VIDEO_WINDOW_POS"] = "{0},{1}".format(x, y)

@@ -41,12 +41,4 @@ ACTION_REPLAY_MK_III_3_17_MOD_ROM = KnownFile(
     "Action Replay Mk III v3.17 (Mod).rom",
 )
 
-# known_files = [
-#     ACTION_REPLAY_MK_III_3_17_ROM
-# ]
-
 # noinspection SpellCheckingInspection
-# known_file_mods = {
-#     ACTION_REPLAY_MK_III_3_17_MOD_ROM.sha1: KnownFileMod(
-#         ACTION_REPLAY_MK_III_3_17_ROM.sha1, "zero-initial-4-bytes"),
-# }

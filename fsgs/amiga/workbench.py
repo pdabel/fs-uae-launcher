@@ -51,7 +51,6 @@ class WorkbenchExtractor(object):
         print("copying workbench file", name)
         if not os.path.exists(os.path.dirname(dest_path)):
             os.makedirs(os.path.dirname(dest_path))
-        # for floppy_sha1, name in workbench_file_map[sha1]:
 
         if self.cached_adf is not None:
             # using a cached/in-memory ADF object is very efficient here

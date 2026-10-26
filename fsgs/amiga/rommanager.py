@@ -60,8 +60,6 @@ class ROMManager(object):
         except Exception:
             raise Exception("did not find rom.key to decrypt ROM with")
         print("using key file", key_path)
-        # if not os.path.exists(key_file):
-        #     raise Exception("did not find rom.key to decrypt ROM with")
         key_data = f2.read()
         f2.close()
 
@@ -73,8 +71,6 @@ class ROMManager(object):
             for i in range(len(data)):
                 dec.append(data[i] ^ key_data[i])
             dec_data = bytes(dec)
-            # if file is not None:
-            #     file.write(dec_data)
             out_data += dec_data
             if sha1 is not None:
                 sha1.update(dec_data)

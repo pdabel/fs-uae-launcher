@@ -11,7 +11,6 @@ class JoystickSettingsPage(SettingsPage):
     def __init__(self, parent):
         super().__init__(parent)
         icon = fsui.Icon("joystick-settings", "pkg:workspace")
-        # gettext("Joystick Settings")
         title = gettext("Controllers")
         subtitle = gettext(
             "Configure joysticks and set preferred joystick " "devices"
@@ -43,8 +42,6 @@ class JoystickSettingsPage(SettingsPage):
     def on_joystick_activated(self, index):
         device_name = self.list_view.get_item(index)
         print(self.get_window())
-        # shell_open("Workspace:Tools/JoystickConfig", [device_name],
-        #            parent=self.get_window())
         JoystickConfigWindow(self.window, device_name).show()
 
 
@@ -56,14 +53,6 @@ class PreferredJoysticksGroup(fsui.Group):
     def __init__(self, parent):
         fsui.Group.__init__(self, parent)
         self.layout = fsui.HorizontalLayout()
-        # self.layout.padding_left = 10
-        # self.layout.padding_right = 10
-
-        # image = fsui.Image("launcher:res/joystick.png")
-        # self.image_view = fsui.ImageView(self, image)
-        # self.layout.add(self.image_view, valign=0.0)
-
-        # self.layout.add_spacer(20)
 
         self.layout2 = fsui.VerticalLayout()
         self.layout.add(self.layout2, fill=True, expand=True)
@@ -103,8 +92,6 @@ class PreferredJoystickSelector(fsui.Group):
         self.layout = fsui.HorizontalLayout()
 
         devices = ["", get_keyboard_title()]
-        # for i, name in enumerate(DeviceManager.get_joystick_names()):
-        #     devices.append(name)
         for device_name in DeviceManager.get_joystick_names():
             if DeviceManager.is_joystick(device_name):
                 devices.append(device_name)
@@ -112,8 +99,6 @@ class PreferredJoystickSelector(fsui.Group):
         self.device_choice = fsui.ComboBox(self, devices)
 
         self.layout.add(self.device_choice, expand=True)
-
-        # Config.add_listener(self)
 
         self.initialize_from_settings()
         self.set_settings_handlers()

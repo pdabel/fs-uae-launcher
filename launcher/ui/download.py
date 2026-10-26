@@ -109,13 +109,11 @@ class DownloadGameWindow(fsui.Window):
         self.task.progressed.connect(self.on_progress)
         self.task.failed.connect(self.on_failure)
         self.task.succeeded.connect(self.on_success)
-        # self.task.stopped.connect(self.close)
         self.task.start()
 
     def on_progress(self, message):
         if not isinstance(message, str):
             message = message[0]
-        # self.icon_header.subtitle_label.set_text(message)
         self.status_label.set_text(message)
 
     def on_failure(self, message):
@@ -143,9 +141,6 @@ class DownloadGameWindow(fsui.Window):
 class RescanTask(Task):
     def __init__(self):
         Task.__init__(self, "RescanTask")
-
-    # def stop_check(self):
-    #     pass
 
     def on_status(self, status):
         self.progressed(status)
@@ -224,7 +219,6 @@ class DownloadTermsDialog(fsui.LegacyDialog):
         self.reject_button.disable()
 
         self.task = DownloadTermsTask(self.download_terms)
-        # self.task.progressed.connect(self.on_progress)
         self.task.failed.connect(self.on_failure)
         self.task.succeeded.connect(self.on_success)
         self.task.start()

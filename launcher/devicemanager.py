@@ -70,15 +70,11 @@ class DeviceManager:
         cls.device_name_count = {}
 
         cls.devices.append(Device("none", gettext("No Host Device"), "none"))
-        # cls.devices.append(Device("mouse", _("Mouse"), "mouse"))
         cls.init_fsuae()
         for id, name, type in zip(
             cls.device_ids, cls.device_names, cls.device_types
         ):
             cls.devices.append(Device(id, name, type))
-        # cls.devices.append(
-        #     Device("keyboard", _("Cursor Keys and Right Ctrl/Alt"),
-        #            "joystick"))
         cls.initialized = True
 
     @classmethod
@@ -135,9 +131,6 @@ class DeviceManager:
                 cls.sdl_names[last_joystick] = value[1:-1]
 
             device_type, name = line.split(" ", 1)
-            # if name.lower() in ["keyboard", "mouse"]:
-            #     # these are automatically added
-            #     continue
             name_count = cls.device_name_count.get((device_type, name), 0) + 1
             cls.device_name_count[(device_type, name)] = name_count
             if name_count > 1:
@@ -152,7 +145,6 @@ class DeviceManager:
                 device_type = "mouse"
             elif device_type == "K:":
                 # works as an emulated joystick...
-                # device_type = "joystick"
                 device_type = "keyboard"
             cls.device_types.append(device_type)
 
@@ -237,11 +229,6 @@ class DeviceManager:
                     device.port = p
                     break
 
-        # print("-")
-        # for device in cls.devices:
-        #     print(device.port, device.id)
-        # print("-")
-
         def auto_fill(port, type):
             mode = config.get(f"joystick_port_{port}_mode")
             if not mode:
@@ -255,14 +242,10 @@ class DeviceManager:
                         break
                 return
             if type == "mouse":
-                # print("a", mode)
                 if mode != "mouse":
                     return
-                # print("b")
                 for dev in cls.devices:
-                    # print("c")
                     if dev.type == "mouse" and dev.port is None:
-                        # print("d")
                         ports[port] = dev
                         dev.port = port
                         return
@@ -307,7 +290,6 @@ class DeviceManager:
         platform = config.get("platform")
         cls.init()
         # Launcher has 5 input devices in total (4 + 1 virtual)
-        # ports = [cls.devices[0] for _ in range(5)]
         # + 1 dummy device for index 0
         ports = [cls.devices[0] for _ in range(6)]
 
@@ -325,17 +307,9 @@ class DeviceManager:
         print("before auto-fill")
         print(ports)
 
-        # print("-")
-        # for device in cls.devices:
-        #     print(device.port, device.id)
-        # print("-")
-
         def auto_fill(port, type):
             mode = config.get(f"{platform}_port_{port}_type")
             if not mode:
-                # FIXME: DEFAULT
-                # mode = cls.get_calculated_port_mode(config, port)
-                # mode = "gamepad"
                 try:
                     option = Option.get(
                         f"{platform}_port_{port}_type"
@@ -359,14 +333,10 @@ class DeviceManager:
                 return
 
             if type == "mouse":
-                # print("a", mode)
                 if mode != "mouse":
                     return
-                # print("b")
                 for dev in cls.devices:
-                    # print("c")
                     if dev.type == "mouse" and dev.port is None:
-                        # print("d")
                         ports[port] = dev
                         dev.port = port
                         return
@@ -375,12 +345,6 @@ class DeviceManager:
                     return
                 elif mode == "mouse":
                     return
-                # elif mode == "gamepad":
-                #     prefs = cls.get_preferred_gamepads()
-                # elif mode == "joystick":
-                #     prefs = cls.get_preferred_joysticks()
-                # else:
-                #     return
 
                 prefs = cls.get_preferred_gamepads()
 

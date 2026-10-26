@@ -62,14 +62,10 @@ class FileContext(BaseContext):
             path = Downloader.get_cache_path(sha1)
             if os.path.exists(path):
                 result = path
-        #    result = self.context.get_game_database().find_file_by_sha1(sha1)
-        # print("find by sha1", sha1, "in file database - result", result)
         if not result and is_locker_enabled() and not offline_mode():
             database = LockerDatabase.instance()
             if database.check_sha1(sha1):
                 result = "locker://" + sha1
-            # print("find by sha1", sha1, "in locker database - result",
-            # result)
         return result
 
     def check_sha1(self, sha1):
@@ -79,9 +75,6 @@ class FileContext(BaseContext):
         if not result and is_locker_enabled():
             database = LockerDatabase.instance()
             result = database.check_sha1(sha1)
-            # print("check sha1", sha1, "in locker database - result", result)
-        # if not result:
-        #     result = self.context.get_game_database().find_file_by_sha1(sha1)
         return result
 
     def get_license_code_for_url(self, url):
@@ -221,13 +214,11 @@ class FileContext(BaseContext):
         else:
             dst_partial = dst + ".partial"
             with open(dst_partial, "wb") as ofs:
-                # ifs_sha1 = hashlib.sha1()
                 while True:
                     # noinspection PyUnresolvedReferences
                     data = ifs.read()
                     if not data:
                         break
-                    # ifs_sha1.update(data)
                     ofs.write(data)
             print("rename file from", dst_partial, "to", dst)
             os.rename(dst_partial, dst)
@@ -262,7 +253,6 @@ class FSGameSystemContext(object):
         self._signal = None
         self._game = None
         self._plugins = None
-        # self._variant = None
         self.file = FileContext(self)
         self.thread_local = threading.local()
 
@@ -302,19 +292,12 @@ class FSGameSystemContext(object):
             self._plugins = PluginsContext(self)
         return self._plugins
 
-    # @property
-    # def variant(self):
-    #     if self._variant is None:
-    #         self._variant = VariantContext(self)
-    #     return self._variant
-
     @property
     def signal(self):
         if self._signal is None:
             from .SignalContext import SignalContext
 
             self._signal = SignalContext(self)
-            # self._signal = Signal()
         return self._signal
 
     def database(self):
@@ -329,15 +312,11 @@ class FSGameSystemContext(object):
             # FIXME
             from fsgs.FSGSDirectories import FSGSDirectories
 
-            # FIXME
-            # path = os.path.join(
-            #     FSGSDirectories.get_cache_dir(), "openretro.org")
             path = os.path.join(
                 FSGSDirectories.databases_dir(), database_name + ".sqlite"
             )
             if not os.path.exists(os.path.dirname(path)):
                 os.makedirs(os.path.dirname(path))
-            # path = os.path.join(path, short_platform_id + ".sqlite")
             database = GameDatabase(path)
             setattr(self.thread_local, attr_name, database)
         return getattr(self.thread_local, attr_name)
@@ -348,12 +327,6 @@ class FSGameSystemContext(object):
         from fsgs.FSGSDirectories import FSGSDirectories
 
         return FSGSDirectories.get_cache_dir()
-
-    # def temp_dir(self, suffix):
-    #     return TemporaryDirectory(suffix)
-
-    # def temp_file(self, suffix):
-    #     return TemporaryFile(suffix)
 
     def load_game_by_uuid(self, game_uuid):
         if self.load_game_variant(game_uuid):
@@ -374,7 +347,6 @@ class FSGameSystemContext(object):
         database = Database.instance()
         variants = database.find_game_variants_new(game_uuid=game_uuid)
         print(variants)
-        # ordered_list = []
         # FIXME: Merge code with VariantsBrowser.py
         sortable_items = []
         for i, variant in enumerate(variants):
@@ -385,7 +357,6 @@ class FSGameSystemContext(object):
             variant[
                 "personal_rating"
             ], ignored = database.get_ratings_for_game(variant["uuid"])
-            # variant_uuid = variant["uuid"]
 
             name = variant["name"]
             # FIXME: name replacement needed any more?
@@ -409,7 +380,6 @@ class FSGameSystemContext(object):
         print("ordered variant list:")
         for variant in ordered_list:
             print("-", variant["name"])
-        # item.configurations = [x[1] for x in ordered_list]
         select_index = None
         if select_index is None:
             # default index selection
@@ -430,15 +400,11 @@ class FSGameSystemContext(object):
                     else:
                         if len(ordered_list) > 0:
                             select_index = 0
-        # return ordered_list[select_index]["uuid"]
         if select_index and select_index > 0:
             ordered_list.insert(0, ordered_list.pop(select_index))
         return ordered_list
 
     def load_game_variant(self, variant_uuid):
-        # game_database = fsgs.get_game_database()
-        # values = game_database.get_game_values_for_uuid(variant_uuid)
-
         from .Database import Database
 
         database = Database.instance()
@@ -459,11 +425,6 @@ class FSGameSystemContext(object):
             return False
         if not values:
             return False
-
-        # print("")
-        # for key in sorted(values.keys()):
-        #     print(" * {0} = {1}".format(key, values[key]))
-        # print("")
 
         from fsgs.platform import PlatformHandler
 
@@ -487,45 +448,6 @@ class FSGameSystemContext(object):
         process = runner.run()
         process.wait()
         runner.finish()
-
-
-# class TemporaryDirectory(object):
-#
-#     def __init__(self, suffix):
-#         self.path = tempfile.mkdtemp(suffix="-fsgs-" + suffix)
-#
-#     def __del__(self):
-#         self.delete()
-#
-#     def delete(self):
-#         if os.environ.get("FSGS_CLEANUP", "") == "0":
-#             print("NOTICE: keeping temp files around...")
-#             return
-#         if self.path:
-#             shutil.rmtree(self.path)
-#             self.path = ""
-
-
-# class TemporaryFile(object):
-#
-#     def __init__(self, suffix):
-#         # self.path = tempfile.mkstemp(suffix=suffix)
-#         self.dir_path = tempfile.mkdtemp(suffix="-fsgs-" + suffix)
-#         self.path = os.path.join(self.dir_path, suffix)
-#
-#     def __del__(self):
-#         self.delete()
-#
-#     def delete(self):
-#         if os.environ.get("FSGS_CLEANUP", "") == "0":
-#             print("NOTICE: keeping temp files around...")
-#             return
-#         if self.path:
-#             os.unlink(self.path)
-#             self.path = ""
-#         if self.dir_path:
-#             shutil.rmtree(self.dir_path)
-#             self.dir_path = ""
 
 
 class GameContext(object):
@@ -618,15 +540,6 @@ class GamePlatform(object):
         from .platform import PlatformHandler
 
         return PlatformHandler.get_platform_name(self._id)
-        # if self._id == "atari-7800":
-        #     return "Atari 7800"
-        # if self._id == "amiga":
-        #     return "Amiga"
-        # if self._id == "cdtv":
-        #     return "CDTV"
-        # if self._id == "cd32":
-        #     return "CD32"
-        # raise Exception("Unrecognized platform ({0})".format(self._id))
 
 
 class VariantContext(object):

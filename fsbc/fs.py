@@ -33,7 +33,6 @@ def get_lib_dir():
     lib_dir = os.path.join(os.getcwdu(), "lib")
     if os.path.exists(lib_dir):
         return lib_dir
-    # raise RuntimeError("could not detect lib dir")
     return ""
 
 
@@ -42,12 +41,7 @@ EXCEPTION = "EXCEPTION"
 
 @cache
 def get_app_id():
-    # FIXME
     return "fs-uae"
-    # if windows or macosx:
-    #     return "fs-uae"
-    # else:
-    #     return "fs-game-center"
 
 
 @memoize
@@ -122,7 +116,6 @@ def unicode_safe(obj, encoding="ASCII"):
     try:
         return str(str(obj), encoding, "replace")
     except Exception:
-        # logger.exception("Error in unicode_safe")
         return "String returned from unicode_safe (problem logged)"
 
 

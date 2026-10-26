@@ -13,30 +13,19 @@ class Device(object):
         # The unmodified sdl_name of the device (non-stripped)
         self.sdl_name = ""
         self.type = ""
-        # self.port = None
-        # self.cmp_id = create_cmp_id(id)
 
         self.index = 0
         self.balls = 0
         self.hats = 0
         self.axes = 0
         self.buttons = 0
-        # self.event_id = ""
 
     def __lt__(self, other):
         if self.index < other.index:
             return True
         return self.name < other.name
 
-    # Returns the unmodified sdl_name of the device (non-stripped)
-    # @property
-    # def sdl_name(self):
-    #     return self.sdl_name
-
     def is_keyboard(self):
-        # print("id:", self.id)
-        # print("name:", self.name)
-        # print("type:", self.type)
         return self.type == self.TYPE_KEYBOARD
 
     def get_config_name(self):
@@ -64,7 +53,6 @@ class Device(object):
         return config_name
 
     def configure(self, system, multiple=True):
-        # name = self.name.rsplit("#", 1)[0]
         name = self.name
         from fsgs.input.inputdevice import InputDevice
 
@@ -92,9 +80,7 @@ class Device(object):
                 f"error initializing device {self.name} for {system}"
             )
             print(repr(e))
-            # return {}
             raise e
-        # config_inv = []
         for key, val in list(config.items()):
             val = val.upper()
             config[key] = val

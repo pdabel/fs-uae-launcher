@@ -54,7 +54,6 @@ class LogoutWindow(fsui.Window):
         hori_layout.add_spacer(20)
 
         self.logout_button = fsui.Button(self, gettext("Log Out"))
-        # self.logout_button.disable()
         self.logout_button.activated.connect(self.__logout_activated)
         hori_layout.add(self.logout_button)
 
@@ -69,9 +68,7 @@ class LogoutWindow(fsui.Window):
         auth_token = app.settings["database_auth"]
         if auth_token:
             task = OGDClient().logout_task(auth_token)
-            # task.progressed.connect(self.progress)
             task.succeeded.connect(self.close)
-            # task.failed.connect(fsui.error_function(gettext("Login Failed")))
             task.failed.connect(self.on_failure)
             task.start()
         else:
@@ -79,22 +76,8 @@ class LogoutWindow(fsui.Window):
             # all auth-related settings just in case
             app.settings["database_auth"] = ""
             app.settings["database_username"] = ""
-            # app.settings["database_email"] = ""
             app.settings["database_password"] = ""
             self.on_close()
 
     def on_failure(self, message):
         fsui.show_error(message, parent=self.window)
-
-    # def on_progress(self):
-    #    print("on_progress")
-
-    # def on_success(self):
-    #     app.settings["database_auth"] = ""
-    #     app.settings["database_username"] = ""
-    #     app.settings["database_email"] = ""
-    #     app.settings["database_password"] = ""
-    #     self.close()
-
-
-# application = SimpleApplication(LogoutWindow)

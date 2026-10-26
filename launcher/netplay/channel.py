@@ -86,7 +86,6 @@ class Channel:
     def remove_nick(self, nick):
         IRCBroadcaster.broadcast("part", {"channel": self.name, "nick": nick})
         if nick not in self.nicks:
-            # print("Channel.parted - warning, nick not in list", nick)
             pass
         else:
             self.nicks.remove(nick)
@@ -214,15 +213,12 @@ class Channel:
     def on_namreply(self, nicks):
         for nick in nicks:
             if nick.startswith("@"):
-                # self.nicks.add(nick[1:])
                 self.ops.add(nick[1:])
                 self.add_nick(nick[1:])
             elif nick.startswith("+"):
-                # self.nicks.add(nick[1:])
                 self.voices.add(nick[1:])
                 self.add_nick(nick[1:])
             else:
-                # self.nicks.add(nick)
                 self.add_nick(nick)
         IRCBroadcaster.broadcast("nick_list", {"channel": self.name})
 

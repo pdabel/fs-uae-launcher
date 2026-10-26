@@ -31,14 +31,7 @@ class WindowBorder(RealWindow):
 
     def __init__(self, parent, title, child):
         super().__init__(parent, child, title, border=False)
-        # self.child = child
 
-        # self.layout = fsui.VerticalLayout(20)
-        # self.hori_layout = fsui.HorizontalLayout()
-        # self.layout.add(self.hori_layout, fill=True)
-        # self.layout.add(child, fill=True, expand=True)
-
-        # self.setWindowFlags(Qt.FramelessWindowHint)
         from fsui.qt import Qt
 
         self.setAttribute(Qt.WA_NoSystemBackground)
@@ -69,10 +62,6 @@ class WindowBorder(RealWindow):
         else:
             self.layout.set_padding(20)
         super().maximize(maximized)
-
-    # def on_close(self):
-    #     self.child.on_window_close()
-    #     del self.child
 
 
 class WindowHeader(fsui.Panel):
@@ -187,7 +176,6 @@ class Window2(fsui.Panel):
     def __init__(self, parent, title="", maximizable=True):
         if isinstance(parent, Application):
             parent.add_window(self)
-            # parent = None
         self.__border = WindowBorder(None, title, self)
         super().__init__(self.__border)
         self.set_background_color(fsui.Color(0xF2, 0xF2, 0xF2))
@@ -255,9 +243,6 @@ class Window2(fsui.Panel):
     def on_window_close(self):
         pass
 
-    # def set_size(self, size):
-    #     self.__border.set_size(size)
-
 
 class WindowTitlePanel(fsui.Panel):
     def __init__(self, parent):
@@ -265,9 +250,6 @@ class WindowTitlePanel(fsui.Panel):
         self.set_background_color(parent.background_color)
         self.set_min_width(40)
         self.set_min_height(40)
-
-        # self.font = fsui.Font("Noto Sans", 15)
-        # self.text_color = fsui.Color(0x80, 0x80, 0x80)
 
         self.pressed = False
         self.window_pos = (-1, -1)
@@ -277,24 +259,14 @@ class WindowTitlePanel(fsui.Panel):
         theme = WorkspaceTheme.instance()
         dc = self.create_dc()
         dc.set_font(theme.title_font)
-        # text = self.parent().title()
         text = self.parent()._window().title()
         tw, th = dc.measure_text(text)
         # FIXME: measurements with Noto Sans is a bit off...
         th += 2
-        # # print(self.size()[1], th)
-        # if theme.title_glow_color is not None:
-        #     dc.set_text_color(theme.title_glow_color)
-        #     for dx in [-1, 1]:
-        #         for dy in [-1, 1]:
-        #             dc.draw_text(text, TEXT_SPACING + dx,
-        #                          (self.size()[1] - th) // 2 + dy)
-        # dc.set_text_color(theme.title_color)
         dc.set_text_color(self.parent().foreground_color)
         dc.draw_text(text, TEXT_SPACING, (self.size()[1] - th) // 2)
 
     def on_left_dclick(self):
-        # self.parent().maximize(not self.parent().maximized())
         # noinspection PyProtectedMember
         self.parent().maximize_button.on_activate()
 
@@ -431,7 +403,6 @@ class WindowMaximizeButton(WindowButton):
             print(window.is_maximized())
             window.set_maximized(not window.is_maximized())
             # FIXME: button is not refreshed when window is maximized
-            # self.on_mouse_motion()
 
 
 class WindowCloseButton(WindowButton):

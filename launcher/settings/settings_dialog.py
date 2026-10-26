@@ -36,13 +36,6 @@ class SettingsDialog(PagedDialog):
             "{} - {} Launcher".format(gettext("Settings"), fsgs.product),
         )
 
-        # FIXME: remove this once the dialog uses Window as base class
-        # self.setAttribute(Qt.WA_DeleteOnClose, True)
-
-        # self.add_page(
-        #     # gettext("Appearance"), LanguageSettingsPage,
-        #     gettext("Language"), LanguageSettingsPage,
-        #     fsui.Icon("language-settings", "pkg:workspace"))
         self.add_page(
             gettext("Common"),
             LanguageSettingsPage,
@@ -59,11 +52,6 @@ class SettingsDialog(PagedDialog):
             PluginsSettingsPage,
             fsui.Icon("settings", "pkg:workspace"),
         )
-        # self.add_page(
-        #     gettext("Directories"),
-        #     DirectoriesSettingsPage,
-        #     fsui.Icon("folder", "pkg:launcher"),
-        # )
         self.add_page(
             gettext("Advanced"),
             AdvancedSettingsPage,
@@ -100,17 +88,6 @@ class SettingsDialog(PagedDialog):
             AdvancedVideoSettingsPage,
             fsui.Icon("video-settings", "pkg:workspace"),
         )
-        # self.add_page(
-        #     gettext("Synchronization"), VideoSyncSettingsPage,
-        #     fsui.Icon("video-settings", "pkg:workspace"))
-        # self.add_page(
-        #     gettext("Filters & Scaling"), FilterSettingsPage,
-        #     fsui.Icon("video-settings", "pkg:workspace"))
-        # self.add_page(gettext("OpenGL Settings"), OpenGLSettingsPage)
-        # if Settings.get("database_feature") == "1":
-        # self.add_page(
-        #     gettext("Logging"), LoggingSettingsPage,
-        #     fsui.Icon("settings", "pkg:workspace"))
         self.add_page(
             f"{fsgs.product} Launcher",
             LauncherSettingsPage,
@@ -127,7 +104,6 @@ class SettingsDialog(PagedDialog):
             GameDatabaseSettingsPage,
             fsui.Icon("database-settings", "pkg:workspace"),
         )
-        # self.add_page(gettext("Custom Settings"), CustomSettingsPage)
         if LauncherSettings.get(Option.NETPLAY_FEATURE) != "0":
             self.add_page(
                 gettext("Net Play"),
@@ -137,16 +113,8 @@ class SettingsDialog(PagedDialog):
         self.add_page(
             "WHDLoad", WHDLoadSettingsPage, fsui.Icon("hd", "pkg:launcher")
         )
-        # self.add_page(
-        #     gettext("Experimental Features"), ExperimentalFeaturesPage,
-        #     fsui.Icon("settings", "pkg:workspace"))
-        # self.add_page(
-        #     gettext("Maintenance"), MaintenanceSettingsPage,
-        #     fsui.Icon("maintenance", "pkg:workspace"))
 
         # Old texts
-        # gettext("Video Synchronization")
-        # gettext("Synchronization")
         gettext("Advanced")
 
         self._style_navigation()
@@ -172,7 +140,6 @@ class SettingsDialog(PagedDialog):
             self.set_size((1100, 720))
         else:
             self.set_size((940, 560))
-        # self.center_on_parent()
 
         self.closed.connect(self.__closed)
         self.page_changed.connect(self.__page_changed)

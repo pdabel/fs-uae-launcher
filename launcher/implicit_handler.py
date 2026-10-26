@@ -31,15 +31,12 @@ class ImplicitConfigHandler:
         if not self.dirty:
             return
         self.dirty = False
-        # print("ImplicitConfigHandler.do_update")
         implicit = ImplicitConfig(ConfigProxy(), SettingsProxy())
-        # failed = False
         try:
             expand_config(implicit, ExpandFunctions())
         except Exception:
             traceback.print_exc()
             print("expand_config failed")
-            # failed = True
         implicit_config = {
             key: ""
             for key in LauncherConfig.keys()
@@ -106,7 +103,6 @@ class ExpandFunctions(AbstractExpandFunctions):
 
     @staticmethod
     def warning(message):
-        # warnings.append(message)
         pass
 
     @staticmethod

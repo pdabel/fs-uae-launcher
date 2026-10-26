@@ -316,33 +316,10 @@ def updateConfigureAc(version: Version, commit: str = "") -> None:
                     v = str(version)
                     d = "Full version"
                 line = f"m4_define([{k.lower()}], [{v}])\n"
-            # if line.startswith("AC_DEFINE_UNQUOTED([FSBUILD_VERSION"):
-            #     if "_MAJOR" in line:
-            #         k = "FSBUILD_VERSION_MAJOR"
-            #         v = version.major
-            #         d = "Major version"
-            #     elif "_MINOR" in line:
-            #         k = "FSBUILD_VERSION_MINOR"
-            #         v = version.minor
-            #         d = "Minor version"
-            #     elif "_REVISION" in line:
-            #         k = "FSBUILD_VERSION_REVISION"
-            #         v = version.revision
-            #         d = "Revision"
-            #     else:
-            #         k = "FSBUILD_VERSION"
-            #         v = str(version)
-            #         d = "Full version"
-            #     line = "AC_DEFINE_UNQUOTED([{}], [{}], [{}])\n".format(k, v, d)
             if line.startswith("m4_define([fsbuild_commit"):
                 line = "m4_define([{}], [{}])\n".format(
                     "fsbuild_commit", commit
                 )
-            # if line.startswith("AC_DEFINE_UNQUOTED([FSBUILD_COMMIT"):
-            #     k = "FSBUILD_COMMIT"
-            #     v = commit
-            #     d = "Package commit"
-            #     line = "AC_DEFINE_UNQUOTED([{}], [{}], [{}])\n".format(k, v, d)
             lines.append(line)
     with open("configure.ac", "w", encoding="UTF-8") as f:
         for line in lines:
@@ -356,9 +333,6 @@ def updateDebianChangelog(version: Version) -> None:
     first_line_changed = False
     deb_package = "unknown"
     deb_version = str(version)
-    # deb_version = deb_version.replace("alpha", "~alpha")
-    # deb_version = deb_version.replace("beta", "~beta")
-    # deb_version = deb_version.replace("dev", "~dev")
     with open("debian/changelog", "r", encoding="UTF-8") as f:
         for line in f:
             if first_line:
@@ -387,19 +361,12 @@ def updateSpecFile(path: str, version: Version) -> None:
     print("Updating", path)
     lines = []
     rpm_version = str(version)
-    # rpm_version = rpm_version.replace("alpha", "-0.1alpha")
-    # rpm_version = rpm_version.replace("beta", "-0.1~beta")
-    # rpm_version = rpm_version.replace("dev", "-0.1dev")
-    # if not "-" in rpm_version:
-    #     rpm_version += "-1"
     with open(path, "r", encoding="UTF-8") as f:
         for line in f:
             if line.startswith("%define fsbuild_version "):
                 lines.append(
                     f"%define fsbuild_version {rpm_version}\n"
                 )
-            # elif line.startswith("%define unmangled_version "):
-            #     lines.append("%define unmangled_version {0}\n".format(version))
             else:
                 lines.append(line)
     with open(path, "w", newline="\n") as f:
@@ -451,15 +418,10 @@ def calculateVersion(
     increment_revision: bool = False,
     include_commit: bool = False,
 ) -> Version:
-    # with open("fsbuild/VERSION") as f:
     with open("BASEVERSION.FS") as f:
         version_str = f.read().strip()
     if version_str.startswith("BASEVERSION_FS="):
         version_str = version_str[len("BASEVERSION_FS=") :].strip()
-    # with open("PACKAGE.FS") as f:
-    #     for line in f:
-    #         if line.startswith("PACKAGE_VERSION="):
-    #             version_str = line[16:].strip()
     version = Version(version_str)
     if auto_revision:
         version_commit = findLastCommitForFile("BASEVERSION.FS")

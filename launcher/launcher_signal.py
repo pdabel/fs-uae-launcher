@@ -10,12 +10,10 @@ class LauncherSignal(object):
 
     @classmethod
     def add_listener(cls, signal, listener):
-        # cls.listeners.setdefault(signal, []).append(listener)
         BaseSignal(signal).connect(listener)
 
     @classmethod
     def remove_listener(cls, signal, listener):
-        # cls.listeners[signal].remove(listener)
         BaseSignal(signal).disconnect(listener)
 
     @classmethod
@@ -27,10 +25,4 @@ class LauncherSignal(object):
             key, value = args
             fsgs.signal.notify("fsgs:config:" + key, value)
 
-        # if threading.current_thread().ident == main_thread_id:
-        #     cls.do_broadcast(signal, *args)
-        # else:
-        #     def function():
-        #         cls.do_broadcast(signal, *args)
-        #     fsui.call_after(function)
         BaseSignal(signal).notify(*args)

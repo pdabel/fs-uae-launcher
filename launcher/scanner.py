@@ -39,11 +39,6 @@ class Scanner:
             cls.error = str(e)
             traceback.print_exc()
 
-        # else:
-        #     if cls.on_status:
-        #         cls.on_status(("", _("Committing data...")))
-        #     database.commit()
-
         def on_done():
             # FIXME: these should be removed soon
             LauncherSettings.set("last_scan", str(time.time()))
@@ -73,7 +68,6 @@ class Scanner:
                 return
 
         # if cls.scan_for_configs or
-        # if cls.update_game_database:
         scanner = ConfigurationScanner(
             cls.paths, on_status=cls.on_status, stop_check=cls.stop_check
         )
@@ -133,10 +127,8 @@ class Scanner:
         cls.error = ""
         cls.stop_flag = False
         cls.status = ("", "")
-        # cls.scan_for_roms = scan_for_roms
         cls.scan_for_files = scan_for_files
         cls.purge_other_dirs = purge_other_dirs
-        # cls.scan_for_configs = scan_for_configs
         cls.update_game_database = update_game_database
         threading.Thread(target=cls.scan_thread, name="ScannerThread").start()
 

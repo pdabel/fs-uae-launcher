@@ -24,14 +24,12 @@ url_keys = set([x[0] for x in url_descriptions])
 class WebLinkElement(StatusElement):
     def __init__(self, parent):
         StatusElement.__init__(self, parent)
-        # self.set_min_width(140)
         self.layout = HorizontalLayout()
         self.icon = Image("launcher:res/16x16/world_link.png")
         self.right_icon = Image("launcher:res/16x16/drop_down_arrow.png")
         self.right_icon_disabled = Image(
             "launcher:res/16x16/drop_down_arrow_disabled.png"
         )
-        # self.inactive_icon = self.active_icon.grey_scale()
 
         self.text = gettext("Web Links")
 

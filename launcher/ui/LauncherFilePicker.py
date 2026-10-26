@@ -24,9 +24,6 @@ class LauncherFilePicker(object):
         self.directory = ""
         if last_path and last_path not in ["internal"]:
             print("last_path", repr(last_path))
-            # if os.path.isdir(last_path):
-            #     last_path_dir = last_path
-            # else:
             last_path_dir = os.path.dirname(last_path)
             print("last_path_dir", last_path_dir)
             if last_path_dir:
@@ -42,9 +39,6 @@ class LauncherFilePicker(object):
                 self.directory = value
         if not self.directory:
             self.directory = self.get_default_directory(media_type)
-        # fsui.FileDialog.__init__(
-        #     self, parent, title, directory, dir_mode=dir_mode,
-        #     multiple=multiple)
 
     @staticmethod
     def get_default_directory(media_type):
@@ -58,7 +52,6 @@ class LauncherFilePicker(object):
             return FSGSDirectories.get_kickstarts_dir()
         # FIXME: Return new Media directory instead
         return FSGSDirectories.get_base_dir()
-        # raise Exception("unknown file dialog type")
 
     def show_modal(self):
         path = None

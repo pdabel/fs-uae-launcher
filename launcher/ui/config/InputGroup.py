@@ -55,7 +55,6 @@ class InputGroup(fsui.Group):
 
         input_ports = [1, 0, 2, 3, 4]
         for i in input_ports[offset : offset + count]:
-            # self.layout.add_spacer(10)
             selector = InputSelector(self, i, autofire_button=autofire_button)
             self.layout.add(selector, fill=True, margin=10)
 

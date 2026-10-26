@@ -53,7 +53,6 @@ class ADFCreatorWindow(fsui.Window):
             gettext("ADF - Extended Floppy Disk Image (MFM Encoded)"), icon
         )
         layout.add(self.list_view, expand=True, fill=True)
-        # self.list_view.on_select_item = self.on_select_item
         self.list_view.item_selected.connect(self.on_item_selected)
 
         layout.add_spacer(20)
@@ -89,24 +88,12 @@ class ADFCreatorWindow(fsui.Window):
         self.created_label = fsui.Label(self, "")
         layout.add(self.created_label, fill=True)
 
-        # layout.add_spacer(20)
-        # layout.add_spacer(20)
-        # hori_layout = fsui.HorizontalLayout()
-        # layout.add(hori_layout, fill=True)
-        # self.created_label = fsui.Label(self, "")
-        # hori_layout.add(self.created_label, expand=True)
-        # hori_layout.add_spacer(20)
         self.create_button = fsui.Button(buttons, gettext("Create"))
-        # self.create_button.activated.connect(self.on_create_clicked)
         self.create_button.activated.connect(self.on_create_clicked)
-        # hori_layout.add(self.create_button)
         buttons.add_button(self.create_button)
 
         self.list_view.select_item(0)
         self.update_name_suggestion()
-
-        # self.set_size_from_layout()
-        # self.center_on_parent()
 
     def __del__(self):
         print("ADFCreator.__del__")
@@ -139,39 +126,17 @@ class ADFCreatorWindow(fsui.Window):
         self.dir_field.set_text(path)
 
     def on_browse_clicked(self):
-        # if hasattr(self, "dialog"):
-        #    return
         self.dialog = fsui.DirDialog(
             None, gettext("Select Destination Directory")
         )
         self.dialog.accepted.connect(self.on_dialog_accepted)
-        # self.dialog.destroyed.connect(self.on_dialog_destroyed)
-        # self.dialog.finished.connect(self.on_dialog_finished)
         self.dialog.show()
-        # if dialog.show_modal():
-        #     self.set_path(dialog.get_path())
-        # dialog.destroy()
 
     def on_dialog_accepted(self):
         print("accepted")
         print(self.dialog)
         self.set_path(self.dialog.get_path())
         self.dialog = None
-
-    # def on_dialog_destroyed(self):
-    #     self.dialog = None
-
-    # def on_dialog_finished(self, result):
-    #     # del self.dialog
-    #     # self.dialog = None
-    #     # return
-    #     print("finished")
-    #     if self.dialog.result():
-    #         print("result")
-    #         self.set_path(self.dialog.get_path())
-    #     # self.dialog.destroy()
-    #     # print("...")
-    #     del self.dialog
 
     def on_create_clicked(self):
         try:
@@ -200,11 +165,6 @@ class ADFCreatorWindow(fsui.Window):
         if not name.lower().endswith(ext):
             name += ext
         path = os.path.join(path, name)
-
-        # if disk_type == 0:
-        #     size = 901120
-        # elif disk_type == 1:
-        #     size = 2104892
 
         if os.path.exists(path):
             return self.show_error(gettext("File already exists"))
@@ -257,6 +217,3 @@ class ADFCreatorWindow(fsui.Window):
         data = s.read()
         data = zlib.decompress(data)
         f.write(data)
-
-
-# application = SimpleApplication(ADFCreatorWindow)

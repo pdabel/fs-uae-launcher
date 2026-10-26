@@ -187,6 +187,5 @@ class LogoutTask(Task):
         self.client.deauth(self.auth_token)
 
         Settings.instance()["database_username"] = ""
-        # Settings.instance()["database_email"] = ""
         Settings.instance()["database_auth"] = ""
         Settings.instance()["database_password"] = ""

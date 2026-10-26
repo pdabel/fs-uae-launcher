@@ -13,7 +13,6 @@ class StatusBar(Panel):
     def __init__(self, parent):
         Panel.__init__(self, parent, paintable=True)
         self.set_min_height(29)
-        # self.set_background_color(Color(0xd8, 0xd8, 0xd8))
         self.layout = VerticalLayout()
         self.hori_layout = HorizontalLayout()
         self.top_border_size = 1
@@ -46,7 +45,6 @@ class StatusBar(Panel):
                 ("no", "flag-no"),
                 ("fi", "flag-fi"),
                 ("ja", "flag-jp"),
-                # ("", "flag-unknown"),
             ]
         ):
             icon = Image("workspace:res/16x16/" + icon_name + ".png")
@@ -56,17 +54,6 @@ class StatusBar(Panel):
 
         element = PlayersElement(self)
         self.hori_layout.add(element, fill=True)
-
-        # for config_key, icon_name in [
-        #     ("database_url", "database_url_16"),
-        #     ("hol_url", "hol_url_16"),
-        #     ("lemonamiga_url", "lemon_url_16"),
-        #     ("mobygames_url", "mobygames_url_16"),
-        #     ("wikipedia_url", "wikipedia_url_16"),
-        # ]:
-        #     icon = Image("launcher:res/" + icon_name + ".png")
-        #     element = LinkButtonElement(self, config_key, icon)
-        #     self.hori_layout.add(element)
 
         element = WebLinkElement(self)
         self.hori_layout.add(element, fill=True)
@@ -115,9 +102,6 @@ class StatusBar(Panel):
 
         color_1 = Skin.get_background_color()
         color_2 = color_1
-        # if fsui.System.macosx:
-        #     color_1 = Color(0xa7, 0xa7, 0xa7)
-        #     color_2 = Color(0xc0, 0xc0, 0xc0)
         if color_1 is not None:
             color_1 = color_1.copy().darken(0.08)
         else:

@@ -78,6 +78,5 @@ class GameRatingSynchronizer(GameDatabaseSynchronizer):
         )
         url = f"{self.url_prefix()}/api/1/user_ratings?from={quote_plus(last_time)}"
         print(url)
-        # data, json_data = self.fetch_json(url)
         json_data = self.fetch_json(url)
         return json_data

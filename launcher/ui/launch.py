@@ -22,52 +22,31 @@ class LaunchGroup(fsui.Group):
         self.progress_label.set_visible(False)
         self.hori_layout.add(self.progress_label, fill=True, expand=True)
 
-        # self.progress_2_label = fsui.Label(self, "")
-        # self.progress_2_label.set_visible(False)
-        # self.hori_layout.add(self.progress_2_label, fill=True, expand=True)
-
-        # self.fullscreen_mode_button = FullscreenModeButton(self)
-        # self.hori_layout.add(
-        #     self.fullscreen_mode_button, fill=True, margin_right=10)
-        # self.monitor_button = MonitorButton(self)
-        # self.hori_layout.add(
-        #     self.monitor_button, fill=True, margin_right=10)
-
         self.screen_info_label = ScreenInfoLabel(self)
         self.hori_layout.add(
             self.screen_info_label, fill=True, expand=True, margin_right=10
         )
-        # self.video_sync_checkbox = VideoSyncCheckBox(self)
-        # self.hori_layout.add(self.video_sync_checkbox, margin_right=10)
         self.override_warning = OverrideWarning(self, Option.FULLSCREEN)
         self.hori_layout.add(self.override_warning, margin_right=10)
         self.fullscreen_button = FullscreenToggleButton(self)
         self.hori_layout.add(self.fullscreen_button, fill=True)
         start_button = StartButton(self, gsc)
         self.hori_layout.add(start_button, fill=True, margin_left=10)
-        # ConfigBehavior(self, [Option.FULLSCREEN])
         gsc.config.add_behavior(
             self, [Option.FULLSCREEN, "__running", "__progress"]
         )
 
     def on___running_config(self, value):
         widgets = [
-            # self.fullscreen_mode_button,
-            # self.monitor_button,
             self.screen_info_label,
-            # self.video_sync_checkbox,
             self.fullscreen_button,
         ]
         for widget in widgets:
             widget.set_visible(value != "1")
         self.progress_label.set_visible(value == "1")
-        # self.progress_2_label.set_visible(value == "1")
         self.hori_layout.update()
 
     def on___progress_config(self, value):
-        # first, rest = value.split(":", 1)
-        # self.progress_label.set_text(first)
-        # self.progress_2_label.set_text(rest.strip())
         self.progress_label.set_text(value)
 
     def on_fullscreen_config(self, _):
@@ -78,7 +57,6 @@ class StartButton(fsui.Button):
     def __init__(self, parent, gsc):
         super().__init__(parent, gettext("Start"))
         self.gsc = gsc
-        #        gsc.signal.add_behavior(self, ["start_ready"])
         gsc.config.add_behavior(self, ["__running"])
 
     def on_activated(self):
@@ -88,9 +66,6 @@ class StartButton(fsui.Button):
 
     def on___running_config(self, value):
         self.set_enabled(value != "1")
-
-        # def on_start_ready_signal(self):
-        #     pass
 
 
 class ScreenInfoLabel(fsui.Label):
@@ -137,7 +112,6 @@ class ScreenInfoLabel(fsui.Label):
         if value is None:
             value = LauncherSettings.get("monitor")
         x, y, w, h = GameDriver.screen_rect_for_monitor(value)
-        # index = GameRunner.screen_index_for_monitor(value)
         refresh_rate = GameDriver.screen_refresh_rate_for_monitor(value)
         assume_refresh_rate = LauncherSettings.get("assume_refresh_rate")
         if assume_refresh_rate:

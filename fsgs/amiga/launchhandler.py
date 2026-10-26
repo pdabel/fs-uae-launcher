@@ -66,7 +66,6 @@ class LaunchHandler(object):
             if req:
                 self.hd_requirements.add(req)
         self.setpatch_installed = False
-        # self.stop_flag = False
 
         self.temp_dir = temp_dir
         self.change_handler = None
@@ -209,10 +208,6 @@ class LaunchHandler(object):
                             print("[ROM] Found", rom_src)
                             break
                     else:
-                        # roms_dir = FSGSDirectories.get_kickstarts_dir()
-                        # src = os.path.join(roms_dir, sha1)
-                        # if os.path.exists(src):
-                        #     break
                         # loop up file in roms dir instead
                         src = sha1
             elif src == "internal":
@@ -348,18 +343,6 @@ class LaunchHandler(object):
             return src, None
         src = Paths.expand_path(src, default_dir)
         archive = Archive(src)
-        # if not archive.exists(src):
-        #     dirs = [default_dir]
-        #     for dir in dirs:
-        #         path = os.path.join(dir, src)
-        #         print("checking", repr(path))
-        #         archive = Archive(path)
-        #         if archive.exists(path):
-        #         #if os.path.exists(path):
-        #             src = path
-        #             break
-        #     else:
-        #         raise Exception("Cannot find path for " + repr(src))
         return src, archive
 
     def prepare_floppy(self, key):
@@ -389,7 +372,6 @@ class LaunchHandler(object):
     def prepare_floppies(self):
         print("LaunchHandler.copy_floppies")
         current_task.set_progress(gettext("Preparing floppy images..."))
-        # self.on_progress(gettext("Preparing floppy images..."))
 
         floppies = []
         for i in range(Amiga.MAX_FLOPPY_DRIVES):
@@ -494,7 +476,6 @@ class LaunchHandler(object):
     def prepare_hard_drives(self):
         print("LaunchHandler.prepare_hard_drives")
         current_task.set_progress(gettext("Preparing hard drives..."))
-        # self.on_progress(gettext("Preparing hard drives..."))
         for i in range(0, 10):
             self.prepare_hard_drive(i)
 
@@ -551,7 +532,6 @@ class LaunchHandler(object):
         self.config["save_states"] = "0"
 
     def prepare_workbench_hard_drive(self, i, src):
-        # dir_name = "DH{0}".format(i)
         dir_name = src.rsplit("/", 1)[-1]
         dir_path = os.path.join(self.temp_dir, dir_name)
         if not os.path.exists(dir_path):
@@ -588,7 +568,6 @@ class LaunchHandler(object):
 
     def prepare_empty_hard_drive(self, i, src):
         dir_name = src.rsplit("/", 1)[-1]
-        # dir_name = "DH{0}".format(i)
         dir_path = os.path.join(self.temp_dir, dir_name)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
@@ -651,15 +630,6 @@ class LaunchHandler(object):
             # extract Amiga relative path and convert each path component
             # to host file name (where needed).
 
-            # amiga_rel_path = name[len(drive_prefix) :]
-            # print("amiga_rel_path", amiga_rel_path)
-            # amiga_rel_parts = amiga_rel_path.split("/")
-            # for i, part in enumerate(amiga_rel_parts):
-            #     # part can be blank if amiga_rel_parts is a directory
-            #     # (ending with /)
-            #     if part:
-            #         amiga_rel_parts[i] = amiga_filename_to_host_filename(part)
-            # amiga_rel_path = "/".join(amiga_rel_parts)
             amiga_rel_path = amiga_path_to_host_path(name[len(drive_prefix) :])
 
             dst_file = os.path.join(dir_path, amiga_rel_path)
@@ -671,20 +641,8 @@ class LaunchHandler(object):
                 os.makedirs(os.path.dirname(dst_file))
             sha1 = file_entry["sha1"]
 
-            # current_task.set_progress(os.path.basename(dst_file))
             current_task.set_progress(amiga_rel_path)
             self.fsgs.file.copy_game_file(f"sha1://{sha1}", dst_file)
-
-            # src_file = self.fsgs.file.find_by_sha1(sha1)
-            # if not os.path.exists(os.path.dirname(dst_file)):
-            #     os.makedirs(os.path.dirname(dst_file))
-            # stream = self.fsgs.file.open(src_file)
-            # # archive = Archive(src_file)
-            # # f = archive.open(src_file)
-            # data = stream.read()
-            # assert hashlib.sha1(data).hexdigest() == sha1
-            # with open(dst_file, "wb") as out_file:
-            #     out_file.write(data)
 
             # noinspection SpellCheckingInspection
             metadata = [
@@ -708,16 +666,7 @@ class LaunchHandler(object):
     @staticmethod
     def encode_file_comment(comment):
         result = []
-        # raw = 0
         for c in comment:
-            # if c == '%':
-            #     result.append("%")
-            #     raw = 2
-            # elif raw:
-            #     result.append(c)
-            #     raw = raw - 1
-            # else:
-            #     result.append("%{0:x}".format(ord(c)))
             result.append(f"%{ord(c):x}")
         return "".join(result)
 
@@ -731,16 +680,6 @@ class LaunchHandler(object):
 
         self.unpack_archive(src, dir_path)
         self.config[f"hard_drive_{i}"] = dir_path
-
-    # def create_devs_dir(self):
-    #     devs_dir = os.path.join(dest_dir, "Devs")
-    #     if not os.path.exists(devs_dir):
-    #         os.makedirs(devs_dir)
-    #
-    # def create_fonts_dir(self):
-    #     fonts_dir = os.path.join(dest_dir, "Fonts")
-    #     if not os.path.exists(fonts_dir):
-    #         os.makedirs(fonts_dir)
 
     def copy_hd_files(self):
         whdload_args = self.config.get("x_whdload_args", "").strip()
@@ -804,7 +743,6 @@ class LaunchHandler(object):
                 )
             extractor = WorkbenchExtractor(self.fsgs)
             extractor.install_version(workbench_version, dest_dir)
-            # install_workbench_files(self.fsgs, dest_dir, workbench_version)
 
         for req in self.hd_requirements:
             if "/" in req:
@@ -855,8 +793,6 @@ class LaunchHandler(object):
             "Libs/compressors/xpkSQSH.library": "2191b616abd4b2fb34c89ae243c35feea2b71104",
         }
         for rel_path, sha1 in file_map.items():
-            # file_dest_dir = os.path.join(dest_dir, os.path.dirname(name))
-            # self.install_whdload_file(sha1, file_dest_dir, value)
             self.install_whdload_file(sha1, dest_dir, rel_path)
 
     def copy_whdload_files(self, dest_dir, s_dir):
@@ -870,7 +806,6 @@ class LaunchHandler(object):
                 whdload_args += " PRELOAD"
 
         current_task.set_progress(gettext("Preparing WHDLoad..."))
-        # self.on_progress(gettext("Preparing WHDLoad..."))
         print("[WHDLOAD] copy_whdload_files, dest_dir = ", dest_dir)
 
         whdload_dir = ""
@@ -966,7 +901,6 @@ class LaunchHandler(object):
                 )
                 self.copy_folder_tree(src_dir, dest_dir)
 
-        # icon = self.config.get("__whdload_icon", "")
         icon = ""
         if icon:
             shutil.copy(
@@ -995,7 +929,6 @@ class LaunchHandler(object):
         # FIXME: semi-colon is used in WHDLoad CONFIG options...
         command = "\n".join([x.strip() for x in command.split(";")])
         startup_sequence = os.path.join(s_dir, "Startup-Sequence")
-        # if True:
         if not os.path.exists(startup_sequence):
             with open(startup_sequence, "wb") as f:
                 if "setpatch" in self.hd_requirements:
@@ -1040,19 +973,12 @@ class LaunchHandler(object):
                     traceback.print_exc()
                 else:
                     wb_data = input_stream.read()
-                    # archive = Archive(path)
-                    # if archive.exists(path):
-                    #     f = archive.open(path)
-                    #     wb_data = f.read()
-                    #     f.close()
                     if self.extract_setpatch_39_6(wb_data, dest):
                         print("SetPatch installed")
                         self.setpatch_installed = True
                         break
                     else:
                         print("WARNING: extract_setpatch_39_6 returned False")
-                # else:
-                #     print("oops, path does not exist")
         else:
             print("WARNING: did not find SetPatch 39.6")
 
@@ -1079,7 +1005,6 @@ class LaunchHandler(object):
             os.makedirs(dest)
         dest = os.path.join(dest, name)
         for checksum in checksums:
-            # print("find kickstart with sha1", checksum)
             path = self.fsgs.file.find_by_sha1(checksum)
             if path:  # and os.path.exists(path):
                 print("found kickstart for", name, "at", path)
@@ -1121,7 +1046,6 @@ class LaunchHandler(object):
             return
 
         self.on_progress(gettext("Cleaning up..."))
-        # self.delete_tree(self.temp_dir)
         shutil.rmtree(self.temp_dir, ignore_errors=True)
         state_dir = self.get_state_dir()
         try:
@@ -1137,22 +1061,12 @@ class LaunchHandler(object):
             pass
 
     def prepare_theme(self):
-        # path = self.game_paths.get_theme_path()
-        # if path:
-        #     self.config["theme"] = path
         pass
 
     def prepare_extra_settings(self):
         prefix = self.config.get("screenshots_output_prefix", "")
         if prefix:
             return
-        # name = self.config.get("floppy_drive_0", "")
-        # if not name:
-        #     name = self.config.get("hard_drive_0", "")
-        # if not name:
-        #     name = self.config.get("cdrom_drive_0", "")
-        # if not name:
-        #     name = self.config.get("floppy_image_0", "")
         name = self.config_name
         if not name:
             name = "fs-uae"
@@ -1176,8 +1090,6 @@ class LaunchHandler(object):
 
     def run(self):
         print("LaunchHandler.run")
-        # self.on_progress(gettext("Starting FS-UAE..."))
-        # current_task.set_progress(gettext("Starting FS-UAE..."))
         current_task.set_progress("__run__")
         config = self.create_config()
         if self.use_relative_paths:
@@ -1241,8 +1153,6 @@ class LaunchHandler(object):
                 ]
                 info = archive.getinfo(entry)
                 if info.comment:
-                    # print(info.comment)
-                    # raise Exception("gnit")
                     metadata[4] = self.encode_file_comment(info.comment)
                 with open(out_path + ".uaem", "wb") as out_file:
                     out_file.write("".join(metadata).encode("UTF-8"))
@@ -1268,7 +1178,6 @@ class LaunchHandler(object):
 
 
 def amiga_path_to_host_path(amiga_rel_path):
-    # amiga_rel_path = amiga_path
     print("amiga_rel_path", amiga_rel_path)
     amiga_rel_parts = amiga_rel_path.split("/")
     for i, part in enumerate(amiga_rel_parts):
@@ -1466,7 +1375,6 @@ def write_string(f, s):
 def create_slave_icon(path, whdload_args):
     default_tool = "DH0:/C/WHDLoad"
     # FIXME: handle "" around slave name?
-    # args = whdload_args.split(" ")
     tool_types = whdload_args.split(" ")
     tool_types[0] = "SLAVE=" + tool_types[0]
 

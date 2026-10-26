@@ -71,7 +71,6 @@ class GameScanner(object):
         self.fsgc = fsgs
         self.fsgs = fsgs
         self.context = context
-        # self.paths = paths
         self.on_status = on_status
         self._stop_check = stop_check
         self.scan_count = 0
@@ -93,10 +92,6 @@ class GameScanner(object):
                 self._update_game_database(database_name, game_database)
             if self.stop_check():
                 return
-        # with self.fsgs.get_game_database() as game_database:
-        #     self._update_game_database(game_database)
-        #     if self.stop_check():
-        #         return
 
         synchronizer = LockerSynchronizer(
             self.context, on_status=self.on_status, stop_check=self.stop_check
@@ -133,16 +128,6 @@ class GameScanner(object):
             if self.stop_check():
                 return
 
-        # if False:
-        #     with self.fsgs.get_game_database() as game_database:
-        #         self.scan_game_database(helper, game_database)
-        #         if self.stop_check():
-        #             return
-        # if Settings.get(Option.DATABASE_SNES) == "1":
-        #     with self.fsgs.game_database("snes") as game_database:
-        #         self.scan_game_database(helper, game_database)
-        #         if self.stop_check():
-        #             return
         helper.finish()
 
     def scan_game_database(self, helper, database_name, game_database):
@@ -152,10 +137,6 @@ class GameScanner(object):
         :type game_database: fsgs.GameDatabase.GameDatabase
         """
         database_cursor = helper.database.cursor()
-
-        # this holds a list of game entry UUIDs which must exist / be checked
-        # after variants have been processed
-        # ensure_updated_games = set()
 
         game_database_cursor = game_database.cursor()
 
@@ -191,14 +172,12 @@ class GameScanner(object):
                     # have this entry already and no files have been deleted
                     # since the last time
 
-                    # print("skipping variant (no deleted files)")
                     helper.variant_seen(variant_uuid)
                     continue
                 if not existing_variant[1] and not helper.added_files:
                     # do not have this entry, but no files have been added
                     # since the last time
 
-                    # print("skipping variant (no added files)")
                     helper.variant_seen(variant_uuid)
                     continue
             else:
@@ -206,7 +185,6 @@ class GameScanner(object):
                 # regardless of file database status, since file_list may
                 # have been changed, or download status... (or other info
                 # needs to be corrected)
-                # print("[SCANNER] Changed: {}".format(variant_uuid))
                 pass
 
             self.scan_count += 1
@@ -269,7 +247,6 @@ class GameScanner(object):
 
             parent_uuid = doc.get("parent_uuid", "")
             variant_name = doc.get("variant_name", "")
-            # published_variant = doc.get("publish", "")
             published_variant = doc.get("__publish_hack__", "")
             if not published_variant:
                 published_variant = None
@@ -300,8 +277,6 @@ class GameScanner(object):
                     game_variant_id,
                 ),
             )
-
-            # ensure_updated_games.add(parent_uuid)
 
         for row in game_rows:
             if self.stop_check():
@@ -418,11 +393,6 @@ class GameScanner(object):
                 )
             else:
                 backdrop_image = ""
-            # if published:
-            #     # search_terms.add("t:published")
-            #     pass
-            # else:
-            #     search_terms.add("t:unpublished")
 
             min_players = 0
             max_players = 0
@@ -516,9 +486,6 @@ class ScanHelper(object):
             self.file_stamps["last_file_delete"]
             != cached_file_stamps["last_file_delete"]
         )
-        # print(LauncherSettings.get(Option.DATABASE_LOCKER),
-        #         cached_file_stamps["database_locker"])
-        # assert 0
         if (
             LauncherSettings.get(Option.DATABASE_LOCKER)
             != cached_file_stamps["database_locker"]

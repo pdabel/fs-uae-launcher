@@ -181,9 +181,7 @@ wb_133_files = {
     "c/Delete": "d6304c0e704c94073ad67edd19725a4742697ef6",
     "c/Dir": "c4c80a92749862fe8fe877dff0d7ab88a824026d",
     "c/DiskChange": "37665418b614fb1d768ea85c32a165cfaec146c1",
-    # "c/DiskDoctor": "c801fbdcc4b04ff492a67cfeaee0036fce70bb85",
     "c/Echo": "b43fc80f2fb23af7c3ee14c8e1b5eecfc3c587ee",
-    # "c/Ed": "dad70eb4a65febb74283c2a189d6bb95b22b0886",
     "c/Edit": "d83ee8a2e1f9d1697875366dafc329f8e8e4d7e9",
     "c/Else": "8f64d3d3fc7c84e02c4211e68ca74b2fa528df7b",
     "c/EndCLI": "24a5167194970a0188c00b234a12d2fba4308478",
@@ -193,7 +191,6 @@ wb_133_files = {
     "c/Execute": "29b7093beae26deab1bd66a98167bfdb96aa7cf7",
     "c/Failat": "49918ba167529cef1320452d7442eac73712e0e7",
     "c/Fault": "e7f20bbe32843bca9c206cab8be50ae1d77b680f",
-    # "c/FF": "dc9b9750c2a38546f7be2dbe983ae258f2496b98",
     "c/FileNote": "36d14d7468eb136b1179f04fa3c218832638e960",
     "c/GetEnv": "be841e3d1794a11b9af1b299ff1d8c9be85d8338",
     "c/IconX": "442df04019ae6ff426c3464f8be8c523ad292830",
@@ -219,7 +216,6 @@ wb_133_files = {
     "c/Resident": "70c21c5a6add12526b29690f8bde0327f91b6f78",
     "c/Run": "caf92a05af573c54a1c9044e51ac6aeaab534e23",
     "c/Search": "0359aa4849bb1e7f7fa37862a4ab2f34b6d3b6fb",
-    # "c/SetClock": "95d98f533207f53c1d90ddc57f2815db56d9bba7",
     "c/SetDate": "cca8245571bd7ffc4ddd46e87441b2600bf8be74",
     "c/SetEnv": "ac8df5ae6adfc7d68e5a3f514b935bd5293b09b7",
     "c/SetPatch": "3b36ee49e10626594545c564957fb4882ac2bfc3",
@@ -303,17 +299,14 @@ wb_133_files = {
     "s/CLI-Startup": "c9abb720ab20b5976e18c45dd6eee46187b367f9",
     "s/DPAT": "bd0ee7066b43ef7df98db2801a75ab4f79f13098",
     "s/PCD": "d6ff57db9f9cd193d99aa64581ca964494b5e430",
-    # "s/Shell-Startup": "25ee071ea6069e7fb10ac23bef1bbb24426b1bf1",
     "s/SPAT": "208cd7d832fb8a0d81d45fc3db7bc31c12727b3f",
     "s/Startup-Sequence.HD": "0d3caa59e5f867a6f9f8c68d318a16da1bf60fd6",
-    # "s/StartupII": "dae0c0aeb988f27c5a9a85dcdf502998570b3b45",
     "Shell": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
     "System/": "",
     "System/CLI": "a6e7eb1585e4ebd6f4ed606eb18d8f23af184bea",
     "System/Diskcopy": "009cfa0952888c059da450b46d731d7f1779ae63",
     "System/FastMemFirst": "5fd51854d5b109fcdbf52809497e642036aa4722",
     "System/FixFonts": "3fc2dfbc62326678c3daf9ee860bac6330666999",
-    # "System/Format": "972bbf474d471bec395d19f6d737908542055d70",
     "System/InitPrinter": "6d35a5215846acef053211dfcd6563054b51da10",
     "System/MergeMem": "04c018c68442187d292c0a57e1686bc8269f2ac4",
     "System/NoFastMem": "87e8c332e69a5446535923157cb6678ccb992614",
@@ -386,7 +379,6 @@ wb_204_files = {
     "Devs/clipboard.device": "83f3490b6480a0515b37e6f926ab48daf9cad61e",
     "Devs/Keymaps/": "",
     "Devs/MountList": "b32b62007cbfd4e5412f003f3fd83a183845b447",
-    # "Devs/narrator.device": "c5a35d605c39b9c59542d71883238a02e92d726d",
     "Devs/parallel.device": "88c8c2bae625caf7b2bdbea9688a763f035bc199",
     "Devs/printer.device": "b13d1ec922deafa5a479fc1c591f911ff95559eb",
     "Devs/Printers/": "",
@@ -399,7 +391,6 @@ wb_204_files = {
     "L/aux-handler": "5a20c44cdcba0793fd292e3f951832ad4670f65e",
     "L/port-handler": "d7e4ddab8cbd94f751a6ffd4bc93cfe07cb4cae2",
     "L/queue-handler": "a458c6935c90d8a9422600c84875237e0558f89b",
-    # "L/speak-handler": "d577708e1a0be7566885824349102025f1a250c4",
     "Libs/": "",
     "Libs/asl.library": "8d1fd81d7c128c397443f0ceb696dab3fecc5828",
     "Libs/commodities.library": "eaa02d69480d8df876f3932bf13f7c6e6ebc6c78",
@@ -411,7 +402,6 @@ wb_204_files = {
     "Libs/mathtrans.library": "92d5888b3d2d3bb83c66cc6e486d303821c518c9",
     "Libs/rexxsupport.library": "7ae7acdd99a89d00b706060f818ad340869827a2",
     "Libs/rexxsyslib.library": "b74995c09a0d6350498579b8ff406477ae5b9566",
-    # "Libs/translator.library": "e99c035faf5184a3397c89a3df1a7606c8417be6",
     "Libs/version.library": "ac699c82157ccc204aaf1eb78e3c53c4a8f13bf5",
     "Monitors/": "",
     "Prefs/": "",
@@ -503,7 +493,6 @@ wb_300_files = {
     "C/List": "86c0a28542939ea5e0d2075f9db337d93b139fb7",
     "C/LoadWB": "e663a715c6ad69a7d3882b4772cbdc9de835e791",
     "C/Lock": "a671aabf698196baa6a237601d07fb49b7f64f60",
-    # "C/MagTape": "8d14c533f6fb73286a642bb208151c36da3af2c9",
     "C/MakeDir": "3e00b210538357ff2ca9f0bc16471f06fb994282",
     "C/MakeLink": "da8472a553ece5484d7ba1290884ad5d59db5770",
     "C/Mount": "c691df2ceb10c6dccd4f735dea0f07c199e09074",
@@ -547,7 +536,6 @@ wb_300_files = {
     "Devs/DOSDrivers/": "",
     "Devs/DOSDrivers/PIPE": "624dd68e9a2794bf5bd60e58c1b3679a1dfd273c",
     "Devs/Keymaps/": "",
-    # "Devs/mfm.device": "63b150010e420f96304375badca126812daa2255",
     "Devs/Monitors/": "",
     "Devs/parallel.device": "88c8c2bae625caf7b2bdbea9688a763f035bc199",
     "Devs/postscript_init.ps": "3c0bc3408a4ac929936f647637a04f45d227cca0",
@@ -558,13 +546,6 @@ wb_300_files = {
     "Devs/system-configuration": "4be3d7e8395a5827085f57cb6cdbf5e88fa78506",
     "Expansion/": "",
     "L/": "",
-    # "L/aux-handler": "5a20c44cdcba0793fd292e3f951832ad4670f65e",
-    # "L/CrossDOSFileSystem": "9f05f997b3aa0c3a431bea96cc4bbc153ba48814",
-    # "L/FileSystem_Trans/": "",
-    # "L/FileSystem_Trans/DANSK.crossdos":
-    # "3db3dbfdb9f6d874368f12152944b00099fd9943",
-    # "L/FileSystem_Trans/INTL.crossdos":
-    # "6d803e82923564dd2f12b68836b2356282edfd93",
     "L/port-handler": "d7e4ddab8cbd94f751a6ffd4bc93cfe07cb4cae2",
     "L/queue-handler": "a458c6935c90d8a9422600c84875237e0558f89b",
     "Libs/": "",
@@ -600,11 +581,8 @@ wb_300_files = {
     "Rexxc/TS": "45a5aa31dd4d42099d41948ef976599fa221938d",
     "Rexxc/WaitForPort": "f3fea65223cb028f479d1831237385812675a065",
     "S/": "",
-    # "S/DPat": "227c6ed4ae33850577a0b03e22b7dfd966b421c4",
     "S/Ed-startup": "2a4e2dd940726199aea3c5cab73dcc527b624fb8",
-    # "S/PCD": "02d4b5292a9ea3b56d68ca7bba3d1df5055b3a25",
     "S/Shell-Startup": "d039a940c89ec6c30a1b3568bfd6afe626a28b6d",
-    # "S/SPat": "4f63e17cb9ca68b5dc5eb37fd02508f4c5ae0761",
     "System/": "",
     "System/CLI": "9f25538fd0a6b134dd7a094350731cdc1e9234e3",
     "System/DiskCopy": "902aa22b272961911a279bba4aca1fd7ba9c537b",
@@ -677,7 +655,6 @@ wb_300_floppies = [
 
 def update_files():
     base_dir = os.path.expanduser("~/Documents/FS-UAE/Floppies/Workbench")
-    # floppies = {}
     floppy_file_sets = {}
     files = {}
     for floppy in os.listdir(base_dir):
@@ -700,7 +677,6 @@ def update_files():
             data = adf.open(name, "r").read()
             sha1 = hashlib.sha1(data).hexdigest()
             sha1sums.add(sha1)
-            # floppies[floppy.lower()] = os.path.join(base_dir, floppy)
             files.setdefault(sha1, set()).add((floppy_sha1, name))
         floppy_file_sets[(floppy, floppy_sha1)] = sha1sums
 
@@ -709,18 +685,6 @@ def update_files():
         for name, sha1 in file_map.items():
             if sha1:
                 interesting_files.add(sha1)
-
-    # print("")
-    # print("workbench_file_map = {")
-    # for sha1 in sorted(interesting_files):
-    #     print("    \"{0}\": [".format(sha1))
-    #     #print("        \"{0}\",".format(floppy_sha1))
-    #     for floppy_sha1, name in sorted(files[sha1]):
-    #         #print("        \"{0}\",".format(floppy_sha1))
-    #         print("        (\"{0}\", \"{1}\"),".format(floppy_sha1, name))
-    #     print("    ],")
-    # print("}")
-    # print("")
 
     for name, file_map in [
         ("wb_133_floppies", wb_133_files),

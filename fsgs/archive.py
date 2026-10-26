@@ -192,8 +192,6 @@ class LhaHandler(object):
         if sub_path:
             return
         for name in self._lhafile.namelist():
-            # if name.endswith(str("/")):
-            #     continue
             yield self.decode_name(name)
 
     def open(self, name):
@@ -285,7 +283,6 @@ class Archive(object):
         if "#/" in path:
             parts = path.rsplit("#/", 1)
             archive = parts[0]
-            # if not archive[-1] in "/\\" and os.path.exists(archive):
             if os.path.isfile(archive):
                 sub_path = parts[1] if len(parts) > 1 else ""
                 return archive, sub_path
@@ -333,13 +330,11 @@ class Archive(object):
         result = []
         print("[ARCHIVE]", self.get_handler())
         for item in self.get_handler().list_files(self.sub_path):
-            # result.append(os.path.join(self.path, item))
             result.append(self.path + "#/" + item)
         return result
 
     def exists(self, path):
         path, sub_path = self.split_path(path)
-        # print(path, self.path)
         assert path == self.path
         if not sub_path:
             if "#?" in path:
@@ -351,12 +346,7 @@ class Archive(object):
 
     def getinfo(self, path):
         path, sub_path = self.split_path(path)
-        # print(path, self.path)
         assert path == self.path
-        # if not sub_path:
-        #     if "#?" in path:
-        #         path = path.rsplit("#?", 1)[0]
-        #     return os.path.exists(path)
         if "#?" in sub_path:
             sub_path = sub_path.rsplit("#?", 1)[0]
         return self.get_handler().getinfo(sub_path)
@@ -364,7 +354,6 @@ class Archive(object):
     def open(self, path):
         print("[Archive] Open", repr(path))
         path, sub_path = self.split_path(path)
-        # print(path, self.path)
         assert path == self.path
         if not sub_path:
             return filter_open(path)

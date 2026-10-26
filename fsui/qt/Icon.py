@@ -15,7 +15,6 @@ class Icon(object):
         self.path = path
 
     def stream_for_size(self, size):
-        # package, file_ = name.split(":", 1)
         assert self.path.startswith("pkg:")
         package = self.path[4:]
         try:

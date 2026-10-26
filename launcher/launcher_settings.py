@@ -84,11 +84,9 @@ class LauncherSettings(object):
         Option.PLATFORMS_FEATURE: "",
         "primary_joystick": "",
         Option.PSX_DATABASE: "",
-        # "rtg_scanlines": "",
         "scan_configs": "1",
         "scan_files": "1",
         "scan_roms": "1",
-        # "scanlines": "",
         "search_path": "",
         "secondary_joystick": "",
         Option.SMD_DATABASE: "",
@@ -108,20 +106,16 @@ class LauncherSettings(object):
         Option.WHDLOAD_PRELOAD: "",
         Option.WHDLOAD_SPLASH_DELAY: "",
         Option.WHDLOAD_QUIT_KEY: "",
-        # "window_width": "",
-        # "window_height": "",
         "zoom": "",
         Option.ZXS_DATABASE: "",
     }
 
     settings = default_settings.copy()
-    # settings_listeners = []
 
     initialize_from_config = {"fullscreen"}
 
     @classmethod
     def get(cls, key):
-        # return app.settings.get(key, cls.default_settings.get(key, ""))
         return Settings.instance().get(key)
 
     @classmethod
@@ -138,12 +132,10 @@ class LauncherSettings(object):
 
     @classmethod
     def add_listener(cls, listener):
-        # cls.settings_listeners.append(listener)
         LauncherSignal.add_listener("setting", listener)
 
     @classmethod
     def remove_listener(cls, listener):
-        # cls.settings_listeners.remove(listener)
         LauncherSignal.remove_listener("setting", listener)
 
     @classmethod

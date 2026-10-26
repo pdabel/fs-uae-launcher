@@ -11,16 +11,12 @@ class PagedDialog(fsui.Window):
         self.theme = LauncherTheme.get()
         self.layout = fsui.VerticalLayout()
 
-        # self.layout.set_padding(20)
         layout = self.layout
 
         h_layout = fsui.HorizontalLayout()
         layout.add(h_layout, fill=True, expand=True)
 
         layout_2 = fsui.VerticalLayout()
-        # layout_2.padding_top = 20
-        # layout_2.padding_bottom = 20
-        # layout_2.padding_left = 20
 
         self.list_view = fsui.ListView(self, border=False)
         self.list_view.set_min_width(240)
@@ -97,8 +93,6 @@ class PagedDialog(fsui.Window):
         layout_2.add(self.list_view, fill=True, expand=True)
         h_layout.add(layout_2, fill=True)
 
-        # h_layout.add_spacer(20)
-
         v_layout = fsui.VerticalLayout()
         h_layout.add(v_layout, fill=True, expand=True)
 
@@ -115,17 +109,8 @@ class PagedDialog(fsui.Window):
             self.page_container.layout = fsui.VerticalLayout()
             v_layout.add(self.page_container, fill=True, expand=True)
 
-        # self.layout.add_spacer(20)
-
-        # h_layout = fsui.HorizontalLayout()
-        # layout.add(h_layout, fill=True)
-
         self.page_titles = []
         self.pages = []
-
-        # self.add_page(_("Hardware"), HardwarePage)
-        # self.add_page(_("Hard Drives"), HardDrivesPage)
-        # elf.add_page(_("Custom Options"), CustomOptionsPage)
 
         self.button_layout = fsui.HorizontalLayout()
         v_layout.add(self.button_layout, fill=True, margin=20, margin_top=0)
@@ -138,14 +123,8 @@ class PagedDialog(fsui.Window):
 
         self.current_page = None
 
-        # self.page_container.set_min_width(600)
-        # self.page_container.set_min_height(640)
-        # self.set_size_from_layout()
         self.set_size((840, 640))
         self.center_on_parent()
-
-    # def on_close_button(self):
-    #     self.end_modal(0)
 
     def on_select_item(self, index):
         self.set_page(index)
@@ -162,12 +141,9 @@ class PagedDialog(fsui.Window):
         return self.list_view.get_index()
 
     def get_page_title(self, index):
-        # return self.page_titles[index][0]
         return self.page_titles[index]["label"]
 
     def get_page_index_by_title(self, title):
-        # for index, t in enumerate(self.page_titles):
-        #     if t[0] == title:
         for i, item in enumerate(self.page_titles):
             if item["label"] == title:
                 return i
@@ -190,7 +166,6 @@ class PagedDialog(fsui.Window):
         self.page_container.layout.add(page, fill=True, expand=True)
         self.current_page = page
         page.show()
-        # print("calling self.layout.update")
         self.page_container.layout.update()
         self.layout.update()
 
@@ -199,6 +174,5 @@ class PagedDialog(fsui.Window):
     def set_page_by_title(self, title):
         index = self.get_page_index_by_title(title)
         if index is not None:
-            # self.set_page(index)
             self.list_view.set_index(index)
         return index

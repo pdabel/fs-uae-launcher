@@ -1,6 +1,5 @@
 import sys
 
-# import traceback
 from collections import defaultdict
 
 from fsbc import settings
@@ -35,8 +34,6 @@ class Config(ContextAware):
             value = self.values[key]
             if value:
                 self.set(key, "")
-        # for key in self.values.keys():
-        #     del self.values[key]
 
     @staticmethod
     def config_from_argv():
@@ -68,7 +65,6 @@ class Config(ContextAware):
 
     def set(self, *values):
         if len(values) == 1:
-            # Config.set_multiple(*values)
             items = list(values[0])
         elif len(values) == 2:
             items = [(values[0], values[1])]
@@ -79,30 +75,17 @@ class Config(ContextAware):
         changed_keys = set()
 
         def add_changed_key(added_key):
-            # try:
-            #     added_priority = cls.key_order.index(added_key)
-            # except ValueError:
-            #     added_priority = 1000
             added_priority = 0
             # FIXME: re-introduce support for key priority if necessary
             changed_keys.add((added_priority, added_key))
 
         def change(changed_key, changed_value):
-            # print("change", changed_key, changed_value)
-            # if key == "joystick_port_1_mode":
-            #     pass
             if old_config.get(changed_key, None) == changed_value:
-                # if changed_value:
-                #     print("config set {0} to {1} (no change)".format(
-                #         changed_key, changed_value))
                 return
             if self.log_config:
                 print(
                     f"[CONFIG] set {changed_key} to {changed_value}"
                 )
-            # if changed_key == "__changed" and changed_value == "1":
-            #     print("Stack trace for event causing __changed = 1:")
-            #     traceback.print_stack()
             add_changed_key(changed_key)
             self.values[changed_key] = changed_value
 
@@ -127,15 +110,5 @@ class Config(ContextAware):
                     change("__changed", "1")
                     break
             for priority, key in sorted(changed_keys):
-                # for listener in cls.config_listeners:
-                #     listener.on_config(key, cls.get(key))
-
                 value = self.get(key)
-                # Signal.broadcast("config", key, value)
                 self.context.signal.notify("config", (key, value))
-
-            # FIXME: reset __netplay_ready...
-            # if "__netplay_ready" not in changed_keys:
-            #     cls.set("__netplay_ready", "0")
-            #
-            # Settings.set("config_changed", "1")

@@ -3,7 +3,6 @@ import platform
 import fsbc.debug
 import fsbc.logging
 
-# import fsbc.unicode
 from fsbc.application import Application
 
 init_called = False
@@ -29,22 +28,13 @@ def initialize_application(
 
     if name is not None:
         Application.app_name = name
-        # print(name)
 
     if version is not None:
         Application.app_version = version
-        # print(version)
 
     if enable_exception_handler:
         fsbc.debug.enable_exception_handler()
         exception_handler_enabled = True
 
     if patch_unicode:
-        # patch system libraries (and argv) to work better with
-        # unicode-enabled programs
-        # FIXME: removed for Python 3
-        # fsbc.unicode.patch_all()
         unicode_patched = True
-
-    # print(platform.uname())
-    # print(sys.argv)

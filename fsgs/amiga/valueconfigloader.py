@@ -40,8 +40,6 @@ class ValueConfigLoader(object):
                 return self.get_config()
 
         self.values = values
-        # from pprint import pprint
-        # pprint(values)
 
         cd_based = False
         amiga_model = "A500"
@@ -62,14 +60,7 @@ class ValueConfigLoader(object):
             raise Exception("unknown platform")
         self.config["amiga_model"] = amiga_model
 
-        # self.config["x_game_uuid"] = self.values["uuid"]
-
         self.viewport = []
-        # game_node = self.root.find("game")
-        # if game_node is not None:
-        #     game_uuid = game_node.get("uuid", "")
-        #     self.config["x_game_uuid"] = game_uuid
-        #     self.load_game_info(game_uuid)
 
         # self.load_options())
 
@@ -96,10 +87,6 @@ class ValueConfigLoader(object):
             self.load_floppies()
 
         self.load_hard_drives()
-
-        # if not self.check_all_files():
-        #     print(" -- some files are missing --")
-        #     self.options["x_missing_files"] = "1"
 
         download_page = values.get("download_page", "")
         if download_page:
@@ -139,7 +126,6 @@ class ValueConfigLoader(object):
             if file["name"].endswith("/"):
                 # this is a folder
                 continue
-            # print(repr(file))
             if not file["sha1"]:
                 return False
             if not fsgs.file.find_by_sha1(file["sha1"]):
@@ -166,8 +152,6 @@ class ValueConfigLoader(object):
             fix(f"cdrom_image_{i}")
 
     def set_name_and_uuid(self):
-        # self.config["x_config_uuid"] = self.root.get("uuid", "")
-
         self.config["game_uuid"] = self.values.get("game_uuid", "")
         self.config["variant_uuid"] = self.values.get("variant_uuid", "")
 
@@ -192,21 +176,12 @@ class ValueConfigLoader(object):
                 parts = value.split(",")
                 for i in range(len(parts)):
                     parts[i] = parts[i].split("#", 1)[0].strip()
-                    # parts[i] = parts[i].replace("=", "=>")
-                    # parts[i] = parts[i].replace("==>", "=>")
                 value = ", ".join(parts)
                 while "  " in value:
                     value = value.replace("  ", " ")
             else:
                 value = "* * * * = " + value
             self.viewport.append(value)
-        # if key.startswith("viewport_"):
-        #     parts = key.split("_")
-        #     if len(parts) == 5:
-        #         parts = parts[1:]
-        #         value = " ".join(parts) + " => " + value
-        #         value = value.replace("x", "*")
-        #         self.viewport.append(value)
         elif key == "hd_startup":
             self.options["hd_startup"] = value
             if whdload.should_disable_drive_click():
@@ -225,8 +200,6 @@ class ValueConfigLoader(object):
             self.options["save_disk"] = value
         elif key == "whdload_version":
             self.options["x_whdload_version"] = value
-        # elif key == "whdload_icon":
-        #     self.options["__whdload_icon"] = value
         elif key == "kickstart":
             if value == "1.2":
                 self.options["amiga_model"] = "A1000"
@@ -292,7 +265,6 @@ class ValueConfigLoader(object):
                 if model in ["A1200", "A1200/020", "A4000/040"]:
                     pass
                 else:
-                    # self.options["amiga_model"] = "A1200"
                     self.options["chip_memory"] = "2048"
             else:
                 self.options["chip_memory"] = value
@@ -359,8 +331,6 @@ class ValueConfigLoader(object):
             self.options["x_variant_error"] = value
         elif key == "joy_emu_conflict":
             self.options["x_joy_emu_conflict"] = value
-            # elif key == "languages":
-            #     self.options["x_languages"] = value
 
     def load_joystick_port_x_mode_option(self, key, value):
         value = value.lower()
@@ -401,7 +371,6 @@ class ValueConfigLoader(object):
 
             if name.startswith("DH0/"):
                 if hds:
-                    # p = os.path.join(self.path, "HardDrive")
                     p = "hd://game/" + self.uuid + "/DH0"
                     if p in added:
                         # already added
@@ -446,9 +415,7 @@ class ValueConfigLoader(object):
                 media_list.append((path, found_sha1))
             else:
                 pass
-                # return False
                 #  FIXME: handle it with a visible error message
-                # raise Exception("could not find file " + repr(name))
         return media_list
 
     def load_floppies_from_floppy_list(self):
@@ -492,20 +459,16 @@ class ValueConfigLoader(object):
         raise Exception("cdrom_sha1_to_uri: could not find " + sha1)
 
     def load_cdroms(self):
-        # media_list = self.build_media_list(cds=True)
         cue_sheets = self.get_cue_sheets()
         if cue_sheets:
             return self.load_cdroms_from_cue_sheets(cue_sheets)
         cue = False
         ccd = False
-        # iso = False
         for file_item in self.get_file_list():
             if file_item["name"].endswith(".cue"):
                 cue = True
             if file_item["name"].endswith(".ccd"):
                 ccd = True
-                # if file_item["name"].endswith(".iso"):
-                #     iso = True
         media_list = []
         if ccd:
             ext = ".ccd"

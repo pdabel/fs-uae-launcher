@@ -3,10 +3,6 @@ import weakref
 
 class StrWithExplicit(str):
 
-    # def __init__(self, object):
-    #     super().__init__(object)
-    #     self.explicit = ""
-
     @property
     def int(self):
         return int(self or "0")
@@ -18,15 +14,12 @@ class ImplicitConfig:
         self._config = config
         self._settings = settings
 
-        # self.__setattr__ = self.__setattr__function
-
     def items(self):
         return self._values.items()
 
     def get(self, key, default=""):
         value = self._values.get(key, default)
         explicit = self._config[key]
-        # print(explicit)
         if not explicit:
             explicit = self._settings[key]
         if value:
@@ -38,11 +31,9 @@ class ImplicitConfig:
 
     def __getitem__(self, item):
         result = self.get(item)
-        # print("get", item, repr(result))
         return result
 
     def __setitem__(self, key, value):
-        # print("setitem", key, value)
         if not value:
             value = ""
         else:
@@ -51,12 +42,7 @@ class ImplicitConfig:
 
     def __getattr__(self, item):
         result = self.get(item)
-        # print("get", item, repr(result))
         return result
-        # print("getattr", item)
-        # if item == "_values":
-        #     return getattr(self, "_values")
-        # return self.get(item)
 
     def __setattr__(self, key, value):
         if key.startswith("_"):
@@ -69,22 +55,15 @@ class NoParent:
     def __call__(self):
         return None
 
-    # def __nonzero__(self):
-    #     return False
-
 
 class Item:
     def __init__(self, text, active=True):
         self.text = text
         self.extra = ""
-        # self.parent = parent
         self._active = active
         self.represents = []
         self.parent = NoParent()
         self.children = []
-
-    # def set_parent(self, item):
-    #     self.parent = item
 
     @property
     def active(self):
@@ -103,8 +82,6 @@ class ContainerItem(Item):
 
     @property
     def active(self):
-        # print("active???", self, len(self.children))
-        # return True
         return len(self.children) > 0
 
 
@@ -122,7 +99,6 @@ class Model:
         self.show_all = show_all
 
     def add(self, item):
-        # if item.active or self.show_all:
         if True:
             if item.parent:
                 for i in range(len(self.items) - 1, -1, -1):
@@ -161,21 +137,6 @@ def create_joystick_port_item(c, num: int) -> Item:
         item = InactiveItem(f"Joystick Port {num}")
     else:
         item = Item(f"Joystick Port {num}")
-        # if mode == "joystick":
-        #     device_text = "[J]"
-        # elif mode == "mouse":
-        #     device_text = "[M]"
-        # elif mode == "cd32_gamepad":
-        #     device_text = "[C]"
-        # else:
-        #     device_text = "[?]"
-        # # FIXME: auto-calculated device
-        # device = c.get("joystick_port_{0}".format(num))
-        # if not device:
-        #     device = "???"
-        # device_text += " " + device
-        # device_item = Item(device_text)
-        # item.add(device_item)
     return item
 
 
@@ -206,13 +167,6 @@ def create_slirp_item(c):
 def create_model(c, show_all=False):
     model = Model(show_all=show_all)
 
-    # if c.ntsc_mode:
-    #     model_item = Item(c.int_model_name + " NTSC")
-    # else:
-    #     model_item = Item(c.int_model_name + " PAL")
-    # model_item.represents = ["amiga_model", "ntsc_mode"]
-    # model.add(model_item)
-
     text = c.int_chipset_name
     if c.uae_chipset_compatible != "-":
         text += f" ({c.uae_chipset_compatible})"
@@ -234,12 +188,6 @@ def create_model(c, show_all=False):
             text += " NTSC"
         else:
             text += " PAL"
-        # alice_item = Item(text)
-        # chipset_item.add(alice_item)
-        # lisa_item = Item("Lisa (AGA)")
-        # chipset_item.add(lisa_item)
-        # paula_item = Item("Paula (AGA)")
-        # chipset_item.add(paula_item)
     else:
         # http://en.wikipedia.org/wiki/MOS_Technology_Agnus
         if c.uae_chipset in ["ecs_agnus", "ecs"]:
@@ -250,23 +198,7 @@ def create_model(c, show_all=False):
             text += " NTSC"
         else:
             text += " PAL"
-        # agnus_item = Item(text)
-        # chipset_item.add(agnus_item)
-        # if c.uae_chipset in ["ecs_denise", "ecs"]:
-        #     denise_item = Item("Denise (ECS)")
-        # else:
-        #     denise_item = Item("Denise")
-        # chipset_item.add(denise_item)
-        # if c.uae_chipset in ["ecs"]:
-        #     paula_item = Item("Paula")
-        # else:
-        #     paula_item = Item("Paula")
-        # chipset_item.add(paula_item)
 
-    # if c.kickstart_file:
-    #     kickstart_item = Item("Custom Kickstart [FIXME]")
-    # else:
-    #     kickstart_item = Item("Default Kickstart [FIXME]")
     kickstart_item = Item(
         f"Kickstart {c.int_kickstart_version} Rev {c.int_kickstart_revision}"
     )
@@ -281,11 +213,6 @@ def create_model(c, show_all=False):
     else:
         kickstart_ext_item = InactiveItem("Extended ROM")
     model.add(kickstart_ext_item)
-
-    # if c.uae_cd32cd == "true":
-    #     akiko_item = Item("Akiko Chip")
-    #     # chipset_item.add(akiko_item)
-    #     model.add(akiko_item)
 
     jit_text = " [JIT]" if c.jit_compiler == "1" else ""
     cpu_item = Item("MC" + c.int_cpu_name + jit_text)
@@ -308,10 +235,6 @@ def create_model(c, show_all=False):
         if c.int_ppc_model:
             item = Item(f"PowerPC {c.int_ppc_model}")
             accelerator_item.add(item)
-
-        # model.remove(cpu_item)
-        # cpu_item.set_parent(accelerator_item)
-        # model.add(cpu_item)
 
         if c.int_cpuboardmem1_size:
             size = f"{int(c.int_cpuboardmem1_size) // (1024 * 1024)} MB"
@@ -339,7 +262,6 @@ def create_model(c, show_all=False):
         fpu_item = Item(f"{c.uae_fpu_model} FPU")
     else:
         fpu_item = InactiveItem("No FPU")
-        # fpu_item.set_parent(cpu_item)
     fpu_item.represents = ["fpu_model"]
     if c.uae_fpu_model == c.uae_cpu_model:
         cpu_item.add(fpu_item)
@@ -389,7 +311,6 @@ def create_model(c, show_all=False):
             size = f"{int(c.int_fastmem_size) // (1024 * 1024)} MB"
         else:
             size = f"{int(c.int_fastmem_size) // 1024} KB"
-        # fastmem_item = Item("{0} Zorro II Fast RAM".format(size))
         fastmem_item = Item(f"{size} Fast RAM")
     else:
         fastmem_item = InactiveItem("No Zorro II Fast RAM")
@@ -402,7 +323,6 @@ def create_model(c, show_all=False):
 
     if int(c.int_z3fastmem_size):
         size = f"{int(c.int_z3fastmem_size) // (1024 * 1024)} MB"
-        # z3fastmem_item = Item("{0} Zorro III Fast RAM".format(size))
         z3fastmem_item = Item(f"{size} Fast RAM")
     else:
         z3fastmem_item = InactiveItem("No Zorro III Fast RAM")
@@ -420,7 +340,6 @@ def create_model(c, show_all=False):
     rtc_item.represents = ["uae_rtc"]
     if bogomem_item.active and c.uae_rtc == "MSM6242B":
         if flatten:
-            # bogomem_item.add(rtc_item)
             model.add(rtc_item)
         else:
             trapdoor_item.add(rtc_item)
@@ -439,8 +358,6 @@ def create_model(c, show_all=False):
     model.add(zorro_ii_item)
     model.add(zorro_iii_item)
 
-    # resident_item = ContainerItem("Resident Libraries")
-    # model.add(resident_item)
     resident_item = model
 
     if c.int_uae_boot_rom == "true":
@@ -473,15 +390,6 @@ def create_model(c, show_all=False):
             uaenet_device_item = InactiveItem("No uaenet.device")
         uaenet_device_item.represents = ["uae_sana2"]
         resident_item.add(uaenet_device_item)
-
-    # if c.uae_a2065:
-    #     a2065_item = Item("A2065 [Network Card]")
-    #     a2065_item.represents = ["uae_a2065"]
-    #     zorro_ii_item.add(a2065_item)
-    #
-    #     if c.uae_a2065 == "slirp":
-    #         slirp_item = create_slirp_item(c)
-    #         a2065_item.add(slirp_item)
 
     if c.uae_gfxcard_type:
         graphics_card_item = Item(
@@ -525,7 +433,6 @@ def create_model(c, show_all=False):
 
     model.add(joystick_port_0_item)
     model.add(joystick_port_1_item)
-    # parallel_port_item = Item("Parallel Port")
 
     if joystick_port_2_item.active or joystick_port_3_item.active:
         parallel_port_item = Item("Parallel Port Joystick Adapter")
@@ -559,10 +466,5 @@ def create_model(c, show_all=False):
             f"uae_df{i}type",
         ]
         model.add(drive_item)
-        # path = getattr(c, "uae_floppy{0}".format(i))
-        # if path:
-        #     name = os.path.basename(path)
-        #     disk_item = Item(name)
-        #     drive_item.add(disk_item)
 
     return model

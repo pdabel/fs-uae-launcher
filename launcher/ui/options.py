@@ -83,7 +83,6 @@ def create_option_group(
     use_label=True,
     expand=False,
 ):
-    # group = fsui.Group(parent)
     group = OptionPanel(parent, platforms)
     group.layout = fsui.HorizontalLayout()
     group.option_label = None
@@ -118,8 +117,6 @@ def create_option_group(
         if not expand:
             group.layout.add_spacer(0, expand=True)
         choices = option["values"]
-        # if use_checkbox:
-        #     choices,insert(("", gettext("Auto")))
         group.layout.add(
             ChoiceControl(
                 group, options, key, choices, use_checkbox=use_checkbox
@@ -134,7 +131,6 @@ def create_option_group(
             LauncherConfig.set(key, val.strip())
 
         text_field = fsui.TextField(group)
-        # text_field.set_min_width(400)
         text_field.set_text(LauncherConfig.get(key))
         text_field.on_changed = on_changed
         group.layout.add(text_field, expand=True)
@@ -150,38 +146,6 @@ def create_option_group(
             group, options, key, option["min"], option["max"]
         )
 
-        # current = LauncherConfig.get(key)
-        # current_int = int(option["default"])
-        # if current:
-        #     try:
-        #         current_int = int(current)
-        #     except ValueError:
-        #         pass
-        # current_int = max(option["min"], min(option["max"], current_int))
-        # check_box = fsui.CheckBox(group, gettext("Default"))
-        # spin_ctrl = fsui.SpinCtrl(group, option["min"],
-        #                           option["max"], current_int)
-        # if current == "":
-        #     check_box.check()
-        #     spin_ctrl.disable()
-
-        # def on_checkbox():
-        #     if check_box.is_checked():
-        #         spin_ctrl.set_value(int(option["default"]))
-        #         spin_ctrl.disable()
-        #         LauncherConfig.set(key, "")
-        #     else:
-        #         spin_ctrl.enable()
-        #
-        # check_box.on_changed = on_checkbox
-        #
-        # def on_spin():
-        #     val = spin_ctrl.get_value()
-        #     val = max(option["min"], min(option["max"], val))
-        #     LauncherConfig.set(key, str(val))
-
-        # spin_ctrl.on_changed = on_spin
-        # group.layout.add(check_box)
         if not expand:
             group.layout.add_spacer(0, expand=True)
         group.layout.add(
@@ -355,13 +319,6 @@ class ChoiceControl(fsui.Choice):
             self.update_auto_item()
 
     def update_auto_item(self):
-        # if self.use_checkbox:
-        #     # Checkboxes are used, so there isn't an auto entry!
-        #     # return
-        #     # if self.options.get(self.key):
-        #     #     self.set_from_value(self.implicit_value)
-        #     pass
-        # else:
         if self.get_index() == 0 and self.implicit_value:
             text = gettext(f"Auto - {self.implicit_value}")
         else:
@@ -372,8 +329,6 @@ class ChoiceControl(fsui.Choice):
 class BooleanChoiceControl(ChoiceControl):
     def __init__(self, parent, options, key, use_checkbox=False):
         choices = [("1", gettext("Enabled")), ("0", gettext("Disabled"))]
-        # if not use_checkbox:
-        #     choices.insert(0, ("", gettext("Auto")))
         super().__init__(
             parent, options, key, choices, use_checkbox=use_checkbox
         )
@@ -382,12 +337,6 @@ class BooleanChoiceControl(ChoiceControl):
 class SpinValueControl(fsui.SpinCtrl):
     # noinspection PyShadowingBuiltins
     def __init__(self, parent, options, key, min, max):
-        # value = self.int_value(options.get(key))
-        # try:
-        #     int_value = int(value)
-        # except ValueError:
-        #     int_value = self.min
-
         super().__init__(parent, min, max, min)
         self.min = min
         self.max = max
@@ -411,7 +360,6 @@ class SpinValueControl(fsui.SpinCtrl):
     def on_explicit_option(self, value):
         print("SpinValueControl", self.key, value)
         self.set_from_value(value)
-        # if self.use_checkbox:
         self.set_enabled(bool(value))
 
     def on_implicit_option(self, value):
@@ -439,38 +387,3 @@ class SpinValueControl(fsui.SpinCtrl):
                 value = default_value(self.key)
         with self.changed.inhibit:
             self.set_value(self.int_value(value))
-
-
-# current = LauncherConfig.get(key)
-# current_int = int(option["default"])
-# if current:
-#     try:
-#         current_int = int(current)
-#     except ValueError:
-#         pass
-# current_int = max(option["min"], min(option["max"], current_int))
-# check_box = fsui.CheckBox(group, gettext("Default"))
-# spin_ctrl = fsui.SpinCtrl(group, option["min"],
-#                           option["max"], current_int)
-#
-# if current == "":
-#     check_box.check()
-#     spin_ctrl.disable()
-#
-#
-# def on_checkbox():
-#     if check_box.is_checked():
-#         spin_ctrl.set_value(int(option["default"]))
-#         spin_ctrl.disable()
-#         LauncherConfig.set(key, "")
-#     else:
-#         spin_ctrl.enable()
-#
-#
-# check_box.on_changed = on_checkbox
-#
-#
-# def on_spin():
-#     val = spin_ctrl.get_value()
-#     val = max(option["min"], min(option["max"], val))
-#     LauncherConfig.set(key, str(val))

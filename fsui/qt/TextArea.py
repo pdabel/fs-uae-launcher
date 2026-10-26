@@ -10,7 +10,6 @@ class TextArea(fsui.qt.QTextEdit, WidgetMixin):
         self, parent, text="", read_only=False, font_family=None, border=True
     ):
         fsui.qt.QTextEdit.__init__(self, "", parent.get_container())
-        # Widget.__init__(self, parent)
         self.init_widget(parent)
         if not border:
             self.setFrameStyle(fsui.qt.QFrame.NoFrame)
@@ -18,7 +17,6 @@ class TextArea(fsui.qt.QTextEdit, WidgetMixin):
         if font_family:
             print("FIXME: not respecting font_family yet")
             font = fsui.qt.QFont("Courier")
-            # font.setStyleHint(QtGui.QFont.TypeWriter)
             self.setFont(font)
         if text:
             self.append_text(text)
@@ -31,15 +29,10 @@ class TextArea(fsui.qt.QTextEdit, WidgetMixin):
         self.setPlainText(text.replace("\n", "\r\n"))
 
     def append_text(self, text, color=None):
-        # text = text.replace("\n", "\r\n")
-        # print("Appending text:", repr(text))
-        # self.moveCursor(QTextCursor.End)
-        # self.insertPlainText(text.strip())
         if color is not None:
             self.setTextColor(fsui.qt.QColor(*color))
         else:
             self.setTextColor(self.palette().color(fsui.qt.QPalette.Text))
-        # self.appendPlainText(text.strip())
         self.append(text.strip())
         self.moveCursor(fsui.qt.QTextCursor.End)
 

@@ -13,7 +13,6 @@ class Choice(QComboBox, WidgetMixin):
         if items is None:
             items = []
         QComboBox.__init__(self, parent.get_container())
-        # Widget.__init__(self, parent)
         self.init_widget(parent)
         self.inhibit_change_event = False
         self.cursor_keys = cursor_keys
@@ -26,7 +25,6 @@ class Choice(QComboBox, WidgetMixin):
         self.currentIndexChanged.connect(self.__current_index_changed)
 
         self.changed = SignalWrapper(self, "changed")
-        # self.changed.inhibit = self.inhibit_signal
 
     def keyPressEvent(self, event):
         if not self.cursor_keys:
@@ -36,21 +34,7 @@ class Choice(QComboBox, WidgetMixin):
                 return
         super().keyPressEvent(event)
 
-    # @contextmanager
-    # def inhibit_signal(self, name):
-    #     attr = "_inhibit_" + name
-    #     old = getattr(self, attr, False)
-    #     print("setattr", self, attr, True)
-    #     setattr(self, attr, True)
-    #     yield
-    #     print("setattr", self, attr, old)
-    #     setattr(self, attr, old)
-
     def add_item(self, label, icon=None):
-        # item = QStandardItem(label)
-        # if icon:
-        #     item.setIcon(icon.qicon)
-        # item.setSizeHint(QSize(-1, 24))
         if label == self.ITEM_SEPARATOR:
             self.insertSeparator(self.count())
         elif icon is not None:
@@ -63,11 +47,7 @@ class Choice(QComboBox, WidgetMixin):
         self.removeItem(index)
 
     def __current_index_changed(self):
-        # print("__current_index_changed", self.currentIndex(),
-        #       "inhibit", self.inhibit_change_event)
         if not self.inhibit_change_event:
-            # print("Choice.__current_index_changed")
-            # if not getattr(self, "_inhibit_changed", False):
             if not self.changed.inhibit:
                 if not getattr(self, "_inhibit_item_selected", False):
                     index = self.currentIndex()
@@ -102,8 +82,6 @@ class ItemChoice(Choice):
         Choice.__init__(self, parent)
 
     def update(self):
-        # for i, item in enumerate(self.items):
-        #     self.add_item(item["name"], icon=self.get_item_icon(i))
         old = self.inhibit_change_event
         old_index = self.get_index()
         self.inhibit_change_event = True

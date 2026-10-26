@@ -8,11 +8,8 @@ class VerticalScrollArea(QScrollArea, WidgetMixin):
         QScrollArea.__init__(self, parent.get_container())
         self.init_widget(parent)
         self.__child = None
-        # self.layout = None
-        # self._painter = None
 
         self.move(0, 2000)
-        # self.setAutoFillBackground(True)
         self.setFrameShape(QFrame.NoFrame)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
@@ -28,8 +25,6 @@ class VerticalScrollArea(QScrollArea, WidgetMixin):
         self.on_resize()
 
     def get_child(self):
-        # child = self.__child()
-        # return child
         return self.__child
 
     def get_min_width(self):
@@ -41,7 +36,6 @@ class VerticalScrollArea(QScrollArea, WidgetMixin):
         child.set_size((self.viewport().width(), height))
 
     def set_widget(self, child):
-        # self.__child = weakref.ref(child)
         self.__child = child
         widget = child.widget()
         self.setWidget(widget)

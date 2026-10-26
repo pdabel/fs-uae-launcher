@@ -49,8 +49,6 @@ def build_cfg():
         ("x_kickstart_ext_file_sha1", "", "checksum", "sync", "no_save"),
         (Option.X_WHDLOAD_ARGS, "", "checksum", "sync"),
         (Option.X_WHDLOAD_VERSION, "", "checksum", "sync"),
-        # (Option.WHDLOAD_SPLASH_DELAY, "", "checksum", "sync"),
-        # (Option.WHDLOAD_QUIT_KEY, "", "checksum", "sync"),
         ("floppy_drive_count", "", "checksum", "sync"),
         ("floppy_drive_speed", "", "checksum", "sync"),
         ("cdrom_drive_count", "", "checksum", "sync"),
@@ -186,9 +184,6 @@ class LauncherConfig(object):
     no_custom_config.append("__changed")
     no_custom_config.append("__ready")
     no_custom_config.append("__config_name")
-    # no_custom_config.append("__database")
-    # no_custom_config.append("x_whdload_icon")
-    # no_custom_config.append("platform")
 
     no_save_keys_set = set([x[0] for x in cfg if "no_save" in x])
 
@@ -220,9 +215,6 @@ class LauncherConfig(object):
         )
     reset_values["x_kickstart_file"] = ("x_kickstart_file_sha1", "")
     reset_values["x_kickstart_ext_file"] = ("x_kickstart_ext_file_sha1", "")
-
-    # config = default_config.copy()
-    # config_listeners = []
 
     @classmethod
     def keys(cls):
@@ -336,11 +328,8 @@ class LauncherConfig(object):
                         config_dict["x_kickstart_ext_file_sha1"] = checksum
                         break
                 else:
-                    # print("WARNING: no suitable kickstart ext file found")
                     config_dict["x_kickstart_ext_file"] = ""
                     config_dict["x_kickstart_ext_file_sha1"] = ""
-                    # Warnings.set("hardware", "kickstart_ext",
-                    #              "No suitable extended kickstart found")
                     # FIXME: set sha1 and name x_options also
 
     @classmethod
@@ -394,9 +383,7 @@ class LauncherConfig(object):
 
         cls.update_kickstart_in_config_dict(update_config)
         cls.fix_loaded_config(update_config)
-        # print("about to set", update_config)
         cls.set_multiple(update_config.items())
-        # Settings.set("config_changed", "0")
         if "__changed" in update_config:
             # We specifically loaded __changed, probably in fix_loaded_config.
             print("__changed was explicitly set:", update_config["__changed"])
@@ -404,12 +391,8 @@ class LauncherConfig(object):
             # Mark config as unchanged (i.e. does not need to be saved).
             cls.set("__changed", "0")
 
-            # cls.update_kickstart()
-
     @classmethod
     def fix_joystick_ports(cls, config):
-        # from .Settings import Settings
-
         print("---", config["joystick_port_0"])
         print("---", config["joystick_port_1"])
 
@@ -439,11 +422,9 @@ class LauncherConfig(object):
             del available_lower[index]
 
         # if config in
-        # print("--------------------------------------------")
         if config["joystick_port_1_mode"] in ["joystick", "cd32 gamepad"]:
             if not config["joystick_port_1"]:
                 want = LauncherSettings.get("primary_joystick").lower()
-                # print("want", want)
                 try:
                     index = available_lower.index(want)
                 except ValueError:
@@ -471,7 +452,6 @@ class LauncherConfig(object):
                     index = available_lower.index(want)
                 except ValueError:
                     index = -1
-                # print("want", want, "index", index)
                 if index == -1:
                     index = len(available) - 1
                 if index >= 0:
@@ -575,7 +555,6 @@ class LauncherConfig(object):
 
     @classmethod
     def load_values(cls, values, uuid=""):
-        # print("loading config values", values)
         platform_id = values.get("platform", "").lower()
 
         if platform_id in ["amiga", "cdtv", "cd32"]:
@@ -631,7 +610,6 @@ class LauncherConfig(object):
     @classmethod
     def fix_loaded_config(cls, config):
         print("[CONFIG] Fix loaded config")
-        # cls.fix_joystick_ports(config)
 
         # FIXME: parent
         checksum_tool = ChecksumTool(None)
@@ -639,7 +617,6 @@ class LauncherConfig(object):
         def fix_file_checksum(sha1_key, key, base_dir, is_rom=False):
             path = config.get(key, "")
             # hack to synchronize URLs
-            # print(repr(path))
             if path.startswith("http://") or path.startswith("https://"):
                 sha1 = path
                 config[sha1_key] = sha1

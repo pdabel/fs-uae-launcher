@@ -46,16 +46,11 @@ class Application(object):
         """
         if cls._instance:
             raise RuntimeError("An application instance already exists")
-            # logger.warning("An application instance already exists")
 
         # noinspection PyAttributeOutsideInit
         cls._instance = instance
-        # Settings.instance().set_path(instance.get_settings_path())
 
     def __init__(self, name="", version=""):
-        # if Application.instance is not None:
-        #     raise Exception("An application instance already exists")
-        # Application.instance = self
         self.stop_flag = False
         self.name = name or Application.app_name
         self.version = version or Application.app_version
@@ -108,9 +103,6 @@ class Application(object):
 
     def run_in_main(self, function, *args, **kwargs):
         raise NotImplementedError("Application.run_in_main")
-
-    # def timer(self, timeout, function, *args, **kwargs):
-    #     raise NotImplementedError("Application.call_later")
 
     @staticmethod
     @memoize
@@ -168,7 +160,6 @@ class Application(object):
         """
         for data_dir in self.data_dirs():
             path = os.path.join(data_dir, name)
-            # print("- checking", path)
             if os.path.exists(path):
                 return path
         raise LookupError(name)
@@ -191,7 +182,6 @@ class ApplicationInstanceProxy(object):
 
     def __setattr__(self, name, value):
         raise Exception("not currently allowed to set attributes on app")
-        # return setattr(Application.instance(), name, value)
 
 
 app = ApplicationInstanceProxy()

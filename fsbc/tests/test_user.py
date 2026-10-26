@@ -1,15 +1,7 @@
 import fsbc.user
-import pytest
 
 
 def test_mypy():
-    pytest.skip()
-    # import fstd.mypy
-    # fstd.mypy.check_module(fsbc.user.__name__)
+    import fstd.mypy
 
-
-def test_doctest():
-    import doctest
-
-    failure_count, test_count = doctest.testmod(fsbc.user)
-    assert failure_count == 0
+    fstd.mypy.check_module(fsbc.user.__name__)

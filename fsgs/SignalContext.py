@@ -20,14 +20,12 @@ class SignalBehavior:
             self._context.connect(
                 signal, getattr(self._parent(), f"on_{signal}_signal")
             )
-            # self._context.connect(signal, self._parent())
 
     def on_parent_destroyed(self):
         for signal in self._names:
             self._context.disconnect(
                 signal, getattr(self._parent(), f"on_{signal}_signal")
             )
-            # self._context.disconnect(signal, self._parent())
 
 
 # noinspection PyMethodMayBeStatic
@@ -37,7 +35,6 @@ class SignalContext(ContextAware):
 
     def signal_name(self, signal):
         # FIXME: use fsgs-context-instance-specific signals
-        # return "fsgs:{}{}".format(id(signal), signal)
         return f"fsgs:{signal}"
 
     def connect(self, signal, listener):

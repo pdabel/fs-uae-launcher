@@ -24,7 +24,6 @@ class TabButton(fsui.Panel):
         fsui.Panel.__init__(self, parent, paintable=True)
         Skin.set_background_color(self)
         self.layout = fsui.VerticalLayout()
-        # self.set_background_color((0xdd, 0xdd, 0xdd))
         self.set_min_width(Constants.TAB_WIDTH + left_padding + right_padding)
         self.set_min_height(Constants.TAB_HEIGHT)
         self.group_id = 0
@@ -49,7 +48,6 @@ class TabButton(fsui.Panel):
             hover=self.hover,
             button_style=(self.type == self.TYPE_BUTTON),
         )
-        # TabPanel.draw_border(self, dc)
         size = self.size()
         x = (
             self.left_padding
@@ -88,10 +86,6 @@ class TabButton(fsui.Panel):
 
     def on_left_up(self):
         if self.type == self.TYPE_BUTTON:
-            # FIXME: hack to avoid sticky hover due to mouse leave not
-            # being sent if on_activate opens modal dialog
-            # self.hover = False
-            # self.refresh()
             self.on_activate()
 
     def on_activate(self):

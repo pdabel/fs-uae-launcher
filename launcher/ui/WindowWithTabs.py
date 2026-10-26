@@ -14,18 +14,10 @@ class WindowWithTabs(fsui.Window):
         self.toolbar = None
         self.tab_panel = TabPanel(self)
         self.layout = fsui.VerticalLayout()
-        # if Skin.fws():
-        #     self.title_bar = TitleBar(self)
-        #     self.layout.add(self.title_bar, fill=True)
         if self.tab_panel:
             self.layout.add(self.tab_panel, fill=True)
         self.current_tab_group_id = 0
         self.tab_groups = [[]]
-
-    # def __size_event(self, event):
-    #     size = event.GetSize()
-    #     print("WindowWithTabs size event, size =", size)
-    #     event.Skip()
 
     def realize_tabs(self):
         if self.toolbar:
@@ -45,7 +37,6 @@ class WindowWithTabs(fsui.Window):
             print("\n\n\nselect tab", index, group)
             # noinspection PyUnresolvedReferences
             self.tab_groups[group][index].select()
-            # self.tab_groups[group].select_tab(index)
 
     def add_tab(self, function, icon, title="", tooltip=""):
         if not tooltip:
@@ -93,20 +84,14 @@ class WindowWithTabs(fsui.Window):
                     menu_data[0] = menu_function()
                     button.check_hover()
 
-            # def on_left_up():
-            #     print("on left up")
-            #     # menu_data[0].close()
-
             button.on_left_down = menu_wrapper
             button.on_left_dclick = menu_wrapper
-            # button.on_left_up = on_left_up
         self.tab_panel.add(button)
         # noinspection PyTypeChecker
         self.tab_groups[self.current_tab_group_id].append(button)
         return button
 
     def add_tab_panel(self, class_, min_width=0, expand=1000000):
-        # panel = class_(self.tab_panel, padding_bottom=2)
         panel = class_(self.tab_panel)
         panel.expandable = True
         panel.set_min_height(Constants.TAB_HEIGHT)

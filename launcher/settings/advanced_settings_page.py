@@ -60,8 +60,6 @@ class AdvancedSettingsPage(SettingsPage):
             parts = line.split("=", 1)
             if len(parts) == 2:
                 key = parts[0].strip()
-                # if key in Settings.default_settings:
-                #     continue
                 value = parts[1].strip()
                 app.settings[key] = value
 
@@ -73,10 +71,6 @@ class AdvancedSettingsPage(SettingsPage):
         for key in sorted(keys):
             if key in LauncherSettings.default_settings:
                 continue
-            # if key in LauncherConfig.config_keys:
-            #     # print("(settings) ignoring key", key)
-            #     text += "\n# {0} is ignored here " \
-            #             "(use config dialog instead)\n".format(key)
             if LauncherConfig.is_config_only_option(key):
                 text += (
                     f"\n# {key} will here function as a global config "

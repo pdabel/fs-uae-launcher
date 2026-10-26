@@ -89,24 +89,12 @@ class HDFCreatorWindow(fsui.DialogWindow):
         self.created_label = fsui.Label(self, "")
         layout.add(self.created_label, fill=True)
 
-        # layout.add_spacer(20)
-        # layout.add_spacer(20)
-        # hori_layout = fsui.HorizontalLayout()
-        # layout.add(hori_layout, fill=True)
-        # self.created_label = fsui.Label(self, "")
-        # hori_layout.add(self.created_label, expand=True)
-        # hori_layout.add_spacer(20)
         self.create_button = fsui.Button(buttons, gettext("Create"))
-        # self.create_button.activated.connect(self.on_create_clicked)
         self.create_button.clicked.connect(self.on_create_clicked)
-        # hori_layout.add(self.create_button)
         buttons.add_button(self.create_button)
 
         self.list_view.select_item(0)
         self.update_name_suggestion()
-
-        # self.set_size(self.layout.get_min_size())
-        # self.center_on_parent()
 
     def __del__(self):
         print("HDFCreator.__del__")
@@ -139,39 +127,17 @@ class HDFCreatorWindow(fsui.DialogWindow):
         self.dir_field.set_text(path)
 
     def on_browse_clicked(self):
-        # if hasattr(self, "dialog"):
-        #    return
         self.dialog = fsui.DirDialog(
             None, gettext("Select Destination Directory")
         )
         self.dialog.accepted.connect(self.on_dialog_accepted)
-        # self.dialog.destroyed.connect(self.on_dialog_destroyed)
-        # self.dialog.finished.connect(self.on_dialog_finished)
         self.dialog.show()
-        # if dialog.show_modal():
-        #     self.set_path(dialog.get_path())
-        # dialog.destroy()
 
     def on_dialog_accepted(self):
         print("accepted")
         print(self.dialog)
         self.set_path(self.dialog.get_path())
         self.dialog = None
-
-    # def on_dialog_destroyed(self):
-    #     self.dialog = None
-
-    # def on_dialog_finished(self, result):
-    #     # del self.dialog
-    #     # self.dialog = None
-    #     # return
-    #     print("finished")
-    #     if self.dialog.result():
-    #         print("result")
-    #         self.set_path(self.dialog.get_path())
-    #     # self.dialog.destroy()
-    #     # print("...")
-    #     del self.dialog
 
     def on_create_clicked(self):
         try:
@@ -265,6 +231,3 @@ class HDFCreatorWindow(fsui.DialogWindow):
             f.write(block)
         f.seek(0)
         f.write(b"rdsk")
-
-
-# application = SimpleApplication(HDFCreatorWindow)

@@ -24,9 +24,6 @@ class AmigaContext(BaseContext):
         ]
         self.set_config(values)
 
-        # self.notify("fsgs:config:floppy_drive_{0}".format(drive), "")
-        # self.notify("fsgs:config:x_floppy_drive_{0}_sha1".format(drive), "")
-
     def clear_floppy_list(self):
         values = []
         for i in range(Amiga.MAX_FLOPPY_IMAGES):

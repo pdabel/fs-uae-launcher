@@ -32,9 +32,6 @@ class SaveButton(IconButton):
         print("SaveButton.on_activate")
         # try:
         self.save_config()
-        # except Exception:
-        #     # FIXME: notify user
-        #     pass
 
     @staticmethod
     def save_config():
@@ -66,25 +63,10 @@ class SaveButton(IconButton):
                     continue
                 if key in LauncherConfig.no_save_keys_set:
                     continue
-                # elif key == "joystick_port_2_mode" and value == "nothing":
-                #     continue
-                # elif key == "joystick_port_3_mode" and value == "nothing":
-                #     continue
                 if value == LauncherConfig.default_config.get(key, ""):
                     continue
                 if value:
                     f.write(f"{key} = {value}\n")
-
-        # scanner = ConfigurationScanner()
-        # search = ConfigurationScanner.create_configuration_search(name)
-        # name = scanner.create_configuration_name(name)
-        # print("adding", path)
-        # # deleting the path from the database first in case it already exists
-        # database.delete_configuration(path=path)
-        # database.delete_file(path=path)
-        # database.add_file(path=path)
-        # database.add_configuration(
-        #     path=path, uuid="", name=name, scan=0, search=search)
 
         file_database = FileDatabase.get_instance()
         scanner = ConfigurationScanner()
@@ -105,5 +87,4 @@ class SaveButton(IconButton):
         file_database.commit()
 
         LauncherSettings.set("__config_refresh", str(time.time()))
-        # Settings.set("config_changed", "0")
         LauncherConfig.set("__changed", "0")

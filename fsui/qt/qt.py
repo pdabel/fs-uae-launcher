@@ -60,28 +60,6 @@ class QtBaseApplication(QApplication):
 
 @functools.lru_cache()
 def init_qt():
-    # if sys.platform == "darwin":
-    #     # qt_plugins_dir = os.path.join(
-    #     #     BaseApplication.executable_dir(), "..", "Resources",
-    #     #     "qt_plugins")
-    #     # print(qt_plugins_dir)
-    #     # if os.path.exists(qt_plugins_dir):
-    #     #     QApplication.setLibraryPaths([qt_plugins_dir])
-    #     if os.path.exists(
-    #         os.path.join(
-    #             fsboot.executable_dir(), "platforms", "libqcocoa.dylib"
-    #         )
-    #     ):
-    #         # noinspection PyCallByClass,PyTypeChecker,PyArgumentList
-    #         QApplication.setLibraryPaths([fsboot.executable_dir()])
-
-    # if getattr(sys, "frozen", False):
-    #     # noinspection PyCallByClass,PyTypeChecker,PyArgumentList
-    #     QApplication.setLibraryPaths([fsboot.executable_dir()])
-
-    # Should not be necessary with Qt 5.2.x:
-    # fix_qt_for_maverick()
-
     fsbc.desktop.set_open_url_in_browser_function(open_url_in_browser)
     qapplication = QtBaseApplication(sys.argv)
     initialize_qt_style(qapplication)

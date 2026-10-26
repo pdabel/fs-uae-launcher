@@ -34,12 +34,6 @@ class AdditionalConfigPanel(ConfigPanel):
         self.add_amiga_option(Option.FREEZER_CARTRIDGE, parent=amiga_panel)
         self.add_amiga_option(Option.DONGLE_TYPE, parent=amiga_panel)
 
-    #     AmigaShowBehavior(amiga_panel)
-    #     ConfigBehavior(self, [Option.PLATFORM])
-    #
-    # def on_platform_config(self, _):
-    #     self.layout.update()
-
 
 class CustomConfigButton(IconButton):
     def __init__(self, parent):

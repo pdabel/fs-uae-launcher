@@ -41,8 +41,6 @@ def openretro_server():
 
 
 def openretro_scheme():
-    # if openretro_host() == default_openretro_host():
-    #     return "https"
     return "http"
 
 
