@@ -185,7 +185,6 @@ class NetplayPanel(fsui.Panel):
         self.netplay.disconnect()
 
     def on_show(self):
-        # FIXME: currently disabled
         if not self.netplay.is_connected():
             self.netplay.connect()
         self.input_field.focus()

@@ -86,8 +86,6 @@ class TabButton(fsui.Panel):
 
     def on_left_up(self):
         if self.type == self.TYPE_BUTTON:
-            # FIXME: hack to avoid sticky hover due to mouse leave not
-            # being sent if on_activate opens modal dialog
             self.on_activate()
 
     def on_activate(self):

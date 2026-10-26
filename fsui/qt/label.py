@@ -15,7 +15,6 @@ class Label(fsui.qt.QLabel, WidgetMixin):
         )
         self.setOpenExternalLinks(True)
 
-        # FIXME: focusPolicy()
         # FIXME: make Label more plain, and rather make a InteractiveLabel
         # descendant or something like that
 

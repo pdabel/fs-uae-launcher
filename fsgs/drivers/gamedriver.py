@@ -121,7 +121,6 @@ class GameDriver:
 
     def init_options(self):
         for key, value in Settings.instance().values.items():
-            # FIXME: re-enable this check?
             self.options[key] = value
         for key, value in self.fsgc.config.items():
             self.options[key] = value

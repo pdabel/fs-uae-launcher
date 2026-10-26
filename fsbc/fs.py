@@ -41,7 +41,6 @@ EXCEPTION = "EXCEPTION"
 
 @cache
 def get_app_id():
-    # FIXME
     return "fs-uae"
 
 

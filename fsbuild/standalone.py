@@ -193,7 +193,6 @@ def ignore_linux_library(name: str):
         return True
     if name.startswith("libXxf86vm.so"):
         return True
-    # FIXME: Why was this commented out?
     if name.startswith("libxcb.so"):
         return True
 

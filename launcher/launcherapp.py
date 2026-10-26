@@ -465,8 +465,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
 
         def on_show_license_information(license_text):
             unused(license_text)
-            # FIXME: don't depend on wx here
-            # noinspection PyUnresolvedReferences
             return True
 
         fsgs.file.on_show_license_information = on_show_license_information

@@ -37,7 +37,4 @@ def initialize_application(
         exception_handler_enabled = True
 
     if patch_unicode:
-        # patch system libraries (and argv) to work better with
-        # unicode-enabled programs
-        # FIXME: removed for Python 3
         unicode_patched = True
