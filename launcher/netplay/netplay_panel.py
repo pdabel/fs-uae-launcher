@@ -36,11 +36,9 @@ class NetplayPanel(fsui.Panel):
 
             hori_layout.add_spacer(0, expand=True)
 
-
         hori_layout = fsui.HorizontalLayout()
         self.layout.add(hori_layout, fill=True, expand=True)
         
-
         ver_layout = fsui.VerticalLayout()
         self.channel_panel = fsui.Panel(self) if columns else self
         if columns:
@@ -188,17 +186,11 @@ class NetplayPanel(fsui.Panel):
 
     def on_show(self):
         # FIXME: currently disabled
-        # return
         if not self.netplay.is_connected():
             self.netplay.connect()
         self.input_field.focus()
 
     def on_select_channel(self, index):
-        # index = self.channel_list.get_index()
-        # if index == 0:
-        #     channel = ""
-        # else:
-        # assert index is not None
         if index is None:
             return
         channel = self.channel_list.get_item(index)
@@ -229,11 +221,8 @@ class NetplayPanel(fsui.Panel):
                 self.channel_list.set_index(i)
         self.update_action_buttons_visibility()
         
-
     def update_channel_list(self):
         items = sorted(self.netplay.irc.channels.keys())
-        # items[0] = "IRC ({0})".format(Settings.get_irc_server())
-        # items[0] = Settings.get_irc_server()
         self.channel_list.set_items(items)
 
     def update_nick_list(self):
@@ -276,7 +265,6 @@ class NetplayPanel(fsui.Panel):
         callback = getattr(self, "on_action_layout_changed", None)
         if callback is not None:
             callback()
-
 
     def on_session(self, session):
         """Render the lobby game: a heading, one row per slot."""

@@ -17,7 +17,6 @@ class GameInfoPanel(BottomPanel):
     def __init__(self, parent, cover_on_right=True):
         BottomPanel.__init__(self, parent)
         Skin.set_background_color(self)
-        # self.set_background_color((0xdd, 0xdd, 0xdd))
 
         self.cover_on_right = cover_on_right
         self.requests = None
@@ -25,17 +24,12 @@ class GameInfoPanel(BottomPanel):
 
         self.layout = fsui.HorizontalLayout()
 
-        # def get_min_height():
-        #     return Constants.COVER_SIZE[1] + 2 * BORDER
-        # self.layout.get_min_height = get_min_height
-
         self.layout.padding_left = BORDER // 2
         self.layout.padding_right = BORDER // 2
         self.layout.padding_top = BORDER + 2
         self.layout.padding_bottom = Skin.get_bottom_margin()
 
         self.default_image = fsui.Image("launcher:res/cover.png")
-        # self.default_image.resize(Constants.COVER_SIZE)
         self.cover_overlay = fsui.Image("launcher:res/cover_overlay.png")
         self.cover_overlay_square = fsui.Image(
             "launcher:res/cover_overlay_square.png"
@@ -44,13 +38,8 @@ class GameInfoPanel(BottomPanel):
         if not self.cover_on_right:
             self.layout.add_spacer(Constants.COVER_SIZE[0])
 
-        # self.panel = fsui.Panel(self)
-        # self.panel.set_background_color((0xdd, 0xdd, 0xdd))
-        # self.layout.add(self.panel, expand=True, fill=True)
-
         vert_layout = fsui.VerticalLayout()
         self.layout.add(vert_layout, expand=True, fill=True)
-        # self.panel.layout.padding_top = 10
         if self.cover_on_right:
             vert_layout.padding_right = BORDER
         else:
@@ -68,16 +57,6 @@ class GameInfoPanel(BottomPanel):
         self.edit_button = EditButton(self)
         hori_layout.add(self.edit_button, margin_right=3)
 
-        # def label_min_width():
-        #     return 330
-        # self.title_label = fsui.HeadingLabel(self)
-        # self.title_label.get_min_width = label_min_width
-        # vert_layout.add(self.title_label)
-
-        # self.sub_title_label = fsui.Label(self)
-        # self.sub_title_label.get_min_width = label_min_width
-        # vert_layout.add(self.sub_title_label)
-
         self.title = ""
         self.sub_title = ""
         self.year = ""
@@ -92,13 +71,7 @@ class GameInfoPanel(BottomPanel):
         hori_layout = fsui.HorizontalLayout()
         vert_layout.add(hori_layout, fill=True)
 
-        # for rating in [1, 4, 5]:
-        #     button = RatingButton(self, rating)
-        #     hori_layout.add(button, margin_right=5, fill=True)
-
         hori_layout.add_spacer(0, expand=True)
-        # self.launch_group = LaunchGroup(self)
-        # hori_layout.add(self.launch_group, fill=True)
 
         if self.cover_on_right:
             self.layout.add_spacer(Constants.COVER_SIZE[0])
@@ -200,11 +173,8 @@ class GameInfoPanel(BottomPanel):
         size = self.size()
 
         image = self.image
-        # dc.draw_image(image, x, y)
         if image.size[0] == image.size[1]:
-            # cover_overlay = self.cover_overlay_square
             y_offset = 14
-            # title_x = 10
         else:
             y_offset = 0
         cover_overlay = self.cover_overlay
@@ -227,7 +197,6 @@ class GameInfoPanel(BottomPanel):
         dc.draw_text(self.title, text_x, y)
         # tw, th = \
         dc.measure_text(self.title)
-        # y += int(th * 1.2)
         y += 24
 
         color = dc.get_text_color()

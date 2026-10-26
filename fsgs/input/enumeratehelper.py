@@ -17,8 +17,6 @@ class EnumerateHelper(object):
         self.initialized = False
 
     def update(self):
-        # if cls.initialized:
-        #     return
         # init can be called more than once (by setting initialized to
         # false, used by refresh function, so we need to clear the lists...
         self.devices = []
@@ -52,9 +50,6 @@ class EnumerateHelper(object):
         # work at least.
         joysticks = joysticks.decode("UTF-8", "replace")
         joysticks = [x.strip() for x in joysticks.split("\n") if x.strip()]
-
-        # joysticks.append("J: controller xbox 360 for windows")
-        # joysticks.append("Buttons: 10 Hats: 1 Axes: 5 Balls: 0")
 
         device_name_count = {}
         last_joystick = None
@@ -93,10 +88,8 @@ class EnumerateHelper(object):
                 device.type = "mouse"
             elif device_type == "K:":
                 # works as an emulated joystick...
-                # device_type = "joystick"
                 device.type = "keyboard"
                 self.keyboard_devices.append(device)
-            # self.device_types.append(device_type)
             self.devices.append(device)
         for i, device in enumerate(self.joystick_devices):
             device.index = i
@@ -109,9 +102,6 @@ class EnumerateHelper(object):
     def default_port_selection(self, ports, options):
         print("[INPUT] Default port selection (EnumerateHelper)")
         self.init()
-        # for device in self.devices:
-        #     print(" #", device.id)
-        #     device.configure("megadrive")
 
         if len(ports) > 0:
             if ports[0].type_option:
@@ -141,7 +131,6 @@ class EnumerateHelper(object):
         print("[INPUT] Old-style port device selection:")
         for port in ports:
             for i, device in enumerate(joystick_like_devices):
-                # device.configure()
                 if True:
                     joystick_like_devices.pop(i)
                     port.device = device

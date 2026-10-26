@@ -60,42 +60,11 @@ def open_window_instance(cls, parent=None):
 
     def reset_instance():
         print("SettingsDialog.reset_instance")
-        # cls._window_instance.deleteLater()
         cls._window_instance = None
 
     cls._window_instance.closed.connect(reset_instance)
     cls._window_instance.show()
     return cls._window_instance
-
-    # def monitor_instance_2(count):
-    #     if count < 100:
-    #         call_after(monitor_instance_2, count + 1)
-    #         return
-    #     print("DESTROYED SIGNAL RECEIVED 2")
-    #     instance = weak_instance()
-    #     if instance is not None:
-    #         print("WARNING: SettingsDialog is still alive")
-    #         import gc
-    #         print(gc.get_referrers(instance))
-    #         print("real window:")
-    #         print(gc.get_referrers(instance.real_window()))
-    #     else:
-    #         print("Instance is now", instance)
-    #
-    # def monitor_instance():
-    #     print("DESTROYED SIGNAL RECEIVED")
-    #     call_after(monitor_instance_2, 1)
-    #
-    # weak_instance = weakref.ref(cls._window_instance)
-    # # cls._window_instance.destroyed.connect(monitor_instance)
-    # cls._window_instance.closed.connect(monitor_instance)
-
-    # if getattr(cls, "_window_instance", None) and cls._window_instance():
-    #     cls._window_instance().raise_and_activate()
-    # else:
-    #     window = cls(parent)
-    #     window.show()
-    #     cls._window_instance = weakref.ref(window)
 
 
 # noinspection PyProtectedMember

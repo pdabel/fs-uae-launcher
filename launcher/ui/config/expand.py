@@ -21,36 +21,14 @@ def _accelerator(c, f):
         value = "0"
     if f.matches(value, "blizzard-1230-iv"):
         value = "blizzard-1230-iv"
-    # elif f.matches(value, "blizzard-1230-iv-scsi"):
-    #     value = "blizzard-1230-iv-scsi"
-    # elif f.matches(value, "blizzard-1230-iv+scsi"):
-    #     value = "blizzard-1230-iv-scsi"
     elif f.matches(value, "blizzard-1240"):
         value = "blizzard-1240"
     elif f.matches(value, "blizzard-1260"):
         value = "blizzard-1260"
-    # elif f.matches(value, "blizzard-1260-scsi"):
-    #     value = "blizzard-1260-scsi"
-    # elif f.matches(value, "blizzard-2060"):
-    #     value = "blizzard-2060"
     elif f.matches(value, "blizzard-ppc"):
         value = "blizzard-ppc"
-    # elif f.matches(value, "cyberstorm-mk-i"):
-    #     value = "cyberstorm-mk-i"
-    # elif f.matches(value, "cyberstorm-mk-ii"):
-    #     value = "cyberstorm-mk-ii"
-    # elif f.matches(value, "cyberstorm-mk-iii"):
-    #     value = "cyberstorm-mk-iii"
     elif f.matches(value, "cyberstorm-ppc"):
         value = "cyberstorm-ppc"
-    # elif f.matches(value, "dkb-1230"):
-    #     value = "dkb-1230"
-    # elif f.matches(value, "dkb-1240"):
-    #     value = "dkb-1240"
-    # elif f.matches(value, "fusion-forty"):
-    #     value = "fusion-forty"
-    # elif f.matches(value, "warp-engine-a4000"):
-    #     value = "warp-engine-a4000"
     c.accelerator = value
 
 
@@ -966,8 +944,6 @@ def _int_z3fastmem_size(c, f):
         f.fail("int_z3fastmem_size was set explicitly")
     if int(c.uae_z3mem_size):
         value = str(int(c.uae_z3mem_size) * 1024 * 1024)
-    # if c.zorro_iii_memory:
-    #     value = str(int(c.zorro_iii_memory) * 1024)
     else:
         value = "0"
     c.int_z3fastmem_size = value
@@ -1122,11 +1098,6 @@ def _uae_a3000mem_size(c, f):
         value = c.uae_a3000mem_size.explicit
     elif c.motherboard_ram != "":
         value = str(int(c.motherboard_ram) // 1024)
-    # elif c.int_model == "A3000":
-    #     value = "8"
-    # elif c.int_model == "A4000":
-    #     # FIXME: should PPC / OS4 models be excluded?
-    #     value = "8"
     else:
         value = "0"
     c.uae_a3000mem_size = value

@@ -47,14 +47,12 @@ class JoystickConfigWindow(fsui.Window):
             "",
             "gamepad",
             "joystick",
-            # "flightstick",
             "other",
         ]
         self.device_type_labels = [
             gettext("Choose Type"),
             gettext("Gamepad"),
             gettext("Digital Joystick"),
-            # gettext("Flight Stick"),
             gettext("Other Device"),
         ]
 
@@ -177,12 +175,6 @@ class JoystickConfigWindow(fsui.Window):
             # ignore failures loading the config
             traceback.print_exc()
         return existing_config
-
-    # def __closed(self):
-    #     print("JoystickConfigWindow.__closed")
-    #     self.stopped = True
-    #     # self.destroy()
-    #     # self.button_panels = []
 
     def map_event(self, name):
         self.map_key_name = name
@@ -372,7 +364,6 @@ def event_thread(device_name, window_ref):
 
     # while not self.stopped and \
     while not Application.instance().stopping():
-        # print("stopping?", Application.instance().stopping())
         window = window_ref()
         if window is None:
             print("window was None")
@@ -464,11 +455,3 @@ a problem, just map the d-pad buttons against the d-pad etc.
 Left and right trigger buttons are located *below* left and right shoulder
 buttons.
 """
-
-
-# def application(uri, args):
-#     fake_uri = uri + repr(args)
-#     if not raise_window(fake_uri):
-#         window = JoystickConfigWindow(args[0])
-#         window.show()
-#         register_window(fake_uri, window)

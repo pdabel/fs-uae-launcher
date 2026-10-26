@@ -23,8 +23,6 @@ class BottomPanel(fsui.Panel):
                 )
                 self.line_color_2 = self.line_color_1
         else:
-            # self.color_1 = fsui.Color(0x00, 0x00, 0x00, 0x20)
-            # self.color_2 = fsui.Color(0x00, 0x00, 0x00, 0x00)
             self.color_1 = fsui.Color(0xFF, 0xFF, 0xFF, 0x60)
             self.color_2 = fsui.Color(0xFF, 0xFF, 0xFF, 0x00)
             self.line_color_1 = fsui.Color(0xFF, 0xFF, 0xFF, 0xA0)

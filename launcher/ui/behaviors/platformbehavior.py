@@ -66,20 +66,8 @@ class PlatformShowBehavior(PlatformBehavior):
         widget = self._parent()
         if match:
             widget.show()
-            # Workaround for (possibly) a bug where the widget is still
-            # disabled if it was enabled while hidden?
-            # if widget.is_enabled():
-            #     widget.disable()
-            #     widget.enable()
         else:
             widget.hide()
-        # FIXME: Disabling/enabling instead, for now
-        # widget = self._parent()
-        # if match:
-        #     widget.enable()
-        # else:
-        #     widget.disable()
-        # pass
 
 
 class AmigaShowBehavior(PlatformShowBehavior):

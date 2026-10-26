@@ -28,7 +28,6 @@ class ScanPathsGroup(fsui.Group):
 
         add_button = IconButton(self, "add_button.png")
         add_button.set_tooltip(gettext("Add Directory to Search Path"))
-        # add_button.disable()
         add_button.activated.connect(self.on_add_button)
         vlayout.add(add_button)
         vlayout.add_spacer(10)
@@ -41,7 +40,6 @@ class ScanPathsGroup(fsui.Group):
         self.remove_button.activated.connect(self.on_remove_button)
         vlayout.add(self.remove_button)
 
-        # self.list_view.set_items(self.get_search_path())
         self.repopulate_list()
         self.list_view.on_select_item = self.on_select_item
         LauncherSettings.add_listener(self)

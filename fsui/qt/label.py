@@ -10,12 +10,10 @@ class Label(fsui.qt.QLabel, WidgetMixin):
         self.init_widget(parent)
 
         self.setTextFormat(fsui.qt.Qt.RichText)
-        # self.setTextInteractionFlags(fsui.qt.Qt.TextBrowserInteraction)
         self.setTextInteractionFlags(
             Qt.TextSelectableByMouse | Qt.LinksAccessibleByMouse
         )
         self.setOpenExternalLinks(True)
-        # self.setFocusPolicy(Qt.NoFocus)
 
         # FIXME: focusPolicy()
         # FIXME: make Label more plain, and rather make a InteractiveLabel
@@ -44,7 +42,6 @@ class URLLabel(Label):
         self._label = label
         self._url = url
         Label.__init__(self, parent, self._fix_label())
-        # self.setFocusPolicy(Qt.StrongFocus)
 
     def set_text(self, label):
         self._label = label
@@ -66,11 +63,8 @@ class URLLabel(Label):
 class MultiLineLabel(WidgetMixin):
     def __init__(self, parent, label, min_width=None):
         self._widget = fsui.qt.QLabel(label, parent.get_container())
-        # Widget.__init__(self, parent)
         self.init_widget(parent)
         self._widget.setWordWrap(True)
-        # self._widget.setFixedWidth(200)
-        # self._widget.setFixedHeight(200)
         if min_width:
             self.set_min_width(min_width)
 
@@ -81,11 +75,6 @@ class MultiLineLabel(WidgetMixin):
 
     def set_text(self, label):
         self._widget.setText(label)
-
-    # def set_fixed_width(self, width):
-
-    # def set_min_width(self):
-    #     pass
 
     def get_min_height(self):
         # + 1 because of url underlines

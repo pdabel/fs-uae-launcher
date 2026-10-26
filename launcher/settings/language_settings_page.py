@@ -8,15 +8,12 @@ class LanguageSettingsPage(SettingsPage):
     def __init__(self, parent):
         super().__init__(parent)
         icon = fsui.Icon("language-settings", "pkg:workspace")
-        # gettext("Appearance")
         title = gettext("Language")
-        # gettext("Set language and look for FS-UAE applications")
         subtitle = gettext("Set language for FS-UAE applications")
         self.add_header(icon, title, subtitle)
 
         hori_layout = fsui.HorizontalLayout()
         self.layout.add(hori_layout, fill=True)
-        # hori_layout.add(fsui.Label(self, gettext("Language:")))
         hori_layout.add(fsui.Label(self, gettext("Language:")))
         hori_layout.add_spacer(0, expand=True)
         self.language_choice = LanguageSettingChoice(self)
@@ -25,10 +22,6 @@ class LanguageSettingsPage(SettingsPage):
         self.layout.add_spacer(20)
 
         information = ""
-        # information = gettext(
-        #     "A change of language will only affect applications "
-        #     "which are restarted after the change.")
-        # information += "\n\n"
         information += gettext(
             "When Automatic is specified, your preferred language is set "
             "based on information from the operating system (or English, "

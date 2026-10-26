@@ -122,9 +122,6 @@ class GameDriver:
     def init_options(self):
         for key, value in Settings.instance().values.items():
             # FIXME: re-enable this check?
-            # if key in Config.config_keys:
-            #     print("... ignoring config key from settings:", key)
-            #     continue
             self.options[key] = value
         for key, value in self.fsgc.config.items():
             self.options[key] = value
@@ -153,12 +150,6 @@ class GameDriver:
                 )
             else:
                 print("[INPUT] No value specified for", port.type_option)
-
-            # Hack / Workaround for Amiga
-            # FIXME: Move to driver subclasses?
-            # if not type_value:
-            #     if self.options[Option.AMIGA_MODEL].lower() == "cd32":
-            #         type_value = "cd32 pad"
 
             if not type_value:
                 # FIXME: RETRIEVE DEFAULT VALUE FOR TYPE OPTION
@@ -202,9 +193,6 @@ class GameDriver:
     def use_vsync(self):
         if self.g_sync():
             return False
-        # if "--no-vsync" in sys.argv:
-        #     return False
-        # return True
         return self.options[Option.VIDEO_SYNC] in ["1", "auto"]
 
     def use_doubling(self):
@@ -295,12 +283,6 @@ class GameDriver:
     def use_stretching(self):
         if self.options[Option.KEEP_ASPECT] == "1":
             return
-        # if "--no-stretch" in sys.argv:
-        #     return False
-        # if self.options[Option.KEEP_ASPECT] == "1":
-        #     return
-        # if Settings.instance()["stretch"] == "0":
-        #     return False
         return True
 
     def use_auto_load(self):
@@ -330,12 +312,6 @@ class GameDriver:
     def screenshots_name(self):
         # FIXME: REMOVE?
         return GameNameUtil.create_fs_name(self.game_name())
-
-    # def get_game_name(self):
-    #     return self.options["game_name"]
-    #
-    # def get_variant_name(self):
-    #     return self.options["variant_name"]
 
     def get_platform_name(self):
         # FIXME: UNUSED? REMOVE?
@@ -458,9 +434,6 @@ class GameDriver:
         return "Unknown Variant"
 
     def get_name(self):
-        # return "{0} ({1}, {2})".format(
-        #     self.get_game_name(), self.get_platform_name(),
-        #     self.get_variant_name())
         return f"{self.fsgc.game.name} ({self.fsgc.game.platform.name}, {self.fsgc.game.variant.name})"
 
     def save_dir(self, create=False):
@@ -488,9 +461,6 @@ class GameDriver:
             uuid_file = os.path.join(state_dir, "uuid.txt")
             with io.open(uuid_file, "w", encoding="UTF-8") as f:
                 f.write(self.fsgc.game.variant.uuid + "\n")
-        # timestamp_file = os.path.join(state_dir, "timestamp.txt")
-        # with open(timestamp_file, "wb") as f:
-        #     f.write("\n")
         return state_dir
 
     def emulator_state_dir(self, emulator):
@@ -509,7 +479,6 @@ class GameDriver:
         # (and creates temp file if necessary)
         input_stream = self.fsgc.file.open(file_uri)
 
-        # self.__game_temp_file = self.fsgc.temp_file(file_uri.split("/")[-1])
         self.__game_temp_file = TemporaryNamedItem(
             self.temp_root, file_uri.split("/")[-1]
         )
@@ -543,7 +512,6 @@ class GameDriver:
         # Set LD_LIBRARY_PATH for Linux plugins with bundled libraries
         # EDIT: No longer doing, can cause problems for OpenGL drivers.
         # Instead, use the standalone-linux.py script with rpath fixing.
-        # env_vars["LD_LIBRARY_PATH"] = os.path.dirname(resource.path)
         return self.start_emulator(
             "", args=args, env_vars=env_vars, executable=resource.path
         )
@@ -551,8 +519,6 @@ class GameDriver:
     def set_environment_path(self, env, key, value):
         """Supports exporting paths with MBCS encoding as well on Windows."""
         env[key] = value
-        # if System.windows:
-        #     env[key + "_MBCS"] = value.encode("mbcs")
 
     def update_environment(self, env):
         x, y, w, h = self.screen_rect()
@@ -587,26 +553,18 @@ class GameDriver:
 
             if fullscreen_mode == "window":
                 print("using fullscreen window mode")
-                # env["FSGS_FULLSCREEN"] = "window"
                 env["FSGS_FULLSCREEN"] = "1"
             else:
                 del env["FSGS_WINDOW"]
                 if fullscreen_mode == "fullscreen":
                     print("using fullscreen (legacy) mode")
-                    # env["FSGS_FULLSCREEN"] = "fullscreen"
                     env["FSGS_FULLSCREEN"] = "2"
                 else:
                     print("using fullscreen desktop mode")
-                    # env["FSGS_FULLSCREEN"] = "desktop"
                     env["FSGS_FULLSCREEN"] = "3"
         else:
             print("using window mode (no fullscreen)")
             env["FSGS_FULLSCREEN"] = "0"
-
-        # if self.use_stretching():
-        #     self.env["FSGS_STRETCH"] = "1"
-        # else:
-        #     self.env["FSGS_STRETCH"] = "0"
 
         if self.stretching() == self.STRETCH_FILL_SCREEN:
             self.emulator.env["FSGS_STRETCH"] = "1"
@@ -622,7 +580,6 @@ class GameDriver:
         else:
             self.emulator.env["FSGS_BORDER"] = "0"
 
-        # env["FSGS_WINDOW_TITLE"] = ""
         self.set_environment_path(
             env, "FSGS_SCREENSHOTS_DIR", self.screenshots_dir()
         )
@@ -647,13 +604,6 @@ class GameDriver:
             env["__GL_GSYNC_ALLOWED"] = "0"
             # Disable V-Sync
             env["__GL_SYNC_TO_VBLANK"] = "0"
-
-        # Make sure we are allowed to flip buff ers faster than the screen
-        # refresh rate, important for e.g. DOSBox @70Hz.
-        # https://dri.freedesktop.org/wiki/ConfigurationOptions/
-        # 1 = Application preference, default interval 0
-        # Update: Not needed when emulators explicitly set swap interval 0.
-        # env["vblank_mode"] = "1"
 
         self.update_environment_with_centering_info(env)
 
@@ -696,11 +646,6 @@ class GameDriver:
         env["FSGS_WINDOW_POS"] = str(f"{x},{y}")
 
         env["FSGS_WINDOW_CENTER"] = f"{main_x + main_w // 2},{main_y + main_h // 2}"
-
-        # args.append("--window-x={0}".format(x))
-        # args.append("--window-y={0}".format(y))
-        # print("window position", env["SDL_VIDEO_WINDOW_POS"])
-        # os.environ["SDL_VIDEO_WINDOW_POS"] = "{0},{1}".format(x, y)
 
     def emulator_skin_paths(self):
         left = self.temp_file("left.png").path
@@ -751,20 +696,6 @@ class GameDriver:
     def start_emulator(
         self, emulator, args=None, env_vars=None, executable=None, cwd=None
     ):
-        # if "/" in emulator:
-        #     if not executable:
-        #         executable = self.find_emulator_executable(emulator)
-        #     if not executable:
-        #         emulator = emulator.split("/")[-1]
-        #
-        # if not executable:
-        #     executable = self.find_emulator_executable("fs-" + emulator)
-        # if not executable:
-        #     executable = self.find_emulator_executable(emulator)
-        #
-        # if not executable:
-        #     raise Exception("could not find executable for " + emulator)
-
         args = []
         args.extend(self.emulator.args)
 
@@ -798,27 +729,14 @@ class GameDriver:
         print("")
         if System.windows:
             kwargs["close_fds"] = True
-        # print(" ".join(args))
         current_task.set_progress(
             f"Starting {emulator}"
         )
-        # import subprocess
-        # return subprocess.Popen(["strace", emulator.path] + args, **kwargs)
         process = emulator.popen(args, **kwargs)
         self.write_emulator_pid_file(self.emulator_pid_file(), process)
         return process
 
     def find_emulator_executable(self, name):
-        # if os.path.isdir("../fs-uae/src"):
-        #     # running from source directory, we then want to find locally
-        #     # compiled binaries if available
-        #     path = "../fs-uae/fs-uae"
-        #     if System.windows:
-        #         path += ".exe"
-        #     if os.path.isfile(path):
-        #         return path
-        #     raise Exception("Could not find development FS-UAE executable")
-
         if "/" in name:
             package, name = name.split("/")
         else:
@@ -909,27 +827,10 @@ class GameDriver:
 
     def configure_vsync(self):
         print("\n" + "-" * 79 + "\n" + "CONFIGURE VSYNC")
-        # print("^" * 80)
         allow_vsync = self.use_vsync()
-        # if self.get_option('vsync'):
         if allow_vsync:
-            # try:
-            #     game_refresh = float(self.options["refresh_rate"])
-            # except Exception:
             game_refresh = self.get_game_refresh_rate() or 0.0
-            # if self.context.game.config.get('system', '') == 'NTSC':
-            #     game_refresh = 60.0
-            # else:
-            #     game_refresh = 50.0
 
-            # refresh_rate_tool = RefreshRateTool(
-            #     game_platform=self.fsgc.game.platform.id,
-            #     game_refresh=round(game_refresh))
-            # refresh_rate_tool.set_best_mode()
-            # if refresh_rate_tool.allow_vsync():
-            #     print("setting vsync to true")
-            #     self.set_vsync(True)
-            #     return refresh_rate_tool.get_display_refresh()
             screen_refresh = self.screen_refresh_rate()
             if self.options[Option.ASSUME_REFRESH_RATE]:
                 try:
@@ -1137,12 +1038,6 @@ class GameFiles:
 
     def install(self):
         for file in self._files:
-            # uri = self.fsgc.file.find_by_sha1(tos_file.sha1)
-            # if not uri:
-            #     raise Exception(
-            #             "Could not find {} (SHA-1: {})".format(
-            #                 tos_file.name, tos_file.sha1))
-            # self.files.add(self.tos_file.path, source=uri)
             if file["source"]:
                 self.fsgc.file.copy_game_file(file["source"], file["dest"])
             else:

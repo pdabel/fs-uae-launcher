@@ -21,13 +21,6 @@ class HardDriveGroup(fsui.Panel):
         self.config_key = f"hard_drive_{index}"
         self.config_key_sha1 = f"x_hard_drive_{index}_sha1"
 
-        # if index == 0:
-        #     # heading_label = fsui.HeadingLabel(self,
-        #     #         _("Hard Drive {0}").format(index + 1))
-        #     heading_label = fsui.HeadingLabel(self, gettext("Hard Drives"))
-        #     self.layout.add(heading_label, margin_bottom=20)
-        #     self.layout.add_spacer(0)
-
         hori_layout = fsui.HorizontalLayout()
         self.layout.add(hori_layout, fill=True)
 
@@ -122,14 +115,6 @@ class HardDriveGroup(fsui.Panel):
         self.text_field.set_text(path)
         values = [(self.config_key, path), (self.config_key_sha1, sha1)]
         if self.index == 0:
-            # whdload_args = ""
-            # dummy, ext = os.path.splitext(path)
-            # if not dir_mode and ext.lower() in Archive.extensions:
-            #     try:
-            #         whdload_args = self.calculate_whdload_args(full_path)
-            #     except Exception:
-            #         traceback.print_exc()
-            # values.append(("x_whdload_args", whdload_args))
             values.extend(
                 whdload.generate_config_for_archive(
                     full_path, model_config=False

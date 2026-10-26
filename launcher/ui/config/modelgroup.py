@@ -34,23 +34,16 @@ class ModelGroup(fsui.Group):
         self.sub_model_updating = False
 
         self.model_choice = fsui.Choice(self, self.model_titles)
-        # AmigaEnableBehavior(self.model_choice)
         self.sub_model_choice = fsui.Choice(self, self.sub_model_titles)
-        # AmigaEnableBehavior(self.sub_model_choice)
         self.accuracy_label = fsui.Label(self, gettext("Accuracy:"))
         self.accuracy_choice = fsui.Choice(
             self, [gettext("High"), gettext("Medium"), gettext("Low")]
         )
-        # AmigaEnableBehavior(self.accuracy_choice)
         self.ntsc_checkbox = ConfigCheckBox(self, "NTSC", Option.NTSC_MODE)
 
         AmigaShowBehavior(self.accuracy_label)
         AmigaShowBehavior(self.accuracy_choice)
         AmigaShowBehavior(self.ntsc_checkbox)
-
-        # if fs_uae_launcher.ui.get_screen_size()[1] > 768:
-        # self.layout.add(heading_label, margin=10)
-        # self.layout.add_spacer(0)
 
         self.model_title_layout = fsui.HorizontalLayout()
         self.layout.add(self.model_title_layout, fill=True)
@@ -104,11 +97,6 @@ class ModelGroup(fsui.Group):
             # The default model (A500) can be specified with the empty string
             model = ""
         LauncherConfig.set("amiga_model", model)
-        # Config.update_kickstart()
-        # if Amiga.is_cd_based(Config):
-        #     FloppyManager.clear_all()
-        # else:
-        #     CDManager.clear_all()
 
     def on_sub_model_changed(self):
         print("ModelGroup.on_sub_model_change\n")
@@ -116,10 +104,6 @@ class ModelGroup(fsui.Group):
             print("sub model list is currently updating")
             return
         index = self.sub_model_choice.get_index()
-        # if index == 0:
-        #     # The default model (A500) can be specified with the empty string
-        #     model = ""
-        # else:
         model = self.model_ids[self.model_choice.get_index()]
         sub_model = self.sub_model_ids[index]
         if sub_model:
@@ -181,16 +165,12 @@ class ModelGroup(fsui.Group):
         self.sub_model_updating = True
         for i, config in enumerate(Amiga.models_config):
             if config == value:
-                # self.model_choice.set_index(i)
                 # find main model index
                 model_index = self.model_ids.index(model_id)
                 sub_model_index = self.update_sub_models(
                     model_id, sub_model_id
                 )
-                # model_index = i
                 break
-        # else:
-        #    print("FIXME: could not set model")
         self.model_choice.set_index(model_index)
         self.sub_model_choice.set_index(sub_model_index)
         self.sub_model_updating = False
@@ -201,4 +181,3 @@ class ModelGroup(fsui.Group):
         else:
             index = 1 - int(value)
         self.accuracy_choice.set_index(index)
-

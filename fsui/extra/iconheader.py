@@ -47,9 +47,6 @@ class NewIconHeader(Group):
             self.layout.add(self.image_view)
             self.layout.add_spacer(20)
 
-        # vert_layout = fsui.VerticalLayout()
-        # self.layout.add(
-        #     vert_layout, expand=True, fill=False, valign=0.5)
         self.title_label = fsui.HeadingLabel(self, title)
         font = self.title_label.get_font()
         font.increase_size(3)

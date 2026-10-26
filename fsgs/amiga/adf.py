@@ -99,7 +99,6 @@ class ADFFile(object):
             with open(stream_or_data_or_file, "rb") as f:
                 data = f.read()
         assert isinstance(data, bytes)
-        # print(len(data))
         assert len(data) == B_SIZE * B_COUNT
         self.blocks = []  # type: List[Block]
         for i in range(0, B_SIZE * B_COUNT, B_SIZE):
@@ -193,7 +192,6 @@ class ADFFile(object):
 
         name_len = b.ubyte(B_SIZE - 80)
         self.volume_name = b.string(B_SIZE - 79, name_len)
-        # self.volume_name = self.volume_name.decode("ISO-8859-1")
         self._parse_directory_content("", self.root_block_number)
         if not verify_block(b.data):
             self.warnings.append("bad root checksum")
@@ -246,7 +244,6 @@ class ADFFile(object):
         for i in range((B_SIZE // 4) - 56):
             entry = d_b.ulong(24 + i * 4)
             while entry:
-                # print(entry)
                 if entry >= B_COUNT:
                     self.warnings.append(
                         "directory entry refers to an invalid block "
@@ -282,7 +279,6 @@ class ADFFile(object):
         name_len = b.ubyte(B_SIZE - 80)
         file_info.name = b.string(B_SIZE - 79, name_len)
         file_info.path = path + file_info.name
-        # print(file_info.path)
         file_key = file_info.path.lower()
         if file_key in self.file_map:
             self.warnings.append(
@@ -337,9 +333,6 @@ class ADFFile(object):
                     f"block {next_data:04d} - bad checksum for data block #{k + 1} for "
                     f"file {file_info.path}"
                 )
-            # self.block_usage[next_data].append(
-            #     "block {2:04d} - data block #{0} for file {1}".format(
-            #         k + 1, file_info.path, next_data))
 
             next_data = data_b.ulong(16)
             k += 1
@@ -412,7 +405,6 @@ class ADFFile(object):
         name_len = b.ubyte(B_SIZE - 80)
         file_info.name = b.string(B_SIZE - 79, name_len)
         file_info.path = path + file_info.name + "/"
-        # print(file_info.path)
         file_key = file_info.path.lower()
         if file_key[:-1] in self.file_map:
             self.warnings.append(
@@ -457,8 +449,6 @@ class ADFFile(object):
 
     def read(self, name: str) -> bytes:
         name = name.lower()
-        # print(repr(self.file_map))
-        # print(repr(name))
         file_info = self.file_map[name]
         bytes_left = file_info.size
         data = []  # type: List[bytes]
@@ -489,20 +479,10 @@ def main():
         if not name.endswith("/"):
             data = adf.open(name).read()
             print("   ", hashlib.sha1(data).hexdigest(), "", len(data))
-            # tracks = set()
-            # for block in adf.file_map[name.lower()].block_list:
-            #     track = block // 11
-            #     cylinder = track // 2
-            #     side = track % 2
-            #     tracks.add((cylinder, side))
-            # tracks = sorted(tracks)
-            # print(tracks)
     print("")
     for warning in adf.warnings:
         print("WARNING:", warning)
     pass
-    # for i, usage in enumerate(adf.block_usage):
-    #     print(i, usage)
     for name in sys.argv[2:]:
         data = adf.open(name).read()
         with open(name + ".dump", "wb") as f:

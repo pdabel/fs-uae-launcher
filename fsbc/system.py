@@ -33,5 +33,3 @@ class System:
     ]:
         if _platform.architecture()[0] == "64bit":
             x86_64 = True
-        # else:
-        #     x86 = True

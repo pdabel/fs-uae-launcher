@@ -2,8 +2,6 @@ A1000_KICKSTARTS = [
     # amiga-os-120.rom (decrypted)
     # Kickstart v1.2 r33.180 (1986)(Commodore)(A500-A1000-A2000)[!]
     "11f9e62cf299f72184835b7b2a70a16333fc0d88",
-    # Kickstart v1.2 r33.166 (1986)(Commodore)(A1000)
-    # "6a7bfb5dbd6b8f179f03da84d8d9528267b6273b",
 ]
 
 A500_KICKSTARTS = [
@@ -29,10 +27,6 @@ A600_KICKSTARTS = [
     # amiga-os-205.rom (decrypted)
     # Kickstart v2.05 r37.350 (1992)(Commodore)(A600HD)[!]
     "02843c4253bbd29aba535b0aa3bd9a85034ecde4",
-    # Kickstart v2.05 r37.300 (1991)(Commodore)(A600HD)
-    # "f72d89148dac39c696e30b10859ebc859226637b",
-    # Kickstart v2.05 r37.299 (1991)(Commodore)(A600)[!]
-    # "87508de834dc7eb47359cede72d2e3c8a2e5d8db",
 ]
 
 # noinspection SpellCheckingInspection
@@ -58,8 +52,6 @@ A4000_KICKSTARTS = [
     # amiga-os-310-a4000.rom (decrypted)
     # Kickstart v3.1 r40.68 (1993)(Commodore)(A4000)
     "5fe04842d04a489720f0f4bb0e46948199406f49",
-    # Kickstart v3.1 r40.68 (1993)(Commodore)(A4000)[h Cloanto]
-    # "c3c481160866e60d085e436a24db3617ff60b5f9",
 ]
 
 CD32_KICKSTARTS = [

@@ -7,7 +7,6 @@ class WHDLoadSettingsPage(SettingsPage):
     def __init__(self, parent):
         super().__init__(parent)
         icon = fsui.Icon("settings", "pkg:workspace")
-        # gettext("WHDLoad Settings")
         title = gettext("WHDLoad")
         subtitle = gettext("Options for WHDLoad support in FS-UAE Launcher")
         self.add_header(icon, title, subtitle)
@@ -26,13 +25,3 @@ class WHDLoadSettingsPage(SettingsPage):
         self.add_option("whdload_preload")
         self.add_option("whdload_splash_delay")
         self.add_option("whdload_quit_key")
-
-        # label = fsui.Label(
-        #     self, gettext("Directory for WHDLoad.key file (if you have it):"))
-        # self.layout.add(label, margin_top=10)
-        # hor_layout = fsui.HorizontalLayout()
-        # self.layout.add(hor_layout, margin_top=4, fill=True)
-        # label = fsui.Label(
-        #     self, FSGSDirectories.get_base_dir())
-        # hor_layout.add_spacer(0, expand=True)
-        # hor_layout.add(label)

@@ -36,7 +36,6 @@ class RefreshRateTool(object):
         modes = self.get_all_modes()
         mode_score_list = []
         for mode in modes:
-            # print(mode)
             # for now, only consider same resolution
             if mode["width"] != current["width"]:
                 continue
@@ -139,17 +138,6 @@ class RefreshRateTool(object):
         return self.calculate_mode_score(current, debug=True) is not None
 
     def get_display_refresh(self):
-        # # FIXME:
-        # if macosx:
-        #     return 60.0
-        # elif windows:
-        #     import win32api
-        #     device = win32api.EnumDisplayDevices()
-        #     settings = win32api.EnumDisplaySettings(device.DeviceName, 0)
-        #     return settings.DisplayFrequency()
-        # # FIXME:
-        # return 50.0
-        # return None
         return self.get_current_mode()["refresh"]
 
     def get_current_mode(self):
@@ -186,7 +174,6 @@ class RefreshRateTool(object):
                     "FIXME: Not calling Quartz.CGDisplayModeRelease("
                     "current_mode), seems to crash pygame on exit..."
                 )
-                # Quartz.CGDisplayModeRelease(current_mode)
                 flags = 0
                 bpp = None
         else:
@@ -216,7 +203,6 @@ class RefreshRateTool(object):
                 height = int(settings.PelsHeight)
                 bpp = int(settings.BitsPerPel)
                 flags = int(settings.DisplayFlags)
-                # print(width, height, refresh, bpp, flags)
                 modes.append(
                     {
                         "width": width,
@@ -232,41 +218,9 @@ class RefreshRateTool(object):
             pass
         else:
             modes = self._get_all_modes_x()
-        # modes.extend(self.get_override_modes())
         return modes
 
-    # def get_override_modes(self):
-    #     modes = []
-    #     k = 0
-    #     while True:
-    #         mode_string = pyapp.user.ini.get('ForceDisplayModes/%d' % k)
-    #         if not mode_string:
-    #             break
-    #         mode_string = mode_string.lower()
-    #         mode = {}
-    #         w, rest = mode_string.split('x')
-    #         h, rest = rest.split('@')
-    #         r, rest = rest.split('hz')
-    #         mode['width'] = int(w)
-    #         mode['height'] = int(h)
-    #         mode['bpp'] = 32
-    #         mode['refresh'] = int(r)
-    #         mode['flags'] = 0
-    #         modes.append(mode)
-    #         k += 1
-    #     print("get_override_modes returning", modes)
-    #     return modes
-
     def set_mode(self, mode):
-        # if windows:
-        #     self._set_mode_windows(mode)
-        # elif macosx:
-        #     # FIXME:
-        #     print("WARNING: mode settings is not supported on this "
-        #             "platform yet")
-        # else:
-        #     self._set_mode_x(mode)
-
         print("FIXME: Currently disabled set_mode")
         return
 
@@ -286,9 +240,6 @@ class RefreshRateTool(object):
             height = int(settings.PelsHeight)
             bpp = int(settings.BitsPerPel)
             flags = int(settings.DisplayFlags)
-            # print(width, height, refresh, bpp, flags)
-            # modes.append({'width': width, 'height': height,
-            #        'refresh': refresh, 'bpp': bpp, 'flags': flags})
             if (
                 width == mode["width"]
                 and height == mode["height"]
@@ -297,17 +248,6 @@ class RefreshRateTool(object):
                 and flags == mode["flags"]
             ):
 
-                # print("trying to override with refresh", int(round(self.game_refresh)))
-                # #refresh == mode['refresh'] and \
-                # settings.DisplayFrequency = int(round(self.game_refresh))
-                # result = win32api.ChangeDisplaySettings(settings,
-                #         win32con.CDS_UPDATEREGISTRY) #win32con.CDS_FULLSCREEN)
-                #         #0) #win32con.CDS_FULLSCREEN)
-                # if result == win32con.DISP_CHANGE_SUCCESSFUL:
-                #     print("display change was successful")
-                #     return True
-                # print("failed, falling back to ", mode['refresh'])
-                # settings.DisplayFrequency = mode['refresh']
                 print("found windows mode, changing display settings")
                 result = win32api.ChangeDisplaySettings(
                     settings, win32con.CDS_UPDATEREGISTRY
@@ -322,27 +262,6 @@ class RefreshRateTool(object):
                     return False
             k += 1
 
-        # for omode in self.get_override_modes():
-        #     print("trying override mode", omode)
-        #     if omode['width'] == mode['width'] and \
-        #             omode['height'] == mode['height'] and \
-        #             omode['refresh'] == mode['refresh'] and \
-        #             omode['bpp'] == mode['bpp'] and \
-        #             omode['flags'] == mode['flags']:
-        #         settings.PelsWidth = omode['width']
-        #         settings.PelsHeight = omode['height']
-        #         settings.BitsPerPel = omode['bpp']
-        #         settings.DisplayFlags = omode['flags']
-        #         settings.DisplayFrequency = omode['refresh']
-        #         result = win32api.ChangeDisplaySettings(settings,
-        #                 win32con.CDS_UPDATEREGISTRY) #win32con.CDS_FULLSCREEN)
-        #                 #0) #win32con.CDS_FULLSCREEN)
-        #         if result == win32con.DISP_CHANGE_SUCCESSFUL:
-        #             print("display change was successful")
-        #             return True
-        #         else:
-        #             print("display change failed, result =", result)
-        #             return False
         return False
 
     def _set_mode_x(self, mode):
@@ -424,7 +343,6 @@ class RefreshRateTool(object):
         args = ["/usr/bin/env", "xrandr", "-q"]
         p = subprocess.Popen(args, stdout=subprocess.PIPE)
         data = p.stdout.read().decode("ISO-8859-1")
-        # data = XRANDR_TEST_DATA
         for line in data.split("\n"):
             last_refresh_rate = 0.0
             if line.startswith(" "):
@@ -434,10 +352,6 @@ class RefreshRateTool(object):
                 parts = line.split(" ")
                 # May not always have a resolution here, could be
                 # a named mode instead
-                # resolution_str = parts[0]
-                # w, h = resolution_str.split("x")
-                # w = int(w)
-                # h = int(h)
                 for part in parts[1:]:
                     if part == "*":
                         screen["refresh_rate"] = last_refresh_rate
@@ -445,11 +359,6 @@ class RefreshRateTool(object):
                         pass
                     else:
                         last_refresh_rate = float(part)
-                        # screen["modes"].append({
-                        #     "width": w,
-                        #     "height": h,
-                        #     "refresh_rate": last_refresh_rate
-                        # })
                         pass
             else:
                 line = re.sub(" +", " ", line).strip()

@@ -9,12 +9,6 @@ ZERO_SHA1 = "da39a3ee5e6b4b0d3255bfef95601890afd80709"
 class ChecksumTool:
     def __init__(self, parent=None):
         self.parent = parent
-        # fsui.Window.__init__(self, parent, "Checksumming")
-        # self.layout = fsui.VerticalLayout()
-        # label = fsui.HeadingLabel(self, "Checksumming file...")
-        # self.layout.add(label, fill=True)
-        # self.layout.add_spacer(6)
-        # #self.center_on_parent()
 
     def checksum(self, path):
         print("[CHECKSUM]", repr(path))

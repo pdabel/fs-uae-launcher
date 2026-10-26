@@ -34,15 +34,10 @@ class ConfigurationScanner:
         for c in configurations:
             if self.stop_check():
                 break
-            # name = os.path.basename(c["path"])
-            # name = c["name"]
-            # name = name[:-7]
-            # search = name.lower()
             path = c["path"]
             name = os.path.basename(path)
             name, ext = os.path.splitext(name)
             sort_key = name.lower()
-            # search = self.create_configuration_search(name)
             name = self.create_configuration_name(name)
 
             game_id = database.add_configuration(
@@ -77,25 +72,7 @@ class ConfigurationScanner:
         self.scan_fs_uae_files(database)
 
         if self.stop_check():
-            # aborted
-            # database.rollback()
             return
-
-            # database.remove_unscanned_configurations(self.scan_version)
-            # print("remove unscanned games")
-            # self.set_status(_("Scanning configurations"),
-            #                 _("Purging old entries..."))
-            # database.remove_unscanned_games_new(self.scan_version)
-            # print("remove unscanned configurations")
-            # database.remove_unscanned_configurations(self.scan_version)
-
-            # self.set_status(_("Scanning configurations"), _("Committing
-            # data..."))
-            # database.commit()
-
-    # @classmethod
-    # def create_configuration_search(cls, name):
-    #     return name.lower()
 
     @classmethod
     def create_search_terms(cls, name):
@@ -109,7 +86,6 @@ class ConfigurationScanner:
         if "(" in name:
             primary, secondary = name.split("(", 1)
             secondary = secondary.replace(", ", " \u00b7 ")
-            # name = primary.rstrip() + " \u2013 " + secondary.lstrip()
             name = primary.rstrip() + "\n" + secondary.lstrip()
             if name[-1] == ")":
                 name = name[:-1]

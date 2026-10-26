@@ -66,7 +66,6 @@ class Settings(object):
         self.set(key, value)
 
     def load(self, force=False):
-        # print("[SETTINGS] Load", self)
         if (not self._loaded) or force:
             try:
                 self._loading = True
@@ -74,7 +73,6 @@ class Settings(object):
             finally:
                 self._loading = False
         self._loaded = True
-        # print("[SETTINGS] Loaded, path is", self.path)
 
     def unload(self) -> None:
         self.values.clear()

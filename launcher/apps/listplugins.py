@@ -19,6 +19,5 @@ def app_main():
     for name in sorted(provides):
         plugin = provides[name]
         print(f"# {name} ({plugin.name})")
-        # print("", plugin.provides()[name])
 
     print("")

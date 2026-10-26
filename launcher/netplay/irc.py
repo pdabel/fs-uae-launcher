@@ -68,7 +68,6 @@ class IRC:
             print("new channel", repr(name))
             self.channels[name] = Channel(self, name)
             print("channels are now", repr(self.channels))
-            # self.set_active_channel(name)
             IRCBroadcaster.broadcast("channel_list", {"added": name})
             return self.channels[name]
 
@@ -98,7 +97,6 @@ class IRC:
             return
         self.stopping = True
         helpers.quit(self.client, "Exited")
-        # self.client.quit()
 
     def irc_thread(self):
         try:
@@ -162,23 +160,13 @@ class IRC:
         call_after(func)
 
     def post_message(self, command, args):
-        # command = command.decode("UTF-8", errors="replace")
         if self.stopping:
             print("ignoring message", command, "because we're stopping")
             return
-        # print("post_message", command, args)
-        # self.on_message(command, args)
-        # print(command, args)
 
         args = list(args)
 
-        # for i, arg in enumerate(args):
-        #     if arg is not None:
-        #         args[i] = arg.decode("UTF-8", errors="replace")
-
         def func():
-            # if IRC.broadcast(command, args):
-            #     return
             if self.irc_server_message(command, args):
                 return
             name = "irc_" + command
@@ -265,9 +253,6 @@ class IRC:
         if len(args) >= 2:
             channel = args[0]
             message = " ".join(args[1:])
-            # self.channel(channel).privmsg(message)
-            # self.channel(channel).message("<{0}> {1}".format(self.my_nick,
-            #        message), IRCColor.MY_MESSAGE)
             self.client.send(f"privmsg {channel} :{message}")
         else:
             self.warning("usage: /msg <nick|channel> <message>")
@@ -276,7 +261,6 @@ class IRC:
         if len(args) >= 2:
             channel = args[0]
             message = " ".join(args[1:])
-            # self.channel(channel).notice(message)
             self.client.send(f"notice {channel} :{message}")
         else:
             self.warning("usage: /notice <nick|channel> <message>")

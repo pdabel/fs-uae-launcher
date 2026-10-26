@@ -77,17 +77,6 @@ class Version(object):
         self.val += self.build * 10000 ** 0
         self.mod = v[4]
         self.release = -1 if v[5] is None else int(v[5])
-        # print(
-        #     {
-        #         "major": self.major,
-        #         "minor": self.minor,
-        #         "revision": self.revision,
-        #         "build": self.build,
-        #         "val": self.val,
-        #         "mod": self.mod,
-        #         "release": self.release,
-        #     }
-        # )
 
     def cmp_value(self):
         mod_cmp = self.mod or "~~e"
@@ -160,10 +149,6 @@ def compare_versions(a: Union[Version, str], b: Union[Version, str]):
     >>> compare_versions("1.22.2fs0", "1.22.2")
     1
     """
-    # >>> compare_versions("2.6.0beta1", "2.6.0beta1.1")
-    # -1
-    # >>> compare_versions("2.6.0beta2", "2.6.0beta1.1")
-    # 1
     if isinstance(a, Version):
         pass
     elif isinstance(a, str):

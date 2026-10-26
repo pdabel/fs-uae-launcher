@@ -48,8 +48,6 @@ class EventHandler(QObject):
             try:
                 function(*args, **kwargs)
             except Exception:
-                # log.warn("callback event failed: %r %r",
-                #         self.callback, self.args, exc_info=True)
                 print("-- callback exception --")
                 traceback.print_exc()
 
@@ -66,8 +64,6 @@ def call_after(function, *args, **kwargs):
 
 
 def call_later(duration, function, *args, **kwargs):
-    # print("FIXME: call_later", duration, function)
-    # raise NotImplementedError()
     # QApplication.instance().
     def timer_callback():
         function(*args, **kwargs)
@@ -78,11 +74,6 @@ def call_later(duration, function, *args, **kwargs):
 def show_error(message, title=None, parent=None):
     if not title:
         title = gettext("An Error Occurred")
-    # QErrorMessage().showMessage(message)
-    # message_box = QMessageBox()
-    # message_box.setIcon(QMessageBox.Critical)
-    # message_box.setText(message)
-    # message_box.exec_()
     QMessageBox.critical(QParent(parent), title, message)
 
 

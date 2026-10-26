@@ -43,10 +43,8 @@ class OptionUI(object):
 
         if description:
             default_tmpl = "{0} (*)"
-            # default_tmpl = "Default - {0}"
         else:
             default_tmpl = "{0} (*)"
-            # default_tmpl = "Default - {0}"
 
         if option["type"].lower() == "boolean":
             if option["default"] == "1":
@@ -79,7 +77,6 @@ class OptionUI(object):
                 LauncherSettings.set(name, val.strip())
 
             text_field = fsui.TextField(group)
-            # text_field.set_min_width(400)
             text_field.set_text(LauncherSettings.get(name))
             text_field.on_changed = on_changed
             group.layout.add(text_field, expand=True)

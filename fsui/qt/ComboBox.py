@@ -5,10 +5,7 @@ from .widget_mixin import WidgetMixin
 class ComboBox(QComboBox, WidgetMixin):
     def __init__(self, parent, items=[], read_only=False):
         QComboBox.__init__(self, parent.get_container())
-        # self = QComboBox(parent.get_container())
-        # Widget.__init__(self, parent)
         self.init_widget(parent)
-        # self.setEditable(not read_only)
         print(
             "FIXME: ComboBox not respecting read_only"
             "(because of missing lineEdit then"
@@ -39,7 +36,6 @@ class ComboBox(QComboBox, WidgetMixin):
         self.setItemText(item, text)
 
     def get_index(self):
-        # return self.GetSelection()
         return self.currentIndex()
 
     def set_index(self, index):

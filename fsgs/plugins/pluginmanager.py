@@ -87,11 +87,6 @@ class Plugin(BasePlugin):
                 return "macOS"
             return "macos"
         elif linux:
-            # if os.environ.get("STEAM_RUNTIME", ""):
-            #     if pretty:
-            #         return "SteamOS"
-            #     return "steamos"
-            # else:
             if pretty:
                 return "Linux"
             return "linux"
@@ -125,7 +120,6 @@ class Expansion(BasePlugin):
             with open(version_path, "r", encoding="UTF-8") as f:
                 version = f.read().strip()
         else:
-            # version_path = os.path.join(path, "Data", "Version.txt")
             version_path = os.path.join(path, "Version.txt")
             with open(version_path, "r", encoding="UTF-8") as f:
                 version = f.read().strip()
@@ -209,8 +203,6 @@ class Executable:
 
     def popen(self, args, env=None, **kwargs):
         logger.info("[EXECUTE] %s %s", self.path, repr(args))
-        # logger.debug("PluginExecutable.popen %s %s %s",
-        #              repr(args), repr(env), repr(kwargs))
         args = [self.path] + args
         if os.environ.get("FSGS_STRACE", "") == "1":
             args.insert(0, "strace")
@@ -253,8 +245,6 @@ class PluginManager:
         if plugins_dir not in result:
             result.append(plugins_dir)
 
-        # if plugins_dir and os.path.isdir(plugins_dir):
-        #     result.append(plugins_dir)
         expansion_dir = os.path.join(
             FSGSDirectories.get_base_dir(), "Workspace", "Expansion"
         )
@@ -282,8 +272,6 @@ class PluginManager:
                 )
             )
             result.append(system_plugins_dir)
-        # if os.path.isdir(system_plugins_dir):
-        #     result.append(system_plugins_dir)
 
         return result
 
@@ -317,15 +305,11 @@ class PluginManager:
             Plugin.arch_name(True),
         )
 
-        # Reversing order so that later loaded plugins (earlier on path)
-        # takes precedence.
-        # for dir_path in reversed(plugin_path):
         # I guess we should sort the list by version number and only load the
         # newest plugin per name.
         for dir_path in plugin_path:
             if not os.path.isdir(dir_path):
                 continue
-            # logger.debug(dir_path)
             for name in os.listdir(dir_path):
                 plugin_dir = os.path.join(dir_path, name)
                 logger.debug(plugin_dir)
@@ -348,18 +332,6 @@ class PluginManager:
     def load_plugin(self, plugin_dir):
         return self.load_expansion(plugin_dir)
 
-        # logger.info("Load plugin %s", plugin_dir)
-        # plugin_ini = os.path.join(plugin_dir, "plugin.ini")
-        # name = os.path.basename(plugin_dir).split("_")[0]
-        # if not os.path.exists(plugin_ini):
-        #     return self.load_expansion(plugin_dir)
-        # cp = ConfigParser()
-        # with open(plugin_ini, "r", encoding="UTF-8") as f:
-        #     cp.read_file(f)
-        # version = cp.get("plugin", "version")
-        # plugin = Plugin(os.path.join(plugin_dir, version), name, version, cp)
-        # return plugin
-
     def load_expansion(self, path):
         logger.info("Load expansion %s", path)
         arch_path = os.path.join(
@@ -367,7 +339,6 @@ class PluginManager:
         )
         version_path = os.path.join(arch_path, "Version.txt")
         if not os.path.exists(version_path):
-            # version_path = os.path.join(path, "Data", "Version.txt")
             version_path = os.path.join(path, "Version.txt")
 
         version = None

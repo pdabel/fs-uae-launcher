@@ -47,8 +47,6 @@ def setup_logging() -> None:
 
     ch = logging.StreamHandler(sys.stdout)
     ch.setLevel(logging.DEBUG)
-    # formatter = logging.Formatter(
-    #     "[%(name)s] - %(asctime)s - %(levelname)s - %(message)s")
     formatter = logging.Formatter("[%(name)s] %(message)s")
     ch.setFormatter(formatter)
     root.addHandler(ch)
@@ -180,7 +178,6 @@ def home_dir() -> str:
     else:
         path = os.path.expanduser("~")
     assert isinstance(path, str)
-    # path = unicode_path(path)
     return path
 
 
@@ -195,7 +192,6 @@ def documents_dir(create: bool = False) -> str:
         if not path:
             path = home_dir()
     assert isinstance(path, str)
-    # path = unicode_path(path)
     if create and not os.path.isdir(path):
         os.makedirs(path)
     return path
@@ -230,7 +226,6 @@ def common_data_dir(create: bool = False) -> str:
     else:
         path = os.path.join(home_dir(), ".local", "share")
         path = os.environ.get("XDG_DATA_HOME", path)
-    # path = unicode_path(path)
     if create and not os.path.exists(path):
         os.makedirs(path)
     return path
@@ -243,8 +238,6 @@ def app_data_dir(app: str) -> str:
 
 @lru_cache()
 def app_config_dir(app: str) -> str:
-    # if not app:
-    #     app = get_app_id()
     if sys.platform == "win32":
         path = app_data_dir(app)
     elif sys.platform == "darwin":
@@ -253,7 +246,6 @@ def app_config_dir(app: str) -> str:
         path = os.path.join(home_dir(), ".config")
         path = os.environ.get("XDG_CONFIG_HOME", path)
         path = os.path.join(path, app)
-        # path = unicode_path(path)
     if not os.path.isdir(path):
         os.makedirs(path)
     return path
@@ -311,7 +303,6 @@ def _getBaseDirectoryBeforeNormalization() -> str:
         return path
 
     if get("base_dir_name"):
-        # path = os.path.join(documents_dir(True), get("base_dir_name"))
         path = os.path.join(home_dir(), get("base_dir_name"))
     else:
         # Check new ~/FS-UAE directory first
@@ -368,111 +359,19 @@ def is_macos() -> bool:
 def setup_frozen_python_libs() -> None:
     return
 
-    # libs_dir = os.path.abspath(
-    #     os.path.join(executable_dir(), "..", "..", "Python")
-
-    # libs_dirs = [executable_dir()]
-    # if sys.platform == "darwin":
-    #     # Add .app/Contents/Python to libs_dirs
-    #     libs_dir = os.path.abspath(
-    #         os.path.join(executable_dir(), "..", "Python")
-    #     )
-    #     print(libs_dir, os.path.exists(libs_dir))
-    #     if os.path.exists(libs_dir):
-    #         libs_dirs.append(libs_dir)
-    # libs_dir = os.path.abspath(
-    #     os.path.join(executable_dir(), "..", "..", "Python")
-    # )
-    # print(libs_dir, os.path.exists(libs_dir))
-    # if os.path.exists(libs_dir):
-    #     libs_dirs.append(libs_dir)
-    # else:
-    #     libs_dir = os.path.abspath(
-    #         os.path.join(
-    #             executable_dir(), "..", "..", "..", "..", "..", "Python"
-    #         )
-    #     )
-    #     print(libs_dir, os.path.exists(libs_dir))
-    #     if os.path.exists(libs_dir):
-    #         libs_dirs.append(libs_dir)
-    # for libs_dir in libs_dirs:
-    #     for item in os.listdir(libs_dir):
-    #         if item.endswith(".zip"):
-    #             path = os.path.join(libs_dir, item)
-    #             print("adding", path)
-    #             sys.path.insert(0, path)
-
 
 def plugin_code_override() -> bool:
     return _plugin_code_override
 
 
-# from importlib.abc import MetaPathFinder
-
 # _python_dir: str
-
-
-# class OverrideImporter(MetaPathFinder):
-
-#     # def find_spec(self, fullname, path, target=None):
-#     #     from importlib.util import spec_from_loader
-#     #     loader = self.find_module(fullname, path)
-#     #     if loader is None:
-#     #         return None
-#     #     spec = spec_from_loader(fullname, loader)
-#     #     print(spec)
-#     #     return spec
-
-#     # FIXME: Any
-#     def find_module(self, fullname: str, path: str) -> Any:
-#         from importlib.machinery import SourceFileLoader
-
-#         print("CustomImporter.find_module", fullname, path)
-#         # if path is None:
-#         #     raise Exception("")
-#         if path is None:
-#             package_path = os.path.join(_python_dir, fullname, "__init__.py")
-#             print(package_path)
-#             if os.path.exists(package_path):
-#                 print("->", package_path)
-#                 return SourceFileLoader(fullname, package_path)
-#             # module_path = os.path.join(_python_dir, f"{fullname}.py")
-#             # if os.path.exists(module_path):
-#             #     return SourceFileLoader(fullname, module_path)
-#         else:
-#             if len(path) == 0:
-#                 return None
-#             name = fullname.rsplit(".", 1)[-1]
-#             package_path = os.path.join(path[0], name, "__init__.py")
-#             print(package_path)
-#             if os.path.exists(package_path):
-#                 print("->", package_path)
-#                 return SourceFileLoader(fullname, package_path)
-#             module_path = os.path.join(path[0], f"{name}.py")
-#             print(module_path)
-#             if os.path.exists(module_path):
-#                 print("->", module_path)
-#                 return SourceFileLoader(fullname, module_path)
-#         print("->", None)
-#         return None
 
 
 def setup_python_path_frozen() -> None:
     """Allow overriding code from Plugin/Python directory."""
     print("setup_python_path_frozen")
-    # global _python_dir
-    # base_dir = plugin_dir() or app_dir()
-    # python_dir = os.path.join(base_dir, "Python")
-    # # print("Check", python_dir)
-    # # if os.path.exists(python_dir):
-    # #     # sys.path.insert(0, python_dir)
-    # #     # _plugin_code_override = True
-    # #     _python_dir = python_dir
-    # #     sys.meta_path.insert(0, OverrideImporter())
-    # #     print("sys.meta_path", sys.meta_path)
 
 
 def setup_python_path() -> None:
-    # print("setup_python_path")
     if is_frozen():
         setup_python_path_frozen()

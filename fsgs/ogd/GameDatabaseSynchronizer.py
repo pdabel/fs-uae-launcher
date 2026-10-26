@@ -33,7 +33,6 @@ class GameDatabaseSynchronizer(object):
         if client:
             self.client = client
             self.database = client.database
-        # self.downloaded_size = 0
         self.on_status = on_status
         self._stop_check = stop_check
         if "/" in platform_id:
@@ -87,16 +86,8 @@ class GameDatabaseSynchronizer(object):
                 continue
             file_list = json.loads(file_list_str)
             for entry in file_list:
-                # print(file_list)
                 if entry["name"].endswith("/"):
                     continue
-                # game = entry["sha1"][:3].upper()
-                # game = uuid[:8] + "/" + values["game_name"]
-                # games.setdefault(game, {})[entry["sha1"]] = {
-                #     "name": entry["sha1"],
-                #     "sha1": entry["sha1"],
-                #     "size": entry["size"],
-                # }
                 game = uuid
                 description = values.get("x_name", "")
                 descriptions[game] = description
@@ -160,29 +151,8 @@ class GameDatabaseSynchronizer(object):
                 rom_node.attrib["size"] = str(rom["size"])
                 rom_node.attrib["sha1"] = rom["sha1"]
 
-        # def indent(elem, level=0):
-        #     i = "\n" + level*"  "
-        #     j = "\n" + (level-1)*"  "
-        #     if len(elem):
-        #         if not elem.text or not elem.text.strip():
-        #             elem.text = i + "  "
-        #         if not elem.tail or not elem.tail.strip():
-        #             elem.tail = i
-        #         for subelem in elem:
-        #             indent(subelem, level+1)
-        #         if not elem.tail or not elem.tail.strip():
-        #             elem.tail = j
-        #     else:
-        #         if level and (not elem.tail or not elem.tail.strip()):
-        #             elem.tail = j
-        #     return elem
-
-        # indent(datafile_node)
         tree = ElementTree.ElementTree(datafile_node)
         # tree.
-        # tree.write('output.xml')
-        # datafile_node('output.xml')
-        # tree.write(xml_path)
         with open(xml_path, "wb") as f:
             f.write(b'<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write(
@@ -225,7 +195,6 @@ class GameDatabaseSynchronizer(object):
                 k += 4
                 game_data = data[k : k + game_data_size]
                 k += game_data_size
-                # print("game data len:", len(game_data))
                 if len(game_data) > 0:
                     self.database.add_game(game_sync_id, game_uuid, game_data)
                 else:
@@ -279,12 +248,6 @@ class GameDatabaseSynchronizer(object):
             t2 = time.time()
             print(f"  {t2 - t1:0.2f} seconds")
 
-        # print(
-        #     "downloaded size: {0:0.2f} MiB".format(
-        #         self.downloaded_size / (1024 * 1024)
-        #     )
-        # )
-
     def url_prefix(self):
         if self.host:
             if is_http_url(self.host):
@@ -306,7 +269,6 @@ class GameDatabaseSynchronizer(object):
         url = f"{self.url_prefix()}/api/sync/{self.platform_id}/games?v=3&sync={last_id}"
         print(url)
         data = self.fetch_data(url)
-        # self.downloaded_size += len(data)
         return data
 
     def fetch_rating_entries(self):
@@ -321,9 +283,7 @@ class GameDatabaseSynchronizer(object):
         )
         url = f"{self.url_prefix()}/api/sync/{self.platform_id}/ratings?from={quote_plus(last_time)}"
         print(url)
-        # data, json_data = self.fetch_json(url)
         json_data = self.fetch_json(url)
-        # self.downloaded_size += len(data)
         return json_data
 
     def fetch_json_attempt(self, url):

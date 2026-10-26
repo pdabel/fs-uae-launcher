@@ -22,7 +22,6 @@ class AdvancedVideoSettingsPage(SettingsPage):
         self.add_option(Option.TEXTURE_FILTER)
         self.add_option(Option.TEXTURE_FORMAT)
 
-        # self.add_section(gettext("Video Synchronization"))
         self.sync_method_label = fsui.MultiLineLabel(
             self,
             gettext(

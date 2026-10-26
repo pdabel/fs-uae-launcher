@@ -48,8 +48,6 @@ class StartupScan:
                     # already exists in database
                     continue
                 name, ext = os.path.splitext(file_name)
-                # search = ConfigurationScanner.create_configuration_search(
-                # name)
                 scanner = ConfigurationScanner()
                 print("[startup] adding config", path)
                 file_database.delete_file(path=path)

@@ -97,7 +97,6 @@ def adf_hash_name(name):
     l = hash = len(name)
     for char in name:
         hash *= 13
-        # hash = hash + ord(char.upper())
         hash += byte_value(char)
         hash &= 0x7FF
     hash %= (BLOCK_SIZE // AMIGA_ULONG_SIZE) - 56
@@ -136,7 +135,6 @@ def adf_parse_name(name):
 
 def extract_file_from_adf_data(data, name):
     ffs = adf_check_ffs(data)
-    # name_parts = [x.encode("ISO-8859-1") for x in adf_parse_name(name)]
     name_parts = adf_parse_name(name)
     block = adf_get_rootblock(data)
     for name_part in name_parts:

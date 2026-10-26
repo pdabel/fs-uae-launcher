@@ -31,7 +31,6 @@ class FloppySelector(fsui.Panel):
         self.__platform = ""
 
         self.eject_button = IconButton(self, "eject_button.png")
-        # AmigaEnableBehavior(self.eject_button)
         self.eject_button.set_tooltip(gettext("Eject"))
         self.eject_button.activated.connect(self.on_eject)
 
@@ -40,7 +39,6 @@ class FloppySelector(fsui.Panel):
         self.browse_button = IconButton(self, "browse_file_16.png")
         self.browse_button.set_tooltip(gettext("Browse for File"))
         self.browse_button.activated.connect(self.on_browse)
-        # AmigaEnableBehavior(self.browse_button)
 
         self.layout = fsui.HorizontalLayout()
         self.layout.add(self.eject_button)
@@ -49,24 +47,12 @@ class FloppySelector(fsui.Panel):
         self.layout.add_spacer(10)
         self.layout.add(self.browse_button)
 
-        # Config.add_listener(self)
-        #  fsgs.signal.connect(self.on_config,
-        #          "fsgs:config:floppy_drive_{0}".format(self.drive),
-        #          "fsgs:config:cdrom_drive_{0}".format(self.drive))
         fsgs.signal.connect("config", self.on_config)
         self.on_config(Option.PLATFORM, fsgs.config.get(Option.PLATFORM))
         self.update_config_key()
 
     def on_destroy(self):
-        # fsgs.signal.disconnect(
-        #     "fsgs:config:floppy_drive_{0}".format(self.drive),
-        #     self.on_config_floppy_drive)
         fsgs.signal.disconnect("config", self.on_config)
-
-    # def enable(self, enable=True):
-    #     self.text_field.enable(enable)
-    #     self.browse_button.enable(enable)
-    #     self.eject_button.enable(enable)
 
     def on_config(self, key, value):
         if key == self.config_key:
@@ -141,7 +127,6 @@ class FloppySelector(fsui.Panel):
     def on_browse(self):
         if self.mode == self.CD_MODE:
             title = gettext("Choose CD-ROM Image")
-            # default_dir = FSGSDirectories.get_cdroms_dir()
             media_type = "cd"
         elif self.mode == self.TAPE_MODE:
             title = gettext("Choose Tape Image")
@@ -151,7 +136,6 @@ class FloppySelector(fsui.Panel):
             media_type = "cartridge"
         else:
             title = gettext("Choose Floppy Image")
-            # default_dir = FSGSDirectories.get_floppies_dir()
             media_type = "floppy"
         dialog = LauncherFilePicker(
             self.window, title, media_type, LauncherConfig.get(self.config_key)

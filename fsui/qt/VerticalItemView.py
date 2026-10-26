@@ -9,17 +9,11 @@ class Model(QAbstractListModel):
         self.parent = weakref.ref(parent)
         self.count = 0
 
-    # def set_item_count(self, count):
-    #     self.count = count
-
     def rowCount(self, parent):
-        # print("returning count", self.count, "for parent", parent)
-        # return self.count
         return self.parent().get_item_count()
 
     def data(self, index, role):
         row = index.row()
-        # print("data for", index, "role", role)
         if role == Qt.SizeHintRole:
             height = self.parent()._row_height
             return QSize(height, height)
@@ -33,7 +27,6 @@ class Model(QAbstractListModel):
             color = self.parent().get_item_text_color(row)
             if color is not None:
                 return QBrush(color)
-        # return QVariant()
 
 
 class VerticalItemView(QListView, WidgetMixin):
@@ -43,24 +36,18 @@ class VerticalItemView(QListView, WidgetMixin):
 
     def __init__(self, parent, border=True):
         QListView.__init__(self, parent.get_container())
-        # Widget.__init__(self, parent)
         self.init_widget(parent)
         self.viewport().installEventFilter(self.get_window())
         self.verticalScrollBar().installEventFilter(self.get_window())
         if not border:
             self.setFrameStyle(0)
 
-        # self.setSelectionModel()
-        # self.model = QStandardItemModel(self)
         self.model = Model(self)
         self.setModel(self.model)
-        # self.itemSelectionChanged.connect(self.__selection_changed)
         selection_model = self.selectionModel()
         print("VerticalItemView selectionModel = ", selection_model)
         selection_model.selectionChanged.connect(self.__selection_changed)
         self.doubleClicked.connect(self.__double_clicked)
-        # self.returnPressed.connect(self.__double_clicked)
-        # self.activated.connect(self.__double_clicked)
         self._row_height = 26
 
     def set_row_height(self, height):
@@ -95,23 +82,8 @@ class VerticalItemView(QListView, WidgetMixin):
     def get_item_text_color(self, index):
         return None
 
-    # def set_item_count(self, count):
-    #     #self.model.rowCoun
-    #     self.model.set_item_count(count)
-    #     #self.update()
-    #     #self.invalidate()
-    #     self.dataChanged(self.model.createIndex(0, 0),
-    #             self.model.createIndex(count, 0))
-
     def set_default_icon(self, image):
         pass
-
-    # def set_items(self, items):
-    #    #print("set_items", items)
-    #    self.model.clear()
-    #    for label in items:
-    #        item = QStandardItem(label)
-    #        self.model.appendRow(item)
 
     def get_index(self):
         indices = self.selectionModel().selectedIndexes()
@@ -122,8 +94,6 @@ class VerticalItemView(QListView, WidgetMixin):
     def set_index(self, index):
         if index is None:
             index = -1
-        # print(self.rootIndex)
-        # idx = QModelIndex.createIndex(index)
         idx = self.model.index(index, 0)
         self.scrollTo(idx)
         self.setCurrentIndex(idx)
@@ -137,9 +107,6 @@ class VerticalItemView(QListView, WidgetMixin):
     def update(self):
         # self.model.rowCoun
         count = self.get_item_count()
-        # self.model.set_item_count(count)
-        # self.update()
-        # self.invalidate()
         self.dataChanged(
             self.model.createIndex(0, 0), self.model.createIndex(count, 0)
         )

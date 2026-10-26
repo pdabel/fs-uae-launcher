@@ -42,14 +42,11 @@ class RemovableMediaGroup(FloppiesGroup):
         self.mode = mode
         self.cd_mode = mode == self.CD_MODE
         for selector in self.selectors:
-            # selector.set_cd_mode(self.cd_mode)
             selector.set_mode(self.mode)
         self.update_heading_label()
-        # self.selectors[1].enable(not self.cd_mode)
 
     def set_cd_mode(self, cd_mode):
         if cd_mode:
             self.set_mode(self.CD_MODE)
         else:
             self.set_mode(self.FLOPPY_MODE)
-

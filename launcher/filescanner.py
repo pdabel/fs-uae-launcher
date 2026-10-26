@@ -70,10 +70,6 @@ class FileScanner(object):
 
             # Commodore 64
 
-            # DOS / GOG
-            # self.extensions.add(".mp3")
-            # self.extensions.add(".ogg")
-
             # Game Boy
             self.extensions.add(".gb")
 
@@ -139,7 +135,6 @@ class FileScanner(object):
     def scan(self):
         self.set_status(gettext("Scanning files"), gettext("Scanning files"))
         file_database = FileDatabase.get_instance()
-        # database.clear()
         scan_dirs = self.get_scan_dirs()
 
         if self.purge_other_dirs:
@@ -221,7 +216,6 @@ class FileScanner(object):
 
     def scan_file(self, file_database, path):
         name = os.path.basename(path)
-        # path = os.path.normcase(os.path.normpath(path))
 
         self.scan_count += 1
         self.set_status(
@@ -254,10 +248,8 @@ class FileScanner(object):
             if p.endswith("/"):
                 # don't index archive directory entries
                 continue
-            # print(p)
             if self.stop_check():
                 return
-            # n = p.replace("\\", "/").replace("|", "/").split("/")[-1]
             n = os.path.basename(p)
             self.scan_count += 1
             self.scan_archive_stream(
@@ -396,7 +388,6 @@ class FileScanner(object):
                     # lookup mechanism
                     # FIXME: Enable use of filter mechanism for Cloanto ROMs
                     sha1 = filter_sha1
-                    # filter_name = "Cloanto"
             else:
                 # If the ROM was encrypted and could not be decrypted, we
                 # don't add it to the database. This way, the file will be

@@ -54,17 +54,12 @@ class RefreshWindow(fsui.Window):
         self.task.stopped.connect(self.close)
         self.task.start()
 
-        # self.closed.connect(self.on_closed_signal)
-
     def __del__(self):
         print("RefreshWindow.__del__")
 
     def on_close(self):
         print("RefreshWindow.on_close")
         self.task.stop()
-
-    # def on_closed_signal(self):
-    #     self.task.stop()
 
     def on_abort_activated(self):
         self.task.stop()
@@ -76,8 +71,4 @@ class RefreshWindow(fsui.Window):
     def on_progress(self, message):
         if not isinstance(message, str):
             message = message[0]
-        # print("on_progress", status)
         self.icon_header.subtitle_label.set_text(message)
-
-
-# application = SimpleApplication(RefreshWindow)

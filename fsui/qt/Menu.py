@@ -12,7 +12,6 @@ class AutoCloseMenu(QMenu):
         if p.x() <= c.x() < p.x() + s[0] and p.y() <= c.y() < p.y() + s[1]:
             # We want to close the menu (and not re-open it) if we click
             # on the widget used to open the menu.
-            # parent._ignore_next_left_down_event = True
             pass
         super().mousePressEvent(event)
 
@@ -20,9 +19,6 @@ class AutoCloseMenu(QMenu):
 class Menu:
     def __init__(self, implementation=QMenu):
         self.qmenu = implementation()
-        # self._menu = wx.Menu()
-        # self._ids = []
-        # #self._functions = []
         pass
 
     def is_open(self):
@@ -37,19 +33,6 @@ class Menu:
         action = self.qmenu.addAction(text)
         if function is not None:
             action.triggered.connect(function)
-
-        # if item_id == -1:
-        #     item_id = wx.NewId()
-        # self._ids.append(item_id)
-        # #self._functions.append(function)
-        # self._menu.Append(item_id, text)
-        # def function_wrapper(event):
-        #     # the reason we use CallAfter here is so control will return
-        #     # to the application after having popped up a menu, so the
-        #     # button opening a menu can draw its correct state when the
-        #     # menu is closed, before for example a modal dialog is opened.
-        #     wx.CallAfter(function)
-        # self._menu.Bind(wx.EVT_MENU, function_wrapper, id=item_id)
 
     def add_about_item(self, text, function):
         self.add_item(text, function)

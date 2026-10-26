@@ -13,9 +13,6 @@ class DatabaseRefreshTask(Task):
     def __init__(self):
         Task.__init__(self, "DatabaseRefreshTask")
 
-    # def stop_check(self):
-    #     pass
-
     def on_status(self, status):
         self.progressed(status)
 
@@ -25,8 +22,6 @@ class DatabaseRefreshTask(Task):
 
     def _run(self, database):
         # FIXME, dependency on fs_uae_launcher
-        # from fs_uae_launcher.Scanner import Scanner
-        # Scanner.start([], scan_for_files=False, update_game_database=True)
         from fsgs.ogd.game_rating_synchronizer import GameRatingSynchronizer
         from launcher.gamescanner import GameScanner
 

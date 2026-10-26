@@ -11,11 +11,7 @@ class TabPanel(fsui.Panel):
         fsui.Panel.__init__(self, parent, paintable=True)
         Skin.set_background_color(self)
         self.layout = fsui.HorizontalLayout()
-        # self.layout.add_spacer(spacing)
-        # self.layout.padding_left = 10
-        # self.layout.padding_right = 10
 
-        # self.set_background_color((0xdd, 0xdd, 0xdd))
         self.set_min_height(Constants.TAB_HEIGHT)
 
     def select_tab(self, index):
@@ -50,7 +46,6 @@ class TabPanel(fsui.Panel):
     def on_paint(self):
         dc = self.create_dc()
         self.draw_background(self, dc)
-        # self.draw_border(self, dc)
 
     @classmethod
     def draw_border(cls, widget, dc):
@@ -63,9 +58,6 @@ class TabPanel(fsui.Panel):
         else:
             line_color_1 = fsui.Color(0xFF, 0xFF, 0xFF, 0xA0)
             line_color_2 = line_color_1
-
-        # line_color_1 = fsui.Color(0xff, 0x00, 0x00, 0xff)
-        # line_color_2 = fsui.Color(0x00, 0xff, 0x00, 0xff)
 
         dc.draw_line(0, size[1] - 2, size[0], size[1] - 2, line_color_1)
         dc.draw_line(0, size[1] - 1, size[0], size[1] - 1, line_color_2)
@@ -87,8 +79,6 @@ class TabPanel(fsui.Panel):
         h = size[1] - 2
 
         if fsbc.system.macosx:
-            # dc.draw_line(0, 0, w, 0, fsui.Color(198, 198, 198))
-            # dc.draw_line(0, 0, w, 0, fsui.Color(188, 188, 188))
             dc.draw_line(0, 0, w, 0, fsui.Color(248, 248, 248))
             y += 1
             h -= 1
@@ -97,12 +87,6 @@ class TabPanel(fsui.Panel):
             x += 2
             w -= 4
             h += 2
-
-        # if button_style and hover:
-        #     x += 6
-        #     y += 6
-        #     w -= 12
-        #     h -= 12
 
         color_1 = Skin.get_background_color()
         if fsbc.system.macosx and False:
@@ -115,9 +99,6 @@ class TabPanel(fsui.Panel):
             else:
                 color_1 = fsui.Color(0xA7, 0xA7, 0xA7)
                 color_2 = fsui.Color(0xC0, 0xC0, 0xC0)
-        # elif Skin.adwaita():
-        #     color_1 = fsui.Color(0xea, 0xe7, 0xe5)
-        #     color_2 = fsui.Color(0xea, 0xe7, 0xe5)
         elif color_1 is not None:
             if selected:
                 color_2 = color_1
@@ -128,8 +109,6 @@ class TabPanel(fsui.Panel):
         else:
             if selected:
                 return
-                # color_1 = fsui.Color(0x00, 0x00, 0x00, 0x00)
-                # color_2 = color_1
             elif hover:
                 color_1 = fsui.Color(0xFF, 0xFF, 0xFF, 0x00)
                 color_2 = fsui.Color(0xFF, 0xFF, 0xFF, 0x40)

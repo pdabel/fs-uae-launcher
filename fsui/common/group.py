@@ -9,15 +9,10 @@ class Group(object):
             self._window = parent._window
         self.position = (0, 0)
         self.__visible = True
-        # FIXME
-        # parent.destroyed.connect(self.on_destroy)
 
     @property
     def parent(self):
         return self._parent()
-
-    # def show_or_hide(self, show):
-    #     self.__visible = show
 
     def is_visible(self):
         return self.__visible

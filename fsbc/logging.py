@@ -76,7 +76,6 @@ class NullOutput(object):
 def setup_logging(log_name):
     if sys.platform == "win32" and "FS_FORCE_STDOUT" not in os.environ:
         # noinspection PyUnresolvedReferences
-        # import win32console
         if hasattr(sys, "frozen"):
             # or win32console.GetConsoleWindow() == 0:
             sys.stdout = NullOutput()

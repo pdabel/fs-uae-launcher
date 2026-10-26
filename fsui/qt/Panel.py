@@ -15,17 +15,10 @@ class Panel(Widget):
         self._widget.setAutoFillBackground(True)
 
         self._parent = weakref.ref(parent)
-        # QWidget.__init__(self, QParent(parent))
-        # self.init_widget(parent)
         self.layout = None
         self._painter = None
 
-        # QWidget.__init__(self)
-        # self.setParent(parent.get_container())
-        # super(Panel, self).__init__(parent.get_container())
-        # super().__init__()
         self._ignore_next_left_down_event = False
-        # self._widget.setFocusPolicy(Qt.NoFocus)
 
     def on_left_down(self):
         pass
@@ -68,19 +61,13 @@ class WidgetWithEventHandlers(QWidget):
     def __init__(self, parent, owner):
         super().__init__(parent)
         self._owner = owner
-        # self._painter = None
 
     def owner(self):
         return self._owner
 
     def paintEvent(self, event):
-        # if not self._paintable:
-        #     #dc = wx.PaintDC(self)
-        #     return
-
         self.owner()._painter = QPainter(self)
         self.owner()._painter.setRenderHint(QPainter.Antialiasing)
-        # self._painter.setRenderHint(QPainter.Qt4CompatiblePainting)
         try:
             self.owner().on_paint()
         except Exception:

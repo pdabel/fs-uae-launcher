@@ -10,7 +10,6 @@ class TextField(QLineEdit, WidgetMixin):
 
     def __init__(self, parent, text="", read_only=False):
         QLineEdit.__init__(self, text, parent.get_container())
-        # Widget.__init__(self, parent)
         self.init_widget(parent)
         self.setReadOnly(read_only)
         # noinspection PyUnresolvedReferences

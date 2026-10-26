@@ -80,7 +80,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
         # FIXME: should now sanitize check some options -for instance,
         # - check if configured joysticks are still connected
         # - check if paths still exists, etc
-        # Config.update_kickstart()
         cls.load_plugins()
 
     @classmethod
@@ -90,8 +89,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
 
         if cls.run_config_or_game():
             return False
-        # window = LauncherWindow(fsgs)
-        # window.show()
         LauncherWindow.open()
         return True
 
@@ -115,8 +112,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
             config_path = last_arg
         elif file_ext in archive_extensions:
             archive_path = last_arg
-        # elif file_ext in floppy_extensions:
-        #     floppy_image_paths = [last_arg]
         elif is_uuid(last_arg):
             config_uuid = last_arg.lower()
         for arg in sys.argv[1:]:
@@ -181,7 +176,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
                 values = whdload.generate_config_for_archive(archive_path)
                 values["hard_drive_0"] = archive_path
                 values.update(fsgs.config.config_from_argv())
-                # archive_name, archive_ext = os.path.splitext(archive_name)
                 values["__config_name"] = archive_name
                 return cls.run_config_directly_with_values(values)
 
@@ -224,7 +218,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
         if config_uuid:
             print("[STARTUP] Config uuid given:", config_uuid)
             variant_uuid = config_uuid
-            # values = fsgs.game.set_from_variant_uuid(variant_uuid)
             if fsgs.load_game_variant(variant_uuid):
                 print("[STARTUP] Loaded variant")
             else:
@@ -317,7 +310,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
         settings = Settings.instance()
         settings.load()
         path = settings.path
-        # path = app.get_settings_path()
         print("loading last config from " + repr(path))
         if not os.path.exists(path):
             print("settings file does not exist")
@@ -346,16 +338,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
                 LauncherConfig.load_default_config()
         else:
             pass
-            # config = {}
-            # try:
-            #     keys = cp.options("config")
-            # except NoSectionError:
-            #     keys = []
-            # for key in keys:
-            #     config[key] = fs.from_utf8_str(cp.get("config", key))
-            # for key, value in config.items():
-            #     print("loaded", key, value)
-            #     fsgs.config.values[key] = value
 
         # Argument --new-config[=<platform>]
         new_config = "--new-config" in sys.argv
@@ -412,7 +394,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
             elif LauncherConfig.get("download_page"):
                 from .ui.launcherwindow import LauncherWindow
 
-                # fsui.show_error(_("This game must be downloaded first."))
                 DownloadGameWindow(LauncherWindow.current(), fsgs).show()
                 return
             else:
@@ -437,12 +418,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
         # make sure x_kickstart_file is initialized
         LauncherConfig.set_kickstart_from_model()
 
-        # if not Config.get("x_kickstart_file"):  # or not \
-        #     #  os.path.exists(Config.get("kickstart_file")):
-        #     fsui.show_error(
-        #         gettext("No kickstart found for this model. Use the 'Import "
-        #                 "Kickstarts' function from the menu."))
-        #     return
         cs = Amiga.get_model_config(LauncherConfig.get("amiga_model"))[
             "ext_roms"
         ]
@@ -483,7 +458,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
         from .ui.launcherwindow import LauncherWindow
 
         task = AmigaLaunchTask(launch_handler)
-        # dialog = LaunchDialog(MainWindow.instance, launch_handler)
         dialog = LaunchDialog(
             LauncherWindow.current(), gettext("Launching FS-UAE"), task
         )
@@ -493,31 +467,18 @@ class LauncherApp(ApplicationMixin, fsui.Application):
             unused(license_text)
             # FIXME: don't depend on wx here
             # noinspection PyUnresolvedReferences
-            # import wx
-            # license_dialog = wx.MessageDialog(
-            #     dialog, license_text, _("Terms of Use"),
-            #     wx.OK | wx.CANCEL | wx.CENTRE)
-            # license_dialog.CenterOnParent()
-            # result = license_dialog.ShowModal()
-            # return result == wx.ID_OK
-            # FIXME
             return True
 
         fsgs.file.on_show_license_information = on_show_license_information
 
         LauncherConfig.set("__running", "1")
         task.start()
-        # dialog.show_modal()
-        # dialog.close()
 
     @classmethod
     def prepare_config(cls, original_config):
         config = StringDict(str)
         for key, value in LauncherSettings.items():
             # We now show warnings on status bar instead
-            # if key in LauncherConfig.config_keys:
-            #     print("... ignoring config key from settings:", key)
-            #     continue
             config[key] = value
 
         config["base_dir"] = FSGSDirectories.get_base_dir()
@@ -587,11 +548,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
 
         # make sure FS-UAE does not load other config files (Host.fs-uae)
         config["end_config"] = "1"
-        # Make FS-UAE check that version matches (except for development)
-        # Edit: The Launcher and FS-UAE will not have identical version
-        # numbers going forward.
-        # if VERSION != "9.8.7dummy":
-        #     config[Option.EXPECT_VERSION] = VERSION
 
         if config.get("__netplay_game", ""):
             print("\nfixing config for netplay game")
@@ -622,4 +578,3 @@ class AmigaLaunchTask(Task):
 
     def run(self):
         self.launch_handler.run_sequence()
-

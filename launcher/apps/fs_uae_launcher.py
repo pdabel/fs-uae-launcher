@@ -46,9 +46,6 @@ def app_main():
         app.run()
         app.save_settings()
 
-    # from fs_uae_launcher.netplay.IRC import IRC
-    # IRC.stop()
-
     from fsbc.signal import Signal
 
     Signal("quit").notify()

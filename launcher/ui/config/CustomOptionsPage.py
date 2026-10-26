@@ -33,15 +33,11 @@ class CustomOptionsPage(fsui.Panel):
         hor_layout = fsui.HorizontalLayout()
         self.layout.add(hor_layout, fill=True, expand=True)
 
-        # hor_layout.add_spacer(20)
         self.text_area = fsui.TextArea(self, font_family="monospace")
         self.text_area.set_min_width(760)
         self.text_area.set_min_height(400)
         self.text_area.set_text(initial_text())
         hor_layout.add(self.text_area, fill=True, expand=True)
-        # hor_layout.add_spacer(20)
-
-        # self.layout.add_spacer(20)
 
         self.get_window().add_close_listener(self.on_close_window)
 
@@ -64,8 +60,6 @@ class CustomOptionsPage(fsui.Panel):
             parts = line.split("=", 1)
             if len(parts) == 2:
                 key = parts[0].strip()
-                # if key in Config.no_custom_config:
-                #     continue
                 value = parts[1].strip()
                 update_config[key] = value
         # Finally, set everything at once

@@ -9,28 +9,20 @@ class ListView(QListView, WidgetMixin):
     item_activated = Signal(int)
 
     def __init__(self, parent, border=True):
-        # self = QListView(parent.get_container())
         QListView.__init__(self, parent.get_container())
-        # Widget.__init__(self, parent)
-        # self.setAutoFillBackground(True)
         self.init_widget(parent)
         self.viewport().installEventFilter(self.get_window())
         self.verticalScrollBar().installEventFilter(self.get_window())
         if not border:
             self.setFrameStyle(0)
 
-        # self.setSelectionModel()
         self._model = QStandardItemModel(self)
-        # self.setModel(self._model)
         self.setModel(self._model)
-        # self.itemSelectionChanged.connect(self._on_selection_changed)
         selection_model = self.selectionModel()
         print("QListView selectionModel", selection_model)
         selection_model.selectionChanged.connect(self.__selection_changed)
         self.setEditTriggers(QListView.NoEditTriggers)
         self.doubleClicked.connect(self.__double_clicked)
-        # self.returnPressed.connect(self.__double_clicked)
-        # self.activated.connect(self.__double_clicked)
         self._row_height = 26
 
     def set_row_height(self, height):
@@ -105,8 +97,6 @@ class ListView(QListView, WidgetMixin):
     def set_index(self, index):
         if index is None:
             index = -1
-        # print(self.rootIndex)
-        # idx = QModelIndex.createIndex(index)
         idx = self._model.index(index, 0)
         self.scrollTo(idx)
         self.setCurrentIndex(idx)

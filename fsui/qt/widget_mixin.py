@@ -8,48 +8,25 @@ from .Color import Color
 
 class MixinBase(object):
     def __init__(self):
-        # self._timer_started = False
         pass
 
     def init_mixin_base(self):
         pass
 
-    #     self._timer_started = False
-    # def set_timer(self, interval):
-    #     assert not self._timer_started
-    #     # noinspection PyUnresolvedReferences
-    #     self.startTimer(interval)
-    #     self._timer_started = True
-    #
-    # def on_timer(self):
-    #     pass
-    #
-    # # noinspection PyPep8Naming
-    # def timerEvent(self, _):
-    #     # import traceback
-    #     # traceback.print_stack()
-    #     print(self, _)
-    #     self.on_timer()
-
 
 # noinspection PyPep8Naming
 class WidgetMixin(MixinBase):
     def __init__(self, *_):
-        # MixinBase.__init__(self)
         self._parent = None
         self._window = None
 
     def init_widget(self, parent):
         self.init_mixin_base()
-        # self.layout = None
         self._parent = weakref.ref(parent)
         # noinspection PyProtectedMember
         self._window = parent._window
-        # widget = getattr(self, "_widget", self)
-        # widget.move(10000, 10000)
 
         widget = getattr(self, "_widget", self)
-        # if self.get_window() != widget:
         assert isinstance(widget, QWidget)
         widget.installEventFilter(self.get_window())
 
@@ -114,26 +91,9 @@ class WidgetMixin(MixinBase):
         else:
             widget.hide()
 
-    # def show(self, show=True):
-    #     widget = getattr(self, "_widget", None)
-    #     if widget is None:
-    #         if show:
-    #             widget.show()
-    #         else:
-    #             widget.hide()
-    #     else:
-    #         if show:
-    #             super().show()
-    #         else:
-    #             super().hide()
-
     def focus(self):
         widget = getattr(self, "_widget", self)
         widget.setFocus()
-
-    # def get_parent(self):
-    #     # widget = getattr(self, "_widget", self)
-    #     return self.parent()
 
     def refresh(self):
         widget = getattr(self, "_widget", self)
@@ -156,15 +116,8 @@ class WidgetMixin(MixinBase):
         if hasattr(self, "layout") and isinstance(self.layout, Layout):
             width = max(self.layout.get_min_width(), width)
             return width
-        # result = max(width, widget.minimumSizeHint().width())
-        # if widget.maximumWidth():
-        #     print(widget.maximumWidth())
-        #     return min(result, widget.maximumWidth())
-        # return min(result, widget.maximumWidth())
-        # return result
         result = max(width, widget.minimumSizeHint().width())
         return min(result, widget.maximumWidth())
-        # return max(width, widget.minimumWidth())
 
     def get_min_height(self):
         widget = getattr(self, "_widget", self)
@@ -177,7 +130,6 @@ class WidgetMixin(MixinBase):
             height = max(self.layout.get_min_height(), height)
             return height
         return max(height, widget.minimumSizeHint().height())
-        # return max(height, widget.minimumHeight())
 
     def set_position(self, position, y=None):
         widget = getattr(self, "_widget", self)
@@ -198,18 +150,6 @@ class WidgetMixin(MixinBase):
     def get_window(self):
         # noinspection PyCallingNonCallable
         return self._window()
-        # # widget = getattr(self, "_widget", self)
-        # parent = self
-        # # while parent.parentWidget() and not isinstance(parent, QMainWindow) \
-        # #         and not isinstance(parent, QDialog):
-        # #     parent = parent.parentWidget()
-        # print(parent)
-        # while parent.get_parent():
-        #     parent = parent.get_parent()
-        # return parent
-        # #while self.parent:
-        # #    parent = self.parent
-        # #return parent
 
     def get_position(self):
         widget = getattr(self, "_widget", self)
@@ -254,17 +194,12 @@ class WidgetMixin(MixinBase):
         p = widget.palette()
         # noinspection PyUnresolvedReferences
         p.setColor(self.backgroundRole(), color)
-        # p.setColor(self.backgroundRole(), QColor(0xff, 0xaa, 0xaa))
         widget.setPalette(p)
-
-    # def on_left_up(self):
-    #     pass
 
     def popup_menu(self, menu, pos=(0, 0), blocking=True):
         # popup does not block, and if menu goes out of the scope of the
         # caller, it will disappear (unless we keep a reference here
         # FIXME: using exec now
-        # self.__last_popup_menu = menu
         widget = getattr(self, "_widget", self)
         global_pos = widget.mapToGlobal(QPoint(pos[0], pos[1]))
         menu.set_parent(self)
@@ -276,9 +211,6 @@ class WidgetMixin(MixinBase):
         # Firing off a fake mouse left up event really assumes that the
         # menu was opened with a left down event, so implementation isn't
         # ideal. Better to add a listener to menu close instead.
-
-        # if hasattr(self, "on_left_up"):
-        #     self.on_left_up()
 
     def is_mouse_over(self):
         # noinspection PyArgumentList

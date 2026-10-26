@@ -12,7 +12,6 @@ class WebButton(Panel):
         else:
             self.icon = Image("launcher:res/16x16/world.png")
         Panel.__init__(self, parent, paintable=True)
-        # self.set_tooltip(tooltip)
         LauncherConfig.add_listener(self)
         self.on_config("variant_uuid", "")
 
@@ -42,15 +41,12 @@ class WebButton(Panel):
             if value:
                 if not self.is_enabled():
                     self.enable()
-                    # self.refresh()
                     self.show()
                     self.set_hand_cursor()
             else:
                 if self.is_enabled():
                     self.disable()
                     self.hide()
-                    # self.refresh()
-                    # self.set_default_cursor()
 
     def on_paint(self):
         dc = self.create_dc()

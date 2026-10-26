@@ -25,7 +25,6 @@ def enable_exception_handler(force=False):
         _let_thread_exceptions_be_unhandled()
         return False
 
-    # print("enabling except hook")
     sys.excepthook = _handle_exception
     _enable_thread_exception_handler()
     return True
@@ -48,8 +47,6 @@ def _let_thread_exceptions_be_unhandled():
 
 
 def _enable_thread_exception_handler():
-    # print("enable tread exception handler")
-
     def run():
         self = threading.current_thread()
         try:
@@ -58,7 +55,6 @@ def _enable_thread_exception_handler():
             _handle_exception(*sys.exc_info())
 
     def set_ident(self):
-        # self = threading.current_thread()
         self._run_ = self.run
         self.run = run
         self._set_ident_()
@@ -75,7 +71,6 @@ def _handle_exception(exc_type, exc_value, exc_traceback):
 
     # FIXME: PYTHON3
     tb = traceback.extract_tb(exc_traceback)
-    # print(exc_type, exc_value, tb)
     filename, line, function, dummy = tb.pop()
     try:
         filename = filename.decode(sys.getfilesystemencoding())
@@ -88,15 +83,6 @@ def _handle_exception(exc_type, exc_value, exc_traceback):
     filename = os.path.basename(filename)
     thread = threading.current_thread()
     error_id = f"{exc_type.__name__}:{filename}:{function}:{line}"
-
-    # QtGui.QMessageBox.critical(None, "Error",
-    # description = "<html>A critical error has occurred.<br/> "
-    #                            + "<b>%s</b><br/><br/>" % error
-    #                            + "It occurred at <b>line %d</b> of file "
-    #                              "<b>%s</b>.<br/>" % (
-    #                            line, filename)
-    #                            + "</html>")
-    #
 
     backtrace_string = "".join(
         traceback.format_exception(exc_type, exc_value, exc_traceback)
@@ -112,22 +98,9 @@ def _handle_exception(exc_type, exc_value, exc_traceback):
 
     if thread.ident == main_thread_id:
         try:
-            # FIXME
-            # import wx
-            # app = wx.GetApp()
-            # if app is not None:
-            #     wx.MessageBox(message + "\n" + backtrace_string)
-            #     if app.IsMainLoopRunning():
-            #         return
-            #     print("The application will now close due to the above error")
-            #     print("calling app.Exit")
-            #     app.Exit()
-
             Signal("quit").notify()
         except Exception as e:
             print(repr(e))
-
-        # sys.exit(1)
 
 
 class AdditionalInfo(object):
@@ -155,9 +128,6 @@ def _thread_bootstrap_2_7(self):
         if __debug__:
             self._note("%s.__bootstrap(): thread started", self)
 
-        # if _trace_hook:
-        #     self._note("%s.__bootstrap(): registering trace hook", self)
-        #     _sys.settrace(_trace_hook)
         if _profile_hook:
             self._note("%s.__bootstrap(): registering profile hook", self)
             _sys.setprofile(_profile_hook)

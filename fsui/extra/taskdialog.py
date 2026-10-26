@@ -52,5 +52,4 @@ class TaskDialog(fsui.Window):
     def on_progress(self, message):
         if not isinstance(message, str):
             message = message[0]
-        # print("on_progress", status)
         self.icon_header.subtitle_label.set_text(message)

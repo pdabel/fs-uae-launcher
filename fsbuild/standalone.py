@@ -10,8 +10,6 @@ from typing import Dict, List, Set
 strip = False
 rpath = False
 no_copy = False
-# steam_runtime = os.getenv("STEAM_RUNTIME", "")
-# steam_runtime = os.getenv("STEAMOS", "")
 steam_runtime = False
 
 
@@ -29,9 +27,6 @@ def fix_linux_binary(path: str):
     # find library locations
     args = ["ldd", path]
     print(args)
-    # p = subprocess.Popen(args, stdout=subprocess.PIPE)
-    # if p.wait() != 0:
-    #     return 0
     p = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     # noinspection PyUnresolvedReferences
     if p.returncode != 0:
@@ -58,7 +53,6 @@ def fix_linux_binary(path: str):
         return 0
     for line in data.split("\n"):
         line = line.strip()
-        # print(line)
         if not line.startswith("NEEDED"):
             continue
         print(line)
@@ -70,16 +64,9 @@ def fix_linux_binary(path: str):
         library_source = library_locations[library]
         library_source = os.path.normpath(library_source)
         print(library, library_source)
-        # if steam_runtime and library_source.startswith(steam_runtime):
-        # if steam_runtime and not library_source.startswith("/usr/local"):
-        # if steam_runtime and not library_source.startswith("/home"):
-        #     print("skipping steam runtime library")
-        #     excluded_libraries.setdefault(library_source, set()).add(path)
-        #     continue
         if no_copy:
             print("no_copy is set")
             continue
-        # included_libraries.setdefault(library_source, set()).add(path)
         dst = os.path.join(os.path.dirname(path), library)
         if not os.path.exists(dst):
             # For now, only add the dependent causing this to be copied
@@ -176,10 +163,6 @@ def ignore_linux_library(name: str):
     if name.startswith("libgcc_s.so"):
         return True
 
-    # Problem with OpenAL on Ubuntu 16.04 if this is included
-    # if name.startswith("libpcre.so"):
-    #     return True
-
     # OpenGL libraries should definitively not be distributed
     if name.startswith("libGL.so"):
         return True
@@ -211,8 +194,6 @@ def ignore_linux_library(name: str):
     if name.startswith("libXxf86vm.so"):
         return True
     # FIXME: Why was this commented out?
-    # if name.startswith("libxkbcommon.so"):
-    #     return True
     if name.startswith("libxcb.so"):
         return True
 
@@ -271,7 +252,6 @@ def fix_macos_binary(path: str, frameworks_dir: str):
         if line.endswith(":"):
             continue
         if line.startswith("/usr/lib") or line.startswith("/System"):
-            # old = line.split(" ")[0]
             continue
         if line.startswith("@executable_path"):
             continue
@@ -280,7 +260,6 @@ def fix_macos_binary(path: str, frameworks_dir: str):
             continue
         print(old)
         _, name = os.path.split(old)
-        # new = old.replace(old, "@executable_path/../Frameworks/" + name)
         if rpath:
             new = old.replace(old, "@rpath/" + name)
         else:
@@ -315,13 +294,7 @@ def fix_macos_binary(path: str, frameworks_dir: str):
 def macos_iteration(app: str):
     binaries: List[str] = []
     if os.path.isdir(app):
-        # mac_os_dir = os.path.join(app, "Contents", "MacOS")
         frameworks_dir = app
-        # frameworks_dir = os.path.join(app, "Contents", "Frameworks")
-        # for name in sorted(os.listdir(mac_os_dir)):
-        #    binaries.append(os.path.join(mac_os_dir, name))
-        # for name in os.listdir(frameworks_dir):
-        #    binaries.append(os.path.join(frameworks_dir, name))
         for name in sorted(os.listdir(app)):
             binaries.append(os.path.join(app, name))
     else:
@@ -347,7 +320,6 @@ def fix_macos_binary_2(path: str, frameworks_dir: str):
         if not line:
             continue
         if line.startswith("/usr/lib") or line.startswith("/System"):
-            # old = line.split(" ")[0]
             continue
         if line.startswith("@executable_path"):
             continue
@@ -382,7 +354,6 @@ def macos_iteration_2(app: str):
         os.makedirs(frameworks_dir)
     for name in os.listdir(mac_os_dir):
         binaries.append(os.path.join(mac_os_dir, name))
-    # if os.path.exists(frameworks_dir):
     for name in os.listdir(frameworks_dir):
         binaries.append(os.path.join(frameworks_dir, name))
     changes = 0
@@ -443,8 +414,6 @@ def fix_windows_binary(path: str, app_dir: str):
     _, ext = os.path.splitext(os.path.basename(path))
     if ext.lower() not in [".dll", ".exe"]:
         return 0
-    # if path.endswith(".txt"):
-    #     return 0
     print("fixing", path)
     fix_dll_name = os.path.basename(path).lower()
     changes = 0
@@ -458,7 +427,6 @@ def fix_windows_binary(path: str, app_dir: str):
     data = p.stdout.read().decode("UTF-8")
     p.wait()
     for line in data.split("\n"):
-        # print(line)
         line = line.strip()
         if not line:
             continue
@@ -508,8 +476,6 @@ def windows_iteration(app: str):
     if os.path.isdir(app):
         for name in sorted(os.listdir(app)):
             binaries.append(os.path.join(app, name))
-    # else:
-    #     binaries.append(app)
     changes = 0
     for binary in binaries:
         changes += fix_windows_binary(binary, app)
@@ -542,7 +508,6 @@ if __name__ == "__main__":
             print("[FSBUILD] Exclude", library)
             for dependent in sorted(excluded_libraries[library]):
                 print("  - depended on by", os.path.basename(dependent))
-        # print("Included libraries:")
     if included_libraries:
         print("")
         for library in sorted(included_libraries.keys()):

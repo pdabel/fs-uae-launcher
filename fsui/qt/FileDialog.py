@@ -25,7 +25,6 @@ class FileDialog(QFileDialog):
             self.setFileMode(QFileDialog.Directory)
         if multiple:
             self.setFileMode(QFileDialog.ExistingFiles)
-        # self.setWindowFlags()
 
     def __del__(self):
         print("FileDialog.__del__")
@@ -41,9 +40,6 @@ class FileDialog(QFileDialog):
         print("File dialog result is", result)
         return result
 
-    # def show(self):
-    #     return self.show_modal()
-
 
 def pick_directory(parent=None, message="", directory=""):
     return pick_file(
@@ -58,12 +54,10 @@ def pick_file(parent=None, message="", directory="", what=FILE):
                 QParent(parent), message, directory
             )
         elif what == FILES:
-            # return value is filenames, selected_filter
             result = QFileDialog.getOpenFileNames(
                 QParent(parent), message, directory
             )
         else:
-            # return value is filename, selected_filter
             result = QFileDialog.getOpenFileName(
                 QParent(parent), message, directory
             )

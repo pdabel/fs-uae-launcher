@@ -6,28 +6,22 @@ import fsboot
 logger = logging.getLogger("WORKSPACE")
 assigns = {
     "C": "Workspace:C",
-    # "CLIPS": "Ram Disk:Clipboards",
     "DEVS": "Workspace:Devs",
     "ENV": "Ram Disk:ENV",
     "ENVARC": "Workspace:Prefs/Env-Archive",
     "FONTS": "Workspace:Fonts",
     "HELP": "Workspace:Locale/Help",
-    # "KEYMAPS": "Workspace:Devs/Keymaps",
-    # "L": "Workspace:L",
     "LIBS": "Workspace:Libs",
     "LOCALE": "Workspace:Locale",
-    # "PRINTERS": "Workspace:Devs/Printers",
     "REXX": "Workspace:S",
     "S": "Workspace:S",
     "SYS": "Workspace:",
-    # "T": "Ram Disk:T",
     # FIXME: Perhaps
     "CDROMS": "Media/CD-ROMs",
     "DISKS": "Media/Hard Drives",
     "FLOPPIES": "Media/Floppies",
     "ICONS": "Workspace:FIXME/Icons",
     "LOGS": "Ram Disk:T/Logs",
-    # "DATABASES": "Data/Databases",
     # Special
     "VOLUMES": ".",
 }

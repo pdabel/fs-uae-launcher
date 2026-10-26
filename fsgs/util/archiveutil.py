@@ -24,7 +24,6 @@ class ArchiveUtil:
         archive_ext = archive_ext.lower()
         if archive_ext == ".zip":
             class_ = zipfile.ZipFile
-            # continue
         elif archive_ext == ".lha":
             from lhafile import Lhafile
 
@@ -33,11 +32,6 @@ class ArchiveUtil:
             print("skipping", archive_name)
             return
 
-        # s = hashlib.sha1()
-        # with open(path, "rb") as f:
-        #     data = f.read()
-        #     s.update(data)
-        # archive_sha1 = s.hexdigest()
         variant = {}
         names = []
         icons = []
@@ -54,10 +48,6 @@ class ArchiveUtil:
             if "META-INF/" in name:
                 continue
 
-            # FIXME: For WHDLoad?
-            # if name.startswith(archive_name + "/"):
-            #     name = name[len(archive_name) + 1:]
-
             if info.comment and not self.ignore_comments:
                 comment = info.comment
             else:
@@ -68,10 +58,7 @@ class ArchiveUtil:
                 pass
             else:
                 # FIXME: Create a uaem metadata helper class
-                # print(type(metadata))
                 metadata = metadata.split("\n")[0].strip()
-                # x_permissions = metadata[0:8]
-                # x_date = metadata[9:31]
                 comment = metadata[32:]
                 comment = unquote(comment)
 
@@ -82,18 +69,11 @@ class ArchiveUtil:
                     # We're at game folder level
                     info_data = archive.read(name)
                     info_data_lower = info_data.lower()
-                    # if "whdload" in info_data_lower and \
-                    #         "slave=" in info_data_lower:
                     if b"slave=" in info_data_lower:
-                        # if ".slav" in info_data.lower():
-                        # assert "slave" in info_data
                         icons.append(name)
                 # All .info files are skipped, these are generally not identical
                 # across installations, and are also not needed.
                 continue
-
-            # FIXME: use DOS charset instead...
-            # name = name.decode("ISO-8859-1")
 
             if len(names) > 0:
                 if names[-1][0].endswith("/"):
@@ -111,8 +91,6 @@ class ArchiveUtil:
             _, ext = os.path.splitext(name)
             if ext:
                 self.extensions.add(ext.lower())
-            # name_lower = name.lower()
-            # content_hash.update(name.encode("ISO-8859-1"))
 
             if type == self.TYPE_WHDLOAD:
                 list_name = "DH0/ " + name
@@ -126,11 +104,7 @@ class ArchiveUtil:
                 file_list.append({"name": list_name})
                 continue
 
-            # FIXME: encoding
-            # data = archive.read(name.encode("ISO-8859-1"))
             data = archive.read(name)
-            # content_hash.update(data)
-            # data_hash.update(data)
             member_hash = hashlib.sha1()
             member_hash.update(data)
             file_sha1s.append(member_hash.hexdigest())

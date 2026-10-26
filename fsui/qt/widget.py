@@ -30,16 +30,7 @@ class Widget(QObject):
 
     def set_widget(self, widget):
         self._widget = widget
-        # self.init_mixin_base()
-        # self.layout = None
-        # self._parent = weakref.ref(parent)
         # noinspection PyProtectedMember
-        # self._window = parent._window
-        # widget = getattr(self, "_widget", self)
-        # widget.move(10000, 10000)
-
-        # if self.get_window() != widget:
-        # assert isinstance(widget, QWidget)
 
         widget.installEventFilter(self)
         widget.destroyed.connect(self.on_destroy)
@@ -125,15 +116,8 @@ class Widget(QObject):
         if hasattr(self, "layout") and isinstance(self.layout, Layout):
             width = max(self.layout.get_min_width(), width)
             return width
-        # result = max(width, widget.minimumSizeHint().width())
-        # if widget.maximumWidth():
-        #     print(widget.maximumWidth())
-        #     return min(result, widget.maximumWidth())
-        # return min(result, widget.maximumWidth())
-        # return result
         result = max(width, widget.minimumSizeHint().width())
         return min(result, widget.maximumWidth())
-        # return max(width, widget.minimumWidth())
 
     def get_min_height(self):
         widget = getattr(self, "_widget", self)
@@ -146,7 +130,6 @@ class Widget(QObject):
             height = max(self.layout.get_min_height(), height)
             return height
         return max(height, widget.minimumSizeHint().height())
-        # return max(height, widget.minimumHeight())
 
     def set_position(self, position, y=None):
         if y is None:
@@ -219,7 +202,6 @@ class Widget(QObject):
         # popup does not block, and if menu goes out of the scope of the
         # caller, it will disappear (unless we keep a reference here
         # FIXME: using exec now
-        # self.__last_popup_menu = menu
         widget = getattr(self, "_widget", self)
         global_pos = widget.mapToGlobal(QPoint(pos[0], pos[1]))
         menu.set_parent(self)
@@ -232,19 +214,7 @@ class Widget(QObject):
         # menu was opened with a left down event, so implementation isn't
         # ideal. Better to add a listener to menu close instead.
 
-        # if hasattr(self, "on_left_up"):
-        #     self.on_left_up()
-
     def is_mouse_over(self):
-        # # noinspection PyArgumentList
-        # c = QCursor.pos()
-        # # noinspection PyUnresolvedReferences
-        # p = self.widget().mapToGlobal(QPoint(0, 0))
-        # s = self.size()
-        # print(c, p, s)
-        # if p.x() <= c.x() < p.x() + s[0] and p.y() <= c.y() < p.y() + s[1]:
-        #     return True
-        # return False
         return self.widget().underMouse()
 
     # DEPRECATED

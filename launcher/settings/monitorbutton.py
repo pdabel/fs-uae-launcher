@@ -26,7 +26,6 @@ class MonitorButton(fsui.ImageButton):
         SettingsBehavior(self, ["fullscreen", "monitor"])
 
     def on_fullscreen_setting(self, value):
-        # self.set_enabled(value == "1")
         pass
 
     def on_monitor_setting(self, value):

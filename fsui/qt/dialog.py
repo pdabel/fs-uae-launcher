@@ -12,7 +12,6 @@ class Dialog(WindowBase(QDialog)):
 
     def show_modal(self):
         self.center_on_initial_show()
-        # self.setWindowModality(Qt.WindowModal)
         return self.exec()
 
     def show(self):

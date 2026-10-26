@@ -19,7 +19,6 @@ class VideoSettingsPage(SettingsPage):
         self.add_option("zoom")
         self.add_option("keep_aspect")
 
-        # self.add_section(gettext("Filters"))
         self.add_option("scanlines")
         self.add_option("rtg_scanlines")
 

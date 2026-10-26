@@ -3,22 +3,6 @@ import tempfile
 import fsbc.settings
 
 
-# def test_unload():
-#     fd, path = tempfile.mkstemp()
-#     os.close(fd)
-#     fsbc.Settings.set_path(path)
-#     fsbc.Settings.load()
-#     os.unlink(path)
-#
-#     fsbc.Settings.set("Key-å", "Value-å")
-#     fsbc.Settings.unload()
-#
-#     fsbc.Settings.set_path("")
-#
-#     value = fsbc.Settings.get("Key-å")
-#     assert value == ""
-
-
 def test_load_save():
     fd, path = tempfile.mkstemp()
     os.close(fd)

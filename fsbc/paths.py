@@ -24,11 +24,6 @@ class Paths(object):
 
     @classmethod
     def join(cls, a, b):
-        # if not a:
-        #     return b
-        # if a[-1] == "/" or a[-1] == "\\":
-        #     return a + b
-        # return a + "/" + b
         return os.path.join(a, b).replace("\\", "/")
 
     @classmethod
@@ -65,8 +60,6 @@ class Paths(object):
             print("before", path)
             path = cls.get_real_case(path)
             print("after", path)
-        # dir, file = os.path.split(path)
-        # norm_dir = dir + "/"
         if default_dir is not None:
             default_dir += "/"
             if path.startswith(default_dir):
@@ -143,12 +136,8 @@ class Paths(object):
             part_compare = part_compare.lower()
             if macosx:
                 part_compare = unicodedata.normalize("NFC", part_compare)
-            # print("part is", part)
             if os.path.isdir(combined):
-                # print("checking case of", combined + "/" + part)
                 for name in os.listdir(combined):
-                    # if part == "Førde":
-                    #     print(os.listdir(combined))
                     name_compare = name
                     name_compare = name_compare.lower()
                     if macosx:
@@ -156,7 +145,6 @@ class Paths(object):
                             "NFC", name_compare
                         )
                     if name_compare == part_compare:
-                        # print("found case =", name)
                         if not combined.endswith("/"):
                             combined += "/"
                         combined += name

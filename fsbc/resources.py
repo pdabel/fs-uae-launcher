@@ -12,14 +12,12 @@ class Resources(object):
 
     def resource_name(self, resource):
         if self.subdir:
-            # return os.path.join(self.subdir, resource)
             return self.subdir + "/" + resource
         return resource
 
     def stream(self, resource):
         print("Resources.stream", resource)
         resource_name = self.resource_name(resource)
-        # return resource_stream(self.package, str_path(resource_name))
         try:
             return files(self.package).joinpath(resource_name).open("rb")
         except Exception as e:
@@ -42,13 +40,9 @@ class Resources(object):
             pass
 
         try:
-            # print("resource_filename(\"{0}\", \"{1}\")".format(
-            #     self.package, resource_name))
             path = files(self.package).joinpath(resource_name)
             if path.is_file():
                 return str(path)
-            # return resource_filename(
-            #     self.package, Paths.encode(resource_name))
         except Exception:
             pass
 

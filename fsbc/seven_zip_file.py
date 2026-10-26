@@ -29,7 +29,6 @@ class SevenZipFile:
             print(name)
             if name.startswith("Path = "):
                 last_name = name[7:]
-                # names.append(name)
             elif name.startswith("Attributes = "):
                 assert last_name
                 if name.startswith("Attributes = D"):

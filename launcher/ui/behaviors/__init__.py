@@ -16,7 +16,6 @@ class OptionsBehavior:
         self.options.add_listener(self)
 
         # FIXME: We need to disconnect the listener
-        # parent.destroyed.connect(self.on_destroy)
 
         # signal call for initial value
         for name in names:

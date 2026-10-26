@@ -26,7 +26,6 @@ class DialogButtons(Panel):
     def add_spacer_if_needed(self):
         if self.added_spacer:
             return
-        # self.layout.add_spacer(0, expand=True)
         self.added_spacer = True
 
     def add_button(self, button):

@@ -34,8 +34,5 @@ class ApplicationRunner:
 
         args = sys.argv[1:]
         application.init(args)
-        # if args:
-        #     print(args)
-        #     application.arguments(args)
 
         self._app.run()

@@ -72,7 +72,4 @@ class ImportGroup(fsui.Group):
 
     def on_import(self):
         dialog = ImportDialog(self.get_window(), self.path, self.type)
-        # dialog.show_modal()
-        # dialog.destroy()
         dialog.show()
-        # Signal.broadcast("scan_done")

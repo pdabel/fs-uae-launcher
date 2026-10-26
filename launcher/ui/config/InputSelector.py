@@ -58,30 +58,17 @@ class InputSelector(fsui.Group):
 
         self.mode_choice = fsui.Choice(self, self.joystick_mode_titles)
         self.mode_choice.set_min_width(MIN_TYPE_CHOICE_WIDTH)
-        # AmigaEnableBehavior(self.mode_choice)
         AmigaShowBehavior(self.mode_choice)
 
         self.layout.add(self.mode_choice)
         self.layout.add_spacer(10)
-        # else:
-        #     self.mode_choice = None
         if port >= 4:
             self.mode_choice.disable()
 
-        # devices = ["", _("No Host Device"), _("Mouse"),
-        #         _("Cursor Keys and Right Ctrl/Alt")]
-        # for i, name in enumerate(DeviceManager.get_joystick_names()):
-        #     devices.append(name)
-        #     if not self.joystick_values_initialized:
-        #         self.joystick_values.append(DeviceManager.device_ids[i])
-        # self.joystick_values_initialized = True
-
         self.device_choice = fsui.ComboBox(self, [""], read_only=True)
-        # AmigaEnableBehavior(self.device_choice)
         self.joystick_values = []
         self.rebuild_device_list()
         self.device_choice.set_index(0)
-        # print(self.device_choice.get_index())
         AmigaShowBehavior(self.device_choice)
         self.layout.add(self.device_choice, expand=True)
 
@@ -209,7 +196,6 @@ class InputSelector(fsui.Group):
             else:
                 print("FIXME: could not set mode")
         elif key == self.device_option_key or key == "amiga_model":
-            # print(self.joystick_values)
             value_lower = value.lower()
             for i, name in enumerate(self.joystick_values):
                 if value_lower == name.lower():
@@ -238,7 +224,6 @@ class InputSelector(fsui.Group):
             self.update_default_device()
 
     def on_device_list_updated_signal(self):
-        # print(self.device_choice.get_index())
         had_default = self.device_choice.get_index() == 0
         self.rebuild_device_list()
         self.update_default_device(had_default=had_default)
@@ -262,19 +247,13 @@ class InputSelector(fsui.Group):
         default_description = gettext("Default ({0})").format(
             fix_device_name(device.name)
         )
-        # print("default_description = ", default_description)
 
         if had_default is None:
             had_default = self.device_choice.get_index() == 0
-        # print("had default", had_default, self.device_choice.get_index())
         self.device_choice.set_item_text(0, default_description)
-        # print("had_default", had_default)
         if had_default:
-            # print("set text for", self.port, default_description)
-            # self.device_choice.set_index(1)
             self.device_choice.set_text(default_description)
             self.device_choice.set_index(0)
-            # print(self.device_choice.get_index())
 
 
 class InputPortTypeChoice(fsui.Choice):
@@ -359,7 +338,6 @@ class InputPortDeviceChoice(fsui.ComboBox):
         self._config_key = ""
         self.device_option_key = ""
 
-        # AmigaEnableBehavior(self.device_choice)
         self.device_values = []
         self.rebuild_device_list()
 
@@ -369,7 +347,6 @@ class InputPortDeviceChoice(fsui.ComboBox):
         self.on_config(
             self.device_option_key, LauncherConfig.get(self.device_option_key)
         )
-        # self.changed.connect(self.__changed)
         self.set_index(0)
 
         LauncherConfig.add_listener(self)
@@ -405,7 +382,6 @@ class InputPortDeviceChoice(fsui.ComboBox):
 
     def update_enabled(self):
         self.set_visible(self._platform not in AMIGA_PLATFORMS)
-        # self.set_enabled(self._choice_labels != ["N/A"])
 
     def on_config(self, key, value):
         if key == "platform":
@@ -422,19 +398,6 @@ class InputPortDeviceChoice(fsui.ComboBox):
                 self.enable()
 
             return
-        # if key == self.mode_option_key or key == "amiga_model":
-        #     value = DeviceManager.get_calculated_port_mode(
-        #         LauncherConfig, self.port)
-        #     for i, config in enumerate(self.joystick_mode_values):
-        #         if config == value:
-        #             if self.mode_choice is not None:
-        #                 self.mode_choice.set_index(i)
-        #                 if self.port >= 4:
-        #                     self.enable(i != 0)
-        #             break
-        #     else:
-        #         print("FIXME: could not set mode")
-        # elif key == self.type_option_key:
         elif key == self.device_option_key:
             value_lower = value.lower()
             for i, name in enumerate(self.device_values):
@@ -445,15 +408,10 @@ class InputPortDeviceChoice(fsui.ComboBox):
         # This is intended to catch all config changes for all ports (both
         # mode and device) to update the defaults
 
-        # FIXME:
-        # if key.startswith("joystick_port_") or key == "amiga_model":
-        #     self.update_default_device()
-
         if key.startswith(f"{self._platform}_port_"):
             self.update_default_device()
 
     def on_device_list_updated_signal(self):
-        # print(self.get_index())
         had_default = self.get_index() == 0
         self.rebuild_device_list()
         self.update_default_device(had_default=had_default)
@@ -471,25 +429,17 @@ class InputPortDeviceChoice(fsui.ComboBox):
                 config[key] = LauncherConfig.get(key)
             key = f"{self._platform}_port_{port}_type"
             config[key] = LauncherConfig.get(key)
-            # config[key] = DeviceManager.get_calculated_port_mode(
-            #     LauncherConfig, port)
 
         device = DeviceManager.get_non_amiga_device_for_port(config, self.port)
 
         default_description = f"{fix_device_name(device.name)} (*)"
-        # print("default_description = ", default_description)
 
         if had_default is None:
             had_default = self.get_index() == 0
-        # print("had default", had_default, self.get_index())
         self.set_item_text(0, default_description)
-        # print("had_default", had_default)
         if had_default:
-            # print("set text for", self.port, default_description)
-            # self.set_index(1)
             self.set_text(default_description)
             self.set_index(0)
-            # print(self.get_index())
 
 
 def fix_device_name(name):

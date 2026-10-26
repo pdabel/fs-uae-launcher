@@ -54,7 +54,6 @@ class ConfigurationsPanel(fsui.Panel):
             vert_layout.add(self.text_field, fill=True, margin=10)
         elif VariantsBrowser.use_horizontal_layout():
             # window is big enough to use fixed size
-            # self.text_field.set_min_width(210)
             self.text_field.set_min_width(229)
             hor_layout.add(
                 self.text_field,
@@ -71,13 +70,6 @@ class ConfigurationsPanel(fsui.Panel):
                 margin_top=0,
                 margin_bottom=0,
             )
-
-        # self.refresh_button = IconButton(self, "refresh_button.png")
-        # self.refresh_button.set_tooltip(
-        #     gettext("Refresh Game Configurations from Online Database"))
-        # self.refresh_button.activated.connect(self.on_refresh_button)
-        # hor_layout.add(
-        #     self.refresh_button, margin=10, margin_top=0, margin_bottom=0)
 
         self.configurations_browser = ConfigurationsBrowser(self)
         if modern:
@@ -104,10 +96,6 @@ class ConfigurationsPanel(fsui.Panel):
         self.variants_panel.layout.add(
             self.variants_browser, fill=False, expand=True
         )
-
-        # for rating in [1, 4, 5]:
-        #     button = RatingButton(self.variants_panel, rating)
-        #     self.variants_panel.layout.add(button, margin_left=5, fill=True)
 
         self.variants_panel.layout.add(
             RatingChoice(self.variants_panel), margin_left=5, fill=True

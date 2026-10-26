@@ -62,7 +62,6 @@ class LoginWindow(fsui.Window):
         label.set_min_width(100)
         hori_layout.add(label)
         hori_layout.add_spacer(20)
-        # self.username_field.select_all()
         self.username_field.changed.connect(self.on_text_field_changed)
         self.username_field.activated.connect(self.on_username_activated)
         hori_layout.add(self.username_field, expand=True)
@@ -157,16 +156,11 @@ class LoginWindow(fsui.Window):
         self.login_button.disable()
 
         task = OGDClient().login_task(email, password)
-        # task.progressed.connect(self.progress)
         task.succeeded.connect(self.on_success)
-        # task.failed.connect(fsui.error_function(gettext("Login Failed")))
         task.failed.connect(self.on_failure)
         task.start()
 
     def on_success(self):
-        # center = self.get_window_center()
-        # fsui.call_after(start_refresh_task, center)
-        # shell_open("Workspace:Tools/Refresh", center=self.get_window_center())
         RefreshWindow.open(self.parent())
         self.close()
 
@@ -177,16 +171,3 @@ class LoginWindow(fsui.Window):
         self.login_button.enable()
         self.password_field.select_all()
         self.password_field.focus()
-
-    # def on_progress(self):
-    #    print("on_progress")
-
-    # def on_success(self):
-    #     self.close()
-
-
-# def start_refresh_task(center):
-#     RefreshWindow.open()
-
-
-# application = SimpleApplication(LoginWindow)

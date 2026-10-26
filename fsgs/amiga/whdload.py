@@ -70,7 +70,6 @@ def read_whdload_args_from_info_data(data: bytes) -> List[str]:
     for part in parts[:]:
         if len(part) > 2:
             length = part[0]
-            # logging.debug("%d", length)
             arg = part[1 : 1 + length - 1]
             if b"***" in arg:
                 break

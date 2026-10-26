@@ -4,8 +4,6 @@ import pytest
 
 def test_mypy():
     pytest.skip()
-    # import fstd.mypy
-    # fstd.mypy.check_module(fsbc.task.__name__)
 
 
 def test_doctest():

@@ -210,8 +210,6 @@ class WarningsElement(StatusElement):
                 self.rebuild_warnings_and_refresh()
         elif key.startswith("__"):
             pass
-        # elif LauncherConfig.is_implicit_option(key):
-        #     pass
         elif LauncherConfig.is_custom_uae_option(key):
             changed = False
             if value:
@@ -300,8 +298,6 @@ class WarningsElement(StatusElement):
             and self.x_kickstart_file_sha1 == Amiga.INTERNAL_ROM_SHA1
             and self.kickstart_file != "internal"
         ):
-            # text = gettext("Compatibility Issue")
-            # self.warnings.append((ERROR_LEVEL, text, "on_kickstart_warning"))
             text = gettext("Using Kickstart ROM replacement")
             self.warnings.append((WARNING_LEVEL, text, "on_kickstart_warning"))
             text = gettext("Click to import Kickstart ROMs")
@@ -397,7 +393,6 @@ class WarningsElement(StatusElement):
         p = self._widget.mapFromGlobal(QCursor.pos())
         for start, stop, handler in self.coordinates:
             if start <= p.x() < stop and handler:
-                # print(start, stop, handler)
                 getattr(self, handler)()
 
     def on_update(self):

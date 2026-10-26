@@ -10,8 +10,6 @@ class ListsSynchronizer(SynchronizerBase):
     def synchronize_list(self, database, list_uuid, list_info):
         self.remove_list(database, list_uuid)
         cursor = database.cursor()
-        # cursor.execute("DELETE FROM game_list_game WHERE list_uuid = ?",
-        #                (list_uuid,))
         doc = self.fetch_json(f"/api/list-sync/1/{list_uuid}")
         for game_info in doc["games"]:
             game_uuid = game_info["uuid"]
@@ -47,16 +45,10 @@ class ListsSynchronizer(SynchronizerBase):
         database = Database.instance()
         cursor = database.cursor()
         cursor.execute("SELECT uuid, name, sync FROM game_list")
-        # existing_lists = {}
         existing_syncs = {}
         for row in cursor:
             uuid, name, sync = row
-            # existing_lists[uuid] = {
-            #     "name": name,
-            #     "sync": sync,
-            # }
             existing_syncs[uuid] = sync
-        # existing_syncs.sort()
 
         for list_uuid, list_info in self.context.meta["lists"].items():
             if list_info["sync"] == existing_syncs.get(list_uuid, None):

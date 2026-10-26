@@ -1,8 +1,6 @@
 from weakref import ref
 from .qt import Qt, QSignal
 
-# from .. import default_window_center, default_window_parent
-
 
 _windows = set()
 
@@ -16,17 +14,8 @@ def WindowBase(BaseClass):
         closed = QSignal()
 
         def __init__(self, parent, *args, title="", border=True, **kwargs):
-            # if parent is None and len(default_window_parent) > 0:
-            #     parent = default_window_parent[-1]
-            #     print("using default parent", parent)
-            #     parent = parent.real_window()
-
             super().__init__(parent, *args, **kwargs)
-            # MixinBase.__init__(self)
 
-            # noinspection PyUnusedLocal
-            # def init_window(self, parent, title):
-            # self.init_mixin_base()
             self.setWindowTitle(title)
 
             self.layout = None
@@ -42,7 +31,6 @@ def WindowBase(BaseClass):
                 self.setWindowFlags(
                     Qt.FramelessWindowHint | Qt.NoDropShadowWindowHint
                 )
-                # self.setWindowFlags(Qt.FramelessWindowHint)
             self._centered_on_initial_show = False
             if hasattr(self, "accepted"):
                 self.accepted.connect(self.__accepted)
@@ -69,7 +57,6 @@ def WindowBase(BaseClass):
             return None
 
         def add_close_listener(self, function):
-            # self.close_listeners.append(function)
             self.closed.connect(function)
 
         def get_window(self):
@@ -95,8 +82,6 @@ def WindowBase(BaseClass):
 
         def set_size(self, size):
             self._size_specified = True
-            # self.SetClientSize(size)
-            # print("FIXME:\n\nDialog.set_size")
             self.resize(size[0], size[1])
 
         def get_title(self):
@@ -106,10 +91,7 @@ def WindowBase(BaseClass):
             self.setWindowTitle(title)
 
         def is_maximized(self):
-            # return self.isMaximized()
             return self.windowState() == Qt.WindowMaximized
-            # print("FIXME: always returning False")
-            # return False
 
         def maximize(self, maximize=True):
             if maximize:
@@ -132,10 +114,6 @@ def WindowBase(BaseClass):
                 self.move(
                     pp[0] + (ps[0] - ss[0]) // 2, pp[1] + (ps[1] - ss[1]) // 2
                 )
-            # elif len(default_window_center) > 0:
-            #     x, y = default_window_center[-1]
-            #     ss = self.get_size()
-            #     self.move(x - ss[0] // 2, y - ss[1] // 2,)
 
         def center_on_screen(self):
             frect = self.frameGeometry()
@@ -146,18 +124,6 @@ def WindowBase(BaseClass):
             p = self.palette()
             p.setColor(self.backgroundRole(), color)
             self.setPalette(p)
-
-        # def show(self):
-        #     if hasattr(self, "layout") and not self._size_specified:
-        #         self.set_size(self.layout.get_min_size())
-        #     #QMainWindow.show(self)
-        #     print("")
-        #     print("")
-        #     print(" -- show --")
-        #     print("")
-        #     print("")
-        #     # noinspection PyUnresolvedReferences
-        #     super().show()
 
         def is_shown(self):
             return self.isVisible()

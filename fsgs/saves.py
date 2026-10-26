@@ -137,7 +137,6 @@ class SaveHandler(object):
         save_dir = self.uuid_save_dir_path()
         if save_dir:
             return save_dir
-        # saves_dir = FSGSDirectories.saves_dir()
         assert False, "save_dir_path not implemented for this case"
 
     def finish(self):
@@ -185,11 +184,9 @@ class SaveHandler(object):
         return self.fsgc
 
     def get_name(self):
-        # warnings.warn("Use .name instead", DeprecationWarning)
         return self.name
 
     def get_variant(self):
-        # warnings.warn("Use .variant instead", DeprecationWarning)
         return self.variant
 
     def _get_state_dir(self):

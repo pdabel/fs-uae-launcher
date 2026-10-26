@@ -20,10 +20,6 @@ class FloppyManager(object):
 
     @classmethod
     def eject(cls, drive):
-        # values = []
-        # values.append(("floppy_drive_{0}".format(drive), ""))
-        # values.append(("x_floppy_drive_{0}_sha1".format(drive), ""))
-        # Config.set_multiple(values)
         fsgs.amiga.eject_floppy(drive)
 
     @classmethod
@@ -106,4 +102,3 @@ class FloppyManager(object):
                     (f"x_floppy_image_{i}_sha1", ""),
                 ]
             )
-            # dialog.destroy()

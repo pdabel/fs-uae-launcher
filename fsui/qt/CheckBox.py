@@ -8,14 +8,12 @@ class CheckBox(QCheckBox, WidgetMixin):
     changed_signal = Signal()
 
     def __init__(self, parent, text="", check=False):
-        # self._widget = QCheckBox(text, parent.get_container())
         QCheckBox.__init__(self, text, parent.get_container())
         self.changed = SignalWrapper(self, "changed")
 
         self.init_widget(parent)
         if check:
             self.setChecked(True)
-        # self._widget.stateChanged.connect(self.__state_changed)
         self.stateChanged.connect(self.__state_changed)
 
     def __state_changed(self):

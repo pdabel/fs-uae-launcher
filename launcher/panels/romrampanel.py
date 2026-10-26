@@ -64,7 +64,6 @@ class KickstartGroup(fsui.Panel):
         kickstart_label.set_min_width(label_width)
         label.set_min_width(label_width)
         hori_layout.add(label, margin_left=10, margin_right=10)
-        # self.layout.add_spacer(0)
 
         kickstart_types = [gettext("Default"), gettext("Custom")]
         self.ext_rom_type_choice = fsui.Choice(self, kickstart_types)
