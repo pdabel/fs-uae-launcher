@@ -41,6 +41,7 @@ Each of these is referenced only by its own definition, or by an `__init__.py` r
   - `input/inputdevice.py`: `InputDeviceInfo`, `InputDeviceNotFoundException`
   - `knownfiles.py`: `KnownFilePath`
   - `network.py`: `openretro_scheme`
+  - `drivers/gamedriver.py`: methods `screenshots_name` and `get_platform_name`, which carry their own `FIXME: REMOVE?` notes. The other `get_platform_name` calls are to `PlatformHandler`'s.
   - `drivers/gamedriver.py:1038`: property `mapping_name`. The `"mapping_name"` dict keys in `fsuaeamigadriver.py` are data, not uses. Check whether a plugin could read it first ([open question 5](#open-questions)).
 - [ ] **fstd**: `desktop/__init__.py` `is_running_windows_10`, `desktop/gnome3.py` `handle_gnome_extensions`
 - [ ] **fsui**
