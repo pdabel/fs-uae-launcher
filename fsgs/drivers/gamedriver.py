@@ -308,23 +308,6 @@ class GameDriver:
     def screenshots_base(self):
         return GameNameUtil.create_link_name(self.game_name())
 
-    def screenshots_name(self):
-        # FIXME: REMOVE?
-        return GameNameUtil.create_fs_name(self.game_name())
-
-    def get_platform_name(self):
-        # FIXME: UNUSED? REMOVE?
-        p = self.options[Option.PLATFORM].lower()
-        if p == "atari-7800":
-            return "Atari 7800"
-        if p == "amiga":
-            return "Amiga"
-        if p == "cdtv":
-            return "CDTV"
-        if p == "cd32":
-            return "CD32"
-        raise Exception("Unrecognized platform")
-
     def screen_size(self):
         rect = self.screen_rect()
         return rect[2], rect[3]
@@ -934,10 +917,6 @@ class Port(object):
     @property
     def type(self):
         return self.types[self.index]["type"]
-
-    @property
-    def mapping_name(self):
-        return self.types[self.index]["mapping_name"]
 
     @property
     def description(self):

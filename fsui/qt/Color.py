@@ -102,10 +102,6 @@ class Color(QColor, BaseColor):
     def complemented(self):
         return self.copy().complement()
 
-    @property
-    def intensity(self):
-        return (self.Red() + self.Blue() + self.Green()) // 3
-
 
 class HSLColor(BaseColor):
     def __init__(self):

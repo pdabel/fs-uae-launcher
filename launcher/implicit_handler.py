@@ -46,9 +46,6 @@ class ImplicitConfigHandler:
             implicit_config["__implicit_" + key] = value
         LauncherConfig.set_multiple(list(implicit_config.items()))
 
-        if self.parent().config_browser:
-            self.parent().config_browser.update_from_implicit(implicit)
-
     def on_config(self, key, value):
         if key.startswith("__implicit_"):
             # The implicit key/values are already set by us.

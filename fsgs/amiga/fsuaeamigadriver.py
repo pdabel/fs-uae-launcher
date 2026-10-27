@@ -9,17 +9,14 @@ from fsgs.drivers.gamedriver import GameDriver
 AMIGA_JOYSTICK = {
     "type": "joystick",
     "description": "Joystick",
-    "mapping_name": "amiga",
 }
 AMIGA_MOUSE = {
     "type": "mouse",
     "description": "Mouse",
-    "mapping_name": "amiga_mouse",  # FIXME ...
 }
 CD32_CONTROLLER = {
     "type": "cd32 gamepad",
     "description": "CD32 Gamepad",
-    "mapping_name": "cd32",
 }
 # FIXME: NO_DEVICE
 AMIGA_PORTS = [
