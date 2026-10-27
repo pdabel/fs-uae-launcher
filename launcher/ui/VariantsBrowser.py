@@ -4,20 +4,7 @@ from fsgs.context import fsgs
 from fsgs.Database import Database
 import fsui
 from ..launcher_config import LauncherConfig
-from ..launcher_signal import LauncherSignal
 from ..launcher_settings import LauncherSettings
-
-
-class LastVariants(object):
-    def __init__(self):
-        self.cache = {}
-        LauncherSignal.add_listener("quit", self)
-
-    def on_quit_signal(self):
-        database = Database.get_instance()
-        for key, value in self.cache.items():
-            database.set_last_game_variant(key, value)
-        database.commit()
 
 
 class VariantsBrowser(fsui.ItemChoice):
