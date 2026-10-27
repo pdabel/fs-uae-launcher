@@ -3,10 +3,9 @@ from fsui.common.group import Group
 from fsui.common.layout import Layout, VerticalLayout, HorizontalLayout
 from fsui.common.spacer import Spacer
 from fsui.qt import *
-from fsui.qt.adapter import Adapter
 from fsui.qt.Application import Application
 from fsui.qt.Button import Button
-from fsui.qt.CheckBox import CheckBox, HeadingCheckBox
+from fsui.qt.CheckBox import CheckBox
 from fsui.qt.Color import Color
 from fsui.qt.Choice import Choice, ItemChoice
 from fsui.qt.ComboBox import ComboBox
