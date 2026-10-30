@@ -217,3 +217,46 @@ def test_bootstrap_f_string_templates():
         f"\tshare/locale/fr/LC_MESSAGES/{config.tar_name}.mo"
     )
     assert catalogs in makefile
+
+
+def test_supported_packaging_uses_pyside6():
+    import json
+    import tomllib
+
+    root = Path(__file__).resolve().parents[2]
+    manifest = tomllib.loads((root / "Pipfile").read_text())
+    locked = json.loads((root / "Pipfile.lock").read_text())
+    assert {"pyside6", "qtpy", "qtawesome"} <= manifest["packages"].keys()
+    assert {"pyside6", "qtpy", "qtawesome"} <= locked["default"].keys()
+    assert locked["default"]["pyside6"]["version"].startswith("==6.")
+    for packages in (
+        manifest["packages"], manifest["dev-packages"],
+        locked["default"], locked["develop"],
+    ):
+        assert not any(name.lower().startswith("pyqt") for name in packages)
+
+    paths = [
+        "fsbuild/build.sh", "fsbuild/bundle.sh", "fsbuild/fix-qt.py",
+        "fs-uae-launcher.spec", "debian/control",
+        ".github/workflows/linux.yml", ".github/workflows/macos.yml",
+    ]
+    for filename in paths:
+        source = (root / filename).read_text().lower()
+        assert "pyqt5" not in source, filename
+        assert "pyqt6" not in source, filename
+        assert "bundle-clean-" not in source, filename
+    assert not list((root / "fsbuild").glob("bundle-clean-*.sh"))
+
+    build = (root / "fsbuild/build.sh").read_text()
+    assert "fsbuild/fix-qt.py" in build
+    assert "PySide6/Qt" in build
+    helper = ast.parse((root / "fsbuild/fix-qt.py").read_bytes())
+    defaults = [
+        node for node in ast.walk(helper)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "setdefault"
+        and [argument.value for argument in node.args
+             if isinstance(argument, ast.Constant)] == ["QT_API", "pyside6"]
+    ]
+    assert len(defaults) == 1

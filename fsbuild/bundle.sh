@@ -62,14 +62,4 @@ cp -a ./workspace/res "$PLUGIN_DATADIR/workspace/"
 PLUGIN_SKIP_APPIFY=1
 PLUGIN_SKIP_STANDALONE=1
 
-# echo "Removing unnecessary libraries from the bundle..."
-# if [ "$SYSTEM_OS" = "Windows" ]; then
-# sh fsbuild/bundle-clean-windows.sh $PLUGIN_BINDIR
-# elif [ "$SYSTEM_OS" = "macOS" ]; then
-# sh fsbuild/bundle-clean-macos.sh \
-#     $PLUGIN_BINDIR/$PACKAGE_NAME_PRETTY.app/Contents/MacOS
-# else
-# sh fsbuild/bundle-clean-linux.sh $PLUGIN_BINDIR
-# fi
-
 . fsbuild/plugin.post.sh
