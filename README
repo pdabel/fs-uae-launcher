@@ -102,6 +102,31 @@ See [the Python and dependency modernization TODO](docs/python-dependency-modern
 for the reviewed packaging, supported-Python, dependency, and code-quality
 work items.
 
+## CPU Performance (Linux)
+
+Open Settings -> FS-UAE to see the current CPU governor. Set Performance asks
+for confirmation, then uses your desktop's PolicyKit authentication dialog to
+run cpupower. The launcher never asks for, stores, or handles your password,
+does not run as root, and does not change boot settings. No terminal sudo
+command is needed. The desktop must have a working PolicyKit authentication
+agent; system-installed cpupower and pkexec must be available. Utilities found
+in user-owned PATH locations are not elevated. Missing or unsupported controls
+are reported in Settings rather than attempted silently.
+
+Changes affect the entire computer, not just FS-UAE, and can increase power
+use, heat, and fan noise. Restore Previous restores the governor recorded for
+each CPU policy before the change, including mixed-governor systems. Keep the
+Settings window open to retain this restore snapshot: it is not saved across
+launcher sessions, and closing the launcher does not automatically restore it.
+Another system service or a reboot can change the governor. Refresh reads the
+current state again; the launcher verifies the result of each completed change.
+
+GameMode remains available and enabled by default for emulator-managed
+optimizations while a game runs. A powersave governor is not proof of reduced
+performance with modern Intel/AMD frequency drivers: the system performance
+power profile can legitimately coexist with that governor. The explicit
+governor control is separate from system power profiles and GameMode.
+
 ## Netplay Command History
 
 In Net Play's command field, Up recalls the previous command and Down recalls

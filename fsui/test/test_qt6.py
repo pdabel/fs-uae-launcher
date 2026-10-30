@@ -56,6 +56,114 @@ class TestQtEnvironment(unittest.TestCase):
 
 
 class TestQt6(WidgetTestCase):
+    def test_cpu_performance_confirmation_and_restore(self):
+        from fsui.qt import QMessageBox
+        from launcher.cpu_performance import CpuPolicy
+        from launcher.settings.cpu_performance_group import CPUPerformanceGroup
+
+        original = (CpuPolicy("policy0", "powersave", ("powersave", "performance"), (0, 1)),)
+        performance = (CpuPolicy("policy0", "performance", ("powersave", "performance"), (0, 1)),)
+        self.setup_dialog()
+        with patch("launcher.settings.cpu_performance_group.read_policies", return_value=original) as read, \
+                patch("launcher.settings.cpu_performance_group.QProcess") as process_class, \
+                patch("launcher.cpu_performance.shutil.which", side_effect=lambda name: "/usr/bin/" + name):
+            group = CPUPerformanceGroup(self.dialog)
+            self.assertTrue(group.performance_button.is_enabled())
+            self.assertFalse(group.restore_button.is_enabled())
+            with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.No):
+                group.performance_button.widget().click()
+            process_class.return_value.start.assert_not_called()
+            self.assertIsNone(group.previous)
+            with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+                group.performance_button.widget().click()
+            process_class.return_value.start.assert_called_once_with(
+                "/usr/bin/pkexec", ["--disable-internal-agent", "/usr/bin/cpupower", "--cpu", "0,1", "frequency-set", "--governor", "performance"]
+            )
+            self.assertTrue(group.busy)
+            self.assertFalse(group.restore_button.is_enabled())
+            read.return_value = performance
+            group.on_process_finished(0, process_class.NormalExit)
+            self.assertFalse(group.busy)
+            self.assertTrue(group.restore_button.is_enabled())
+            self.assertFalse(group.performance_button.is_enabled())
+            self.assertEqual(group.previous, original)
+            with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+                group.restore_button.widget().click()
+            self.assertEqual(process_class.return_value.start.call_args.args[1][-1], "powersave")
+            read.return_value = original
+            group.on_process_finished(0, process_class.NormalExit)
+            self.assertIsNone(group.previous)
+            self.assertTrue(group.performance_button.is_enabled())
+        self.run_dialog()
+
+    def test_cpu_performance_denial_retains_restore_snapshot(self):
+        from fsui.qt import QMessageBox
+        from launcher.cpu_performance import CpuPolicy
+        from launcher.settings.cpu_performance_group import CPUPerformanceGroup
+
+        original = (CpuPolicy("policy0", "powersave", ("powersave", "performance"), (0,)),)
+        self.setup_dialog()
+        with patch("launcher.settings.cpu_performance_group.read_policies", return_value=original), \
+                patch("launcher.settings.cpu_performance_group.QProcess") as process_class, \
+                patch("launcher.cpu_performance.shutil.which", side_effect=lambda name: "/usr/bin/" + name), \
+                patch("fsui.show_error") as error:
+            process_class.return_value.readAllStandardError.return_value = b"Not authorized"
+            group = CPUPerformanceGroup(self.dialog)
+            with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+                group.performance_button.widget().click()
+            group.on_process_finished(126, process_class.NormalExit)
+            error.assert_called_once()
+            self.assertFalse(group.busy)
+            self.assertEqual(group.previous, original)
+            self.assertTrue(group.restore_button.is_enabled())
+        self.run_dialog()
+
+    def test_cpu_performance_reports_missing_tools_and_cpu_controls(self):
+        from launcher.cpu_performance import CpuPolicy
+        from launcher.settings.cpu_performance_group import CPUPerformanceGroup
+
+        original = (CpuPolicy("policy0", "powersave", ("powersave", "performance"), (0,)),)
+        self.setup_dialog()
+        with patch("launcher.settings.cpu_performance_group.read_policies", return_value=original) as read, \
+                patch("launcher.settings.cpu_performance_group.QProcess") as process_class, \
+                patch("launcher.cpu_performance.shutil.which", return_value=None):
+            group = CPUPerformanceGroup(self.dialog)
+            self.assertFalse(group.performance_button.is_enabled())
+            self.assertIn("powersave", group.status_label._widget.text())
+            self.assertIn("cpupower", group.status_label._widget.text())
+            read.return_value = ()
+            group.refresh()
+            self.assertIn("unavailable", group.status_label._widget.text())
+            process_class.return_value.start.assert_not_called()
+        self.run_dialog()
+
+    def test_cpu_performance_verifies_results_and_handles_timeout(self):
+        from fsui.qt import QMessageBox
+        from launcher.cpu_performance import CpuPolicy
+        from launcher.settings.cpu_performance_group import CPUPerformanceGroup
+
+        original = (CpuPolicy("policy0", "powersave", ("powersave", "performance"), (0,)),)
+        self.setup_dialog()
+        with patch("launcher.settings.cpu_performance_group.read_policies", return_value=original), \
+                patch("launcher.settings.cpu_performance_group.QProcess") as process_class, \
+                patch("launcher.cpu_performance.shutil.which", side_effect=lambda name: "/usr/bin/" + name), \
+                patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes), \
+                patch("fsui.show_error") as error:
+            group = CPUPerformanceGroup(self.dialog)
+            group.performance_button.widget().click()
+            group.on_process_finished(0, process_class.NormalExit)
+            self.assertIn("not applied", error.call_args.args[0])
+            self.assertEqual(group.previous, original)
+            error.reset_mock()
+            group.performance_button.widget().click()
+            group.on_timeout()
+            process_class.return_value.kill.assert_called_once()
+            group.on_process_finished(9, process_class.CrashExit)
+            self.assertIn("timed out", error.call_args.args[0])
+            self.assertFalse(group.busy)
+            self.assertEqual(group.previous, original)
+        self.run_dialog()
+
     def test_cleared_list_selection(self):
         class Items(fsui.VerticalItemView):
             def get_item_count(self):
