@@ -331,21 +331,12 @@ class GameDriver:
 
     @classmethod
     def _screens(cls):
-        screens = []
-        try:
-            from fsui.qt import init_qt
+        from fsui.qt import init_qt
 
-            qapplication = init_qt()
-            desktop = qapplication.desktop()
-        except AttributeError:
-            # no QApplication, probably not running via QT
-            # FIXME: log warning
-            pass
-        else:
-            for i in range(desktop.screenCount()):
-                geometry = desktop.screenGeometry(i)
-                screens.append([geometry.x(), i, geometry])
-        return screens
+        return [
+            [screen.geometry().x(), index, screen.geometry()]
+            for index, screen in enumerate(init_qt().screens())
+        ]
 
     @classmethod
     def screen_refresh_rate_for_monitor(cls, monitor):
@@ -361,10 +352,12 @@ class GameDriver:
                     f"Screen {i} refresh rate (Qt) = {screen.refreshRate()}"
                 )
             index = cls.screen_index_for_monitor(monitor)
-            screen = qapplication.screens()[index]
+            if not qapplication.screens():
+                return 0
+            selected_screen = qapplication.screens()[index]
 
             if System.windows or System.macos:
-                return int(round(screen.refreshRate()))
+                return int(round(selected_screen.refreshRate()))
 
             refresh_rate_tool = RefreshRateTool()
             screens = refresh_rate_tool.screens_xrandr()
@@ -377,7 +370,7 @@ class GameDriver:
             for screen in screens:
                 if rect == screen:
                     return screens[screen]["refresh_rate"]
-            return 0
+            return int(round(selected_screen.refreshRate()))
 
     def screen_refresh_rate(self):
         monitor = self.options[Option.MONITOR]
@@ -385,30 +378,35 @@ class GameDriver:
 
     @classmethod
     def screen_index_for_monitor(cls, monitor):
-        rect = cls.screen_rect_for_monitor(monitor)
-        for i, s in enumerate(cls._screens()):
-            if rect == (s[2].x(), s[2].y(), s[2].width(), s[2].height()):
-                return i
-        raise Exception(f"Could not find screen at position {rect}")
+        from fsui.qt import init_qt
+        from fsgs.displays import screen_index
+
+        application = init_qt()
+        return screen_index(application.screens(), monitor, application.primaryScreen()) or 0
 
     def screen_index(self):
         monitor = self.options[Option.MONITOR]
         return self.screen_index_for_monitor(monitor)
 
     @classmethod
+    def fsuae_monitor_for_monitor(cls, monitor):
+        from fsui.qt import init_qt
+        from fsgs.displays import fsuae_monitor
+
+        application = init_qt()
+        return fsuae_monitor(application.screens(), monitor, application.primaryScreen())
+
+    @classmethod
     def screen_rect_for_monitor(cls, monitor):
-        screens = cls._screens()
-        screens.sort()
-        if monitor == "left":
-            mon = 0
-        elif monitor == "middle-right":
-            mon = 2
-        elif monitor == "right":
-            mon = 3
-        else:  # middle-left
-            mon = 1
-        display = round(mon / 3 * (len(screens) - 1))
-        geometry = screens[display][2]
+        from fsui.qt import init_qt
+        from fsgs.displays import screen_index
+
+        application = init_qt()
+        screens = application.screens()
+        index = screen_index(screens, monitor, application.primaryScreen())
+        if index is None:
+            return 0, 0, 1280, 720
+        geometry = screens[index].geometry()
         return geometry.x(), geometry.y(), geometry.width(), geometry.height()
 
     def screen_rect(self):
@@ -624,16 +622,9 @@ class GameDriver:
             height = int(height)
         except:
             height = 540
-        from launcher.ui.launcherwindow import LauncherWindow
-
-        if LauncherWindow.current() is None:
-            return
-
-        main_w, main_h = LauncherWindow.current().get_size()
-        main_x, main_y = LauncherWindow.current().get_position()
-
-        x = main_x + (main_w - width) // 2
-        y = main_y + (main_h - height) // 2
+        screen_x, screen_y, screen_w, screen_h = self.screen_rect()
+        x = screen_x + max(0, (screen_w - width) // 2)
+        y = screen_y + max(0, (screen_h - height) // 2)
 
         # FIXME: REMOVE
         env["FSGS_WINDOW_X"] = str(x)
@@ -643,7 +634,7 @@ class GameDriver:
         env["SDL_VIDEO_WINDOW_POS"] = str(f"{x},{y}")
         env["FSGS_WINDOW_POS"] = str(f"{x},{y}")
 
-        env["FSGS_WINDOW_CENTER"] = f"{main_x + main_w // 2},{main_y + main_h // 2}"
+        env["FSGS_WINDOW_CENTER"] = f"{screen_x + screen_w // 2},{screen_y + screen_h // 2}"
 
     def emulator_skin_paths(self):
         left = self.temp_file("left.png").path

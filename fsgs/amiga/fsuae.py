@@ -92,17 +92,16 @@ class FSUAE(object):
             height = int(height)
         except:
             height = 540
-        from launcher.ui.launcherwindow import LauncherWindow
+        from fsgs.drivers.gamedriver import GameDriver
 
-        if LauncherWindow.current() is None:
-            return
-
-        main_w, main_h = LauncherWindow.current().get_size()
-        main_x, main_y = LauncherWindow.current().get_position()
-
-        x = main_x + (main_w - width) // 2
-        y = main_y + (main_h - height) // 2
+        monitor = LauncherConfig.get("monitor") or LauncherSettings.get("monitor")
+        screen_x, screen_y, screen_w, screen_h = GameDriver.screen_rect_for_monitor(monitor)
+        x = screen_x + max(0, (screen_w - width) // 2)
+        y = screen_y + max(0, (screen_h - height) // 2)
 
         env[str("SDL_VIDEO_WINDOW_POS")] = str(f"{x},{y}")
+        native_monitor = GameDriver.fsuae_monitor_for_monitor(monitor)
+        if native_monitor is not None:
+            args.append("--monitor=" + native_monitor)
         args.append(f"--window-x={x}")
         args.append(f"--window-y={y}")

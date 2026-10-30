@@ -30,6 +30,7 @@ CONFIG_KEY_BLACKLIST = [
     "last_scan",
     "last_settings_page",
     Option.LAUNCHER_THEME,
+    Option.MONITOR,
     "lemon_url",
     "mobygames_url",
     "netplay_feature",

@@ -5,7 +5,7 @@ from fsgs.option import Option
 from launcher.i18n import gettext
 from launcher.option import options
 from launcher.settings.fullscreenmodebutton import FullscreenModeButton
-from launcher.settings.monitorbutton import MonitorButton
+from launcher.settings.monitorbutton import MonitorChoice
 from launcher.settings.option_ui import OptionUI
 from launcher.settings.settings_dialog import SettingsDialog
 from launcher.settings.videosynccheckbox import VideoSyncCheckBox
@@ -58,13 +58,16 @@ class QuickSettingsPanel(fsui.Panel):
 
         self.layout.add_spacer(expand=True)
 
+        self.layout.add(fsui.Label(self, gettext("Game Monitor")), margin=10, margin_bottom=0)
+        self.monitor_choice = MonitorChoice(self)
+        self.monitor_button = self.monitor_choice
+        self.layout.add(self.monitor_choice, fill=True, margin=10)
+
         hori_layout = fsui.HorizontalLayout()
         hori_layout.add_spacer(expand=True)
         self.video_sync_checkbox = VideoSyncCheckBox(self)
         hori_layout.add(self.video_sync_checkbox, margin_right=10)
         self.layout.add(hori_layout, fill=True)
-        self.monitor_button = MonitorButton(self)
-        hori_layout.add(self.monitor_button, fill=True, margin_right=10)
         if False:
             self.fullscreen_mode_button = FullscreenModeButton(self)
             hori_layout.add(

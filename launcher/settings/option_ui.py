@@ -139,14 +139,19 @@ class OptionUI(object):
                 index = choice.get_index()
                 LauncherSettings.set(name, choice_values[index][0])
 
-            choice_labels = [x[1] for x in choice_values]
-            choice = fsui.Choice(group, choice_labels)
-            current = LauncherSettings.get(name)
-            for i, value in enumerate(choice_values):
-                if current == value[0]:
-                    choice.set_index(i)
-                    break
-            choice.on_changed = on_changed
+            if name == Option.MONITOR:
+                from launcher.settings.monitorbutton import MonitorChoice
+
+                choice = MonitorChoice(group)
+            else:
+                choice_labels = [x[1] for x in choice_values]
+                choice = fsui.Choice(group, choice_labels)
+                current = LauncherSettings.get(name)
+                for i, value in enumerate(choice_values):
+                    if current == value[0]:
+                        choice.set_index(i)
+                        break
+                choice.on_changed = on_changed
             if thin or expand:
                 group.layout.add(choice, expand=True)
             else:

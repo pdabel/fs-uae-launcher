@@ -56,6 +56,142 @@ class TestQtEnvironment(unittest.TestCase):
 
 
 class TestQt6(WidgetTestCase):
+    def test_detected_monitor_choices_persist_and_handle_disconnect(self):
+        from types import SimpleNamespace
+        from fsui.qt import QRect
+        from fsgs.displays import display_id
+        from launcher.settings.monitorbutton import MonitorChoice
+        from launcher.settings.option_ui import OptionUI
+
+        def display(name, horizontal):
+            return SimpleNamespace(
+                name=lambda: name, manufacturer=lambda: "Test",
+                model=lambda: "Test Display", serialNumber=lambda: name,
+                geometry=lambda: QRect(horizontal, 0, 1920, 1080),
+                geometryChanged=Mock(),
+            )
+
+        first = display("DP-1", -1920)
+        second = display("HDMI-1", 0)
+        screens = [first, second]
+        application = Mock()
+        application.screens.side_effect = lambda: screens
+        settings = {"monitor": ""}
+        self.setup_dialog()
+        with patch("launcher.settings.monitorbutton.init_qt", return_value=application), \
+            patch("launcher.settings.monitorbutton.MonitorHighlight"), \
+                patch("launcher.settings.monitorbutton.LauncherSettings.get", side_effect=lambda key: settings.get(key, "")), \
+                patch("launcher.settings.monitorbutton.LauncherSettings.set", side_effect=settings.__setitem__):
+            choice = MonitorChoice(self.dialog)
+            group = OptionUI.create_group(self.dialog, "monitor", help_button=False)
+            self.assertIsInstance(group.value_control, MonitorChoice)
+            self.assertEqual(choice.count(), 3)
+            self.assertIn("DP-1", choice.itemText(1))
+            choice.set_index(2)
+            self.assertEqual(settings["monitor"], display_id(second))
+            group.value_control.on_monitor_setting(settings["monitor"])
+            self.assertEqual(group.value_control.values[group.value_control.get_index()], display_id(second))
+            screens[:] = [first]
+            choice.refresh()
+            self.assertIn("unavailable", choice.currentText())
+            self.assertEqual(settings["monitor"], display_id(second))
+            screens[:] = [second, first]
+            choice.on_screen_added(second)
+            self.assertIn("HDMI-1", choice.currentText())
+            self.assertEqual(choice.get_index(), 1)
+            self.assertEqual(settings["monitor"], display_id(second))
+            settings["monitor"] = "right"
+            choice.refresh()
+            self.assertIn("legacy", choice.currentText())
+            choice.set_index(0)
+            self.assertEqual(settings["monitor"], "")
+        self.run_dialog()
+        from fsui.qt import QEvent
+
+        self.dialog.deleteLater()
+        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+
+    def test_monitor_highlight_previews_without_saving_and_times_out(self):
+        from fsui.qt import QEvent, Qt
+        from launcher.settings.monitorbutton import MonitorChoice, MonitorHighlight
+
+        self.setup_dialog()
+        self.dialog.layout = fsui.VerticalLayout()
+        with patch("launcher.settings.monitorbutton.LauncherSettings.get", return_value=""), \
+                patch("launcher.settings.monitorbutton.LauncherSettings.set") as save:
+            choice = MonitorChoice(self.dialog)
+            self.dialog.layout.add(choice, fill=True)
+            self.dialog.set_size((540, 300))
+            self.dialog.show()
+            self.application.processEvents()
+            choice.showPopup()
+            self.application.processEvents()
+            self.assertTrue(choice.view().isVisible())
+            focused = self.application.focusWidget()
+            choice.on_highlighted(1)
+            self.application.processEvents()
+            self.assertTrue(choice.view().isVisible())
+            self.assertIs(self.application.focusWidget(), focused)
+            indicator = choice.monitor_highlight
+            self.assertIsInstance(indicator, MonitorHighlight)
+            self.assertTrue(indicator.isVisible())
+            self.assertIs(indicator.selected, self.application.screens()[0])
+            self.assertFalse(indicator.isWindow())
+            self.assertFalse(indicator.windowState() & Qt.WindowFullScreen)
+            self.assertLessEqual(indicator.width(), 360)
+            self.assertLessEqual(indicator.height(), 160)
+            self.assertTrue(self.dialog.rect().contains(indicator.geometry()))
+            self.assertTrue(indicator.testAttribute(Qt.WA_TransparentForMouseEvents))
+            self.assertTrue(indicator.testAttribute(Qt.WA_ShowWithoutActivating))
+            self.assertEqual(indicator.focusPolicy(), Qt.NoFocus)
+            self.assertIsNot(self.dialog.childAt(indicator.geometry().center()), indicator)
+            self.assertIn(self.application.screens()[0].name(), indicator.text)
+            save.assert_not_called()
+            image = indicator.grab().toImage()
+            self.assertLessEqual(image.width(), 360)
+            self.assertLessEqual(image.height(), 160)
+            self.assertTrue(indicator.monitor_rects())
+            choice.hidePopup()
+            self.assertFalse(indicator.isVisible())
+            choice.on_monitor_activated(1)
+            self.assertTrue(indicator.isVisible())
+            self.assertEqual(indicator.timer.interval(), 1800)
+            self.assertTrue(indicator.timer.isActive())
+            choice.hidePopup()
+            self.assertTrue(indicator.isVisible())
+            indicator.timer.timeout.emit()
+            self.assertFalse(indicator.isVisible())
+            choice.on_highlighted(1)
+            choice.refresh()
+            self.assertFalse(indicator.isVisible())
+            save.assert_not_called()
+        self.run_dialog()
+        self.dialog.deleteLater()
+        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+
+    def test_monitor_preview_diagram_preserves_layout_and_stays_bounded(self):
+        from types import SimpleNamespace
+        from fsui.qt import QRect
+        from launcher.settings.monitorbutton import MonitorHighlight
+
+        self.setup_dialog()
+        preview = MonitorHighlight(self.dialog)
+        preview.resize(360, 160)
+        left = SimpleNamespace(geometry=lambda: QRect(-1920, 0, 1920, 1080), name=lambda: "DP-1")
+        upper = SimpleNamespace(geometry=lambda: QRect(0, -1080, 1920, 1080), name=lambda: "HDMI-1")
+        preview.screens = [left, upper]
+        preview.selected = upper
+        rectangles = preview.monitor_rects()
+        self.assertEqual(len(rectangles), 2)
+        for screen, rect in rectangles:
+            self.assertTrue(preview.rect().contains(rect))
+        self.assertLess(rectangles[0][1].center().x(), rectangles[1][1].center().x())
+        self.assertGreater(rectangles[0][1].center().y(), rectangles[1][1].center().y())
+        image = preview.grab().toImage()
+        selected_rect = rectangles[1][1]
+        self.assertGreater(image.pixelColor(selected_rect.left(), selected_rect.center().y()).blue(), 180)
+        self.run_dialog()
+
     def test_cpu_performance_confirmation_and_restore(self):
         from fsui.qt import QMessageBox
         from launcher.cpu_performance import CpuPolicy

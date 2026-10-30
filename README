@@ -102,6 +102,33 @@ See [the Python and dependency modernization TODO](docs/python-dependency-modern
 for the reviewed packaging, supported-Python, dependency, and code-quality
 work items.
 
+## Game Monitor Selection
+
+Select Game Monitor in the main window's quick settings or Settings -> Video.
+The dropdown lists detected display names, model names when available,
+resolutions, and desktop coordinates. The default is the system primary display.
+Hovering over a dropdown entry shows a compact monitor-layout diagram inside
+the launcher, outlining that display and showing its name without changing the
+saved selection. Selecting an entry keeps the preview visible briefly.
+Cancelling the dropdown clears it. The preview is click-through, cannot take
+keyboard focus, and never creates a fullscreen overlay or hides the desktop.
+Explicit selections are saved using display identity rather than a left/right
+guess or enumeration number. Window placement supports reordered and vertically
+stacked displays. A disconnected saved display falls back to the primary display
+without losing the saved choice. Reconnect it to use it again.
+
+FS-UAE's initial window position is now centred within the selected display,
+not the launcher window. For fullscreen, the launcher also translates the
+selection into FS-UAE 3.x's native monitor argument: this reliably represents
+up to four displays with distinct horizontal positions. Stacked displays and
+some positions in larger layouts cannot be represented by that older emulator
+interface; choosing one shows a warning. Full support for those fullscreen
+layouts requires emulator changes. Existing positional settings remain readable
+as legacy choices; choose a detected display to replace them. Saved display
+identity stays launcher-local rather than being written into emulator config.
+Window placement ultimately remains subject to emulator and desktop/compositor
+behaviour, especially Wayland and mixed-DPI setups.
+
 ## Deleting Saved Configurations
 
 Local saved configurations have a trash icon at the right of their library row.
