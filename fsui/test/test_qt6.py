@@ -1101,6 +1101,62 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 panel.on_destroy()
         self.run_dialog()
 
+    def test_netplay_history_button_shares_input_row(self):
+        from launcher.netplay.netplay_panel import NetplayPanel
+
+        self.setup_dialog()
+        self.dialog.layout = fsui.VerticalLayout()
+        with patch("launcher.netplay.netplay_panel.Netplay"):
+            panel = NetplayPanel(self.dialog, header=False)
+            self.dialog.layout.add(panel, fill=True, expand=True)
+            self.dialog.show()
+            for width in (540, 800, 1000):
+                with self.subTest(width=width):
+                    self.dialog.set_size((width, 600))
+                    self.application.processEvents()
+                    field = panel.input_field.geometry()
+                    button = panel.clear_history_button.widget().geometry()
+                    self.assertLessEqual(abs(field.center().y() - button.center().y()), 1)
+                    self.assertEqual(button.left() - field.right() - 1, 10)
+                    self.assertGreater(field.width(), 120)
+                    self.assertLess(button.right(), panel.widget().width())
+                    self.assertLess(button.bottom(), panel.widget().height())
+                    self.assertFalse(field.intersects(button))
+        self.run_dialog()
+
+    def test_netplay_history_icon_is_centered(self):
+        from fsui.qt.modern_theme import apply_modern_theme
+        from launcher.netplay.netplay_panel import NetplayPanel
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        self.setup_dialog()
+        try:
+            apply_modern_theme(self.application)
+            with patch("launcher.netplay.netplay_panel.Netplay"):
+                panel = NetplayPanel(self.dialog, header=False)
+                button = panel.clear_history_button.widget()
+                try:
+                    image = button.grab().toImage()
+                    pixels = [
+                        (horizontal, vertical)
+                        for horizontal in range(4, image.width() - 4)
+                        for vertical in range(4, image.height() - 4)
+                        if all(channel > 170 for channel in image.pixelColor(horizontal, vertical).getRgb()[:3])
+                    ]
+                    self.assertTrue(pixels)
+                    for axis, size in ((0, image.width()), (1, image.height())):
+                        center = (min(pixel[axis] for pixel in pixels) + max(pixel[axis] for pixel in pixels)) / 2
+                        self.assertAlmostEqual(center, (size - 1) / 2, delta=1.5)
+                finally:
+                    panel.on_destroy()
+        finally:
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+        self.run_dialog()
+
     def test_netplay_history_failure_does_not_block_commands(self):
         import sqlite3
         from qtpy.QtTest import QTest

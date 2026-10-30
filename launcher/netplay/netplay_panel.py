@@ -105,24 +105,30 @@ class NetplayPanel(fsui.Panel):
         self.input_field.focus()
 
     def _manual_command_input(self):
-        header = fsui.HorizontalLayout()
-        self.layout.add(header, fill=True, margin=10)
-        header.add(fsui.Label(self, gettext("Netplay Server Commands")), expand=True)
+        self.layout.add(
+            fsui.Label(self, gettext("Netplay Server Commands")), margin=10
+        )
         self.clear_history_button = fsui.Button(self, "")
         button = self.clear_history_button.widget()
+        button.setText("")
         button.setIcon(qta.icon(
             "fa5s.trash-alt", color=button.palette().color(QtGui.QPalette.ButtonText).name()
         ))
         button.setFixedSize(36, 36)
+        self.clear_history_button.set_min_width(36)
+        self.clear_history_button.set_min_height(36)
+        button.setStyleSheet("padding: 0px;")
         button.setAccessibleName(gettext("Clear Command History"))
         self.clear_history_button.set_tooltip(gettext("Clear Command History"))
         self.clear_history_button.activated.connect(self.on_clear_history)
-        header.add(self.clear_history_button)
         self.command_history = CommandHistory()
         self.input_field = CommandHistoryField(self, self.command_history, self.on_history_error)
         self.input_field.set_tooltip(gettext("Previous command: Up; next command: Down"))
         self.input_field.activated.connect(self.on_input)
-        self.layout.add(self.input_field, fill=True, margin=10, margin_top=0)
+        input_row = fsui.HorizontalLayout()
+        self.layout.add(input_row, fill=True, margin=10, margin_top=0)
+        input_row.add(self.input_field, fill=True, expand=True)
+        input_row.add(self.clear_history_button, margin_left=10)
 
     def on_history_error(self):
         self.netplay.irc.warning(gettext(

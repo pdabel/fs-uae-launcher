@@ -107,7 +107,8 @@ work items.
 In Net Play's command field, Up recalls the previous command and Down recalls
 the next. Returning past the newest entry restores your unfinished draft.
 Recall does not send anything: edit the command as needed, then press Enter.
-The trash button beside the field clears saved history after confirmation.
+The centred trash icon on the same row, to the right of the command field,
+clears saved history after confirmation.
 
 The latest 100 distinct supported slash commands are saved locally in
 Data/Databases/NetplayHistory.sqlite (under your configured data folder).
