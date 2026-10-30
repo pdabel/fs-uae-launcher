@@ -899,14 +899,11 @@ options = {
         "type": "",
     },
     Option.MONITOR: {
-        "default": "middle-left",
-        "description": N_("Monitor to display FS-UAE on (fullscreen)"),
+        "default": "primary",
+        "description": N_("Game Monitor"),
         "type": "choice",
         "values": [
-            ("left", N_("Left")),
-            ("middle-left", N_("Middle Left")),
-            ("middle-right", N_("Middle Right")),
-            ("right", N_("Right")),
+            ("primary", N_("Primary display")),
         ],
     },
     Option.MOTHERBOARD_RAM: {
