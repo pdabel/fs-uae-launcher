@@ -506,6 +506,132 @@ class TestQt6(WidgetTestCase):
 
 
 class TestLaunchAndNetplay(WidgetTestCase):
+    def test_configuration_row_delete_confirmation_and_refresh(self):
+        import tempfile
+        from pathlib import Path
+        from qtpy.QtTest import QTest
+        from fsui.qt import QMessageBox, Qt
+        from launcher.ui.ConfigurationsBrowser import ConfigurationItemDelegate, ConfigurationsBrowser
+
+        self.setup_dialog()
+        self.dialog.layout = fsui.VerticalLayout()
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "Test.fs-uae"
+            path.write_text("[fs-uae]\n")
+            item = {"uuid": None, "name": "Test", "path": str(path), "have": 5, "platform": "", "published": 1, "sort_key": "test"}
+            settings = {"config_path": str(path)}
+            with patch("launcher.ui.ConfigurationsBrowser.Database.get_instance") as database_factory, \
+                    patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.get", side_effect=lambda key: settings.get(key, "")), \
+                    patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.set") as set_setting, \
+                    patch("launcher.ui.ConfigurationsBrowser.LauncherConfig.load_file") as load, \
+                    patch("launcher.ui.ConfigurationsBrowser.LauncherConfig.load_default_config") as reset, \
+                    patch("launcher.ui.ConfigurationsBrowser.ConfigurationScanner.delete_configuration") as delete, \
+                    patch("launcher.scanner.Scanner.running", False):
+                database = database_factory.return_value
+                database.find_games_new.return_value = [item]
+                database.decode_path.side_effect = lambda value: value
+                browser = ConfigurationsBrowser(self.dialog)
+                self.dialog.layout.add(browser, fill=True, expand=True)
+
+                def setting_changed(key, value):
+                    settings[key] = value
+                    browser.on_setting(key, value)
+
+                set_setting.side_effect = setting_changed
+                def delete_file(database, filename):
+                    Path(filename).unlink()
+                    database.find_games_new.return_value = []
+
+                delete.side_effect = delete_file
+                self.dialog.set_size((540, 300))
+                self.dialog.show()
+                self.application.processEvents()
+                index = browser.model.index(0, 0)
+                rect = ConfigurationItemDelegate.delete_rect(browser.visualRect(index))
+                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.No):
+                    QTest.mouseClick(browser.viewport(), Qt.LeftButton, pos=rect.center())
+                    with patch("launcher.launcherapp.LauncherApp.start_game") as start:
+                        QTest.mouseDClick(browser.viewport(), Qt.LeftButton, pos=rect.center())
+                        start.assert_not_called()
+                delete.assert_not_called()
+                load.assert_not_called()
+                self.assertTrue(path.exists())
+                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes) as confirmation:
+                    QTest.mouseClick(browser.viewport(), Qt.LeftButton, pos=rect.center())
+                self.assertIn(str(path), confirmation.call_args.args[2])
+                delete.assert_called_once_with(database, str(path))
+                reset.assert_called_once_with()
+                self.assertFalse(path.exists())
+                self.assertEqual(browser.model.rowCount(index), 0)
+                self.assertIsNone(browser.get_index())
+        self.run_dialog()
+
+    def test_configuration_delete_preserves_other_selected_configuration(self):
+        from fsui.qt import QMessageBox
+        from launcher.ui.ConfigurationsBrowser import ConfigurationsBrowser
+
+        self.setup_dialog()
+        kept = {"uuid": None, "name": "Keep", "path": "/tmp/Keep.fs-uae", "have": 5, "platform": "", "published": 1, "sort_key": "keep"}
+        removed = dict(kept, name="Remove", path="/tmp/Remove.fs-uae")
+        settings = {"config_path": kept["path"]}
+        with patch("launcher.ui.ConfigurationsBrowser.Database.get_instance") as database_factory, \
+                patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.get", side_effect=lambda key: settings.get(key, "")), \
+                patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.set") as set_setting, \
+                patch("launcher.ui.ConfigurationsBrowser.LauncherConfig.load_file") as load, \
+                patch("launcher.ui.ConfigurationsBrowser.LauncherConfig.load_default_config") as reset, \
+                patch("launcher.ui.ConfigurationsBrowser.ConfigurationScanner.delete_configuration") as delete, \
+                patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes), \
+                patch("launcher.scanner.Scanner.running", False):
+            database = database_factory.return_value
+            database.find_games_new.return_value = [kept, removed]
+            database.decode_path.side_effect = lambda value: value
+            browser = ConfigurationsBrowser(self.dialog)
+            browser.select_item(0)
+            load.reset_mock()
+            set_setting.side_effect = browser.on_setting
+            delete.side_effect = lambda *arguments: setattr(database.find_games_new, "return_value", [kept])
+            browser.delete_configuration(1)
+            self.assertEqual(browser.get_index(), 0)
+            self.assertEqual(browser.items[0]["path"], kept["path"])
+            reset.assert_not_called()
+            load.assert_not_called()
+        self.run_dialog()
+
+    def test_configuration_delete_protects_database_entries_and_reports_errors(self):
+        from qtpy.QtTest import QTest
+        from fsui.qt import QMessageBox, Qt
+        from launcher.ui.ConfigurationsBrowser import ConfigurationsBrowser
+
+        self.setup_dialog()
+        item = {"uuid": "database-game", "name": "Game", "path": "/tmp/Test.fs-uae", "have": 5, "platform": "", "published": 1, "sort_key": "game"}
+        with patch("launcher.ui.ConfigurationsBrowser.Database.get_instance") as database_factory, \
+                patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.get", return_value=""), \
+                patch("launcher.ui.ConfigurationsBrowser.ConfigurationScanner.delete_configuration") as delete, \
+                patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes) as confirmation, \
+                patch("fsui.show_error") as error, \
+                patch("launcher.scanner.Scanner.running", False):
+            database = database_factory.return_value
+            database.find_games_new.return_value = [item]
+            database.decode_path.side_effect = lambda value: value
+            browser = ConfigurationsBrowser(self.dialog)
+            self.assertFalse(browser.can_delete_configuration(0))
+            browser.delete_configuration(0)
+            confirmation.assert_not_called()
+            item["uuid"] = None
+            delete.side_effect = PermissionError("Permission denied")
+            browser.delete_configuration(0)
+            error.assert_called_once()
+            self.assertEqual(browser.get_item_count(), 1)
+            browser.selectionModel().blockSignals(True)
+            browser.select_item(0)
+            browser.selectionModel().blockSignals(False)
+            QTest.keyClick(browser, Qt.Key_Delete)
+            self.assertEqual(delete.call_count, 2)
+            with patch("launcher.scanner.Scanner.running", True):
+                browser.delete_configuration(0)
+            self.assertEqual(delete.call_count, 2)
+        self.run_dialog()
+
     def test_restart_command_and_shutdown_order(self):
         from types import SimpleNamespace
         from launcher.launcherapp import LauncherApp

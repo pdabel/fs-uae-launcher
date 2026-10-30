@@ -74,6 +74,29 @@ class ConfigurationScanner:
         if self.stop_check():
             return
 
+    @staticmethod
+    def delete_configuration(database, path):
+        path = os.path.abspath(path)
+        if not path.lower().endswith(".fs-uae"):
+            raise ValueError("Only saved .fs-uae configuration files can be deleted.")
+        file_database = FileDatabase.get_instance()
+        with database, file_database:
+            cursor = database.cursor()
+            cursor.execute(
+                "SELECT id, uuid FROM game WHERE path = ?",
+                (database.encode_path(path),),
+            )
+            rows = cursor.fetchall()
+            if not rows or any(row[1] for row in rows):
+                raise ValueError("This item is not an indexed local configuration.")
+            for game_id, _ in rows:
+                database.delete_game(id=game_id)
+            file_database.delete_file(path=path)
+            try:
+                os.unlink(path)
+            except FileNotFoundError:
+                pass
+
     @classmethod
     def create_search_terms(cls, name):
         search_terms = set()
