@@ -55,7 +55,7 @@ class ListsSynchronizer(SynchronizerBase):
                 print(f"[SYNC] List {list_uuid} already synced")
             else:
                 self.set_status(
-                    gettext("Updating list '{0}'...".format(list_info["name"]))
+                    gettext("Updating list '{0}'...").format(list_info["name"])
                 )
                 self.synchronize_list(database, list_uuid, list_info)
 

@@ -286,10 +286,8 @@ class WarningsElement(StatusElement):
             self.warnings.append((NOTICE_LEVEL, text, "on_update"))
 
         if self.outdated_plugins:
-            text = gettext(
-                "Outdated plugins: {0}".format(
-                    ", ".join(self.outdated_plugins)
-                )
+            text = gettext("Outdated plugins: {0}").format(
+                ", ".join(self.outdated_plugins)
             )
             self.warnings.append((ERROR_LEVEL, text, "on_outdated_plugins"))
 

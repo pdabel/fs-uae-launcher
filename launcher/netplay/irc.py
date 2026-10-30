@@ -233,7 +233,7 @@ class IRC:
     # noinspection SpellCheckingInspection
     def command_whois(self, args):
         if len(args) >= 1:
-            self.client.send("whois {0}".format(" ".join(args)))
+            self.client.send(f"whois {' '.join(args)}")
         else:
             self.warning("usage: /whois <nick>")
 
@@ -241,7 +241,7 @@ class IRC:
         if len(args) == 0:
             self.client.send("away")
         else:
-            self.client.send("away {0}".format(" ".join(args)))
+            self.client.send(f"away {' '.join(args)}")
 
     def command_back(self, args):
         if len(args) == 0:
@@ -288,7 +288,7 @@ class IRC:
 
     def command_mode(self, args):
         if len(args) >= 2:
-            self.client.send("mode {0}".format(" ".join(args)))
+            self.client.send(f"mode {' '.join(args)}")
         else:
             self.warning("usage: /mode <channel|nick> <parameters...>")
 
@@ -459,7 +459,7 @@ class IRC:
             self.channel(destination).on_mode(self.filter_nick(who), args)
         else:
             self.message(
-                "{0} set mode {1} {2}".format(who, destination, " ".join(args))
+                f"{who} set mode {destination} {' '.join(args)}"
             )
 
     def irc_quit(self, who, reason):

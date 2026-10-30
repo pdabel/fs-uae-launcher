@@ -371,9 +371,8 @@ class GameDriver:
             rect = cls.screen_rect_for_monitor(monitor)
             for screen in screens:
                 print(
-                    "Screen {} refresh rate (Xrandr) = {}".format(
-                        screen, screens[screen]["refresh_rate"]
-                    )
+                    f"Screen {screen} refresh rate (Xrandr) = "
+                    f"{screens[screen]['refresh_rate']}"
                 )
             for screen in screens:
                 if rect == screen:
@@ -1047,8 +1046,6 @@ class GameFiles:
                         file["dest"]
                     )
                     raise Exception(
-                        "Could not find {} (SHA-1: {})".format(
-                            description, file["sha1"]
-                        )
+                        f"Could not find {description} (SHA-1: {file['sha1']})"
                     )
                 self.fsgc.file.copy_game_file(uri, file["dest"])
