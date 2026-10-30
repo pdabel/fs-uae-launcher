@@ -102,6 +102,17 @@ See [the Python and dependency modernization TODO](docs/python-dependency-modern
 for the reviewed packaging, supported-Python, dependency, and code-quality
 work items.
 
+## Deleting Saved Configurations
+
+Local saved configurations have a trash icon at the right of their library row.
+Click it, or select a configuration and press Delete, then confirm the file path.
+Deletion is permanent and removes only the .fs-uae file and its index records;
+game disks, ROMs, and save data are not removed. Database game entries cannot
+be deleted this way. An open deleted configuration returns to the default
+configuration, discarding its unsaved changes. Cancel leaves everything intact.
+Deleting a different row preserves the currently loaded configuration and edits.
+Finish any active database scan before deleting configurations.
+
 ## CPU Performance (Linux)
 
 Open Settings -> FS-UAE to see the current CPU governor. Set Performance asks
