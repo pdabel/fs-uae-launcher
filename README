@@ -102,6 +102,23 @@ See [the Python and dependency modernization TODO](docs/python-dependency-modern
 for the reviewed packaging, supported-Python, dependency, and code-quality
 work items.
 
+## Netplay Command History
+
+In Net Play's command field, Up recalls the previous command and Down recalls
+the next. Returning past the newest entry restores your unfinished draft.
+Recall does not send anything: edit the command as needed, then press Enter.
+The trash button beside the field clears saved history after confirmation.
+
+The latest 100 distinct supported slash commands are saved locally in
+Data/Databases/NetplayHistory.sqlite (under your configured data folder).
+Reusing a command puts it at the end of the history. History persists between
+launcher sessions and travels with portable data. Chat messages, private
+messages, raw IRC commands, operator/authentication commands, passworded
+host/join commands, and sensitive /set options are not saved. Unknown commands
+are excluded by default. History records submitted commands, not a guarantee
+that the server accepted them. A history database error does not prevent
+commands from being sent.
+
 ## Portable Mode
 
 Open Settings -> FS-UAE Launcher -> Data Location and select Portable mode.

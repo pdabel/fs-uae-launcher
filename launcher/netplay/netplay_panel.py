@@ -1,14 +1,18 @@
+import sqlite3
+
 import fsui
+import qtawesome as qta
 from launcher.i18n import gettext
 from launcher.launcher_settings import LauncherSettings
 from launcher.option import Option
 from launcher.netplay.irc import LOBBY_CHANNEL, is_game_channel
 from launcher.netplay.irc_broadcaster import IRCBroadcaster
 from launcher.netplay.netplay import Netplay
+from launcher.netplay.command_history import CommandHistory
 from launcher.ui.skin import Skin
 from launcher.ui.InfoDialog import InfoDialog
 from launcher.ui.IconButton import IconButton
-from fsui.qt import QApplication
+from fsui.qt import QApplication, Qt
 from qtpy import QtGui
 
 
@@ -17,6 +21,28 @@ def normalize_game_channel(channel):
     if channel and channel[0] not in "&#+!":
         channel = f"#{channel}"
     return channel
+
+
+class CommandHistoryField(fsui.TextField):
+    def __init__(self, parent, history, on_history_error):
+        super().__init__(parent)
+        self.history = history
+        self.on_history_error = on_history_error
+        self.textEdited.connect(self.history.reset)
+
+    def keyPressEvent(self, event):
+        if event.modifiers() == Qt.NoModifier and event.key() in (Qt.Key_Up, Qt.Key_Down):
+            try:
+                if event.key() == Qt.Key_Up:
+                    text = self.history.previous(self.get_text())
+                else:
+                    text = self.history.next(self.get_text())
+                self.set_text(text)
+            except (OSError, sqlite3.Error):
+                self.on_history_error()
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
 
 class NetplayPanel(fsui.Panel):
@@ -79,10 +105,54 @@ class NetplayPanel(fsui.Panel):
         self.input_field.focus()
 
     def _manual_command_input(self):
-        self.layout.add(fsui.Label(self, gettext("Netplay Server Commands")), margin=10, margin_top=10)
-        self.input_field = fsui.TextField(self)
+        header = fsui.HorizontalLayout()
+        self.layout.add(header, fill=True, margin=10)
+        header.add(fsui.Label(self, gettext("Netplay Server Commands")), expand=True)
+        self.clear_history_button = fsui.Button(self, "")
+        button = self.clear_history_button.widget()
+        button.setIcon(qta.icon(
+            "fa5s.trash-alt", color=button.palette().color(QtGui.QPalette.ButtonText).name()
+        ))
+        button.setFixedSize(36, 36)
+        button.setAccessibleName(gettext("Clear Command History"))
+        self.clear_history_button.set_tooltip(gettext("Clear Command History"))
+        self.clear_history_button.activated.connect(self.on_clear_history)
+        header.add(self.clear_history_button)
+        self.command_history = CommandHistory()
+        self.input_field = CommandHistoryField(self, self.command_history, self.on_history_error)
+        self.input_field.set_tooltip(gettext("Previous command: Up; next command: Down"))
         self.input_field.activated.connect(self.on_input)
         self.layout.add(self.input_field, fill=True, margin=10, margin_top=0)
+
+    def on_history_error(self):
+        self.netplay.irc.warning(gettext(
+            "Command history is unavailable. Netplay commands can still be entered."
+        ))
+
+    def on_clear_history(self):
+        from fsui.qt import QMessageBox
+        from fsui.qt.helpers import QParent
+
+        answer = QMessageBox.question(
+            QParent(self), gettext("Clear Command History"),
+            gettext("Delete all saved netplay commands? This cannot be undone."),
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+        )
+        if answer != QMessageBox.Yes:
+            return
+        browsing = self.command_history.position is not None
+        draft = self.command_history.draft
+        try:
+            self.command_history.clear()
+        except (OSError, sqlite3.Error):
+            fsui.show_error(
+                gettext("Unable to clear command history. Please try again."),
+                gettext("Command History"),
+            )
+            return
+        if browsing:
+            self.input_field.set_text(draft)
+        self.input_field.focus()
 
     def _build_netplay_game_inputs(self):
         parent = self.game_panel
@@ -204,6 +274,10 @@ class NetplayPanel(fsui.Panel):
             pass
         else:
             self.netplay.irc.handle_command(command)
+        try:
+            self.command_history.add(command)
+        except (OSError, sqlite3.Error):
+            self.on_history_error()
         self.input_field.set_text("")
 
     def set_active_channel(self, channel):
