@@ -102,6 +102,34 @@ See [the Python and dependency modernization TODO](docs/python-dependency-modern
 for the reviewed packaging, supported-Python, dependency, and code-quality
 work items.
 
+## Portable Mode
+
+Open Settings -> FS-UAE Launcher -> Data Location and select Portable mode.
+Choose a new empty data folder, then confirm the copy and restart.
+No manual configuration file is required.
+Choose Data Folder changes an existing portable setup's data location.
+Clear Portable mode to select a normal data folder and restart again.
+
+The launcher copies existing data rather than moving or deleting originals.
+Copying happens after settings are saved and the launcher shuts down, with a
+progress window. Existing destination files are never overwritten. Database
+backups include committed SQLite WAL data. A failed copy leaves the original
+startup location unchanged. Stop any running database scan before switching.
+Close other launcher instances and emulators before copying data they may use.
+
+Portable mode writes Portable.ini next to the launcher (or updates the existing
+portable marker), with a relative reference to the selected data folder. That
+location must be writable. Move the launcher and data together, retaining their
+relative layout. This setting does not copy/install the launcher program, its
+Python environment, or the emulator. External media folders and symbolic links
+remain external; internal scan paths and saved configuration paths are converted
+to data-root-relative references. Custom portable folder mappings are preserved.
+Keep external files available at their paths.
+Disabling portable mode keeps a backup of the marker and remembers the chosen
+normal data folder in the user preferences. Explicit --base-dir launch options
+still override automatic folder selection; FS_UAE_BASE_DIR overrides normal-mode
+folder preferences. Legacy empty Portable.ini files remain supported.
+
 ## Python Consistency Checks
 
 Literal percent interpolation is modernized only where output equivalence is

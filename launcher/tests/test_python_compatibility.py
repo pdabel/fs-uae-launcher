@@ -8,6 +8,20 @@ from launcher.i18n import _default_language
 from launcher.launcherapp import LauncherApp
 
 
+@pytest.mark.parametrize("relative", [None, ".", "Amiga Data"])
+def test_portable_data_location(tmp_path, monkeypatch, relative):
+    import fsboot
+
+    marker = tmp_path / "Portable.ini"
+    marker.write_text(
+        "" if relative is None else "[launcher]\nbase_dir = " + relative + "\n"
+    )
+    monkeypatch.setattr(sys, "argv", ["fs-uae-launcher"])
+    monkeypatch.setattr(fsboot, "portable_dir", lambda: str(tmp_path))
+    expected = tmp_path if relative in (None, ".") else tmp_path / relative
+    assert fsboot._getBaseDirectoryBeforeNormalization() == str(expected)
+
+
 @pytest.mark.parametrize(
     "environment,expected",
     [({}, None),

@@ -50,22 +50,54 @@ class LauncherApp(ApplicationMixin, fsui.Application):
         self._restart_arguments = None
         # Try to auto-detect game when launching with an archive
 
-    def request_restart(self):
+    def request_restart(self, portable_change=None):
         import fsboot
 
         if self._restart_arguments is not None:
             return
+        if portable_change is not None:
+            from launcher.scanner import Scanner
+
+            if Scanner.running:
+                raise OSError("Wait for the database scan to finish before changing portable mode.")
+            portable_change.validate()
         arguments = [sys.executable]
         if not getattr(sys, "frozen", False):
             arguments.append(os.path.abspath(sys.argv[0]))
         arguments.append("--base-dir=" + fsboot.base_dir())
         self.save_settings()
+        self._portable_change = portable_change
         self._restart_arguments = arguments
         self.qapplication.closeAllWindows()
         self.qapplication.quit()
 
     def restart_if_requested(self):
         if self._restart_arguments is not None:
+            change = getattr(self, "_portable_change", None)
+            if change is not None:
+                from qtpy.QtCore import Qt
+                from qtpy.QtWidgets import QProgressDialog
+
+                progress = QProgressDialog("Copying launcher data...", "", 0, 0)
+                progress.setCancelButton(None)
+                progress.setWindowModality(Qt.ApplicationModal)
+                progress.setMinimumDuration(0)
+                progress.show()
+
+                def update(path):
+                    progress.setLabelText("Copying launcher data...\n" + os.path.basename(path))
+                    self.qapplication.processEvents()
+
+                try:
+                    change.apply(update)
+                except Exception as error:
+                    raise OSError(
+                        "Portable mode could not be changed. Your original data "
+                        "has not been moved.\n\n" + str(error)
+                    ) from error
+                finally:
+                    progress.close()
+                self._restart_arguments[-1] = "--base-dir=" + str(change.destination)
             os.execv(self._restart_arguments[0], self._restart_arguments)
 
     def on_idle(self):

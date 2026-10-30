@@ -469,6 +469,55 @@ class TestLaunchAndNetplay(WidgetTestCase):
                             self.assertEqual(events, ["run", "save", "notify", "restart"])
                             self.assertEqual(show_error.call_count, int(restart_failure))
 
+    def test_portable_restart_copies_final_saved_settings(self):
+        import tempfile
+        from pathlib import Path
+        from types import SimpleNamespace
+        from launcher.launcherapp import LauncherApp
+        from launcher.portable import PortableModeChange
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "original"
+            data = source / "Data"
+            data.mkdir(parents=True)
+            settings = data / "Settings.ini"
+            change = PortableModeChange(
+                source, root / "portable data", root / "Portable.ini",
+                True, root / "preferences" / "base-dir",
+            )
+            application = SimpleNamespace(
+                _restart_arguments=None, qapplication=Mock(),
+                save_settings=Mock(side_effect=lambda: settings.write_text("[settings]\nstate = saved\n")),
+            )
+            with patch("sys.argv", ["fs-uae-launcher"]), \
+                    patch("fsboot.base_dir", return_value=str(source)), \
+                    patch("launcher.scanner.Scanner.running", False):
+                LauncherApp.request_restart(application, portable_change=change)
+            self.assertFalse(change.marker.exists())
+            settings.write_text("[settings]\nstate = final shutdown save\n")
+            with patch("launcher.launcherapp.os.execv") as execute:
+                LauncherApp.restart_if_requested(application)
+                execute.assert_called_once()
+            self.assertIn("final shutdown save", (change.destination / "Data" / "Settings.ini").read_text())
+            self.assertEqual(application._restart_arguments[-1], "--base-dir=" + str(change.destination))
+
+    def test_portable_restart_failure_does_not_relaunch(self):
+        from types import SimpleNamespace
+        from launcher.launcherapp import LauncherApp
+
+        change = Mock()
+        change.apply.side_effect = OSError("Disk full")
+        application = SimpleNamespace(
+            _restart_arguments=["python", "--base-dir=/original"],
+            _portable_change=change, qapplication=Mock(),
+        )
+        with patch("launcher.launcherapp.os.execv") as execute:
+            with self.assertRaisesRegex(OSError, "original data"):
+                LauncherApp.restart_if_requested(application)
+            execute.assert_not_called()
+        self.assertEqual(application._restart_arguments[-1], "--base-dir=/original")
+
     def test_embedded_host_server_lifecycle(self):
         from launcher.netplay.netplay import Netplay
         from launcher.netplay.server_details import ServerDetails
@@ -1292,6 +1341,47 @@ class TestDashboard(WidgetTestCase):
                     with patch("fsui.show_error") as show_error:
                         page.restart_button.widget().click()
                         show_error.assert_called_once()
+        self.run_dialog()
+
+    def test_portable_mode_confirmation_and_cancellation(self):
+        from fsui.qt import QMessageBox
+        from launcher.settings.launchersettingspage import LauncherSettingsPage
+
+        self.setup_dialog()
+        application = Mock(qapplication=self.application)
+        with patch("launcher.settings.option_ui.app", application), \
+                patch("launcher.settings.launchersettingspage.app", application), \
+                patch("fsboot.is_portable", return_value=False), \
+                patch("launcher.portable.PortableModeChange") as change_class, \
+                patch("launcher.scanner.Scanner.running", False):
+            page = LauncherSettingsPage(self.dialog)
+            self.assertFalse(page.portable_checkbox.is_checked())
+            self.assertFalse(page.portable_folder_button.is_enabled())
+            with patch("fsui.pick_directory", return_value=""):
+                page.portable_checkbox.click()
+            application.request_restart.assert_not_called()
+            self.assertFalse(page.portable_checkbox.is_checked())
+            with patch("fsui.pick_directory", return_value="/example/portable"):
+                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.No):
+                    page.portable_checkbox.click()
+                application.request_restart.assert_not_called()
+                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+                    page.portable_checkbox.click()
+                application.request_restart.assert_called_once_with(
+                    portable_change=change_class.return_value
+                )
+            self.assertFalse(page.portable_checkbox.is_checked())
+            application.request_restart.reset_mock()
+            with patch("fsboot.is_portable", return_value=True):
+                page.reset_portable_checkbox()
+                with patch("fsui.pick_directory", return_value="/example/normal"), \
+                        patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+                    page.portable_checkbox.click()
+                self.assertTrue(page.portable_checkbox.is_checked())
+                self.assertFalse(change_class.call_args.args[3])
+                application.request_restart.assert_called_once_with(
+                    portable_change=change_class.return_value
+                )
         self.run_dialog()
 
     def test_workspace_settings_navigation(self):
