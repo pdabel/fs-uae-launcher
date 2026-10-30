@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import time
+from configparser import ConfigParser
 from functools import lru_cache
 from typing import Dict, List, Optional
 
@@ -286,7 +287,10 @@ def _getBaseDirectoryBeforeNormalization() -> str:
 
     path = portable_dir()
     if path:
-        return path
+        config = ConfigParser(interpolation=None)
+        config.read(os.path.join(path, "Portable.ini"), encoding="UTF-8")
+        relative = config.get("launcher", "base_dir", fallback=".")
+        return os.path.abspath(os.path.join(path, relative))
 
     logger.debug("Checking FS_UAE_BASE_DIR")
     path = os.environ.get("FS_UAE_BASE_DIR", "")
