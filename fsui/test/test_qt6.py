@@ -1053,6 +1053,88 @@ class TestLaunchAndNetplay(WidgetTestCase):
                         self.assertEqual(get_setting.call_args_list[1].args, (Option.NETPLAY_TAG,))
         self.run_dialog()
 
+    def test_netplay_command_history_keys_and_clear(self):
+        import tempfile
+        from pathlib import Path
+        from qtpy.QtTest import QTest
+        from fsui.qt import QMessageBox, Qt
+        from launcher.netplay.command_history import CommandHistory
+        from launcher.netplay.netplay_panel import NetplayPanel
+
+        self.setup_dialog()
+        with tempfile.TemporaryDirectory() as temporary, \
+                patch("launcher.netplay.netplay_panel.Netplay") as netplay_class, \
+                patch("launcher.netplay.netplay_panel.CommandHistory", return_value=CommandHistory(Path(temporary) / "history.sqlite")):
+            panel = NetplayPanel(self.dialog, header=False)
+            netplay = netplay_class.return_value
+            netplay.handle_command.return_value = True
+            field = panel.input_field
+            try:
+                for command in ("/join #amiga", "/hostgame localhost:25101 2"):
+                    field.set_text(command)
+                    QTest.keyClick(field, Qt.Key_Return)
+                self.assertEqual(netplay.handle_command.call_count, 2)
+                self.assertEqual(field.get_text(), "")
+                field.set_text("unfinished draft")
+                QTest.keyClick(field, Qt.Key_Up)
+                self.assertEqual(field.get_text(), "/hostgame localhost:25101 2")
+                QTest.keyClick(field, Qt.Key_Up)
+                self.assertEqual(field.get_text(), "/join #amiga")
+                QTest.keyClick(field, Qt.Key_Down)
+                QTest.keyClick(field, Qt.Key_Down)
+                self.assertEqual(field.get_text(), "unfinished draft")
+                self.assertEqual(netplay.handle_command.call_count, 2)
+                QTest.keyClick(field, Qt.Key_Up)
+                QTest.keyClicks(field, " edited")
+                self.assertIsNone(panel.command_history.position)
+                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.No):
+                    panel.clear_history_button.widget().click()
+                self.assertEqual(panel.command_history.previous("draft"), "/hostgame localhost:25101 2")
+                field.set_text("/hostgame localhost:25101 2")
+                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+                    panel.clear_history_button.widget().click()
+                self.assertEqual(field.get_text(), "draft")
+                QTest.keyClick(field, Qt.Key_Up)
+                self.assertEqual(field.get_text(), "draft")
+                self.assertFalse(panel.clear_history_button.widget().icon().isNull())
+            finally:
+                panel.on_destroy()
+        self.run_dialog()
+
+    def test_netplay_history_failure_does_not_block_commands(self):
+        import sqlite3
+        from qtpy.QtTest import QTest
+        from fsui.qt import QMessageBox, Qt
+        from launcher.netplay.netplay_panel import NetplayPanel
+
+        self.setup_dialog()
+        with patch("launcher.netplay.netplay_panel.Netplay") as netplay_class, \
+                patch("launcher.netplay.netplay_panel.CommandHistory") as history_class:
+            panel = NetplayPanel(self.dialog, header=False)
+            netplay = netplay_class.return_value
+            netplay.handle_command.return_value = False
+            history = history_class.return_value
+            history.add.side_effect = sqlite3.OperationalError("Database locked")
+            history.previous.side_effect = sqlite3.OperationalError("Database locked")
+            try:
+                panel.input_field.set_text("/join #amiga")
+                QTest.keyClick(panel.input_field, Qt.Key_Return)
+                netplay.irc.handle_command.assert_called_once_with("/join #amiga")
+                self.assertEqual(panel.input_field.get_text(), "")
+                panel.input_field.set_text("keep this draft")
+                QTest.keyClick(panel.input_field, Qt.Key_Up)
+                self.assertEqual(panel.input_field.get_text(), "keep this draft")
+                self.assertEqual(netplay.irc.warning.call_count, 2)
+                history.clear.side_effect = sqlite3.OperationalError("Database locked")
+                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes), \
+                        patch("fsui.show_error") as error:
+                    panel.clear_history_button.widget().click()
+                    error.assert_called_once()
+                self.assertEqual(panel.input_field.get_text(), "keep this draft")
+            finally:
+                panel.on_destroy()
+        self.run_dialog()
+
     def test_join_channel_private_checkbox(self):
         from launcher.netplay.netplay_panel import NetplayPanel
         from launcher.option import Option
