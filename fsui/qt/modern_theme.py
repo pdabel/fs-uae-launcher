@@ -200,6 +200,13 @@ def render(template, skin=None):
     return template
 
 
+def default_font_size(skin=DEFAULT_SKIN):
+    """Point size the skin sets, or 0 when none of its fonts is installed."""
+    p = SKINS.get(skin, MODERN)
+    families = QFontDatabase.families()
+    return p.font_size if any(family in families for family in p.fonts) else 0
+
+
 def apply_modern_theme(application, skin=DEFAULT_SKIN):
     global _active
     _active = SKINS.get(skin, MODERN)
