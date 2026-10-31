@@ -66,6 +66,12 @@ class NetplayPage(fsui.Panel):
         for panel in (self.panel.channel_panel, self.panel.game_panel):
             panel.widget().setMinimumSize(panel.get_min_width(), panel.get_min_height())
 
+    def on_theme_changed(self):
+        self.channel_area.setMinimumWidth(
+            self.panel.channel_panel.get_min_width() + 2
+        )
+        self._update_chat_size()
+
     def _restore_column_sizes(self):
         available = self.splitter.width() - 2 * self.splitter.handleWidth()
         total = sum(self._column_sizes)
