@@ -100,7 +100,8 @@ in docs/compiling.md. Packaging policy checks run with:
 
 See [the Python and dependency modernization TODO](docs/python-dependency-modernization.md)
 for the reviewed packaging, supported-Python, dependency, and code-quality
-work items.
+work items. For a map of the packages, startup sequence, theme engine and
+data stores, see [docs/architecture.md](docs/architecture.md).
 
 ## Game Monitor Selection
 
