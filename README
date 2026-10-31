@@ -267,6 +267,16 @@ The completed stack's local Python 3.12 validation passed 138 core, API,
 command and packaging tests (10 skipped), plus 39 offscreen Qt tests and
 65 subtests. This does not certify frozen builds or another platform/version.
 
+## Play Tile
+
+The Overview workspace opens with a Play card above the library: the
+selected game's name, a one-line hint about where it came from, a large Play
+button (the same action as Start / Launch Amiga, disabled while a game is
+running) and an "Edit configuration" toggle. The detailed configuration editor
+is hidden until that toggle is on; choosing any configuration page from the
+navigation rail also reveals it. The choice is remembered in
+`launcher_show_editor`. Implementation: `launcher/ui/play_tile.py`.
+
 ## Plain-Language Model Names
 
 The Amiga Model selector on the Overview page shows everyday names such as

@@ -1946,6 +1946,98 @@ class TestDashboard(WidgetTestCase):
             self.application.setStyleSheet(stylesheet)
             self.application.setFont(font)
 
+    def test_play_tile_and_editor_toggle(self):
+        from launcher.launcher_settings import LauncherSettings
+        from launcher.ui.book import Book
+        from launcher.ui.dashboard import Dashboard
+        from launcher.ui.play_tile import EDITOR_SETTING
+
+        settings = {"config_name": "Lotus Turbo Challenge 2", "parent_uuid": "abc"}
+        listeners = []
+
+        def set_setting(key, value):
+            settings[key] = value
+            for listener in list(listeners):
+                listener.on_setting(key, value)
+
+        def create_launch_group(parent, context):
+            group = fsui.Group(parent)
+            group.layout = fsui.VerticalLayout()
+            group.layout.add(fsui.Button(group, "Start"), fill=True)
+            return group
+
+        def make_owner():
+            owner = fsui.Window(None, title="Play tile")
+            owner.gsc = object()
+            owner.books = [None, Book(owner), Book(owner)]
+            owner.books[1].add_page(fsui.Panel(owner.books[1]))
+            owner.books[1].set_page(0)
+            for _ in range(8):
+                owner.books[2].add_page(fsui.Panel(owner.books[2]))
+            owner.screenshots_panel = None
+            owner.quick_settings_panel = fsui.Panel(owner)
+            owner.status_bar = fsui.Panel(owner)
+            owner.on_settings_button = Mock()
+            return owner
+
+        with patch.object(LauncherSettings, "get", side_effect=lambda key: settings.get(key, "")), \
+                patch.object(LauncherSettings, "set", side_effect=set_setting), \
+                patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
+                patch.object(LauncherSettings, "remove_listener", side_effect=listeners.remove), \
+                patch("launcher.ui.behaviors.configbehavior.LauncherConfig.add_listener"), \
+                patch("launcher.ui.behaviors.configbehavior.LauncherConfig.get", return_value=""), \
+                patch("launcher.ui.dashboard.LaunchGroup", create_launch_group):
+            owner = make_owner()
+            dashboard = Dashboard(owner)
+            owner.layout = fsui.VerticalLayout()
+            owner.layout.add(dashboard, fill=True, expand=True)
+            owner.show()
+            tile = dashboard.play_tile
+            self.assertEqual(tile.title.toolTip(), "Lotus Turbo Challenge 2")
+            self.assertIn("online database", tile.subtitle.text())
+            self.assertEqual(tile.play_button.text(), "Play")
+            self.assertTrue(tile.play_button.isEnabled())
+            # Editor hidden by default for a clean first impression.
+            self.assertFalse(tile.edit_button.isChecked())
+            self.assertTrue(dashboard.editor.isHidden())
+
+            with patch("launcher.launcherapp.LauncherApp.start_game") as start:
+                tile.play_button.click()
+                start.assert_called_once_with()
+
+            tile.on___running_config("1")
+            self.assertFalse(tile.play_button.isEnabled())
+            self.assertEqual(tile.play_button.text(), "Running")
+            tile.on___running_config("0")
+            self.assertTrue(tile.play_button.isEnabled())
+
+            tile.edit_button.click()
+            self.assertFalse(dashboard.editor.isHidden())
+            self.assertEqual(settings[EDITOR_SETTING], "1")
+            tile.edit_button.click()
+            self.assertTrue(dashboard.editor.isHidden())
+            self.assertEqual(settings[EDITOR_SETTING], "0")
+
+            # Picking a configuration page from the rail reveals the editor.
+            dashboard.nav_buttons[3].click()
+            self.assertTrue(tile.edit_button.isChecked())
+            self.assertFalse(dashboard.editor.isHidden())
+            self.assertIs(owner.books[2].current_page, owner.books[2].pages[3])
+
+            set_setting("parent_uuid", "")
+            set_setting("config_name", "")
+            self.assertIn("Amiga 500", tile.title.toolTip())
+            self.assertIn("library", tile.subtitle.text())
+            owner.closed.emit()
+            self.assertNotIn(tile, listeners)
+
+            # The remembered state is restored for the next window.
+            owner = make_owner()
+            dashboard = Dashboard(owner)
+            self.assertTrue(dashboard.play_tile.edit_button.isChecked())
+            self.assertFalse(dashboard.editor.isHidden())
+            owner.closed.emit()
+
     def test_plain_language_model_labels(self):
         from fsui.qt import Qt
         from launcher.ui.config.model_labels import (
