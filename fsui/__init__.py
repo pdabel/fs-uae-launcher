@@ -46,6 +46,7 @@ toolkit = "qt"
 use_qt = True
 theme = ""
 theme_variant = ""
+theme_skin = ""
 
 
 # noinspection PyProtectedMember

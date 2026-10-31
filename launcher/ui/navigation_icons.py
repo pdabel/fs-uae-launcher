@@ -1,6 +1,7 @@
 import qtawesome as qta
 
 import fsui
+from fsui.qt import modern_theme
 from fsui.qt import (
     QApplication, QColor, QIcon, QIconEngine, QPainter, QPainterPath, QPalette, QPen, QPixmap,
     QRect, Qt,
@@ -70,10 +71,13 @@ class RetroNavigationIcon(QIconEngine):
         return pixmap
 
 
-def navigation_icon(name):
+def navigation_icon(name, on_accent=False):
+    """``on_accent`` colours the icon for use on an accent-filled button."""
     if fsui.theme_variant in ("windows311", "workbench"):
         return QIcon(RetroNavigationIcon(name, fsui.theme_variant))
-    color = "#9bcce2" if fsui.theme_variant == "modern" else (
+    if on_accent and fsui.theme_variant == "modern":
+        return qta.icon(name, color=modern_theme.palette().accent_text)
+    color = modern_theme.palette().icon if fsui.theme_variant == "modern" else (
         QApplication.palette().color(QPalette.ButtonText).name()
     )
     return qta.icon(name, color=color)

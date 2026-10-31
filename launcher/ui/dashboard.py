@@ -1,4 +1,5 @@
 import fsui
+from fsui.qt import modern_theme
 from fsui.qt import (
     Qt, QSize, QButtonGroup, QFrame, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QSizePolicy, QSplitter, QStyle, QToolButton, QVBoxLayout,
@@ -29,45 +30,45 @@ class Dashboard(fsui.Panel):
         self._restore_library_after_quick = False
         self.widget().setObjectName("dashboard")
         self.set_min_size((1000, 720))
-        self.widget().setStyleSheet("""
-            QWidget#dashboard { background: #171923; }
-            QFrame#navigation { background: #1c1e2b;
-                border-right: 1px solid #303447; }
-            QLabel#brand { font-size: 23px; font-weight: 700; color: #f5f7fc; }
-            QLabel#brandCaption, QLabel#eyebrow { color: #929db6;
+        self.widget().setStyleSheet(modern_theme.render("""
+            QWidget#dashboard { background: @window@; }
+            QFrame#navigation { background: @nav@;
+                border-right: 1px solid @nav_border@; }
+            QLabel#brand { font-size: 23px; font-weight: 700; color: @brand@; }
+            QLabel#brandCaption, QLabel#eyebrow { color: @caption@;
                 font-size: 11px; }
-            QLabel#pageTitle { color: #f5f7fc; font-size: 25px;
+            QLabel#pageTitle { color: @brand@; font-size: 25px;
                 font-weight: 600; }
-            QLabel#sectionTitle { color: #edf0f7; font-size: 15px;
+            QLabel#sectionTitle { color: @text@; font-size: 15px;
                 font-weight: 600; }
-            QLabel#badge { background: #173c3a; color: #69d6ae;
-                padding: 5px 9px; border-radius: 4px; font-size: 11px; }
-            QLabel#configurationName { color: #b9c5da; font-size: 13px; }
+            QLabel#badge { background: @success_bg@; color: @success@;
+                padding: 5px 9px; border-radius: @radius_small@; font-size: 11px; }
+            QLabel#configurationName { color: @nav_text@; font-size: 13px; }
             QPushButton[nav="true"] { background: transparent;
-                color: #aeb8ce; border: 0; border-radius: 4px;
+                color: @nav_text@; border: 0; border-radius: @radius_small@;
                 text-align: left; padding: 11px 14px; }
-            QPushButton[nav="true"]:hover { background: #282d40; color: white; }
-            QPushButton[nav="true"]:checked { background: #253e54;
-                color: #73cef8; border-left: 3px solid #46b7ee; }
-            QFrame#topbar { border-bottom: 1px solid #303447; }
-            QFrame#launchbar { background: #212431;
-                border-top: 1px solid #363d51; }
-            QFrame#library { background: #212431; }
-            QFrame#editor { background: #212431; }
-            QToolButton { background: #292d3e; color: #dce5f5;
-                border: 1px solid #40485e; border-radius: 4px; padding: 8px; }
-            QToolButton:hover { background: #3b445d; }
-            QToolButton:checked { background: #254f69; border-color: #46b7ee; }
-            QPushButton#launchButton { background: #36b4e5; color: #101d28;
-                border: 1px solid #5dc8ef; font-weight: 700;
+            QPushButton[nav="true"]:hover { background: @nav_hover@; color: @brand@; }
+            QPushButton[nav="true"]:checked { background: @pressed@;
+                color: @accent_soft@; border-left: 3px solid @accent@; }
+            QFrame#topbar { border-bottom: 1px solid @nav_border@; }
+            QFrame#launchbar { background: @surface@;
+                border-top: 1px solid @border@; }
+            QFrame#library { background: @surface@; }
+            QFrame#editor { background: @surface@; }
+            QToolButton { background: @raised@; color: @text@;
+                border: 1px solid @border_strong@; border-radius: @radius_small@; padding: 8px; }
+            QToolButton:hover { background: @hover@; }
+            QToolButton:checked { background: @highlight@; border-color: @accent@; }
+            QPushButton#launchButton { background: @accent@; color: @accent_text@;
+                border: 1px solid @accent_hover@; font-weight: 700;
                 padding: 10px 24px; }
-            QPushButton#launchButton:hover { background: #72d2f2; }
-            QPushButton#launchButton:disabled { background: #303649;
-                color: #737e96; border-color: #454d64; }
-            QSplitter::handle { background: #171923; }
-            QSplitter::handle:hover { background: #46b7ee; }
-            QScrollArea { border: 0; background: #212431; }
-        """)
+            QPushButton#launchButton:hover { background: @accent_hover@; }
+            QPushButton#launchButton:disabled { background: @launch_disabled@;
+                color: @disabled_text@; border-color: @border_strong@; }
+            QSplitter::handle { background: @window@; }
+            QSplitter::handle:hover { background: @accent@; }
+            QScrollArea { border: 0; background: @surface@; }
+        """))
         if fsui.theme_variant != "modern":
             self.widget().setStyleSheet("""
                 QWidget#dashboard, QFrame#navigation {
@@ -315,7 +316,11 @@ class Dashboard(fsui.Panel):
             if button.text().strip() == gettext("Start"):
                 button.setObjectName("launchButton")
                 button.setText(gettext("Launch Amiga"))
-                button.setIcon(self._icon(QStyle.SP_MediaPlay))
+                button.setIcon(
+                    navigation_icon("fa5s.play", on_accent=True)
+                    if fsui.theme_variant == "modern"
+                    else self._icon(QStyle.SP_MediaPlay)
+                )
         layout.addWidget(self.launch_host.widget(), 1)
         self.launch_host.widget().show()
         return frame
