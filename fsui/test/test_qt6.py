@@ -2108,6 +2108,18 @@ class TestDashboard(WidgetTestCase):
             set_setting("config_name", "")
             self.assertIn("Amiga 500", tile.title.toolTip())
             self.assertIn("library", tile.subtitle.text())
+            # Switching to a saved local configuration updates the hint
+            # even though parent_uuid does not change.
+            set_setting("config_path", "/configs/mine.fs-uae")
+            self.assertIn("saved configuration", tile.subtitle.text())
+            set_setting("config_path", "")
+            self.assertIn("library", tile.subtitle.text())
+            set_setting("config_path", "/configs/mine.fs-uae")
+            set_setting("parent_uuid", "abc")
+            self.assertIn("online database", tile.subtitle.text())
+            set_setting("parent_uuid", "")
+            self.assertIn("saved configuration", tile.subtitle.text())
+            set_setting("config_path", "")
             owner.closed.emit()
             self.assertNotIn(tile, listeners)
 

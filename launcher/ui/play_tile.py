@@ -61,7 +61,7 @@ class PlayTile(QFrame):
         layout.addWidget(self.edit_button)
         LauncherSettings.add_listener(self)
         self.on_setting("config_name", LauncherSettings.get("config_name"))
-        self.on_setting("parent_uuid", LauncherSettings.get("parent_uuid"))
+        self._update_subtitle()
         ConfigBehavior(self, ["__running"])
 
     def shutdown(self):
@@ -91,13 +91,16 @@ class PlayTile(QFrame):
         if key == "config_name":
             self._name = value.strip()
             self._update_title()
-        elif key == "parent_uuid":
-            if value:
-                self.subtitle.setText(gettext("Game from the online database"))
-            elif LauncherSettings.get("config_path"):
-                self.subtitle.setText(gettext("Your saved configuration"))
-            else:
-                self.subtitle.setText(gettext("Pick a game from the library below"))
+        elif key in ("parent_uuid", "config_path"):
+            self._update_subtitle()
+
+    def _update_subtitle(self):
+        if LauncherSettings.get("parent_uuid"):
+            self.subtitle.setText(gettext("Game from the online database"))
+        elif LauncherSettings.get("config_path"):
+            self.subtitle.setText(gettext("Your saved configuration"))
+        else:
+            self.subtitle.setText(gettext("Pick a game from the library below"))
 
     def _update_title(self):
         name = self._name or gettext("Amiga 500 (default setup)")
