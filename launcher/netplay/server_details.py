@@ -2,6 +2,7 @@ import fsui
 import qtawesome as qta
 
 from fsui.qt import modern_theme
+from fsui.qt.qt import theme_applied
 from fsui.qt import (
     Qt, QFrame, QLabel, QPushButton, QTimer, QVBoxLayout,
 )
@@ -14,17 +15,8 @@ class ServerDetails(QFrame):
         self.server = None
         self.setObjectName("serverDetails")
         self.setMinimumWidth(240)
-        self.setStyleSheet(modern_theme.render("""
-            QFrame#serverDetails { background: @surface@; }
-            QLabel[detailLabel="true"] { color: @muted@; font-size: 12px; }
-            QLabel#serverStatus { color: @success@; font-weight: 600; }
-        """))
-        if fsui.theme_variant != "modern":
-            self.setStyleSheet("""
-                QFrame#serverDetails { background: palette(window); }
-                QLabel[detailLabel="true"] { font-size: 12px; }
-                QLabel#serverStatus { font-weight: 600; }
-            """)
+        self.restyle()
+        theme_applied.connect(self.restyle)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(10)
@@ -64,6 +56,27 @@ class ServerDetails(QFrame):
         self.monitor = QTimer(self)
         self.monitor.setInterval(1000)
         self.monitor.timeout.connect(self._check_server)
+
+    def restyle(self):
+        if fsui.theme_variant == "modern":
+            self.setStyleSheet(modern_theme.render("""
+                QFrame#serverDetails { background: @surface@; }
+                QLabel[detailLabel="true"] { color: @muted@; font-size: 12px; }
+                QLabel#serverStatus { color: @success@; font-weight: 600; }
+            """))
+        else:
+            self.setStyleSheet("""
+                QFrame#serverDetails { background: palette(window); }
+                QLabel[detailLabel="true"] { font-size: 12px; }
+                QLabel#serverStatus { font-weight: 600; }
+            """)
+        if hasattr(self, "stop_button"):
+            self.stop_button.setIcon(
+                qta.icon("fa5s.stop", color=modern_theme.palette().danger)
+            )
+
+    def shutdown(self):
+        theme_applied.disconnect(self.restyle)
 
     def present(self, parent, server, game_id, port, channel):
         if server is not self.server:

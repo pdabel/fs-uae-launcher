@@ -1,5 +1,6 @@
 import fsui
 from fsui.qt import modern_theme
+from fsui.qt.qt import theme_applied
 from launcher.ui.widgets import CloseButton
 from .skin import LauncherTheme
 
@@ -43,6 +44,47 @@ class PagedDialog(fsui.Window):
         }}
         """
         )
+        self.restyle_navigation()
+        theme_applied.connect(self.restyle_navigation)
+        self.closed.connect(self._disconnect_theme_signal)
+        layout_2.add(self.list_view, fill=True, expand=True)
+        h_layout.add(layout_2, fill=True)
+
+        v_layout = fsui.VerticalLayout()
+        h_layout.add(v_layout, fill=True, expand=True)
+
+        use_scrolling = False
+        if use_scrolling:
+            # FIXME: Problems with page height
+            scroll_area = fsui.VerticalScrollArea(self)
+            self.page_container = fsui.Panel(scroll_area)
+            self.page_container.layout = fsui.VerticalLayout()
+            scroll_area.set_widget(self.page_container)
+            v_layout.add(scroll_area, fill=True, expand=True)
+        else:
+            self.page_container = fsui.Panel(self)
+            self.page_container.layout = fsui.VerticalLayout()
+            v_layout.add(self.page_container, fill=True, expand=True)
+
+        self.page_titles = []
+        self.pages = []
+
+        self.button_layout = fsui.HorizontalLayout()
+        v_layout.add(self.button_layout, fill=True, margin=20, margin_top=0)
+        if self.window.theme.has_close_buttons:
+            self.button_layout.add_spacer(expand=True)
+            self.close_button = CloseButton(self)
+            self.button_layout.add(
+                self.close_button, fill=True, margin_left=10
+            )
+
+        self.current_page = None
+
+        self.set_size((840, 640))
+        self.center_on_parent()
+
+    def restyle_navigation(self):
+        """Apply theme colours to the page list; rerun on live theme change."""
         if fsui.theme_variant in ("modern", "plain", "windows311", "workbench"):
             from fsui.qt import QSize, Qt
 
@@ -91,41 +133,9 @@ class PagedDialog(fsui.Window):
                         QListView::item:selected { border: 2px solid #000000; }
                     """
                 self.list_view.setStyleSheet(stylesheet)
-        layout_2.add(self.list_view, fill=True, expand=True)
-        h_layout.add(layout_2, fill=True)
 
-        v_layout = fsui.VerticalLayout()
-        h_layout.add(v_layout, fill=True, expand=True)
-
-        use_scrolling = False
-        if use_scrolling:
-            # FIXME: Problems with page height
-            scroll_area = fsui.VerticalScrollArea(self)
-            self.page_container = fsui.Panel(scroll_area)
-            self.page_container.layout = fsui.VerticalLayout()
-            scroll_area.set_widget(self.page_container)
-            v_layout.add(scroll_area, fill=True, expand=True)
-        else:
-            self.page_container = fsui.Panel(self)
-            self.page_container.layout = fsui.VerticalLayout()
-            v_layout.add(self.page_container, fill=True, expand=True)
-
-        self.page_titles = []
-        self.pages = []
-
-        self.button_layout = fsui.HorizontalLayout()
-        v_layout.add(self.button_layout, fill=True, margin=20, margin_top=0)
-        if self.window.theme.has_close_buttons:
-            self.button_layout.add_spacer(expand=True)
-            self.close_button = CloseButton(self)
-            self.button_layout.add(
-                self.close_button, fill=True, margin_left=10
-            )
-
-        self.current_page = None
-
-        self.set_size((840, 640))
-        self.center_on_parent()
+    def _disconnect_theme_signal(self):
+        theme_applied.disconnect(self.restyle_navigation)
 
     def on_select_item(self, index):
         self.set_page(index)
