@@ -117,6 +117,10 @@ Explicit selections are saved using display identity rather than a left/right
 guess or enumeration number. Window placement supports reordered and vertically
 stacked displays. A disconnected saved display falls back to the primary display
 without losing the saved choice. Reconnect it to use it again.
+When available, a unique manufacturer/model/serial match follows a monitor
+even when its connector name changes; displays without serials use their
+existing connector identity. The active launch context's monitor choice takes
+precedence over the global launcher selection.
 
 FS-UAE's initial window position is now centred within the selected display,
 not the launcher window. For fullscreen, the launcher also translates the
@@ -140,6 +144,9 @@ be deleted this way. An open deleted configuration returns to the default
 configuration, discarding its unsaved changes. Cancel leaves everything intact.
 Deleting a different row preserves the currently loaded configuration and edits.
 Finish any active database scan before deleting configurations.
+Deletion keeps a private recovery copy until both indexes commit. A failed
+commit restores the configuration and its index records; if file restoration
+also fails, the recovery copy's location is reported in the launcher log.
 
 ## CPU Performance (Linux)
 
@@ -197,6 +204,9 @@ Copying happens after settings are saved and the launcher shuts down, with a
 progress window. Existing destination files are never overwritten. Database
 backups include committed SQLite WAL data. A failed copy leaves the original
 startup location unchanged. Stop any running database scan before switching.
+Copies are prepared in a private staging folder and published only if the
+destination is still empty. If writing the startup preference fails after
+publication, the completed copy is kept for recovery; the original remains intact.
 Close other launcher instances and emulators before copying data they may use.
 
 Portable mode writes Portable.ini next to the launcher (or updates the existing
@@ -211,6 +221,9 @@ Disabling portable mode keeps a backup of the marker and remembers the chosen
 normal data folder in the user preferences. Explicit --base-dir launch options
 still override automatic folder selection; FS_UAE_BASE_DIR overrides normal-mode
 folder preferences. Legacy empty Portable.ini files remain supported.
+The source tree does not include an active portable marker. Disabling in place
+is rejected when the startup marker also contains custom directory mappings;
+choose a new folder so those mappings can be preserved.
 
 ## Python Consistency Checks
 

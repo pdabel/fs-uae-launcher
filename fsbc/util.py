@@ -165,6 +165,11 @@ def compare_versions(a: Union[Version, str], b: Union[Version, str]):
     return (a > b) - (a < b)
 
 
+def chained_exception(new_e, org_e):
+    new_e.__cause__ = org_e
+    return new_e
+
+
 if __name__ == "__main__":
     import doctest
 

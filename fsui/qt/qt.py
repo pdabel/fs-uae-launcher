@@ -1,6 +1,7 @@
 import functools
 import os
 import sys
+import traceback
 import weakref
 
 import fsbc.application
@@ -112,6 +113,58 @@ class ThemeListeners:
 
 
 theme_applied = ThemeListeners()
+_applied_launcher_theme = None
+
+
+def applied_launcher_theme():
+    """The launcher_theme value last applied, including a command-line one."""
+    return _applied_launcher_theme
+
+
+def _layout_owner(widget):
+    try:
+        owner = widget.owner
+    except AttributeError:
+        return None
+    return owner() if callable(owner) else owner
+
+
+def _run_relayout_step(step):
+    # One broken layout must not stop the theme change or the other layouts.
+    try:
+        step()
+    except RuntimeError:
+        traceback.print_exc()
+    except Exception:
+        traceback.print_exc()
+
+
+def relayout_widgets():
+    """Re-run fsui layouts, which only refresh on show and resize.
+
+    A font change alters minimum sizes without resizing the widgets, so
+    owners get ``on_theme_changed`` to re-measure, then every layout runs.
+    """
+    # QApplication.setFont does not reliably reach already-created widgets;
+    # each window passes the change on to its children.
+    for widget in QApplication.topLevelWidgets():
+        if widget.windowType() in (Qt.Window, Qt.Dialog):
+            QApplication.sendEvent(
+                widget, QEvent(QEvent.ApplicationFontChange)
+            )
+    owners = []
+    for top in QApplication.topLevelWidgets():
+        for widget in [top] + top.findChildren(QWidget):
+            owner = _layout_owner(widget)
+            if owner is not None and owner not in owners:
+                owners.append(owner)
+    for owner in reversed(owners):
+        hook = getattr(owner, "on_theme_changed", None)
+        if hook is not None:
+            _run_relayout_step(hook)
+    for order in (reversed(owners), owners):
+        for owner in order:
+            _run_relayout_step(owner.on_resize)
 
 
 def resolve_launcher_theme(launcher_theme):
@@ -126,6 +179,23 @@ def resolve_launcher_theme(launcher_theme):
     for skin in SKINS:
         themes["fusion-" + skin] = ("modern", skin)
     return themes.get(launcher_theme or "fusion-modern")
+
+
+def theme_default_point_size(launcher_theme):
+    """Point size a theme uses when launcher_font_size is not overridden."""
+    variant, skin = resolve_launcher_theme(launcher_theme) or ("plain", "")
+    size = 0
+    if variant == "modern":
+        from fsui.qt.modern_theme import default_font_size
+
+        size = default_font_size(skin)
+    elif variant in ("windows311", "workbench"):
+        from fsui.qt.retro_theme import default_font_size
+
+        size = default_font_size(variant)
+    return size or QFontDatabase.systemFont(
+        QFontDatabase.GeneralFont
+    ).pointSize()
 
 
 def apply_launcher_theme(qapplication, launcher_theme, font_size=""):
@@ -159,4 +229,7 @@ def apply_launcher_theme(qapplication, launcher_theme, font_size=""):
     fsui.theme = "fusion"
     fsui.theme_variant = fusion_variant
     fsui.theme_skin = skin
+    global _applied_launcher_theme
+    _applied_launcher_theme = launcher_theme
     theme_applied.notify()
+    relayout_widgets()

@@ -133,6 +133,7 @@ class PagedDialog(fsui.Window):
                         QListView::item:selected { border: 2px solid #000000; }
                     """
                 self.list_view.setStyleSheet(stylesheet)
+            self.list_view.refresh_items()
 
     def _disconnect_theme_signal(self):
         theme_applied.disconnect(self.restyle_navigation)

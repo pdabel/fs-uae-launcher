@@ -3,15 +3,24 @@ import fsbc.logging
 
 from fsbc.application import Application
 
+init_called = False
+unicode_patched = False
+logging_enabled = False
+exception_handler_enabled = False
+
 
 def initialize_application(
     name=None,
     version=None,
+    patch_unicode=True,
     enable_logging=True,
     enable_exception_handler=True,
 ):
+    global init_called, unicode_patched, logging_enabled, exception_handler_enabled
+    init_called = True
     if name and enable_logging:
         fsbc.logging.setup_logging(name + ".log.txt")
+        logging_enabled = True
 
     if name is not None:
         Application.app_name = name
@@ -21,3 +30,6 @@ def initialize_application(
 
     if enable_exception_handler:
         fsbc.debug.enable_exception_handler()
+        exception_handler_enabled = True
+    if patch_unicode:
+        unicode_patched = True
