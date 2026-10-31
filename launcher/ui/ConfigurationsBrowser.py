@@ -79,6 +79,9 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
         if LauncherSettings.get("config_search").strip():
             LauncherSettings.set("config_search", "")
             return
+        if LauncherSettings.get("game_list_uuid"):
+            LauncherSettings.set("game_list_uuid", "")
+            return
         from launcher.ui.scan import ScanDialog
 
         ScanDialog(self.get_window()).show()
@@ -90,6 +93,15 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
                 gettext("Try a shorter name, or clear the search box."),
             )
             self.empty_state.button.setText(gettext("Clear search"))
+        elif LauncherSettings.get("game_list_uuid"):
+            self.empty_state.set_text(
+                gettext("This list is empty"),
+                gettext(
+                    "Nothing has been added to the selected list yet. "
+                    "Switch back to see all your games and configurations."
+                ),
+            )
+            self.empty_state.button.setText(gettext("Show Configs and Games"))
         else:
             self.empty_state.set_text(
                 gettext("No games yet"),

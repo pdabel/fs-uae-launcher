@@ -116,7 +116,10 @@ class PlayTile(QFrame):
     def _update_title(self):
         name = self._name or gettext("Amiga 500 (default setup)")
         metrics = self.title.fontMetrics()
-        buttons = self.play_button.sizeHint().width() + self.edit_button.sizeHint().width()
+        buttons = sum(
+            max(button.minimumWidth(), button.sizeHint().width())
+            for button in (self.play_button, self.edit_button)
+        )
         available = self.width() - buttons - 16 * 2 - 16 * 2
         width = max(160, available)
         self.title.setText(metrics.elidedText(name, Qt.ElideRight, width))
