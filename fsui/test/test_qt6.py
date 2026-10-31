@@ -1946,6 +1946,66 @@ class TestDashboard(WidgetTestCase):
             self.application.setStyleSheet(stylesheet)
             self.application.setFont(font)
 
+    def test_library_empty_state_and_media_placeholders(self):
+        from launcher.ui.ConfigurationsBrowser import ConfigurationsBrowser
+        from launcher.ui.floppyselector import FloppySelector
+
+        self.setup_dialog()
+        self.dialog.layout = fsui.VerticalLayout()
+        item = {"uuid": "u1", "name": "Test", "path": "", "have": 4,
+                "platform": "Amiga", "published": 1, "sort_key": "test"}
+        settings = {"config_search": ""}
+        with patch("launcher.ui.ConfigurationsBrowser.Database.get_instance") as database_factory, \
+                patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.get", side_effect=lambda key: settings.get(key, "")), \
+                patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.set") as set_setting, \
+                patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.add_listener"), \
+                patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.remove_listener"):
+            database = database_factory.return_value
+            database.find_games_new.return_value = []
+            browser = ConfigurationsBrowser(self.dialog)
+            self.dialog.layout.add(browser, fill=True, expand=True)
+            self.dialog.set_size((540, 300))
+            self.dialog.show()
+            self.application.processEvents()
+            overlay = browser.empty_state
+            self.assertFalse(overlay.isHidden())
+            self.assertEqual(overlay.title.text(), "No games yet")
+            self.assertEqual(overlay.button.text(), "Scan a folder\u2026")
+            self.assertEqual(overlay.geometry(), browser.viewport().rect())
+            with patch("launcher.ui.scan.ScanDialog") as scan_dialog:
+                overlay.button.click()
+                scan_dialog.assert_called_once()
+                scan_dialog.return_value.show.assert_called_once_with()
+
+            # A search with no hits offers to clear the search instead.
+            settings["config_search"] = "zzz"
+            browser.update_search()
+            self.assertFalse(overlay.isHidden())
+            self.assertEqual(overlay.title.text(), "Nothing matches your search")
+            self.assertEqual(overlay.button.text(), "Clear search")
+            overlay.button.click()
+            set_setting.assert_called_with("config_search", "")
+
+            # Rows hide the overlay; removing them brings it back.
+            settings["config_search"] = ""
+            database.find_games_new.return_value = [item]
+            browser.update_search()
+            self.assertTrue(overlay.isHidden())
+            database.find_games_new.return_value = []
+            browser.update_search()
+            self.assertFalse(overlay.isHidden())
+
+        with patch("launcher.ui.floppyselector.fsgs") as fsgs_mock, \
+                patch("launcher.ui.floppyselector.LauncherConfig.get", return_value=""):
+            fsgs_mock.config.get.return_value = "amiga"
+            first = FloppySelector(self.dialog, 0)
+            second = FloppySelector(self.dialog, 1)
+            self.assertIn("No disk inserted", first.text_field.placeholderText())
+            self.assertEqual(second.text_field.placeholderText(), "Empty drive")
+            first.set_mode(FloppySelector.CD_MODE)
+            self.assertIn("No CD inserted", first.text_field.placeholderText())
+        self.run_dialog()
+
     def test_play_tile_and_editor_toggle(self):
         from launcher.launcher_settings import LauncherSettings
         from launcher.ui.book import Book

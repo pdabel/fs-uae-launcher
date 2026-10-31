@@ -267,6 +267,16 @@ The completed stack's local Python 3.12 validation passed 138 core, API,
 command and packaging tests (10 skipped), plus 39 offscreen Qt tests and
 65 subtests. This does not certify frozen builds or another platform/version.
 
+## Empty-State Guidance
+
+An empty library no longer shows a blank box. `launcher/ui/empty_state.py`
+overlays "No games yet — Scan a folder with your Amiga disks and games" with a
+"Scan a folder…" button that opens the Update File Database dialog. When a
+search has no hits it says "Nothing matches your search" and offers "Clear
+search" instead. The overlay follows the list's model, so it hides as soon as
+rows appear. Floppy, CD, tape and cartridge slots show placeholder text such
+as "No disk inserted — click the folder to choose one" when empty.
+
 ## Play Tile
 
 The Overview workspace opens with a Play card above the library: the

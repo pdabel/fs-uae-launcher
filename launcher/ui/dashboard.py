@@ -51,6 +51,13 @@ MODERN_STYLESHEET = """
                 color: @disabled_text@; border-color: @border_strong@; }
             QPushButton#editButton:checked { background: @pressed@;
                 border-color: @accent@; color: @accent_soft@; }
+            QWidget#emptyState { background: transparent; }
+            QLabel#emptyStateTitle { color: @brand@; font-size: 17px;
+                font-weight: 600; }
+            QLabel#emptyStateHint { color: @muted@; font-size: 12px; }
+            QPushButton#emptyStateAction { background: @pressed@;
+                border: 1px solid @accent@; color: @accent_soft@;
+                padding: 8px 18px; }
             QToolButton { background: @raised@; color: @text@;
                 border: 1px solid @border_strong@; border-radius: @radius_small@; padding: 8px; }
             QToolButton:hover { background: @hover@; }
@@ -87,6 +94,9 @@ PALETTE_STYLESHEET = """
                 QLabel#playSubtitle { font-size: 12px; }
                 QPushButton#playButton { font-size: 17px; font-weight: 700;
                     padding: 10px 28px; }
+                QWidget#emptyState { background: transparent; }
+                QLabel#emptyStateTitle { font-size: 17px; font-weight: 600; }
+                QLabel#emptyStateHint { font-size: 12px; }
                 QToolButton { padding: 8px; }
                 QPushButton#launchButton { font-weight: 700; padding: 10px 24px; }
                 QSplitter::handle { background: palette(window); }
@@ -203,7 +213,7 @@ class Dashboard(fsui.Panel):
             self.quick_toggle.setIcon(self._icon(QStyle.SP_FileDialogDetailedView))
             for button in self.launch_host.widget().findChildren(QPushButton):
                 if button.objectName() == "launchButton":
-                    button.setIcon(self._icon(QStyle.SP_MediaPlay))
+                    button.setIcon(self.play_tile.play_icon())
             self.play_tile.restyle_icons()
 
     def _toggle_editor(self, checked):
@@ -372,7 +382,7 @@ class Dashboard(fsui.Panel):
             if button.text().strip() == gettext("Start"):
                 button.setObjectName("launchButton")
                 button.setText(gettext("Launch Amiga"))
-                button.setIcon(self._icon(QStyle.SP_MediaPlay))
+                button.setIcon(self.play_tile.play_icon())
         layout.addWidget(self.launch_host.widget(), 1)
         self.launch_host.widget().show()
         return frame

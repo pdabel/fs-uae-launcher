@@ -50,6 +50,7 @@ class FloppySelector(fsui.Panel):
         fsgs.signal.connect("config", self.on_config)
         self.on_config(Option.PLATFORM, fsgs.config.get(Option.PLATFORM))
         self.update_config_key()
+        self.update_placeholder()
 
     def on_destroy(self):
         fsgs.signal.disconnect("config", self.on_config)
@@ -115,6 +116,20 @@ class FloppySelector(fsui.Panel):
     def set_mode(self, mode):
         self.mode = mode
         self.update_config_key()
+        self.update_placeholder()
+
+    def update_placeholder(self):
+        if self.mode == self.CD_MODE:
+            text = gettext("No CD inserted — click the folder to choose one")
+        elif self.mode == self.TAPE_MODE:
+            text = gettext("No tape inserted — click the folder to choose one")
+        elif self.mode == self.CARTRIDGE_MODE:
+            text = gettext("No cartridge — click the folder to choose one")
+        elif self.drive == 0:
+            text = gettext("No disk inserted — click the folder to choose one")
+        else:
+            text = gettext("Empty drive")
+        self.text_field.setPlaceholderText(text)
 
     def on_eject(self):
         if self.mode == self.CD_MODE:
