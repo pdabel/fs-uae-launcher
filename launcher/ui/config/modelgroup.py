@@ -1,6 +1,7 @@
 import fsui
 from fsbc.util import unused
 from fsgs.amiga.amiga import Amiga
+from fsui.qt import Qt
 from launcher.option import Option
 from launcher.cd_manager import CDManager
 from launcher.floppy_manager import FloppyManager
@@ -13,6 +14,9 @@ from launcher.ui.behaviors.platformbehavior import (
     AmigaShowBehavior,
 )
 from launcher.ui.config.ConfigCheckBox import ConfigCheckBox
+from launcher.ui.config.model_labels import (
+    model_hint, model_label, technical_tooltip, variant_label,
+)
 
 
 class ModelGroup(fsui.Group):
@@ -27,18 +31,40 @@ class ModelGroup(fsui.Group):
         self.model_titles = [
             x["title"] for x in Amiga.models if "/" not in x["id"]
         ]
+        self.model_labels = [model_label(x) for x in self.model_ids]
 
         self.sub_model_ids = []
         self.sub_model_titles = []
         self.sub_model_updating = False
 
-        self.model_choice = fsui.Choice(self, self.model_titles)
+        self.model_choice = fsui.Choice(self, self.model_labels)
+        for index, model_id in enumerate(self.model_ids):
+            hint = model_hint(model_id)
+            technical = technical_tooltip(self.model_titles[index])
+            self.model_choice.setItemData(
+                index, f"{hint}\n{technical}" if hint else technical,
+                Qt.ToolTipRole,
+            )
+        self.model_choice.set_tooltip(
+            gettext("Which Amiga to emulate. Amiga 500 runs most games.")
+        )
         self.sub_model_choice = fsui.Choice(self, self.sub_model_titles)
+        self.sub_model_choice.set_tooltip(
+            gettext("Memory, processor and ROM variant of this model")
+        )
         self.accuracy_label = fsui.Label(self, gettext("Accuracy:"))
         self.accuracy_choice = fsui.Choice(
             self, [gettext("High"), gettext("Medium"), gettext("Low")]
         )
+        self.accuracy_choice.set_tooltip(gettext(
+            "High is most faithful to real hardware. Lower settings run "
+            "faster on slow computers but some games may misbehave."
+        ))
         self.ntsc_checkbox = ConfigCheckBox(self, "NTSC", Option.NTSC_MODE)
+        self.ntsc_checkbox.set_tooltip(gettext(
+            "Use the American 60 Hz video mode. Leave off for European "
+            "(PAL) games."
+        ))
 
         AmigaShowBehavior(self.accuracy_label)
         AmigaShowBehavior(self.accuracy_choice)
@@ -127,22 +153,30 @@ class ModelGroup(fsui.Group):
         model_id_s = model_id + "/"
         self.sub_model_ids.clear()
         self.sub_model_titles.clear()
+        technical = []
 
         for i, config in enumerate(Amiga.models):
             if config["id"] == model_id:
                 self.sub_model_ids.append("")
-                self.sub_model_titles.append(config["subtitle"])
             elif config["id"].startswith(model_id_s):
                 self.sub_model_ids.append(config["id"].split("/", 1)[1])
-                self.sub_model_titles.append(config["subtitle"])
             else:
                 continue
+            self.sub_model_titles.append(
+                variant_label(config["id"], config["subtitle"])
+            )
+            technical.append(
+                technical_tooltip(config["title"], config["subtitle"])
+            )
             if sub_model_id == self.sub_model_ids[-1]:
                 sub_model_index = len(self.sub_model_ids) - 1
 
         self.sub_model_choice.clear()
-        for title in self.sub_model_titles:
+        for index, title in enumerate(self.sub_model_titles):
             self.sub_model_choice.add_item(title)
+            self.sub_model_choice.setItemData(
+                index, technical[index], Qt.ToolTipRole
+            )
         self.sub_model_choice.enable(
             LauncherConfig.get(Option.PLATFORM) in AMIGA_PLATFORMS
             and len(self.sub_model_ids) > 1
