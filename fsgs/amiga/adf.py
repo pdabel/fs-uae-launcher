@@ -6,7 +6,7 @@ import hashlib
 from io import BytesIO
 
 # noinspection PyUnresolvedReferences
-from typing import List, Dict
+from typing import List
 
 
 B_SIZE = 512
@@ -33,18 +33,6 @@ def ulong(block: bytes, pos: int) -> int:
     c = block[pos + 2]
     d = block[pos + 3]
     return (a << 24) | (b << 16) | (c << 8) | d
-
-
-def checksum_block(block: bytes) -> int:
-    # clear checksum field
-    data = block[:20] + b"\0\0\0\0" + block[24:]
-    sum = 0
-    for pos in range(0, B_SIZE, 4):
-        sum += ulong(data, pos)
-        sum &= 0xFFFFFFFF
-    sum = -sum
-    sum &= 0xFFFFFFFF
-    return sum
 
 
 def verify_block(data: bytes) -> bool:

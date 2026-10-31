@@ -302,19 +302,15 @@ def updateConfigureAc(version: Version, commit: str = "") -> None:
                 if "_major" in line:
                     k = "FSBUILD_VERSION_MAJOR"
                     v = str(version.major)
-                    d = "Major version"
                 elif "_minor" in line:
                     k = "FSBUILD_VERSION_MINOR"
                     v = str(version.minor)
-                    d = "Minor version"
                 elif "_revision" in line:
                     k = "FSBUILD_VERSION_REVISION"
                     v = str(version.revision)
-                    d = "Revision"
                 else:
                     k = "FSBUILD_VERSION"
                     v = str(version)
-                    d = "Full version"
                 line = f"m4_define([{k.lower()}], [{v}])\n"
             if line.startswith("m4_define([fsbuild_commit"):
                 line = f"m4_define([fsbuild_commit], [{commit}])\n"
@@ -433,27 +429,26 @@ def calculateVersion(
     if "--commit" in sys.argv:
         version.commit = findlastCommit()
 
-    if True:
-        branch = None
-        githubRef = os.environ.get("GITHUB_REF")
-        if githubRef is not None:
-            if githubRef.startswith("refs/heads/"):
-                branch = githubRef[len("refs/heads/") :]
-            if githubRef.startswith("refs/pull/"):
-                branch = "pull" + githubRef[len("refs/pull/") :].replace(
-                    "/", ""
-                )
-        if not branch:
-            branch = subprocess.check_output(
-                ["git", "symbolic-ref", "--short", "HEAD"], encoding="UTF-8"
-            ).strip()
+    branch = None
+    githubRef = os.environ.get("GITHUB_REF")
+    if githubRef is not None:
+        if githubRef.startswith("refs/heads/"):
+            branch = githubRef[len("refs/heads/") :]
+        if githubRef.startswith("refs/pull/"):
+            branch = "pull" + githubRef[len("refs/pull/") :].replace(
+                "/", ""
+            )
+    if not branch:
+        branch = subprocess.check_output(
+            ["git", "symbolic-ref", "--short", "HEAD"], encoding="UTF-8"
+        ).strip()
 
-        if branch == "stable":
-            version.tag = ""
-        elif branch:
-            version.tag = f"-{branch}"
-        else:
-            raise Exception("Cannot calculate version tag from git ref")
+    if branch == "stable":
+        version.tag = ""
+    elif branch:
+        version.tag = f"-{branch}"
+    else:
+        raise Exception("Cannot calculate version tag from git ref")
 
     return version
 

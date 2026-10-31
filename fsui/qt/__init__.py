@@ -81,10 +81,3 @@ def show_warning(message, title=None, parent=None):
     if not title:
         title = gettext("Warning")
     QMessageBox.warning(QParent(parent), title, message)
-
-
-def error_function(title):
-    def error_function_2(message):
-        show_error(message, title)
-
-    return error_function_2

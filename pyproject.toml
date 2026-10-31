@@ -6,4 +6,13 @@ target-version = "py312"
 line-length = 79
 
 [tool.ruff.lint]
-select = ["UP031", "UP032"]
+select = ["F401", "F811", "F841", "UP031", "UP032"]
+
+[tool.ruff.lint.per-file-ignores]
+# Package re-exports.
+"__init__.py" = ["F401"]
+# Re-exported through `from fsui.qt.qt import *` and `from fsui.qt.signal import Signal`.
+"fsui/qt/qt.py" = ["F401"]
+"fsui/qt/signal.py" = ["F401"]
+# `get_data_dir` is re-exported for fsgs/application.py.
+"fsbc/fs.py" = ["F401"]

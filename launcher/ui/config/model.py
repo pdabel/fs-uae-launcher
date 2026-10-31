@@ -99,19 +99,18 @@ class Model:
         self.show_all = show_all
 
     def add(self, item):
-        if True:
-            if item.parent:
-                for i in range(len(self.items) - 1, -1, -1):
-                    if (
-                        self.items[0].parent == item.parent
-                        or self.items[0] == item.parent
-                    ):
-                        self.items.insert(i + 1, item)
-                        break
-                else:
-                    self.items.append(item)
+        if item.parent:
+            for i in range(len(self.items) - 1, -1, -1):
+                if (
+                    self.items[0].parent == item.parent
+                    or self.items[0] == item.parent
+                ):
+                    self.items.insert(i + 1, item)
+                    break
             else:
                 self.items.append(item)
+        else:
+            self.items.append(item)
         return item
 
     def remove(self, item):
@@ -138,30 +137,6 @@ def create_joystick_port_item(c, num: int) -> Item:
     else:
         item = Item(f"Joystick Port {num}")
     return item
-
-
-def create_slirp_item(c):
-    implementation = c.uae_slirp_implementation
-    if implementation == "auto":
-        name = "Auto"
-    elif implementation == "none":
-        name = "None"
-    elif implementation == "builtin":
-        name = "Built-in"
-    elif implementation == "qemu":
-        name = "QEMU"
-    else:
-        name = implementation
-    slirp_item = Item(f"Slirp ({name})")
-
-    if c.uae_slirp_ports:
-        slirp_ports_item = Item("Ports: " + c.uae_slirp_ports)
-        slirp_item.add(slirp_ports_item)
-    if c.uae_slirp_redir:
-        slirp_redirect_item = Item("Redirect: " + c.uae_slirp_redir)
-        slirp_item.add(slirp_redirect_item)
-
-    return slirp_item
 
 
 def create_model(c, show_all=False):

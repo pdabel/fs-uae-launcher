@@ -1,7 +1,6 @@
-import fsui
-from fsui.qt import QObject, QSignal
+from fsui.qt import QSignal
 from .application import Application
-from .button import Button, CustomButton, FlatButton
+from .button import Button, CustomButton
 from .canvas import Canvas
 from .color import Color
 from .font import Font
@@ -15,17 +14,9 @@ from .painter import Painter
 from .panel import Panel
 from .text_area import TextArea
 from .text_field import TextField
-from .window import Window, TitlePanel, TitleSeparator
-
-
-class Object(QObject):
-    pass
+from .window import Window
 
 
 # noinspection PyPep8Naming
 def Signal():
     return QSignal()
-
-
-def screen_size():
-    return fsui.get_screen_size()

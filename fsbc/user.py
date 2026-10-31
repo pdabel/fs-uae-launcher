@@ -1,4 +1,3 @@
-import os
 import sys
 
 import fsboot
@@ -23,20 +22,6 @@ def xdg_user_dir(name):
     return fsboot.xdg_user_dir(name)
 
 
-@memoize
-def get_desktop_dir(allow_create=True):
-    if sys.platform == "win32":
-        path = fsboot.csidl_dir(fsboot.CSIDL_DESKTOP)
-    else:
-        path = xdg_user_dir("DESKTOP")
-        if not path:
-            path = os.path.join(get_home_dir(), "Desktop")
-    path = unicode_path(path)
-    if allow_create and not os.path.isdir(path):
-        os.makedirs(path)
-    return path
-
-
 def get_documents_dir(create=False):
     return fsboot.documents_dir(create=create)
 
@@ -48,20 +33,6 @@ def get_common_documents_dir():
     else:
         raise NotImplementedError("Only for windows")
     path = unicode_path(path)
-    return path
-
-
-@memoize
-def get_pictures_dir(allow_create=True):
-    if sys.platform == "win32":
-        path = fsboot.csidl_dir(CSIDL_MYPICTURES)
-    else:
-        path = xdg_user_dir("PICTURES")
-        if not path:
-            path = os.path.join(get_home_dir(), "Pictures")
-    path = unicode_path(path)
-    if allow_create and not os.path.isdir(path):
-        os.makedirs(path)
     return path
 
 

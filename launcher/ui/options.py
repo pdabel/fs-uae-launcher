@@ -185,14 +185,6 @@ class ConfigWidgetFactory(OptionWidgetFactory):
         super().__init__(check=check, help=help, label=label, expand=expand)
 
 
-class SettingsWidgetFactory(OptionWidgetFactory):
-    """Factory for creating user interface groups for settings."""
-
-    # noinspection PyShadowingBuiltins
-    def __init__(self, check=False, help=True):
-        super().__init__(check=check, help=help, settings=True)
-
-
 def default_value(key):
     option = Option.get(key)
     return option["default"]

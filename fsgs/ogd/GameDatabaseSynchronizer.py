@@ -2,10 +2,7 @@ import json
 import os
 import time
 import xml.etree.cElementTree as ElementTree
-from gzip import GzipFile
-from io import StringIO
 from urllib.parse import quote_plus
-from urllib.request import Request
 
 import requests
 

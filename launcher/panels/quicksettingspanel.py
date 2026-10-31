@@ -4,7 +4,6 @@ import fsui
 from fsgs.option import Option
 from launcher.i18n import gettext
 from launcher.option import options
-from launcher.settings.fullscreenmodebutton import FullscreenModeButton
 from launcher.settings.monitorbutton import MonitorChoice
 from launcher.settings.option_ui import OptionUI
 from launcher.settings.settings_dialog import SettingsDialog
@@ -44,11 +43,8 @@ class QuickSettingsPanel(fsui.Panel):
         for option in quick_settings.split(","):
             option = option.strip().lower()
             if "[" in option:
-                # For future use of e.g.:
-                # option1[platform1,platform2],option2[platform,...]
-                option, platforms = option.split("[", 1)
-            else:
-                platforms = []
+                # Reserved for option1[platform1,platform2] syntax.
+                option, _ = option.split("[", 1)
             if option in options:
                 try:
                     self.add_option(option)
@@ -68,11 +64,6 @@ class QuickSettingsPanel(fsui.Panel):
         self.video_sync_checkbox = VideoSyncCheckBox(self)
         hori_layout.add(self.video_sync_checkbox, margin_right=10)
         self.layout.add(hori_layout, fill=True)
-        if False:
-            self.fullscreen_mode_button = FullscreenModeButton(self)
-            hori_layout.add(
-                self.fullscreen_mode_button, fill=True, margin_right=10
-            )
         self.layout.add_spacer(10)
 
         ConfigBehavior(self, [Option.PLATFORM])

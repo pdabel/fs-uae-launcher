@@ -1,5 +1,4 @@
 import time
-from functools import lru_cache
 
 import fsbc.settings
 from fsgs.filedatabase import FileDatabase

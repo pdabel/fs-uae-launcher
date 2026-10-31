@@ -4,9 +4,8 @@ import subprocess
 import tempfile
 import traceback
 
-from fsbc.application import Application, app
-from fsbc.system import windows, macosx
-from fsgs.plugins.pluginmanager import Plugin
+from fsbc.application import app
+from fsbc.system import windows
 
 
 class FSUAE(object):

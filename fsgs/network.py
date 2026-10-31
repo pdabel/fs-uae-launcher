@@ -1,7 +1,6 @@
 import os
 from functools import lru_cache
 
-from fsbc.application import app
 from fsbc.settings import Settings
 from fsgs.FSGSDirectories import FSGSDirectories
 
@@ -38,10 +37,6 @@ def openretro_server():
         scheme = "http"
         host = server
     return scheme, host
-
-
-def openretro_scheme():
-    return "http"
 
 
 def openretro_url_prefix():

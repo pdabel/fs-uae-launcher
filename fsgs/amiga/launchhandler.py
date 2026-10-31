@@ -24,7 +24,7 @@ from fsgs.download import Downloader
 from fsgs.drivers.gamedriver import GameDriver
 from fsgs.FSGSDirectories import FSGSDirectories
 from fsgs.GameChangeHandler import GameChangeHandler
-from fsgs.GameNameUtil import GameNameUtil
+from fsgs.util.gamenameutil import GameNameUtil
 from fsgs.knownfiles import (
     ACTION_REPLAY_MK_II_2_14_MOD_ROM,
     ACTION_REPLAY_MK_II_2_14_ROM,

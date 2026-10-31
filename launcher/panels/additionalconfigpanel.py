@@ -2,8 +2,6 @@ import fsui
 from launcher.i18n import gettext
 from launcher.option import Option
 from launcher.ui.IconButton import IconButton
-from launcher.ui.behaviors.configbehavior import ConfigBehavior
-from launcher.ui.behaviors.platformbehavior import AmigaShowBehavior
 from launcher.ui.config.configpanel import ConfigPanel
 from launcher.ui.config.configdialog import ConfigDialog
 

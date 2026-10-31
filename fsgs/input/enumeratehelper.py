@@ -110,7 +110,6 @@ class EnumerateHelper(object):
                 port_devices = DeviceManager.get_non_amiga_devices_for_ports(
                     options
                 )
-                from fsgs.platform import Platform
 
                 if ports[0].type_option == Option.C64_PORT_2_TYPE:
                     print("[INPUT] Hack for inverted C64 port order")
@@ -131,8 +130,7 @@ class EnumerateHelper(object):
         print("[INPUT] Old-style port device selection:")
         for port in ports:
             for i, device in enumerate(joystick_like_devices):
-                if True:
-                    joystick_like_devices.pop(i)
-                    port.device = device
-                    break
+                joystick_like_devices.pop(i)
+                port.device = device
+                break
             print("[INPUT] Old Selection:", port.name, port.device)

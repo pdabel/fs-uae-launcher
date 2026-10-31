@@ -338,10 +338,6 @@ def base_dir() -> str:
     return path
 
 
-def getBaseDirectory() -> str:
-    return base_dir()
-
-
 @lru_cache()
 def development() -> bool:
     # FIXME: Document option
@@ -358,14 +354,6 @@ def is_frozen() -> bool:
 
 def is_macos() -> bool:
     return sys.platform == "darwin"
-
-
-def setup_frozen_python_libs() -> None:
-    return
-
-
-def plugin_code_override() -> bool:
-    return _plugin_code_override
 
 
 # _python_dir: str
