@@ -9,6 +9,12 @@ from fsbc.paths import Paths
 from fsgs.FSGSDirectories import FSGSDirectories
 
 
+def normalized_path(path):
+    return os.path.normcase(
+        os.path.normpath(Paths.expand_path(path).replace("\\", "/"))
+    ).replace("\\", "/")
+
+
 class ScanPathsGroup(fsui.Group):
     def __init__(self, parent):
         fsui.Group.__init__(self, parent)
@@ -66,29 +72,36 @@ class ScanPathsGroup(fsui.Group):
 
     @classmethod
     def get_search_path(cls):
-        paths = FSGSDirectories.get_default_search_path()
+        paths = [
+            normalized_path(path)
+            for path in FSGSDirectories.get_default_search_path()
+        ]
         search_path = LauncherSettings.get("search_path")
         for p in search_path.split(";"):
             p = p.strip()
             if not p:
                 continue
             elif p[0] == "-":
-                p = os.path.normpath(Paths.expand_path(p[1:]))
+                p = normalized_path(p[1:])
                 if p in paths:
                     paths.remove(p)
             else:
-                p = os.path.normpath(Paths.expand_path(p))
+                p = normalized_path(p)
                 if p not in paths:
                     paths.append(p)
         # The Configurations dir is always scanned on startup (whenever
         # modification time has changed). If we don't include it here too
         # always, the result will be that the configs sometimes appear (on
         # startup) and disappear (on scan).
-        if not FSGSDirectories.get_configurations_dir() in paths:
-            paths.append(FSGSDirectories.get_configurations_dir())
+        configurations = normalized_path(
+            FSGSDirectories.get_configurations_dir()
+        )
+        if configurations not in paths:
+            paths.append(configurations)
         # Likewise, we force the Kickstarts directory to always be scanned.
-        if not FSGSDirectories.get_kickstarts_dir() in paths:
-            paths.append(FSGSDirectories.get_kickstarts_dir())
+        kickstarts = normalized_path(FSGSDirectories.get_kickstarts_dir())
+        if kickstarts not in paths:
+            paths.append(kickstarts)
         return paths
 
     def on_add_button(self):
@@ -96,36 +109,51 @@ class ScanPathsGroup(fsui.Group):
         search_path = [x.strip() for x in search_path.split(";") if x.strip()]
         path = fsui.pick_directory(parent=self.get_window())
         if path:
+            path = normalized_path(path)
             for i in range(len(search_path)):
                 if search_path[i].startswith("-"):
-                    if path == os.path.normpath(Paths.expand_path(search_path[i][1:])):
+                    if path == normalized_path(search_path[i][1:]):
                         search_path.remove(search_path[i])
                         break
                 else:
-                    if os.path.normpath(Paths.expand_path(search_path[i])) == path:
+                    if normalized_path(search_path[i]) == path:
                         # Already added.
                         break
             else:
-                default_paths = FSGSDirectories.get_default_search_path()
+                default_paths = [
+                    normalized_path(p)
+                    for p in FSGSDirectories.get_default_search_path()
+                ]
                 if path not in default_paths:
-                    search_path.append(Paths.contract_path(path, force_real_case=False))
+                    search_path.append(
+                        Paths.contract_path(path, force_real_case=False)
+                    )
             LauncherSettings.set("search_path", ";".join(search_path))
 
     def on_remove_button(self):
-        path = self.list_view.get_item(self.list_view.get_index())
+        path = normalized_path(
+            self.list_view.get_item(self.list_view.get_index())
+        )
         search_path = LauncherSettings.get("search_path")
         search_path = [x.strip() for x in search_path.split(";") if x.strip()]
         for i in range(len(search_path)):
             if search_path[i].startswith("-"):
-                if path == os.path.normpath(Paths.expand_path(search_path[i][1:])):
+                if path == normalized_path(search_path[i][1:]):
                     # Already removed.
                     break
             else:
-                if os.path.normpath(Paths.expand_path(search_path[i])) == path:
+                if normalized_path(search_path[i]) == path:
                     search_path.remove(search_path[i])
                     break
-        default_paths = FSGSDirectories.get_default_search_path()
+        default_paths = [
+            normalized_path(p)
+            for p in FSGSDirectories.get_default_search_path()
+        ]
         if path in default_paths:
-            stored = "$BASE/" if path == FSGSDirectories.get_base_dir() else Paths.contract_path(path, force_real_case=False)
+            stored = (
+                "$BASE/"
+                if path == normalized_path(FSGSDirectories.get_base_dir())
+                else Paths.contract_path(path, force_real_case=False)
+            )
             search_path.append("-" + stored)
         LauncherSettings.set("search_path", ";".join(search_path))

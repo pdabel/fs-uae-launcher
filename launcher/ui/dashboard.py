@@ -341,7 +341,11 @@ class Dashboard(fsui.Panel):
             if button.text().strip() == gettext("Start"):
                 button.setObjectName("launchButton")
                 button.setText(gettext("Launch Amiga"))
-                button.setIcon(self._icon(QStyle.SP_MediaPlay))
+                button.setIcon(
+                    navigation_icon("fa5s.play", on_accent=True)
+                    if fsui.theme_variant == "modern"
+                    else self._icon(QStyle.SP_MediaPlay)
+                )
         layout.addWidget(self.launch_host.widget(), 1)
         self.launch_host.widget().show()
         return frame

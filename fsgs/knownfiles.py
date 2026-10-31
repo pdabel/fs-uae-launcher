@@ -1,5 +1,18 @@
+import os
 from collections import namedtuple
 from fsgs.platforms import PLATFORM_AMIGA
+
+
+class KnownFilePath:
+    def __init__(self, path=None):
+        self.__path = path
+
+    @property
+    def path(self):
+        return self.__path
+
+    def exists(self):
+        return os.path.exists(self.path)
 
 
 KnownFile = namedtuple("KnownFile", ["sha1", "platform", "name"])
