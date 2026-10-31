@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import Mock, call, patch
 
 import fsui
-from fsui.qt import QDialog, QFontMetrics, QImage, QPainter, QTimer
+from fsui.qt import QDialog, QEvent, QFontMetrics, QImage, QPainter, QTimer
 from fsui.qt.DrawingContext import DrawingContext
 from fsui.qt.qt import configure_qt_environment
 from .WidgetTestCase import WidgetTestCase
@@ -2082,6 +2082,139 @@ class TestDashboard(WidgetTestCase):
             self.application.setFont(font)
             fsui.theme, fsui.theme_variant, fsui.theme_skin = state
         self.run_dialog()
+
+    def finish_dialog(self):
+        """run_dialog, then delete the dialog so later style changes skip it."""
+        self.run_dialog()
+        self.dialog.deleteLater()
+        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+
+    def test_font_preview_keeps_command_line_theme_and_relayouts(self):
+        from fsui.qt import modern_theme
+        from fsui.qt.qt import apply_launcher_theme, theme_applied
+        from launcher.launcher_settings import LauncherSettings
+        from launcher.settings.launchersettingspage import LauncherSettingsPage
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        state = fsui.theme, fsui.theme_variant, fsui.theme_skin
+        settings = {"launcher_theme": "fusion-plain", "launcher_font_size": ""}
+        listeners = []
+
+        def set_setting(key, value):
+            settings[key] = value
+            for listener in list(listeners):
+                listener.on_setting(key, value)
+
+        self.setup_dialog()
+        application = Mock(qapplication=self.application)
+        try:
+            with patch.object(LauncherSettings, "get", side_effect=lambda key: settings.get(key, "")), \
+                    patch.object(LauncherSettings, "set", side_effect=set_setting), \
+                    patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
+                    patch.object(LauncherSettings, "remove_listener", side_effect=listeners.remove), \
+                    patch("launcher.settings.option_ui.app", application), \
+                    patch("launcher.settings.launchersettingspage.app", application):
+                apply_launcher_theme(self.application, "fusion-cyberpunk", "")
+                page = LauncherSettingsPage(self.dialog)
+                self.assertEqual(fsui.theme_skin, "cyberpunk")
+
+                set_setting("launcher_font_size", "12")
+                self.assertEqual(fsui.theme_skin, "cyberpunk")
+                self.assertEqual(self.application.font().pointSize(), 12)
+
+                set_setting("launcher_theme", "fusion-plain")
+                self.assertEqual(fsui.theme_variant, "plain")
+
+                layouts = [
+                    group.label_layout for group in page.option_groups
+                    if hasattr(group, "label_layout")
+                ]
+                self.assertTrue(layouts)
+                set_setting("launcher_font_size", "8")
+                small = layouts[0].min_width
+                set_setting("launcher_font_size", "24")
+                large = layouts[0].min_width
+                self.assertGreater(large, small)
+                self.assertEqual({layout.min_width for layout in layouts}, {large})
+            self.finish_dialog()
+        finally:
+            theme_applied._refs = []
+            modern_theme.apply_modern_theme(self.application, "modern")
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+            fsui.theme, fsui.theme_variant, fsui.theme_skin = state
+
+    def test_font_change_reruns_fsui_layouts(self):
+        from fsui.qt import modern_theme
+        from fsui.qt.qt import apply_launcher_theme
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        state = fsui.theme, fsui.theme_variant, fsui.theme_skin
+        try:
+            apply_launcher_theme(self.application, "fusion-plain", "8")
+            self.setup_dialog()
+            panel = fsui.Panel(self.dialog)
+            panel.layout = fsui.VerticalLayout()
+            label = fsui.Label(panel, "A fairly long label for measuring")
+            panel.layout.add(label)
+            self.dialog.layout = fsui.VerticalLayout()
+            self.dialog.layout.add(panel, fill=True, expand=True)
+            self.dialog.set_size((900, 400))
+            self.dialog.show()
+            self.application.processEvents()
+            before = label.height()
+            apply_launcher_theme(self.application, "fusion-plain", "24")
+            self.assertGreater(label.height(), before)
+            self.assertGreaterEqual(label.height(), label.minimumSizeHint().height())
+            self.dialog.close()
+        finally:
+            modern_theme.apply_modern_theme(self.application, "modern")
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+            fsui.theme, fsui.theme_variant, fsui.theme_skin = state
+        self.finish_dialog()
+
+    def test_paged_dialog_navigation_follows_font_and_theme(self):
+        from fsui.qt import QFont, modern_theme
+        from fsui.qt.qt import apply_launcher_theme
+        from launcher.ui.pageddialog import PagedDialog
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        state = fsui.theme, fsui.theme_variant, fsui.theme_skin
+        try:
+            apply_launcher_theme(self.application, "fusion-modern", "10")
+            self.setup_dialog()
+            paged = PagedDialog(self.dialog, "Navigation")
+            paged.add_page("Common", lambda parent: fsui.Panel(parent), bold=True)
+            paged.add_page("Other", lambda parent: fsui.Panel(parent))
+            model = paged.list_view.model()
+            self.assertEqual(model.item(0).sizeHint().height(), 42)
+            apply_launcher_theme(self.application, "fusion-workbench", "20")
+            first, second = model.item(0), model.item(1)
+            self.assertEqual(first.sizeHint().height(), 44)
+            self.assertEqual(first.font().pointSize(), 20)
+            self.assertGreaterEqual(first.font().weight(), QFont.Bold)
+            self.assertLess(second.font().weight(), QFont.Bold)
+            self.assertEqual(second.font().pointSize(), 20)
+            apply_launcher_theme(self.application, "fusion-modern", "10")
+            self.assertEqual(model.item(0).sizeHint().height(), 42)
+            self.assertEqual(model.item(0).font().pointSize(), 10)
+            paged.close()
+        finally:
+            modern_theme.apply_modern_theme(self.application, "modern")
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+            fsui.theme, fsui.theme_variant, fsui.theme_skin = state
+        self.finish_dialog()
 
     def test_restart_button_confirmation(self):
         from fsui.qt import QMessageBox

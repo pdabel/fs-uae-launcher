@@ -3,6 +3,9 @@ from fsui.qt import QListView, QStandardItemModel, QStandardItem
 from .widget_mixin import WidgetMixin
 
 
+BOLD_ROLE = Qt.UserRole + 1
+
+
 class ListView(QListView, WidgetMixin):
 
     item_selected = Signal(object)
@@ -75,12 +78,22 @@ class ListView(QListView, WidgetMixin):
                 item.setIcon(icon.qicon(16))
             except TypeError:
                 item.setIcon(icon.qicon)
-        item.setSizeHint(QSize(-1, self._row_height))
-        if bold:
-            font = self.font()
-            font.setWeight(QFont.Bold)
-            item.setFont(font)
+        item.setData(bold, BOLD_ROLE)
         self._model.appendRow(item)
+        self.refresh_items(self._model.rowCount() - 1)
+
+    def refresh_items(self, row=None):
+        """Re-apply row height and fonts, e.g. after a theme or font change."""
+        rows = range(self._model.rowCount()) if row is None else [row]
+        for index in rows:
+            item = self._model.item(index)
+            item.setSizeHint(QSize(-1, self._row_height))
+            if item.data(BOLD_ROLE):
+                font = self.font()
+                font.setWeight(QFont.Bold)
+                item.setFont(font)
+            else:
+                item.setData(None, Qt.FontRole)
 
     def get_item(self, index):
         return self._model.item(index).text()

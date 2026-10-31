@@ -25,17 +25,26 @@ class SettingsPage(fsui.Panel):
             self, name, description=description, expand=True
         )
         self.option_groups.append(group)
+        self._sync_label_widths()
+        self.layout.add(group, fill=True, margin_top=10, margin_bottom=10)
+        self.options_on_page.add(name)
+        return group
+
+    def _sync_label_widths(self, reset=False):
         label_layouts = [
             item.label_layout for item in self.option_groups
             if hasattr(item, "label_layout")
         ]
+        if reset:
+            for layout in label_layouts:
+                layout.min_width = 0
         if label_layouts:
             width = max(layout.get_min_width() for layout in label_layouts)
             for layout in label_layouts:
                 layout.min_width = width
-        self.layout.add(group, fill=True, margin_top=10, margin_bottom=10)
-        self.options_on_page.add(name)
-        return group
+
+    def on_theme_changed(self):
+        self._sync_label_widths(reset=True)
 
     def add_section(self, title):
         label = fsui.HeadingLabel(self, title)
