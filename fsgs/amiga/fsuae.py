@@ -11,7 +11,7 @@ from fsgs.plugins.pluginmanager import Plugin
 
 class FSUAE(object):
     @classmethod
-    def start_with_config(cls, config, cwd=None):
+    def start_with_config(cls, config, cwd=None, monitor=None):
         print("FSUAE.start_with_config:")
         tf = tempfile.NamedTemporaryFile(suffix=".fs-uae", delete=False)
         config_file = tf.name
@@ -21,10 +21,10 @@ class FSUAE(object):
                 tf.write(line.encode("UTF-8"))
                 tf.write(b"\n")
         args = [config_file]
-        return cls.start_with_args(args, cwd=cwd), config_file
+        return cls.start_with_args(args, cwd=cwd, monitor=monitor), config_file
 
     @classmethod
-    def start_with_args(cls, args, cwd=None, **kwargs):
+    def start_with_args(cls, args, cwd=None, monitor=None, **kwargs):
         print("FSUAE.start_with_args:", args)
         exe = PluginExecutableFinder().find_executable("fs-uae")
         if exe is None:
@@ -43,7 +43,7 @@ class FSUAE(object):
         env = os.environ.copy()
         print(repr(env))
         try:
-            cls.center_window(args, env)
+            cls.center_window(args, env, monitor=monitor)
         except Exception:
             traceback.print_exc()
         cls.add_environment_from_settings(env)
@@ -73,7 +73,7 @@ class FSUAE(object):
                 env[key] = value
 
     @classmethod
-    def center_window(cls, args, env):
+    def center_window(cls, args, env, monitor=None):
         # FIXME: does not really belong here (dependency loop)
         from launcher.launcher_config import LauncherConfig
         from launcher.launcher_settings import LauncherSettings
@@ -94,7 +94,8 @@ class FSUAE(object):
             height = 540
         from fsgs.drivers.gamedriver import GameDriver
 
-        monitor = LauncherConfig.get("monitor") or LauncherSettings.get("monitor")
+        if monitor is None:
+            monitor = LauncherConfig.get("monitor") or LauncherSettings.get("monitor")
         screen_x, screen_y, screen_w, screen_h = GameDriver.screen_rect_for_monitor(monitor)
         x = screen_x + max(0, (screen_w - width) // 2)
         y = screen_y + max(0, (screen_h - height) // 2)

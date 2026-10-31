@@ -217,3 +217,93 @@ def test_refresh_rate_uses_selected_qt_screen_when_xrandr_does_not_match(
         "fsgs.drivers.gamedriver.RefreshRateTool", lambda: tool
     )
     assert GameDriver.screen_refresh_rate_for_monitor(display_id(screen)) == 60
+
+
+def test_saved_serial_follows_reconnected_monitor():
+    saved = display_id(display("DP-1", serial="physical-monitor"))
+    primary = display("HDMI-1", serial="other-monitor")
+    reconnected = display("DP-2", serial="physical-monitor")
+    assert screen_index([primary, reconnected], saved, primary) == 1
+
+
+def test_ambiguous_serial_does_not_select_arbitrary_monitor():
+    saved = display_id(display("DP-1", serial="duplicate"))
+    primary = display("HDMI-1", serial="other")
+    assert (
+        screen_index(
+            [
+                display("DP-2", serial="duplicate"),
+                primary,
+                display("DP-3", serial="duplicate"),
+            ],
+            saved,
+            primary,
+        )
+        == 1
+    )
+
+
+def test_explicit_context_monitor_overrides_global_selection(monkeypatch):
+    from fsgs.amiga.fsuae import FSUAE
+    from fsgs.drivers.gamedriver import GameDriver
+    from launcher.launcher_config import LauncherConfig
+    from launcher.launcher_settings import LauncherSettings
+
+    monkeypatch.setattr(
+        LauncherConfig, "get", lambda key: "global" if key == "monitor" else ""
+    )
+    monkeypatch.setattr(LauncherSettings, "get", lambda key: "")
+    selected = []
+    monkeypatch.setattr(
+        GameDriver,
+        "screen_rect_for_monitor",
+        lambda monitor: selected.append(monitor) or (0, 0, 1920, 1080),
+    )
+    monkeypatch.setattr(
+        GameDriver, "fsuae_monitor_for_monitor", lambda monitor: None
+    )
+    FSUAE.center_window([], {}, monitor="context")
+    FSUAE.center_window([], {}, monitor="")
+    assert selected == ["context", ""]
+
+
+def test_startup_forwards_effective_monitor(tmp_path, monkeypatch):
+    from fsgs.amiga.fsuae import FSUAE
+    from unittest.mock import Mock
+
+    startup = Mock()
+    monkeypatch.setattr(FSUAE, "start_with_args", startup)
+    _, path = FSUAE.start_with_config(
+        ["amiga_model = A500"], monitor="context"
+    )
+    try:
+        assert startup.call_args.kwargs["monitor"] == "context"
+    finally:
+        from pathlib import Path
+
+        Path(path).unlink()
+
+
+def test_amiga_driver_forwards_its_launch_context_monitor(monkeypatch):
+    from fsgs.amiga.fsuae import FSUAE
+    from fsgs.amiga.fsuaeamigadriver import FSUAEAmigaDriver
+    from unittest.mock import Mock
+
+    process = Mock()
+    startup = Mock(return_value=(process, "/temporary/config.fs-uae"))
+    monkeypatch.setattr(FSUAE, "start_with_config", startup)
+    driver = SimpleNamespace(
+        cwd=SimpleNamespace(path="/temporary"),
+        launch_handler=SimpleNamespace(
+            config={"monitor": "context"}, create_config=lambda: []
+        ),
+        emulator=SimpleNamespace(process=None),
+        write_emulator_pid_file=Mock(),
+        emulator_pid_file=lambda: "/temporary/emulator.pid",
+    )
+    FSUAEAmigaDriver.run(driver)
+    assert startup.call_args.kwargs == {
+        "cwd": "/temporary",
+        "monitor": "context",
+    }
+    assert driver.emulator.process is process
