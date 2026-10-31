@@ -8,6 +8,10 @@ main_thread_id = threading.current_thread().ident
 already_run = False
 
 
+class AdditionalInfo:
+    pass
+
+
 def is_running_in_debugger():
     return bool(sys.gettrace())
 
@@ -98,4 +102,3 @@ def _handle_exception(exc_type, exc_value, exc_traceback):
             Signal("quit").notify()
         except Exception as e:
             print(repr(e))
-

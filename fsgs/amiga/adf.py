@@ -35,6 +35,14 @@ def ulong(block: bytes, pos: int) -> int:
     return (a << 24) | (b << 16) | (c << 8) | d
 
 
+def checksum_block(block: bytes) -> int:
+    data = block[:20] + b"\0\0\0\0" + block[24:]
+    checksum = 0
+    for pos in range(0, B_SIZE, 4):
+        checksum = (checksum + ulong(data, pos)) & 0xFFFFFFFF
+    return -checksum & 0xFFFFFFFF
+
+
 def verify_block(data: bytes) -> bool:
     sum = 0
     for pos in range(0, B_SIZE, 4):
