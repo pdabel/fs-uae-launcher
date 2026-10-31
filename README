@@ -351,10 +351,14 @@ Help and netplay information buttons and status-bar notices use the same cyan
 icon family as the navigation rail in Modern Dark.
 
 ### Quick Theme Switching
-Choosing a theme or font size in Settings > FS-UAE Launcher applies it to
+Choosing a theme or interface size in Settings > FS-UAE Launcher applies it to
 the running launcher immediately: the application palette and stylesheet,
 the dashboard, Settings navigation and netplay server panel all re-render
 (`fsui.qt.qt.apply_launcher_theme` notifies `theme_applied` listeners).
+The interface size is a Smaller / Default / Larger slider
+(`launcher/settings/ui_scale.py`) with a "Use Default Size" button; it still
+stores a point size in `launcher_font_size`, so existing preferences and
+Reset to Defaults behave as before. Dragging previews on release.
 Icon sets and window sizes chosen at startup are refreshed by clicking
 Restart Launcher. After confirmation, preferences are saved and the launcher
 reopens with the selected theme and font. The current base directory is
