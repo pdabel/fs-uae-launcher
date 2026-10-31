@@ -1,4 +1,5 @@
 import fsui
+from fsui.qt import modern_theme
 from launcher.ui.widgets import CloseButton
 from .skin import LauncherTheme
 
@@ -49,17 +50,17 @@ class PagedDialog(fsui.Window):
             self.list_view.set_row_height(42)
             self.list_view.setIconSize(QSize(20, 20))
             self.list_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-            self.list_view.setStyleSheet("""
-                QListView { background: #1c1e2b; color: #aeb8ce;
-                    border: 0; border-right: 1px solid #303447;
+            self.list_view.setStyleSheet(modern_theme.render("""
+                QListView { background: @nav@; color: @nav_text@;
+                    border: 0; border-right: 1px solid @nav_border@;
                     padding: 20px 10px; outline: none; }
                 QListView::item { padding-left: 12px; margin: 2px 0;
                     border: 0; border-left: 3px solid transparent;
-                    border-radius: 4px; }
-                QListView::item:hover { background: #282d40; color: white; }
-                QListView::item:selected { background: #253e54;
-                    color: #73cef8; border-left: 3px solid #46b7ee; }
-            """)
+                    border-radius: @radius_small@; }
+                QListView::item:hover { background: @nav_hover@; color: @brand@; }
+                QListView::item:selected { background: @pressed@;
+                    color: @accent_soft@; border-left: 3px solid @accent@; }
+            """))
             if fsui.theme_variant != "modern":
                 self.list_view.set_row_height(44)
                 self.list_view.setIconSize(QSize(20, 20) if fsui.theme_variant == "plain" else QSize(24, 24))
