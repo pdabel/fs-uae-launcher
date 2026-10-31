@@ -10,29 +10,32 @@ render on GitHub and in VS Code's Markdown preview.
 | **Scope** | The Python launcher (`fs-uae-launcher`). The Go netplay server has its own notes in [fsnp-server/README.md](../fsnp-server/README.md) and [netplay-go-server-design.md](netplay-go-server-design.md). |
 | **Out of scope** | `venv-*/`, `oyoyo/` internals |
 
-## Layers
+## Responsibility groups
 
-The code is layered from the bottom up. Each package imports only from the
-layers below it; the counts are `from X import` / `import X` statements.
+These are responsibility groups, not strict import layers. The diagram shows
+selected dependencies rather than an exhaustive import graph. Cross-group
+imports exist in both directions: for example, `fsbc.settings` imports
+`launcher.version` and `fsgs.amiga.amiga`, while `fsgs.drivers.gamedriver`
+imports `launcher.option`.
 
 ```mermaid
 flowchart TB
-    subgraph app["Application layer"]
+    subgraph app["Applications"]
         launcher["launcher/<br/>Main window, dashboard, settings,<br/>config panels, scanning, netplay client"]
         workspace["workspace/<br/>Tool windows: ADF/HDF creator,<br/>joystick config, login, locker upload"]
         arcade["arcade/<br/>Arcade front-end (minimal)"]
     end
 
-    subgraph domain["Game-systems layer"]
+    subgraph domain["Game-system services"]
         fsgs["fsgs/<br/>Platforms, drivers, databases,<br/>archives, downloads, OpenRetro client"]
         amitools["amitools/<br/>Amiga filesystem and ROM tools"]
     end
 
-    subgraph ui["UI toolkit layer"]
+    subgraph ui["UI toolkit"]
         fsui["fsui/<br/>Widget abstraction over Qt 6 (QtPy/PySide6),<br/>themes, dialogs, layouts"]
     end
 
-    subgraph base["Base layer"]
+    subgraph base["Framework and bootstrap"]
         fsbc["fsbc/<br/>Application, Settings, Signal,<br/>paths, tasks, logging"]
         fspy["fspy/<br/>zipfile patches"]
         fstd["fstd/<br/>desktop helpers"]
@@ -47,9 +50,9 @@ flowchart TB
         openretro["OpenRetro / oagd.net"]
     end
 
-    launcher -- "20+" --> fsui
-    launcher -- "25+" --> fsgs
-    launcher -- "15+" --> fsbc
+    launcher --> fsui
+    launcher --> fsgs
+    launcher --> fsbc
     launcher --> fsboot
     launcher --> irc
     launcher --> fsnp
@@ -58,7 +61,8 @@ flowchart TB
     workspace --> fsgs
     arcade --> fsgs
     arcade --> fsui
-    fsgs -- "10+" --> fsbc
+    fsgs --> fsbc
+    fsgs -. "launcher option metadata" .-> launcher
     fsgs --> fspy
     fsgs --> amitools
     fsgs --> fsuae
@@ -66,17 +70,19 @@ flowchart TB
     fsui --> fsbc
     fsui --> qt
     fsbc --> fsboot
+    fsbc -. "version metadata" .-> launcher
+    fsbc -. "Amiga settings defaults" .-> fsgs
 ```
 
 ### Package responsibilities
 
 | Package | Responsibility | Key modules |
 |---|---|---|
-| `fsboot/` | First thing imported. Fixes `sys.path`, finds the base directory (`~/FS-UAE` or a portable marker), exposes `fsboot.init()`. | [fsboot/__init__.py](../fsboot/__init__.py) |
+| `fsboot/` | First thing imported. `init()` records startup arguments and sets up `sys.path`. `base_dir()` resolves the data root lazily: existing `~/FS-UAE`, otherwise `documents_dir()/FS-UAE`, with portable markers and configured overrides taking precedence. | [fsboot/__init__.py](../fsboot/__init__.py) |
 | `fsbc/` | Framework base: `Application`, `Settings` (persisted key/value), `Signal`, `Task`, path and desktop helpers, logging setup. | [application.py](../fsbc/application.py), [settings.py](../fsbc/settings.py), [signal.py](../fsbc/signal.py), [init.py](../fsbc/init.py) |
 | `fspy/`, `fstd/` | Small stdlib patches and desktop-environment helpers. | [fspy/zipfile.py](../fspy/zipfile.py) |
 | `fsui/` | Toolkit-neutral widget API (`Panel`, `Button`, `Choice`, layouts, dialogs) implemented on Qt in `fsui/qt/`. Owns the theme engine. | [fsui/qt/qt.py](../fsui/qt/qt.py), [modern_theme.py](../fsui/qt/modern_theme.py), [retro_theme.py](../fsui/qt/retro_theme.py) |
-| `fsgs/` | Everything about games and emulators that is not UI: the `fsgs` context singleton, platforms and drivers, SQLite databases, archive reading, file scanning, OpenRetro sync, plugin discovery. | [context.py](../fsgs/context.py), [Database.py](../fsgs/Database.py), [amiga/launchhandler.py](../fsgs/amiga/launchhandler.py), [drivers/gamedriver.py](../fsgs/drivers/gamedriver.py) |
+| `fsgs/` | Game and emulator services: the `fsgs` context singleton, platforms and drivers, SQLite databases, archive reading, file scanning, OpenRetro sync, plugin discovery. Some driver code also depends on launcher options and Qt display information. | [context.py](../fsgs/context.py), [Database.py](../fsgs/Database.py), [amiga/launchhandler.py](../fsgs/amiga/launchhandler.py), [drivers/gamedriver.py](../fsgs/drivers/gamedriver.py) |
 | `amitools/` | Vendored Amiga tooling used for ADF/HDF and ROM inspection. | `amitools/fs`, `amitools/rom` |
 | `launcher/` | The application: `LauncherApp`, `LauncherWindow`, the dashboard shell, configuration panels, the Settings dialog, startup scans, netplay client, option metadata. | [launcherapp.py](../launcher/launcherapp.py), [ui/launcherwindow.py](../launcher/ui/launcherwindow.py), [ui/dashboard.py](../launcher/ui/dashboard.py), [option.py](../launcher/option.py) |
 | `workspace/` | Secondary tool windows opened from the launcher (ADF and HDF creators, joystick configuration, OpenRetro login/logout, locker upload, refresh), with their own small widget set in `workspace/ui`. | [workspace/apps](../workspace/apps) |
@@ -91,6 +97,7 @@ sequenceDiagram
     autonumber
     participant S as fs-uae-launcher (script)
     participant B as fsboot
+    participant C as launcher.apps (dispatcher)
     participant M as launcher.apps.fs_uae_launcher
     participant A as LauncherApp
     participant Q as fsui / Qt
@@ -98,9 +105,11 @@ sequenceDiagram
     participant D as Dashboard
 
     S->>B: fsboot.init()
-    Note over B: sys.path, base dir,<br/>portable marker
-    S->>M: app_main()
-    M->>M: fsbc.init.initialize_application()
+    Note over B: Record startup arguments,<br/>set up sys.path
+    S->>C: main()
+    C->>C: Select app_main; initialize_application()
+    Note over B: base_dir() resolves lazily<br/>when application services request it
+    C->>M: app_main()
     M->>A: LauncherApp()
     A->>Q: fsui.Application → init_qt()
     Q->>Q: initialize_qt_style()
@@ -164,7 +173,7 @@ saves settings and re-executes the process so a new theme applies cleanly.
 
 ```mermaid
 flowchart LR
-    subgraph basedir["Base directory (~/FS-UAE or portable)"]
+    subgraph basedir["Base directory (existing ~/FS-UAE, otherwise Documents/FS-UAE; portable or configured override)"]
         conf["Data/Settings.ini<br/>(fsbc.Settings)"]
         cfg["Configurations/*.fs-uae"]
         db1[("Data/Databases/Launcher.sqlite<br/>fsgs/Database.py<br/>configs, search index")]
@@ -186,6 +195,13 @@ flowchart LR
     np --> fsnp["fsnp-server child process<br/>(launcher/server/Server.py)"]
 ```
 
+`fsboot.base_dir()` resolves this root lazily. Explicit `--base-dir` takes
+precedence, followed by a portable marker, `FS_UAE_BASE_DIR`, the saved
+`base-dir` preference, and the default location. Without an override, an
+existing `~/FS-UAE` is used; otherwise the root is `documents_dir()/FS-UAE`
+(typically `~/Documents/FS-UAE`, depending on the desktop's Documents setting).
+Custom portable directory mappings can also change the subfolders shown above.
+
 ## Tests
 
 | Suite | Command | Platform |
@@ -195,6 +211,15 @@ flowchart LR
 | Lint | `ruff check` | any |
 | Go server | `make -C fsnp-server check` | Go toolchain |
 
-CI runs these in [.github/workflows/linux.yml](../.github/workflows/linux.yml).
-Qt tests that build a real `LauncherWindow` use isolated temporary base
-directories and mock the IRC transport and server process.
+Python, Qt and Ruff checks run in
+[.github/workflows/linux.yml](../.github/workflows/linux.yml).
+The Go server checks run in
+[.github/workflows/netplay-server.yml](../.github/workflows/netplay-server.yml);
+[.github/workflows/ci.yml](../.github/workflows/ci.yml) calls the workflows
+separately.
+
+The Qt suite tests widgets, settings panels, theme components, and dashboard
+composition. Dashboard tests construct a generic `fsui.Window` with stubbed
+books and panels, and mock IRC transport and the server process. Some launcher
+handlers are called on that test owner, but the suite does not construct a
+real `LauncherWindow` and is not an end-to-end launcher integration test.

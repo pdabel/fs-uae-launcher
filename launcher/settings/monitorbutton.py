@@ -7,6 +7,7 @@ from fsgs.displays import (
     display_id,
     display_label,
     fsuae_monitor,
+    matching_display_index,
     screen_index,
 )
 from launcher.i18n import gettext
@@ -164,6 +165,13 @@ class MonitorChoice(fsui.Choice):
                 ),
                 None,
             )
+        if selected is None:
+            if current.startswith("display:"):
+                matching = matching_display_index(
+                    self.application.screens(), current
+                )
+                if matching is not None:
+                    selected = matching + 1
         if selected is None:
             legacy = {
                 "left": gettext("Left"),

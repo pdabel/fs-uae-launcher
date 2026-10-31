@@ -1,3 +1,4 @@
+import os
 import sys
 
 import fsboot
@@ -20,6 +21,30 @@ def get_user_name():
 @memoize
 def xdg_user_dir(name):
     return fsboot.xdg_user_dir(name)
+
+
+@memoize
+def get_desktop_dir(allow_create=True):
+    if sys.platform == "win32":
+        path = fsboot.csidl_dir(CSIDL_DESKTOP)
+    else:
+        path = xdg_user_dir("DESKTOP") or os.path.join(get_home_dir(), "Desktop")
+    path = unicode_path(path)
+    if allow_create:
+        os.makedirs(path, exist_ok=True)
+    return path
+
+
+@memoize
+def get_pictures_dir(allow_create=True):
+    if sys.platform == "win32":
+        path = fsboot.csidl_dir(CSIDL_MYPICTURES)
+    else:
+        path = xdg_user_dir("PICTURES") or os.path.join(get_home_dir(), "Pictures")
+    path = unicode_path(path)
+    if allow_create:
+        os.makedirs(path, exist_ok=True)
+    return path
 
 
 def get_documents_dir(create=False):

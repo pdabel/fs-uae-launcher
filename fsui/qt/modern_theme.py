@@ -112,7 +112,7 @@ SYNTHWAVE = replace(
     disabled_text="#6f5c93", nav_text="#d5bdea",
     accent="#ff9f43", accent_hover="#ffb86b", accent_text="#2a1300",
     accent_soft="#ff5fa2", icon="#f6c177", highlight="#6a2a63",
-    pressed="#4a2160",
+    pressed="#3f1b55",
     border="#45307a", border_hover="#ff5fa2", border_strong="#5a3f94",
     nav_border="#2f1f57", disabled_border="#33255a", hover="#3a2868",
     nav_hover="#2a1a4e",
