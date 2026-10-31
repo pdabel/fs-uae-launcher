@@ -129,6 +129,7 @@ class ModelGroup(fsui.Group):
             print("sub model list is currently updating")
             return
         index = self.sub_model_choice.get_index()
+        self.update_sub_model_tooltip(index)
         model = self.model_ids[self.model_choice.get_index()]
         sub_model = self.sub_model_ids[index]
         if sub_model:
@@ -177,11 +178,25 @@ class ModelGroup(fsui.Group):
             self.sub_model_choice.setItemData(
                 index, technical[index], Qt.ToolTipRole
             )
+        self.sub_model_technical = technical
         self.sub_model_choice.enable(
             LauncherConfig.get(Option.PLATFORM) in AMIGA_PLATFORMS
             and len(self.sub_model_ids) > 1
         )
+        self.update_sub_model_tooltip(sub_model_index)
         return sub_model_index
+
+    def update_sub_model_tooltip(self, index):
+        """Show the technical details on the control itself.
+
+        Single-variant families disable the combo, so its item tooltips
+        cannot be opened.
+        """
+        text = gettext("Memory, processor and ROM variant of this model")
+        technical = getattr(self, "sub_model_technical", [])
+        if 0 <= index < len(technical):
+            text += "\n" + technical[index]
+        self.sub_model_choice.set_tooltip(text)
 
     def on_amiga_model_config(self, value):
         if value == "":
@@ -206,6 +221,7 @@ class ModelGroup(fsui.Group):
                 break
         self.model_choice.set_index(model_index)
         self.sub_model_choice.set_index(sub_model_index)
+        self.update_sub_model_tooltip(sub_model_index)
         self.sub_model_updating = False
 
     def on_accuracy_config(self, value):
