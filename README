@@ -112,6 +112,9 @@ be deleted this way. An open deleted configuration returns to the default
 configuration, discarding its unsaved changes. Cancel leaves everything intact.
 Deleting a different row preserves the currently loaded configuration and edits.
 Finish any active database scan before deleting configurations.
+Deletion keeps a private recovery copy until both indexes commit. A failed
+commit restores the configuration and its index records; if file restoration
+also fails, the recovery copy's location is reported in the launcher log.
 
 ## CPU Performance (Linux)
 
