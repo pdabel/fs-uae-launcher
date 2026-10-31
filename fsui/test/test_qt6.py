@@ -463,6 +463,23 @@ class TestQt6(WidgetTestCase):
         self.assertNotEqual(images["windows311"], images["workbench"])
         self.assertNotEqual(images["modern"], images["workbench"])
 
+    @staticmethod
+    def contrast_ratio(foreground, background):
+        def luminance(value):
+            channels = []
+            for index in (1, 3, 5):
+                channel = int(value[index:index + 2], 16) / 255
+                channels.append(
+                    channel / 12.92 if channel <= 0.03928
+                    else ((channel + 0.055) / 1.055) ** 2.4
+                )
+            return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+
+        lighter, darker = sorted(
+            (luminance(foreground), luminance(background)), reverse=True
+        )
+        return (lighter + 0.05) / (darker + 0.05)
+
     def test_modern_skins_resolve_all_tokens_and_differ(self):
         from fsui.qt import QColor, modern_theme
 
@@ -487,6 +504,15 @@ class TestQt6(WidgetTestCase):
                     QColor(skin.pressed).lightness(),
                 )
                 windows.add(skin.window)
+                self.assertGreaterEqual(
+                    self.contrast_ratio(skin.accent_soft, skin.pressed), 4.5
+                )
+                self.assertGreaterEqual(
+                    self.contrast_ratio(skin.accent_text, skin.accent), 4.5
+                )
+                self.assertGreaterEqual(
+                    self.contrast_ratio(skin.nav_text, skin.nav), 4.5
+                )
         self.assertEqual(len(windows), len(modern_theme.SKINS))
         self.assertEqual(
             modern_theme.render("@icons@/check.svg", "modern").endswith("/res/check.svg"),
@@ -539,12 +565,10 @@ class TestQt6(WidgetTestCase):
                     initialize_qt_style(self.application)
             self.assertEqual(fsui.theme_skin, "")
         finally:
-            self.application.setPalette(palette)
-            self.application.setStyleSheet(stylesheet)
-            self.application.setFont(font)
             modern_theme.apply_modern_theme(self.application, "modern")
             self.application.setPalette(palette)
             self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
             fsui.theme, fsui.theme_variant, fsui.theme_skin = state
 
     def test_modern_skin_colours_reach_navigation_and_icons(self):
@@ -567,6 +591,8 @@ class TestQt6(WidgetTestCase):
                         with patch("launcher.ui.navigation_icons.qta.icon", wraps=qta.icon) as icon:
                             navigation_icon("fa5s.save")
                             icon.assert_called_with("fa5s.save", color=skin.icon)
+                            navigation_icon("fa5s.play", on_accent=True)
+                            icon.assert_called_with("fa5s.play", color=skin.accent_text)
                         self.setup_dialog()
                         paged = PagedDialog(self.dialog, "Skins")
                         self.assertIn(skin.nav, paged.list_view.styleSheet())
