@@ -100,6 +100,14 @@ class TestQt6(WidgetTestCase):
             self.assertIn("HDMI-1", choice.currentText())
             self.assertEqual(choice.get_index(), 1)
             self.assertEqual(settings["monitor"], display_id(second))
+            reconnected = display("HDMI-2", 0)
+            reconnected.serialNumber = second.serialNumber
+            screens[:] = [first, reconnected]
+            choice.refresh()
+            self.assertIn("HDMI-2", choice.currentText())
+            self.assertNotIn("unavailable", choice.currentText())
+            self.assertEqual(choice.get_index(), 2)
+            self.assertEqual(settings["monitor"], display_id(second))
             settings["monitor"] = "right"
             choice.refresh()
             self.assertIn("legacy", choice.currentText())
@@ -294,6 +302,9 @@ class TestQt6(WidgetTestCase):
             group.performance_button.widget().click()
             group.on_timeout()
             process_class.return_value.kill.assert_called_once()
+            group.on_process_error(process_class.Crashed)
+            self.assertTrue(group.busy)
+            error.assert_not_called()
             group.on_process_finished(9, process_class.CrashExit)
             self.assertIn("timed out", error.call_args.args[0])
             self.assertFalse(group.busy)

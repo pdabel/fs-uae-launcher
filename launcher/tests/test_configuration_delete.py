@@ -1,3 +1,4 @@
+import os
 import sqlite3
 
 import pytest
@@ -63,8 +64,12 @@ def test_permission_failure_keeps_file_and_indexes(
 ):
     path, database, files = indexed_configuration
 
-    def denied(path):
-        raise PermissionError("Permission denied")
+    unlink = os.unlink
+
+    def denied(target, **kwargs):
+        if target == str(path):
+            raise PermissionError("Permission denied")
+        return unlink(target, **kwargs)
 
     monkeypatch.setattr("launcher.configuration_scanner.os.unlink", denied)
     with pytest.raises(PermissionError):
@@ -138,3 +143,58 @@ def test_delete_symbolic_link_does_not_remove_its_target(
     ConfigurationScanner.delete_configuration(database, str(path))
     assert not path.is_symlink()
     assert target.read_text() == "[fs-uae]\namiga_model = A500\n"
+
+
+@pytest.mark.parametrize("failed_database", ["launcher", "files"])
+def test_commit_failure_restores_file_and_both_indexes(
+    indexed_configuration, monkeypatch, failed_database
+):
+    path, database, files = indexed_configuration
+    failed = database if failed_database == "launcher" else files
+    commit = failed.commit
+    calls = 0
+
+    def fail_once():
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise sqlite3.OperationalError("Commit failed")
+        commit()
+
+    monkeypatch.setattr(failed, "commit", fail_once)
+    with pytest.raises(sqlite3.OperationalError, match="Commit failed"):
+        ConfigurationScanner.delete_configuration(database, str(path))
+    assert path.read_text() == "[fs-uae]\namiga_model = A500\n"
+    assert database.connection.execute("SELECT * FROM game").fetchall() == [
+        (1, None, "$/Test.fs-uae")
+    ]
+    assert database.connection.execute(
+        "SELECT * FROM search_term"
+    ).fetchall() == [(1, "test")]
+    assert files.connection.execute("SELECT * FROM file").fetchall() == [
+        (1, "$/Test.fs-uae", None)
+    ]
+    assert not database.connection.in_transaction
+    assert not files.connection.in_transaction
+    assert not list(path.parent.glob(".configuration-delete-*"))
+
+
+def test_commit_failure_restores_symbolic_link(
+    indexed_configuration, monkeypatch
+):
+    path, database, files = indexed_configuration
+    target = path.with_name("Original.fs-uae")
+    path.rename(target)
+    path.symlink_to(target.name)
+    commit = database.commit
+
+    def fail_once():
+        monkeypatch.setattr(database, "commit", commit)
+        raise sqlite3.OperationalError("Commit failed")
+
+    monkeypatch.setattr(database, "commit", fail_once)
+    with pytest.raises(sqlite3.OperationalError, match="Commit failed"):
+        ConfigurationScanner.delete_configuration(database, str(path))
+    assert path.is_symlink()
+    assert path.readlink().name == target.name
+    assert target.is_file()

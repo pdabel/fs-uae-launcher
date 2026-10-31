@@ -8,6 +8,25 @@ from fsgs.context import fsgs
 from fsbc.resources import Resources
 
 
+class InputDeviceNotFoundException(Exception):
+    pass
+
+
+class InputDeviceInfo:
+    id = ""
+    generic_id = ""
+    sdl_name = ""
+    name = ""
+    buttons = 0
+    axes = 0
+    hats = 0
+    balls = 0
+    index = 0
+
+    def get_type(self):
+        return "TYPE_JOYSTICK" if self.sdl_name else "TYPE_KEYBOARD"
+
+
 class MissingPlatformSupportException(Exception):
     pass
 
