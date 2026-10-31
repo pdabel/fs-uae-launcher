@@ -308,6 +308,21 @@ class GameDriver:
     def screenshots_base(self):
         return GameNameUtil.create_link_name(self.game_name())
 
+    def screenshots_name(self):
+        return GameNameUtil.create_fs_name(self.game_name())
+
+    def get_platform_name(self):
+        platform = self.options[Option.PLATFORM].lower()
+        names = {
+            "atari-7800": "Atari 7800",
+            "amiga": "Amiga",
+            "cdtv": "CDTV",
+            "cd32": "CD32",
+        }
+        if platform not in names:
+            raise ValueError("Unrecognized platform")
+        return names[platform]
+
     def screen_size(self):
         rect = self.screen_rect()
         return rect[2], rect[3]

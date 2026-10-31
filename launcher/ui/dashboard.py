@@ -203,12 +203,29 @@ class Dashboard(fsui.Panel):
             self.quick_toggle.setIcon(self._icon(QStyle.SP_FileDialogDetailedView))
             for button in self.launch_host.widget().findChildren(QPushButton):
                 if button.objectName() == "launchButton":
-                    button.setIcon(self._icon(QStyle.SP_MediaPlay))
+                    button.setIcon(
+                        navigation_icon("fa5s.play", on_accent=True)
+                        if fsui.theme_variant == "modern"
+                        else self._icon(QStyle.SP_MediaPlay)
+                    )
             self.play_tile.restyle_icons()
 
     def _toggle_editor(self, checked):
         self.editor.setVisible(checked)
         PlayTile.remember_editor_visible(checked)
+    def on_theme_changed(self):
+        """Re-measure the scrolled panels after a font change."""
+        for panel in (self.owner.books[1], self.owner.books[2]):
+            widget = panel.widget()
+            widget.setMinimumSize(
+                max(280, panel.get_min_width()), max(100, panel.get_min_height())
+            )
+        quick_area = getattr(self, "quick_area", None)
+        if quick_area is not None and quick_area.widget() is not None:
+            panel = self.owner.quick_settings_panel
+            quick_area.widget().setMinimumSize(
+                max(280, panel.get_min_width()), max(100, panel.get_min_height())
+            )
 
     def _icon(self, standard_icon):
         names = {
@@ -372,7 +389,11 @@ class Dashboard(fsui.Panel):
             if button.text().strip() == gettext("Start"):
                 button.setObjectName("launchButton")
                 button.setText(gettext("Launch Amiga"))
-                button.setIcon(self._icon(QStyle.SP_MediaPlay))
+                button.setIcon(
+                    navigation_icon("fa5s.play", on_accent=True)
+                    if fsui.theme_variant == "modern"
+                    else self._icon(QStyle.SP_MediaPlay)
+                )
         layout.addWidget(self.launch_host.widget(), 1)
         self.launch_host.widget().show()
         return frame

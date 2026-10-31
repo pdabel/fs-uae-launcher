@@ -1094,10 +1094,12 @@ class LaunchHandler(object):
         config = self.create_config()
         if self.use_relative_paths:
             process, config_file = FSUAE.start_with_config(
-                config, cwd=self.temp_dir
+                config, cwd=self.temp_dir, monitor=self.config.get("monitor", "")
             )
         else:
-            process, config_file = FSUAE.start_with_config(config)
+            process, config_file = FSUAE.start_with_config(
+                config, monitor=self.config.get("monitor", "")
+            )
         pid_file = self.fsgc.settings[Option.EMULATOR_PID_FILE]
         GameDriver.write_emulator_pid_file(pid_file, process)
         process.wait()

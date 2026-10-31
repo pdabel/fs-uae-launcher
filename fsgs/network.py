@@ -39,6 +39,10 @@ def openretro_server():
     return scheme, host
 
 
+def openretro_scheme():
+    return "http"
+
+
 def openretro_url_prefix():
     scheme, host = openretro_server()
     return f"{scheme}://{host}"

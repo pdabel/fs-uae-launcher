@@ -215,7 +215,7 @@ class CPUPerformanceGroup(fsui.Group):
             self.run_next()
 
     def on_process_error(self, error):
-        if self.busy:
+        if self.busy and error == QProcess.FailedToStart:
             self.timeout.stop()
             self.complete(
                 gettext("Unable to run the CPU governor utility.")

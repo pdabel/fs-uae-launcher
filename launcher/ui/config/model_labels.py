@@ -6,42 +6,43 @@ users can still see exactly what each entry means.
 """
 
 from launcher.i18n import gettext
+from launcher.option import N_
 
 # Family id (the part before "/") -> short everyday name and a one-line hint.
 MODEL_LABELS = {
-    "A1000": ("Amiga 1000", "The original 1985 Amiga; rarely needed"),
-    "A500": ("Amiga 500", "Classic model; works with most games"),
-    "A500+": ("Amiga 500 Plus", "1991 update; for Kickstart 2.0 games"),
-    "A600": ("Amiga 600", "Compact model with a hard drive"),
-    "A1200": ("Amiga 1200", "Faster AGA model; for later and HD games"),
-    "A3000": ("Amiga 3000", "Workstation; for Workbench and productivity"),
-    "A4000": ("Amiga 4000", "Most powerful classic Amiga"),
-    "CD32": ("Amiga CD32", "Games console; uses CD images"),
-    "CDTV": ("Commodore CDTV", "Early CD multimedia player"),
+    "A1000": (N_("Amiga 1000"), N_("The original 1985 Amiga; rarely needed")),
+    "A500": (N_("Amiga 500"), N_("Classic model; works with most games")),
+    "A500+": (N_("Amiga 500 Plus"), N_("1991 update; for Kickstart 2.0 games")),
+    "A600": (N_("Amiga 600"), N_("Compact model with a hard drive")),
+    "A1200": (N_("Amiga 1200"), N_("Faster AGA model; for later and HD games")),
+    "A3000": (N_("Amiga 3000"), N_("Workstation; for Workbench and productivity")),
+    "A4000": (N_("Amiga 4000"), N_("Most powerful classic Amiga")),
+    "CD32": (N_("Amiga CD32"), N_("Games console; uses CD images")),
+    "CDTV": (N_("Commodore CDTV"), N_("Early CD multimedia player")),
 }
 
 # Full model id -> what makes this variant different from the base model.
 VARIANT_LABELS = {
-    "A1000": "Standard",
-    "A500/512K": "Basic memory (512 KB)",
-    "A500": "Standard (1 MB total memory)",
-    "A500+": "Standard",
-    "A600": "Standard",
-    "A1200/3.0": "Older system ROM (3.0)",
-    "A1200": "Standard",
-    "A1200/020": "Extra memory and speed",
-    "A1200/1230": "Blizzard 1230 accelerator",
-    "A1200/1240": "Blizzard 1240 accelerator",
-    "A1200/1260": "Blizzard 1260 accelerator",
-    "A1200/PPC": "Blizzard PowerPC accelerator",
-    "A3000": "Standard",
-    "A4000": "Standard",
-    "A4000/040": "Faster processor (68040)",
-    "A4000/PPC": "PowerPC accelerator",
-    "A4000/OS4": "PowerPC with AmigaOS 4",
-    "CD32": "Standard",
-    "CD32/FMV": "With video (FMV) module",
-    "CDTV": "Standard",
+    "A1000": N_("Standard"),
+    "A500/512K": N_("Basic memory (512 KB)"),
+    "A500": N_("Standard (1 MB total memory)"),
+    "A500+": N_("Standard"),
+    "A600": N_("Standard"),
+    "A1200/3.0": N_("Older system ROM (3.0)"),
+    "A1200": N_("Standard"),
+    "A1200/020": N_("Full 68020 processor (standard A1200 has the 68EC020)"),
+    "A1200/1230": N_("Blizzard 1230 accelerator"),
+    "A1200/1240": N_("Blizzard 1240 accelerator"),
+    "A1200/1260": N_("Blizzard 1260 accelerator"),
+    "A1200/PPC": N_("Blizzard PowerPC accelerator"),
+    "A3000": N_("Standard"),
+    "A4000": N_("Standard"),
+    "A4000/040": N_("Faster processor (68040)"),
+    "A4000/PPC": N_("PowerPC accelerator"),
+    "A4000/OS4": N_("PowerPC with AmigaOS 4"),
+    "CD32": N_("Standard"),
+    "CD32/FMV": N_("With video (FMV) module"),
+    "CDTV": N_("Standard"),
 }
 
 

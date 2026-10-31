@@ -39,7 +39,9 @@ class Paths(object):
 
                 config_path = LauncherSettings.get("config_path")
                 if config_path:
-                    return cls.join(os.path.dirname(config_path), path[8:])
+                    return cls.join(
+                        os.path.dirname(cls.expand_path(config_path)), path[8:]
+                    )
             if cmp_path.startswith("$HOME/"):
                 return cls.join(cls.get_home_dir(), path[6:])
             # FIXME: $base_dir is deprecated

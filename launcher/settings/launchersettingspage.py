@@ -8,7 +8,7 @@ import fsui
 import qtawesome as qta
 from fsbc.application import app
 from fsui.qt import QPalette
-from fsui.qt.qt import apply_launcher_theme
+from fsui.qt.qt import apply_launcher_theme, applied_launcher_theme
 from fsui.extra.taskdialog import TaskDialog
 from launcher.launcher_settings import LauncherSettings
 from launcher.option import Option
@@ -89,16 +89,25 @@ class LauncherSettingsPage(SettingsPage):
 
     def on_setting(self, key, value):
         if key in (Option.LAUNCHER_THEME, Option.LAUNCHER_FONT_SIZE):
-            self.preview_theme()
+            self.preview_theme(theme_changed=key == Option.LAUNCHER_THEME)
 
-    def preview_theme(self):
-        """Apply the saved theme and font to the running application."""
+    def preview_theme(self, theme_changed=True):
+        """Apply the saved theme and font to the running application.
+
+        A font-only change keeps the theme currently applied, which may come
+        from the command line rather than from settings.
+        """
         qapplication = getattr(app, "qapplication", None)
         if qapplication is None:
             return
+        theme = LauncherSettings.get(Option.LAUNCHER_THEME)
+        if not theme_changed:
+            applied = applied_launcher_theme()
+            if applied is not None:
+                theme = applied
         apply_launcher_theme(
             qapplication,
-            LauncherSettings.get(Option.LAUNCHER_THEME),
+            theme,
             LauncherSettings.get(Option.LAUNCHER_FONT_SIZE),
         )
 
