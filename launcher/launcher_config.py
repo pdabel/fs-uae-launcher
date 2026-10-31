@@ -3,6 +3,8 @@ import os
 import traceback
 from configparser import ConfigParser, NoSectionError
 
+import fsboot
+
 from fsbc.paths import Paths
 from fsbc.signal import Signal
 from fsgs.checksumtool import ChecksumTool
@@ -503,6 +505,7 @@ class LauncherConfig(object):
 
     @classmethod
     def _load_file(cls, path, data):
+        path = Paths.expand_path(path)
         if data:
             print("loading config from data")
         else:
@@ -534,7 +537,12 @@ class LauncherConfig(object):
             for key in keys:
                 config[key] = cp.get("fs-uae", key)
 
-        LauncherSettings.set("config_path", path)
+        stored_path = (
+            Paths.contract_path(path, force_real_case=False)
+            if fsboot.is_portable()
+            else path
+        )
+        LauncherSettings.set("config_path", stored_path)
 
         print("__changed before load:", cls.get("__changed"))
         cls.load(config)

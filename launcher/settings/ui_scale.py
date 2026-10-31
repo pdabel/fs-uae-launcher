@@ -1,7 +1,10 @@
 import fsui
 from fsui.qt import (
-    QFontDatabase, QHBoxLayout, QLabel, QSignalBlocker, QSlider, QVBoxLayout,
+    QHBoxLayout, QLabel, QSignalBlocker, QSlider, QVBoxLayout,
     Qt,
+)
+from fsui.qt.qt import (
+    applied_launcher_theme, theme_applied, theme_default_point_size,
 )
 from launcher.i18n import gettext
 from launcher.launcher_settings import LauncherSettings
@@ -9,7 +12,11 @@ from launcher.option import Option
 
 
 def default_point_size():
-    return QFontDatabase.systemFont(QFontDatabase.GeneralFont).pointSize()
+    """The point size of the selected theme without a size override."""
+    theme = applied_launcher_theme()
+    if theme is None:
+        theme = LauncherSettings.get(Option.LAUNCHER_THEME)
+    return theme_default_point_size(theme)
 
 
 class UIScaleSlider(fsui.Panel):
@@ -69,9 +76,21 @@ class UIScaleSlider(fsui.Panel):
         self.slider.sliderReleased.connect(self.commit)
         self.on_setting(Option.LAUNCHER_FONT_SIZE, LauncherSettings.get(Option.LAUNCHER_FONT_SIZE))
         LauncherSettings.add_listener(self)
+        theme_applied.connect(self.refresh_default)
 
     def on_destroy(self):
+        theme_applied.disconnect(self.refresh_default)
         LauncherSettings.remove_listener(self)
+
+    def refresh_default(self):
+        """Follow the selected theme's own default font size."""
+        default = max(self.minimum, min(self.maximum, default_point_size()))
+        if default != self.default:
+            self.default = default
+            self.on_setting(
+                Option.LAUNCHER_FONT_SIZE,
+                LauncherSettings.get(Option.LAUNCHER_FONT_SIZE),
+            )
 
     def value(self):
         return self.slider.value()
@@ -91,15 +110,21 @@ class UIScaleSlider(fsui.Panel):
 
     def on_value_changed(self, value):
         self.caption.setText(self.describe(value))
-        self.reset_button.set_enabled(value != self.default)
+        self.reset_button.set_enabled(
+            value != self.default or self.has_override()
+        )
         if not self.slider.isSliderDown():
             self.commit()
+
+    def has_override(self):
+        return bool(str(LauncherSettings.get(Option.LAUNCHER_FONT_SIZE)).strip())
 
     def commit(self):
         LauncherSettings.set(Option.LAUNCHER_FONT_SIZE, self.stored_value())
 
     def on_reset(self):
         self.slider.setValue(self.default)
+        LauncherSettings.set(Option.LAUNCHER_FONT_SIZE, "")
 
     def on_setting(self, key, value):
         if key != Option.LAUNCHER_FONT_SIZE:
@@ -112,4 +137,6 @@ class UIScaleSlider(fsui.Panel):
         with QSignalBlocker(self.slider):
             self.slider.setValue(point_size)
         self.caption.setText(self.describe(point_size))
-        self.reset_button.set_enabled(point_size != self.default)
+        self.reset_button.set_enabled(
+            point_size != self.default or bool(str(value or "").strip())
+        )

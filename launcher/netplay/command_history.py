@@ -46,7 +46,7 @@ class CommandHistory:
             pass
         else:
             os.close(descriptor)
-        with closing(sqlite3.connect(path)) as connection, connection:
+        with closing(sqlite3.connect(path, timeout=0)) as connection, connection:
             connection.execute("PRAGMA secure_delete=ON")
             connection.execute(
                 "CREATE TABLE IF NOT EXISTS command_history ("

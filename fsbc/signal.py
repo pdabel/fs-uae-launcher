@@ -1,6 +1,7 @@
 import threading
 import traceback
 from weakref import ref
+from typing import Any, Dict, List, Tuple  # noqa: F401 - used by type comments
 
 
 main_thread_id = threading.current_thread().ident

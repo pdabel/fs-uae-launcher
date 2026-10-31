@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import Mock, call, patch
 
 import fsui
-from fsui.qt import QDialog, QFontMetrics, QImage, QPainter, QTimer
+from fsui.qt import QDialog, QEvent, QFont, QFontMetrics, QImage, QPainter, QTimer
 from fsui.qt.DrawingContext import DrawingContext
 from fsui.qt.qt import configure_qt_environment
 from .WidgetTestCase import WidgetTestCase
@@ -99,6 +99,14 @@ class TestQt6(WidgetTestCase):
             choice.on_screen_added(second)
             self.assertIn("HDMI-1", choice.currentText())
             self.assertEqual(choice.get_index(), 1)
+            self.assertEqual(settings["monitor"], display_id(second))
+            reconnected = display("HDMI-2", 0)
+            reconnected.serialNumber = second.serialNumber
+            screens[:] = [first, reconnected]
+            choice.refresh()
+            self.assertIn("HDMI-2", choice.currentText())
+            self.assertNotIn("unavailable", choice.currentText())
+            self.assertEqual(choice.get_index(), 2)
             self.assertEqual(settings["monitor"], display_id(second))
             settings["monitor"] = "right"
             choice.refresh()
@@ -294,6 +302,9 @@ class TestQt6(WidgetTestCase):
             group.performance_button.widget().click()
             group.on_timeout()
             process_class.return_value.kill.assert_called_once()
+            group.on_process_error(process_class.Crashed)
+            self.assertTrue(group.busy)
+            error.assert_not_called()
             group.on_process_finished(9, process_class.CrashExit)
             self.assertIn("timed out", error.call_args.args[0])
             self.assertFalse(group.busy)
@@ -452,6 +463,23 @@ class TestQt6(WidgetTestCase):
         self.assertNotEqual(images["windows311"], images["workbench"])
         self.assertNotEqual(images["modern"], images["workbench"])
 
+    @staticmethod
+    def contrast_ratio(foreground, background):
+        def luminance(value):
+            channels = []
+            for index in (1, 3, 5):
+                channel = int(value[index:index + 2], 16) / 255
+                channels.append(
+                    channel / 12.92 if channel <= 0.03928
+                    else ((channel + 0.055) / 1.055) ** 2.4
+                )
+            return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+
+        lighter, darker = sorted(
+            (luminance(foreground), luminance(background)), reverse=True
+        )
+        return (lighter + 0.05) / (darker + 0.05)
+
     def test_modern_skins_resolve_all_tokens_and_differ(self):
         from fsui.qt import QColor, modern_theme
 
@@ -476,6 +504,15 @@ class TestQt6(WidgetTestCase):
                     QColor(skin.pressed).lightness(),
                 )
                 windows.add(skin.window)
+                self.assertGreaterEqual(
+                    self.contrast_ratio(skin.accent_soft, skin.pressed), 4.5
+                )
+                self.assertGreaterEqual(
+                    self.contrast_ratio(skin.accent_text, skin.accent), 4.5
+                )
+                self.assertGreaterEqual(
+                    self.contrast_ratio(skin.nav_text, skin.nav), 4.5
+                )
         self.assertEqual(len(windows), len(modern_theme.SKINS))
         self.assertEqual(
             modern_theme.render("@icons@/check.svg", "modern").endswith("/res/check.svg"),
@@ -528,12 +565,10 @@ class TestQt6(WidgetTestCase):
                     initialize_qt_style(self.application)
             self.assertEqual(fsui.theme_skin, "")
         finally:
-            self.application.setPalette(palette)
-            self.application.setStyleSheet(stylesheet)
-            self.application.setFont(font)
             modern_theme.apply_modern_theme(self.application, "modern")
             self.application.setPalette(palette)
             self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
             fsui.theme, fsui.theme_variant, fsui.theme_skin = state
 
     def test_modern_skin_colours_reach_navigation_and_icons(self):
@@ -556,6 +591,8 @@ class TestQt6(WidgetTestCase):
                         with patch("launcher.ui.navigation_icons.qta.icon", wraps=qta.icon) as icon:
                             navigation_icon("fa5s.save")
                             icon.assert_called_with("fa5s.save", color=skin.icon)
+                            navigation_icon("fa5s.play", on_accent=True)
+                            icon.assert_called_with("fa5s.play", color=skin.accent_text)
                         self.setup_dialog()
                         paged = PagedDialog(self.dialog, "Skins")
                         self.assertIn(skin.nav, paged.list_view.styleSheet())
@@ -2088,6 +2125,18 @@ class TestDashboard(WidgetTestCase):
             set_setting("config_name", "")
             self.assertIn("Amiga 500", tile.title.toolTip())
             self.assertIn("library", tile.subtitle.text())
+            # Switching to a saved local configuration updates the hint
+            # even though parent_uuid does not change.
+            set_setting("config_path", "/configs/mine.fs-uae")
+            self.assertIn("saved configuration", tile.subtitle.text())
+            set_setting("config_path", "")
+            self.assertIn("library", tile.subtitle.text())
+            set_setting("config_path", "/configs/mine.fs-uae")
+            set_setting("parent_uuid", "abc")
+            self.assertIn("online database", tile.subtitle.text())
+            set_setting("parent_uuid", "")
+            self.assertIn("saved configuration", tile.subtitle.text())
+            set_setting("config_path", "")
             owner.closed.emit()
             self.assertNotIn(tile, listeners)
 
@@ -2114,6 +2163,39 @@ class TestDashboard(WidgetTestCase):
         self.assertEqual(model_label("unknown"), "unknown")
         self.assertEqual(variant_label("A1200/1230", "x"), "Blizzard 1230 accelerator")
         self.assertEqual(variant_label("unknown", "fallback"), "fallback")
+        self.assertNotIn("memory", VARIANT_LABELS["A1200/020"].lower())
+        self.assertIn("68020", VARIANT_LABELS["A1200/020"])
+
+        # xgettext only extracts literals passed directly to a keyword.
+        import ast
+        import inspect
+        from launcher.ui.config import model_labels
+
+        tree = ast.parse(inspect.getsource(model_labels))
+        marked = {
+            node.args[0].value for node in ast.walk(tree)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+            and node.func.id == "N_"
+        }
+        expected = {text for pair in MODEL_LABELS.values() for text in pair}
+        expected |= set(VARIANT_LABELS.values())
+        self.assertEqual(expected - marked, set())
+        for name in ("MODEL_LABELS", "VARIANT_LABELS"):
+            assignment = next(
+                node for node in tree.body
+                if isinstance(node, ast.Assign) and node.targets[0].id == name
+            )
+            wrapped = {
+                id(node.args[0]) for node in ast.walk(assignment.value)
+                if isinstance(node, ast.Call)
+            }
+            keys = {id(key) for key in assignment.value.keys}
+            bare = [
+                node.value for node in ast.walk(assignment.value)
+                if isinstance(node, ast.Constant) and isinstance(node.value, str)
+                and id(node) not in wrapped and id(node) not in keys
+            ]
+            self.assertEqual(bare, [])
 
         self.setup_dialog()
         config = {"amiga_model": "", "platform": "amiga", "accuracy": "", "ntsc_mode": ""}
@@ -2143,7 +2225,14 @@ class TestDashboard(WidgetTestCase):
             group.on_amiga_model_config("A1200/1230")
             self.assertEqual(group.model_choice.currentText(), "Amiga 1200")
             self.assertEqual(group.sub_model_choice.currentText(), "Blizzard 1230 accelerator")
+            self.assertIn("Blizzard 1230", group.sub_model_choice.toolTip())
             self.assertTrue(group.model_choice.toolTip())
+            # Single-variant families have a disabled combo, so the control
+            # itself carries the technical details.
+            group.on_amiga_model_config("A600")
+            self.assertFalse(group.sub_model_choice.is_enabled())
+            self.assertIn("Technical:", group.sub_model_choice.toolTip())
+            self.assertIn("A600", group.sub_model_choice.toolTip())
             self.assertTrue(group.accuracy_choice.toolTip())
             self.assertTrue(group.ntsc_checkbox.toolTip())
         self.run_dialog()
@@ -2170,9 +2259,11 @@ class TestDashboard(WidgetTestCase):
                 patch.object(LauncherSettings, "remove_listener", side_effect=listeners.remove), \
                 patch("launcher.settings.option_ui.app", application), \
                 patch("launcher.settings.launchersettingspage.app", application), \
+                patch("launcher.settings.ui_scale.default_point_size", return_value=12), \
                 patch("launcher.settings.launchersettingspage.apply_launcher_theme"):
             page = LauncherSettingsPage(self.dialog)
             slider = page.ui_scale
+            self.assertEqual(slider.default, 12)
             self.assertIsInstance(slider, UIScaleSlider)
             self.assertIn(Option.LAUNCHER_FONT_SIZE, page.options_on_page)
             self.assertEqual(slider.value(), slider.default)
@@ -2209,6 +2300,68 @@ class TestDashboard(WidgetTestCase):
             self.assertEqual(settings["launcher_font_size"], "")
             self.assertEqual(slider.value(), slider.default)
         self.run_dialog()
+
+    def test_ui_scale_default_follows_theme_and_clamps(self):
+        from fsui.qt.qt import apply_launcher_theme, theme_default_point_size
+        from launcher.launcher_settings import LauncherSettings
+        from launcher.settings.ui_scale import UIScaleSlider
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        state = fsui.theme, fsui.theme_variant, fsui.theme_skin
+        settings = {"launcher_font_size": "", "launcher_theme": "fusion-plain"}
+        listeners = []
+
+        def set_setting(key, value):
+            settings[key] = value
+            for listener in list(listeners):
+                listener.on_setting(key, value)
+
+        self.setup_dialog()
+        try:
+            with patch.object(LauncherSettings, "get", side_effect=lambda key: settings.get(key, "")), \
+                    patch.object(LauncherSettings, "set", side_effect=set_setting), \
+                    patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
+                    patch.object(LauncherSettings, "remove_listener", side_effect=listeners.remove):
+                system = Mock(return_value=QFont("DejaVu Sans", 9))
+                with patch("fsui.qt.qt.QFontDatabase.systemFont", system):
+                    apply_launcher_theme(self.application, "fusion-plain", "")
+                    slider = UIScaleSlider(self.dialog)
+                    self.assertEqual(slider.default, 9)
+                    modern = theme_default_point_size("fusion-modern")
+                    apply_launcher_theme(self.application, "fusion-modern", "")
+                    self.assertEqual(slider.default, modern)
+                    self.assertEqual(slider.value(), modern)
+
+                    # With a modern 10 pt default, 9 pt is an explicit choice.
+                    if modern == 10:
+                        slider.slider.setValue(9)
+                        self.assertEqual(settings["launcher_font_size"], "9")
+
+                    # An override equal to the default can still be cleared.
+                    set_setting("launcher_font_size", str(slider.default))
+                    self.assertTrue(slider.reset_button.is_enabled())
+                    slider.slider.setValue(slider.default)
+                    slider.reset_button.widget().click()
+                    self.assertEqual(settings["launcher_font_size"], "")
+                    self.assertFalse(slider.reset_button.is_enabled())
+
+                    # Boundary defaults clamp into the slider range.
+                    with patch("launcher.settings.ui_scale.default_point_size", return_value=30):
+                        slider.refresh_default()
+                        self.assertEqual(slider.default, 18)
+                        slider.slider.setValue(18)
+                        self.assertEqual(settings["launcher_font_size"], "")
+                        slider.slider.setValue(17)
+                        self.assertEqual(settings["launcher_font_size"], "17")
+                slider.on_destroy()
+        finally:
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+            fsui.theme, fsui.theme_variant, fsui.theme_skin = state
+        self.finish_dialog()
 
     def test_live_theme_preview(self):
         from fsui.qt import QPalette, modern_theme
@@ -2306,6 +2459,139 @@ class TestDashboard(WidgetTestCase):
             self.application.setFont(font)
             fsui.theme, fsui.theme_variant, fsui.theme_skin = state
         self.run_dialog()
+
+    def finish_dialog(self):
+        """run_dialog, then delete the dialog so later style changes skip it."""
+        self.run_dialog()
+        self.dialog.deleteLater()
+        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+
+    def test_font_preview_keeps_command_line_theme_and_relayouts(self):
+        from fsui.qt import modern_theme
+        from fsui.qt.qt import apply_launcher_theme, theme_applied
+        from launcher.launcher_settings import LauncherSettings
+        from launcher.settings.launchersettingspage import LauncherSettingsPage
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        state = fsui.theme, fsui.theme_variant, fsui.theme_skin
+        settings = {"launcher_theme": "fusion-plain", "launcher_font_size": ""}
+        listeners = []
+
+        def set_setting(key, value):
+            settings[key] = value
+            for listener in list(listeners):
+                listener.on_setting(key, value)
+
+        self.setup_dialog()
+        application = Mock(qapplication=self.application)
+        try:
+            with patch.object(LauncherSettings, "get", side_effect=lambda key: settings.get(key, "")), \
+                    patch.object(LauncherSettings, "set", side_effect=set_setting), \
+                    patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
+                    patch.object(LauncherSettings, "remove_listener", side_effect=listeners.remove), \
+                    patch("launcher.settings.option_ui.app", application), \
+                    patch("launcher.settings.launchersettingspage.app", application):
+                apply_launcher_theme(self.application, "fusion-cyberpunk", "")
+                page = LauncherSettingsPage(self.dialog)
+                self.assertEqual(fsui.theme_skin, "cyberpunk")
+
+                set_setting("launcher_font_size", "12")
+                self.assertEqual(fsui.theme_skin, "cyberpunk")
+                self.assertEqual(self.application.font().pointSize(), 12)
+
+                set_setting("launcher_theme", "fusion-plain")
+                self.assertEqual(fsui.theme_variant, "plain")
+
+                layouts = [
+                    group.label_layout for group in page.option_groups
+                    if hasattr(group, "label_layout")
+                ]
+                self.assertTrue(layouts)
+                set_setting("launcher_font_size", "8")
+                small = layouts[0].min_width
+                set_setting("launcher_font_size", "24")
+                large = layouts[0].min_width
+                self.assertGreater(large, small)
+                self.assertEqual({layout.min_width for layout in layouts}, {large})
+            self.finish_dialog()
+        finally:
+            theme_applied._refs = []
+            modern_theme.apply_modern_theme(self.application, "modern")
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+            fsui.theme, fsui.theme_variant, fsui.theme_skin = state
+
+    def test_font_change_reruns_fsui_layouts(self):
+        from fsui.qt import modern_theme
+        from fsui.qt.qt import apply_launcher_theme
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        state = fsui.theme, fsui.theme_variant, fsui.theme_skin
+        try:
+            apply_launcher_theme(self.application, "fusion-plain", "8")
+            self.setup_dialog()
+            panel = fsui.Panel(self.dialog)
+            panel.layout = fsui.VerticalLayout()
+            label = fsui.Label(panel, "A fairly long label for measuring")
+            panel.layout.add(label)
+            self.dialog.layout = fsui.VerticalLayout()
+            self.dialog.layout.add(panel, fill=True, expand=True)
+            self.dialog.set_size((900, 400))
+            self.dialog.show()
+            self.application.processEvents()
+            before = label.height()
+            apply_launcher_theme(self.application, "fusion-plain", "24")
+            self.assertGreater(label.height(), before)
+            self.assertGreaterEqual(label.height(), label.minimumSizeHint().height())
+            self.dialog.close()
+        finally:
+            modern_theme.apply_modern_theme(self.application, "modern")
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+            fsui.theme, fsui.theme_variant, fsui.theme_skin = state
+        self.finish_dialog()
+
+    def test_paged_dialog_navigation_follows_font_and_theme(self):
+        from fsui.qt import QFont, modern_theme
+        from fsui.qt.qt import apply_launcher_theme
+        from launcher.ui.pageddialog import PagedDialog
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        state = fsui.theme, fsui.theme_variant, fsui.theme_skin
+        try:
+            apply_launcher_theme(self.application, "fusion-modern", "10")
+            self.setup_dialog()
+            paged = PagedDialog(self.dialog, "Navigation")
+            paged.add_page("Common", lambda parent: fsui.Panel(parent), bold=True)
+            paged.add_page("Other", lambda parent: fsui.Panel(parent))
+            model = paged.list_view.model()
+            self.assertEqual(model.item(0).sizeHint().height(), 42)
+            apply_launcher_theme(self.application, "fusion-workbench", "20")
+            first, second = model.item(0), model.item(1)
+            self.assertEqual(first.sizeHint().height(), 44)
+            self.assertEqual(first.font().pointSize(), 20)
+            self.assertGreaterEqual(first.font().weight(), QFont.Bold)
+            self.assertLess(second.font().weight(), QFont.Bold)
+            self.assertEqual(second.font().pointSize(), 20)
+            apply_launcher_theme(self.application, "fusion-modern", "10")
+            self.assertEqual(model.item(0).sizeHint().height(), 42)
+            self.assertEqual(model.item(0).font().pointSize(), 10)
+            paged.close()
+        finally:
+            modern_theme.apply_modern_theme(self.application, "modern")
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+            fsui.theme, fsui.theme_variant, fsui.theme_skin = state
+        self.finish_dialog()
 
     def test_restart_button_confirmation(self):
         from fsui.qt import QMessageBox
