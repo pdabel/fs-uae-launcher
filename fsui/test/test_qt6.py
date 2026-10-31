@@ -2042,6 +2042,39 @@ class TestDashboard(WidgetTestCase):
         self.assertEqual(model_label("unknown"), "unknown")
         self.assertEqual(variant_label("A1200/1230", "x"), "Blizzard 1230 accelerator")
         self.assertEqual(variant_label("unknown", "fallback"), "fallback")
+        self.assertNotIn("memory", VARIANT_LABELS["A1200/020"].lower())
+        self.assertIn("68020", VARIANT_LABELS["A1200/020"])
+
+        # xgettext only extracts literals passed directly to a keyword.
+        import ast
+        import inspect
+        from launcher.ui.config import model_labels
+
+        tree = ast.parse(inspect.getsource(model_labels))
+        marked = {
+            node.args[0].value for node in ast.walk(tree)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+            and node.func.id == "N_"
+        }
+        expected = {text for pair in MODEL_LABELS.values() for text in pair}
+        expected |= set(VARIANT_LABELS.values())
+        self.assertEqual(expected - marked, set())
+        for name in ("MODEL_LABELS", "VARIANT_LABELS"):
+            assignment = next(
+                node for node in tree.body
+                if isinstance(node, ast.Assign) and node.targets[0].id == name
+            )
+            wrapped = {
+                id(node.args[0]) for node in ast.walk(assignment.value)
+                if isinstance(node, ast.Call)
+            }
+            keys = {id(key) for key in assignment.value.keys}
+            bare = [
+                node.value for node in ast.walk(assignment.value)
+                if isinstance(node, ast.Constant) and isinstance(node.value, str)
+                and id(node) not in wrapped and id(node) not in keys
+            ]
+            self.assertEqual(bare, [])
 
         self.setup_dialog()
         config = {"amiga_model": "", "platform": "amiga", "accuracy": "", "ntsc_mode": ""}
@@ -2071,7 +2104,14 @@ class TestDashboard(WidgetTestCase):
             group.on_amiga_model_config("A1200/1230")
             self.assertEqual(group.model_choice.currentText(), "Amiga 1200")
             self.assertEqual(group.sub_model_choice.currentText(), "Blizzard 1230 accelerator")
+            self.assertIn("Blizzard 1230", group.sub_model_choice.toolTip())
             self.assertTrue(group.model_choice.toolTip())
+            # Single-variant families have a disabled combo, so the control
+            # itself carries the technical details.
+            group.on_amiga_model_config("A600")
+            self.assertFalse(group.sub_model_choice.is_enabled())
+            self.assertIn("Technical:", group.sub_model_choice.toolTip())
+            self.assertIn("A600", group.sub_model_choice.toolTip())
             self.assertTrue(group.accuracy_choice.toolTip())
             self.assertTrue(group.ntsc_checkbox.toolTip())
         self.run_dialog()
