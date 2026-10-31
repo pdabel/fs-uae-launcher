@@ -1986,6 +1986,103 @@ class TestDashboard(WidgetTestCase):
             self.application.setStyleSheet(stylesheet)
             self.application.setFont(font)
 
+    def test_live_theme_preview(self):
+        from fsui.qt import QPalette, modern_theme
+        from fsui.qt.qt import theme_applied
+        from launcher.launcher_settings import LauncherSettings
+        from launcher.netplay.server_details import ServerDetails
+        from launcher.settings.launchersettingspage import LauncherSettingsPage
+        from launcher.ui.book import Book
+        from launcher.ui.dashboard import Dashboard
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        state = fsui.theme, fsui.theme_variant, fsui.theme_skin
+        settings = {"launcher_theme": "fusion-modern", "launcher_font_size": ""}
+        listeners = []
+
+        def set_setting(key, value):
+            settings[key] = value
+            for listener in list(listeners):
+                listener.on_setting(key, value)
+
+        self.setup_dialog()
+        application = Mock(qapplication=self.application)
+        try:
+            with patch.object(LauncherSettings, "get", side_effect=lambda key: settings.get(key, "")), \
+                    patch.object(LauncherSettings, "set", side_effect=set_setting), \
+                    patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
+                    patch.object(LauncherSettings, "remove_listener", side_effect=listeners.remove), \
+                    patch("launcher.settings.option_ui.app", application), \
+                    patch("launcher.settings.launchersettingspage.app", application), \
+                    patch("launcher.ui.dashboard.LaunchGroup", lambda parent, context: fsui.Group(parent)):
+                modern_theme.apply_modern_theme(self.application, "modern")
+                fsui.theme_variant, fsui.theme_skin = "modern", "modern"
+                owner = fsui.Window(None, title="Preview")
+                owner.gsc = object()
+                owner.books = [None, Book(owner), Book(owner)]
+                owner.books[1].add_page(fsui.Panel(owner.books[1]))
+                owner.books[1].set_page(0)
+                for _ in range(8):
+                    owner.books[2].add_page(fsui.Panel(owner.books[2]))
+                owner.screenshots_panel = None
+                owner.quick_settings_panel = fsui.Panel(owner)
+                owner.status_bar = fsui.Panel(owner)
+                owner.on_settings_button = Mock()
+                dashboard = Dashboard(owner)
+                details = ServerDetails()
+                page = LauncherSettingsPage(self.dialog)
+                self.assertIn("previewed immediately", page.preview_label._widget.text())
+                self.assertIn(modern_theme.MODERN.window, dashboard.widget().styleSheet())
+
+                for theme, skin in (("fusion-hologram", "hologram"), ("fusion-terminal", "terminal")):
+                    with self.subTest(theme=theme):
+                        set_setting("launcher_theme", theme)
+                        expected = modern_theme.SKINS[skin]
+                        self.assertEqual(fsui.theme_skin, skin)
+                        self.assertEqual(
+                            self.application.palette().color(QPalette.Window).name(),
+                            expected.window,
+                        )
+                        self.assertIn(expected.window, dashboard.widget().styleSheet())
+                        self.assertIn(expected.surface, details.styleSheet())
+                        self.assertNotIn(modern_theme.MODERN.window, dashboard.widget().styleSheet())
+                        icon = dashboard.nav_buttons[0].icon().pixmap(20, 20).toImage()
+                        self.assertFalse(icon.isNull())
+
+                set_setting("launcher_theme", "fusion-windows311")
+                self.assertEqual(fsui.theme_variant, "windows311")
+                self.assertEqual(self.application.palette().color(QPalette.Window).name(), "#c0c0c0")
+                self.assertIn("palette(window)", dashboard.widget().styleSheet())
+                self.assertIn("palette(window)", details.styleSheet())
+
+                set_setting("launcher_font_size", "14")
+                self.assertEqual(self.application.font().pointSize(), 14)
+                set_setting("launcher_font_size", "")
+                self.assertNotEqual(self.application.font().pointSize(), 14)
+
+                # Unrelated settings do not re-apply the theme.
+                with patch("launcher.settings.launchersettingspage.apply_launcher_theme") as apply_theme:
+                    set_setting("irc_nick", "Player")
+                    apply_theme.assert_not_called()
+
+                # Destroyed widgets stop listening and never break later changes.
+                details.shutdown()
+                owner.closed.emit()
+                set_setting("launcher_theme", "fusion-modern")
+                self.assertIn("palette(window)", dashboard.widget().styleSheet())
+                self.assertEqual(fsui.theme_skin, "modern")
+                self.assertNotIn(dashboard.restyle, [ref() for ref in theme_applied._refs])
+        finally:
+            theme_applied._refs = []
+            modern_theme.apply_modern_theme(self.application, "modern")
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+            fsui.theme, fsui.theme_variant, fsui.theme_skin = state
+        self.run_dialog()
+
     def test_restart_button_confirmation(self):
         from fsui.qt import QMessageBox
         from launcher.settings.launchersettingspage import LauncherSettingsPage

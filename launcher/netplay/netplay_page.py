@@ -84,4 +84,5 @@ class NetplayPage(fsui.Panel):
 
     def shutdown(self):
         self.panel.on_destroy()
+        self.server_details.shutdown()
         self.server_details.close()

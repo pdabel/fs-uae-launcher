@@ -362,15 +362,16 @@ Help and netplay information buttons and status-bar notices use the same cyan
 icon family as the navigation rail in Modern Dark.
 
 ### Quick Theme Switching
-Choose a theme in Settings > FS-UAE Launcher, then click Restart Launcher
-below the theme and font selectors. After confirmation, preferences are saved
-and the launcher reopens with the selected theme and font. The current base directory
-is preserved; old theme overrides and game/disk command-line arguments are
-not repeated. Active netplay sessions and hosted servers are stopped. Save
+Choosing a theme or font size in Settings > FS-UAE Launcher applies it to
+the running launcher immediately: the application palette and stylesheet,
+the dashboard, Settings navigation and netplay server panel all re-render
+(`fsui.qt.qt.apply_launcher_theme` notifies `theme_applied` listeners).
+Icon sets and window sizes chosen at startup are refreshed by clicking
+Restart Launcher. After confirmation, preferences are saved and the launcher
+reopens with the selected theme and font. The current base directory is
+preserved; old theme overrides and game/disk command-line arguments are not
+repeated. Active netplay sessions and hosted servers are stopped. Save
 configuration edits before restarting. Cancelling leaves the launcher open.
-
-This is a launcher restart, not a live theme preview: palettes, fonts, and
-icon sets are initialized at startup.
 
 ### GUI Cleanup
 
