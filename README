@@ -115,6 +115,9 @@ Copying happens after settings are saved and the launcher shuts down, with a
 progress window. Existing destination files are never overwritten. Database
 backups include committed SQLite WAL data. A failed copy leaves the original
 startup location unchanged. Stop any running database scan before switching.
+Copies are prepared in a private staging folder and published only if the
+destination is still empty. If writing the startup preference fails after
+publication, the completed copy is kept for recovery; the original remains intact.
 Close other launcher instances and emulators before copying data they may use.
 
 Portable mode writes Portable.ini next to the launcher (or updates the existing
@@ -129,6 +132,9 @@ Disabling portable mode keeps a backup of the marker and remembers the chosen
 normal data folder in the user preferences. Explicit --base-dir launch options
 still override automatic folder selection; FS_UAE_BASE_DIR overrides normal-mode
 folder preferences. Legacy empty Portable.ini files remain supported.
+The source tree does not include an active portable marker. Disabling in place
+is rejected when the startup marker also contains custom directory mappings;
+choose a new folder so those mappings can be preserved.
 
 ## Python Consistency Checks
 
