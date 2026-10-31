@@ -267,6 +267,16 @@ The completed stack's local Python 3.12 validation passed 138 core, API,
 command and packaging tests (10 skipped), plus 39 offscreen Qt tests and
 65 subtests. This does not certify frozen builds or another platform/version.
 
+## Plain-Language Model Names
+
+The Amiga Model selector on the Overview page shows everyday names such as
+"Amiga 500" and "Amiga 1200", and its variant list describes what differs
+("Standard (1 MB total memory)", "Blizzard 1230 accelerator") instead of
+"1.3 ROM, 512 KB". Hovering an entry shows the original technical title and
+subtitle, and the Accuracy and NTSC controls explain what they do. The
+mapping lives in `launcher/ui/config/model_labels.py`; stored configuration
+values (`amiga_model=A1200/1230`) are unchanged.
+
 ## Modern Dark Workspace
 
 ROM & memory, Expansions, and Advanced use aligned label columns and evenly
