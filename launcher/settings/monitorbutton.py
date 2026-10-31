@@ -2,7 +2,7 @@ import fsui
 from qtpy.QtCore import QRect, Qt, QTimer, QSignalBlocker
 from qtpy.QtGui import QColor, QFontMetrics, QPainter, QPen
 from qtpy.QtWidgets import QWidget
-from fsui.qt import init_qt
+from fsui.qt import init_qt, modern_theme
 from fsgs.displays import (
     display_id,
     display_label,
@@ -50,15 +50,16 @@ class MonitorHighlight(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor("#101218"))
-        painter.setPen(QPen(QColor("#454c62"), 1))
+        theme = modern_theme.palette()
+        painter.fillRect(self.rect(), QColor(theme.dark))
+        painter.setPen(QPen(QColor(theme.light), 1))
         painter.drawRect(self.rect().adjusted(0, 0, -1, -1))
         font = painter.font()
         font.setPointSize(10)
         font.setBold(True)
         painter.setFont(font)
         metrics = QFontMetrics(font)
-        painter.setPen(QColor("#ffffff"))
+        painter.setPen(QColor(theme.brand))
         painter.drawText(
             QRect(10, 4, max(1, self.width() - 20), metrics.height() + 8),
             Qt.AlignLeft | Qt.AlignVCenter,
@@ -69,16 +70,16 @@ class MonitorHighlight(QWidget):
         for screen, rect in self.monitor_rects():
             selected = screen is self.selected
             painter.fillRect(
-                rect, QColor("#253e54") if selected else QColor("#292d3e")
+                rect, QColor(theme.pressed if selected else theme.raised)
             )
             painter.setPen(
                 QPen(
-                    QColor("#46b7ee") if selected else QColor("#7f879c"),
+                    QColor(theme.accent if selected else theme.border_hover),
                     3 if selected else 1,
                 )
             )
             painter.drawRect(rect)
-            painter.setPen(QColor("#ffffff"))
+            painter.setPen(QColor(theme.brand))
             painter.drawText(
                 rect.adjusted(4, 0, -4, 0),
                 Qt.AlignCenter,

@@ -146,12 +146,16 @@ runs on Qt's Fusion style; themes differ by palette, stylesheet and font.
 ```mermaid
 flowchart TD
     OPT["Option.LAUNCHER_THEME<br/>(Settings or --launcher-theme=)"] --> INIT["initialize_qt_style()"]
-    INIT -->|"fusion-modern"| MOD["modern_theme.apply_modern_theme()<br/>dark palette + QSS + SVG arrows"]
+    INIT -->|"fusion-modern<br/>fusion-cyberpunk<br/>fusion-synthwave<br/>fusion-hologram<br/>fusion-terminal"| MOD["modern_theme.apply_modern_theme(app, skin)<br/>ModernPalette tokens → QPalette + rendered QSS"]
     INIT -->|"fusion-plain"| PLAIN["Fusion standard palette"]
     INIT -->|"fusion-windows311<br/>fusion-workbench"| RETRO["retro_theme.apply_retro_theme()<br/>bevelled palette + QSS"]
-    INIT --> VAR["fsui.theme_variant =<br/>modern | plain | windows311 | workbench"]
-    VAR --> UI["Dashboard, PagedDialog, ServerDetails,<br/>navigation_icons, IconButton, WarningsElement<br/>pick layout and icon colours by variant"]
+    INIT --> VAR["fsui.theme_variant =<br/>modern | plain | windows311 | workbench<br/>fsui.theme_skin = modern | cyberpunk | ..."]
+    VAR --> UI["Dashboard, PagedDialog, ServerDetails,<br/>MonitorHighlight, navigation_icons, IconButton,<br/>WarningsElement read modern_theme.palette()"]
 ```
+
+Modern Dark and its skins share one stylesheet template; `modern_theme.render()`
+substitutes `@token@` placeholders from the active `ModernPalette`, so adding a
+skin is a palette record plus an option label.
 
 The Settings page offers a *Restart Launcher* button; `LauncherApp.request_restart()`
 saves settings and re-executes the process so a new theme applies cleanly.
