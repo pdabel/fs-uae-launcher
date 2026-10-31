@@ -125,6 +125,9 @@ class ConfigurationsPanel(fsui.Panel):
             self.variants_panel.show_or_hide(bool(value))
             self.config_panel.show_or_hide(not bool(value))
             self.layout.update()
+        elif key == "config_search":
+            if self.text_field.get_text() != value:
+                self.text_field.set_text(value)
 
     def on_verified_button(self):
         pass

@@ -2023,6 +2023,17 @@ class TestDashboard(WidgetTestCase):
             overlay.button.click()
             set_setting.assert_called_with("config_search", "")
 
+            # An empty selected list is not an empty library.
+            settings["config_search"] = ""
+            settings["game_list_uuid"] = "fav"
+            browser.update_search()
+            self.assertEqual(overlay.title.text(), "This list is empty")
+            self.assertNotIn("Scan", overlay.button.text())
+            self.assertEqual(overlay.button.text(), "Show Configs and Games")
+            overlay.button.click()
+            set_setting.assert_called_with("game_list_uuid", "")
+            settings["game_list_uuid"] = ""
+
             # Rows hide the overlay; removing them brings it back.
             settings["config_search"] = ""
             database.find_games_new.return_value = [item]
@@ -2042,6 +2053,18 @@ class TestDashboard(WidgetTestCase):
             first.set_mode(FloppySelector.CD_MODE)
             self.assertIn("No CD inserted", first.text_field.placeholderText())
         self.run_dialog()
+
+    def test_search_clear_updates_text_field(self):
+        from launcher.ui.ConfigurationsPanel import ConfigurationsPanel
+
+        panel = Mock()
+        panel.text_field.get_text.return_value = "zzz"
+        ConfigurationsPanel.on_setting(panel, "config_search", "")
+        panel.text_field.set_text.assert_called_once_with("")
+        panel.text_field.set_text.reset_mock()
+        panel.text_field.get_text.return_value = "abc"
+        ConfigurationsPanel.on_setting(panel, "config_search", "abc")
+        panel.text_field.set_text.assert_not_called()
 
     def test_play_tile_and_editor_toggle(self):
         from launcher.launcher_settings import LauncherSettings
@@ -2092,6 +2115,20 @@ class TestDashboard(WidgetTestCase):
             tile = dashboard.play_tile
             self.assertEqual(tile.title.toolTip(), "Lotus Turbo Challenge 2")
             self.assertIn("online database", tile.subtitle.text())
+            # The title leaves room for the Play button's minimum width.
+            settings["config_name"] = "A very long game title " * 12
+            tile._name = settings["config_name"]
+            tile._update_title()
+            reserved = (
+                max(tile.play_button.minimumWidth(), tile.play_button.sizeHint().width())
+                + max(tile.edit_button.minimumWidth(), tile.edit_button.sizeHint().width())
+            )
+            self.assertGreaterEqual(tile.play_button.minimumWidth(), 132)
+            self.assertLessEqual(
+                tile.title.fontMetrics().horizontalAdvance(tile.title.text()),
+                max(160, tile.width() - reserved - 64),
+            )
+            set_setting("config_name", "Lotus Turbo Challenge 2")
             self.assertEqual(tile.play_button.text(), "Play")
             self.assertTrue(tile.play_button.isEnabled())
             # Editor hidden by default for a clean first impression.
