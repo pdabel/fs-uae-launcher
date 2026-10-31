@@ -402,8 +402,13 @@ The interface size is a Smaller / Default / Larger slider
 (`launcher/settings/ui_scale.py`) with a "Use Default Size" button; it still
 stores a point size in `launcher_font_size`, so existing preferences and
 Reset to Defaults behave as before. Dragging previews on release.
-Icon sets and window sizes chosen at startup are refreshed by clicking
-Restart Launcher. After confirmation, preferences are saved and the launcher
+Default size follows the selected theme's unoverridden font, rather than
+assuming the desktop's font size. "Use Default Size" clears a stored override,
+even when it already equals the default. Font-only changes preserve an active
+command-line theme; existing controls, label columns, navigation rows and
+scroll-area minimum sizes are remeasured without a manual window resize.
+Restart Launcher remains available for a full restart. After confirmation,
+preferences are saved and the launcher
 reopens with the selected theme and font. The current base directory is
 preserved; old theme overrides and game/disk command-line arguments are not
 repeated. Active netplay sessions and hosted servers are stopped. Save
