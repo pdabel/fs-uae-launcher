@@ -463,6 +463,124 @@ class TestQt6(WidgetTestCase):
         self.assertNotEqual(images["windows311"], images["workbench"])
         self.assertNotEqual(images["modern"], images["workbench"])
 
+    def test_modern_skins_resolve_all_tokens_and_differ(self):
+        from fsui.qt import QColor, modern_theme
+
+        self.assertEqual(modern_theme.DEFAULT_SKIN, "modern")
+        self.assertEqual(
+            list(modern_theme.SKINS),
+            ["modern", "cyberpunk", "synthwave", "hologram", "terminal"],
+        )
+        windows = set()
+        for name, skin in modern_theme.SKINS.items():
+            with self.subTest(skin=name):
+                self.assertEqual(skin.name, name)
+                rendered = modern_theme.render(modern_theme.STYLESHEET, name)
+                self.assertNotIn("@", rendered)
+                self.assertIn(skin.accent, rendered)
+                self.assertIn(f"border-radius: {skin.radius}px", rendered)
+                # Every skin is dark with readable text.
+                self.assertLess(QColor(skin.window).lightness(), 60)
+                self.assertGreater(QColor(skin.text).lightness(), 170)
+                self.assertGreater(
+                    QColor(skin.accent).lightness(),
+                    QColor(skin.pressed).lightness(),
+                )
+                windows.add(skin.window)
+        self.assertEqual(len(windows), len(modern_theme.SKINS))
+        self.assertEqual(
+            modern_theme.render("@icons@/check.svg", "modern").endswith("/res/check.svg"),
+            True,
+        )
+        self.assertEqual(modern_theme.palette("not-a-skin"), modern_theme.MODERN)
+
+    def test_modern_skin_selection(self):
+        from fsui.qt import QPalette, modern_theme
+        from fsui.qt.qt import initialize_qt_style
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        state = fsui.theme, fsui.theme_variant, fsui.theme_skin
+        try:
+            for name, skin in modern_theme.SKINS.items():
+                for command_line in (False, True):
+                    with self.subTest(skin=name, command_line=command_line):
+                        arguments = ["fs-uae-launcher"]
+                        if command_line:
+                            arguments.append("--launcher-theme=fusion-" + name)
+                        with patch("fsui.qt.qt.Settings.instance") as settings:
+                            settings.return_value.get.side_effect = lambda key: (
+                                ("fusion-modern" if command_line else "fusion-" + name)
+                                if key == "launcher_theme" else ""
+                            )
+                            with patch("sys.argv", arguments):
+                                initialize_qt_style(self.application)
+                            settings.return_value.set.assert_not_called()
+                        self.assertEqual(fsui.theme_variant, "modern")
+                        self.assertEqual(fsui.theme_skin, name)
+                        self.assertIs(modern_theme.palette(), skin)
+                        self.assertEqual(
+                            self.application.palette().color(QPalette.Window).name(),
+                            skin.window,
+                        )
+                        self.assertEqual(
+                            self.application.palette().color(QPalette.Link).name(),
+                            skin.accent,
+                        )
+                        self.assertNotIn("@", self.application.styleSheet())
+                        self.assertIn(skin.accent, self.application.styleSheet())
+            # Plain and retro themes leave the active skin at Modern Dark.
+            with patch("fsui.qt.qt.Settings.instance") as settings:
+                settings.return_value.get.side_effect = lambda key: (
+                    "fusion-plain" if key == "launcher_theme" else ""
+                )
+                with patch("sys.argv", ["fs-uae-launcher"]):
+                    initialize_qt_style(self.application)
+            self.assertEqual(fsui.theme_skin, "")
+        finally:
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+            modern_theme.apply_modern_theme(self.application, "modern")
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            fsui.theme, fsui.theme_variant, fsui.theme_skin = state
+
+    def test_modern_skin_colours_reach_navigation_and_icons(self):
+        import qtawesome as qta
+        from fsui.qt import modern_theme
+        from launcher.ui.navigation_icons import navigation_icon
+        from launcher.ui.pageddialog import PagedDialog
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        state = fsui.theme, fsui.theme_variant, fsui.theme_skin
+        try:
+            for name in ("cyberpunk", "hologram", "terminal"):
+                with self.subTest(skin=name):
+                    modern_theme.apply_modern_theme(self.application, name)
+                    skin = modern_theme.palette()
+                    with patch.object(fsui, "theme_variant", "modern"), \
+                            patch.object(fsui, "theme_skin", name):
+                        with patch("launcher.ui.navigation_icons.qta.icon", wraps=qta.icon) as icon:
+                            navigation_icon("fa5s.save")
+                            icon.assert_called_with("fa5s.save", color=skin.icon)
+                        self.setup_dialog()
+                        paged = PagedDialog(self.dialog, "Skins")
+                        self.assertIn(skin.nav, paged.list_view.styleSheet())
+                        self.assertIn(skin.accent_soft, paged.list_view.styleSheet())
+                        self.assertNotIn("#1c1e2b", paged.list_view.styleSheet())
+                        paged.close()
+                        self.run_dialog()
+        finally:
+            modern_theme.apply_modern_theme(self.application, "modern")
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+            fsui.theme, fsui.theme_variant, fsui.theme_skin = state
+
     def test_retro_theme_selection(self):
         from fsui.qt import QPalette
         from fsui.qt.qt import initialize_qt_style
@@ -2012,23 +2130,33 @@ class TestDashboard(WidgetTestCase):
         self.assertEqual(labels.count("Windows 3.11"), 1)
         self.assertEqual(labels.count("Amiga Workbench 1.3"), 1)
         self.assertEqual(labels, [
-            "Modern Dark (*)", "Modern Dark", "Fusion", "Windows 3.11", "Amiga Workbench 1.3"
+            "Modern Dark (*)", "Modern Dark", "Neon City", "Synthwave Sunset",
+            "Holo Grid", "Phosphor Terminal", "Fusion", "Windows 3.11",
+            "Amiga Workbench 1.3",
         ])
         self.run_dialog()
 
     def test_navigation_and_responsive_layout(self):
+        from fsui.qt import modern_theme
         from fsui.qt.modern_theme import apply_modern_theme
         from fsui.qt.retro_theme import apply_retro_theme
 
         palette = self.application.palette()
         stylesheet = self.application.styleSheet()
         font = self.application.font()
+        skin_state = fsui.theme_skin
         try:
-            for variant in ("modern", "plain", "windows311", "workbench"):
-                with self.subTest(variant=variant):
-                    with patch.object(fsui, "theme_variant", variant):
+            for variant in (
+                "modern", "plain", "windows311", "workbench",
+                "modern:cyberpunk", "modern:synthwave", "modern:hologram",
+                "modern:terminal",
+            ):
+                variant, _, skin = variant.partition(":")
+                with self.subTest(variant=variant, skin=skin):
+                    with patch.object(fsui, "theme_variant", variant), \
+                            patch.object(fsui, "theme_skin", skin):
                         if variant == "modern":
-                            apply_modern_theme(self.application)
+                            apply_modern_theme(self.application, skin or "modern")
                         elif variant == "plain":
                             self.application.setStyleSheet("")
                             self.application.setPalette(self.application.style().standardPalette())
@@ -2036,9 +2164,11 @@ class TestDashboard(WidgetTestCase):
                             apply_retro_theme(self.application, variant)
                         self._check_navigation_and_responsive_layout()
         finally:
+            modern_theme.apply_modern_theme(self.application, "modern")
             self.application.setPalette(palette)
             self.application.setStyleSheet(stylesheet)
             self.application.setFont(font)
+            fsui.theme_skin = skin_state
 
     def _check_navigation_and_responsive_layout(self):
         from launcher.ui.book import Book

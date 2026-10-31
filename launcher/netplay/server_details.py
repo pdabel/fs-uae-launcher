@@ -1,6 +1,7 @@
 import fsui
 import qtawesome as qta
 
+from fsui.qt import modern_theme
 from fsui.qt import (
     Qt, QFrame, QLabel, QPushButton, QTimer, QVBoxLayout,
 )
@@ -13,11 +14,11 @@ class ServerDetails(QFrame):
         self.server = None
         self.setObjectName("serverDetails")
         self.setMinimumWidth(240)
-        self.setStyleSheet("""
-            QFrame#serverDetails { background: #212431; }
-            QLabel[detailLabel="true"] { color: #a2abc0; font-size: 12px; }
-            QLabel#serverStatus { color: #69d6ae; font-weight: 600; }
-        """)
+        self.setStyleSheet(modern_theme.render("""
+            QFrame#serverDetails { background: @surface@; }
+            QLabel[detailLabel="true"] { color: @muted@; font-size: 12px; }
+            QLabel#serverStatus { color: @success@; font-weight: 600; }
+        """))
         if fsui.theme_variant != "modern":
             self.setStyleSheet("""
                 QFrame#serverDetails { background: palette(window); }
@@ -54,7 +55,7 @@ class ServerDetails(QFrame):
             self.fields[name] = value
         layout.addStretch(1)
         self.stop_button = QPushButton(
-            qta.icon("fa5s.stop", color="#fa7979"), gettext("Stop server")
+            qta.icon("fa5s.stop", color=modern_theme.palette().danger), gettext("Stop server")
         )
         self.stop_button.setToolTip(gettext("Stop the hosted netplay server"))
         self.stop_button.setEnabled(False)
