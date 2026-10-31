@@ -1,5 +1,6 @@
 import fsgs
 import fsui
+from fsui.qt.qt import theme_applied
 from launcher.i18n import gettext
 from launcher.launcher_settings import LauncherSettings
 from launcher.launcher_signal import LauncherSignal
@@ -143,6 +144,7 @@ class SettingsDialog(PagedDialog):
 
         self.closed.connect(self.__closed)
         self.page_changed.connect(self.__page_changed)
+        theme_applied.connect(self._style_navigation)
 
     def _style_navigation(self):
         from launcher.ui.navigation_icons import navigation_icon
@@ -174,6 +176,7 @@ class SettingsDialog(PagedDialog):
         LauncherSettings.set("last_settings_page", self.get_page_title(index))
 
     def __closed(self):
+        theme_applied.disconnect(self._style_navigation)
         LauncherSignal.broadcast("settings_updated")
 
     def __defaults_activated(self):

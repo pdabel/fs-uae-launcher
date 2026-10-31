@@ -8,7 +8,9 @@ import fsui
 import qtawesome as qta
 from fsbc.application import app
 from fsui.qt import QPalette
+from fsui.qt.qt import apply_launcher_theme
 from fsui.extra.taskdialog import TaskDialog
+from launcher.launcher_settings import LauncherSettings
 from launcher.option import Option
 from launcher.res import gettext
 from launcher.settings.settings_page import SettingsPage
@@ -22,15 +24,27 @@ class LauncherSettingsPage(SettingsPage):
 
         theme_group = self.add_option(Option.LAUNCHER_THEME)
         self.theme_choice = theme_group.widget
+        self.preview_label = fsui.MultiLineLabel(
+            self,
+            gettext(
+                "Theme and font changes are previewed immediately. Restart "
+                "the launcher to refresh icons and window sizes."
+            ),
+            640,
+        )
+        self.layout.add(self.preview_label, fill=True, margin_bottom=10)
         self.restart_button = fsui.Button(self, gettext("Restart Launcher"))
         palette = self.restart_button.widget().palette()
         self.restart_button.widget().setIcon(qta.icon(
             "fa5s.redo", color=palette.color(QPalette.ButtonText).name()
         ))
-        self.restart_button.set_tooltip(gettext("Restart to apply the selected theme and font"))
+        self.restart_button.set_tooltip(
+            gettext("Restart to fully apply the selected theme and font")
+        )
         self.restart_button.activated.connect(self.on_restart_button)
         self.add_option(Option.LAUNCHER_FONT_SIZE)
         self.layout.add(self.restart_button, margin_bottom=10)
+        LauncherSettings.add_listener(self)
 
         self.add_option(Option.LAUNCHER_CLOSE_BUTTONS)
 
@@ -66,6 +80,24 @@ class LauncherSettingsPage(SettingsPage):
         button = fsui.Button(self, gettext("Defragment Databases"))
         button.activated.connect(self.on_defragment_button)
         self.layout.add(button, margin_top=20)
+
+    def on_destroy(self):
+        LauncherSettings.remove_listener(self)
+
+    def on_setting(self, key, value):
+        if key in (Option.LAUNCHER_THEME, Option.LAUNCHER_FONT_SIZE):
+            self.preview_theme()
+
+    def preview_theme(self):
+        """Apply the saved theme and font to the running application."""
+        qapplication = getattr(app, "qapplication", None)
+        if qapplication is None:
+            return
+        apply_launcher_theme(
+            qapplication,
+            LauncherSettings.get(Option.LAUNCHER_THEME),
+            LauncherSettings.get(Option.LAUNCHER_FONT_SIZE),
+        )
 
     def on_restart_button(self):
         from fsui.qt import QMessageBox
