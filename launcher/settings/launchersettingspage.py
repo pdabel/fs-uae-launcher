@@ -14,6 +14,7 @@ from launcher.launcher_settings import LauncherSettings
 from launcher.option import Option
 from launcher.res import gettext
 from launcher.settings.settings_page import SettingsPage
+from launcher.settings.ui_scale import UIScaleSlider
 
 
 class LauncherSettingsPage(SettingsPage):
@@ -42,7 +43,9 @@ class LauncherSettingsPage(SettingsPage):
             gettext("Restart to fully apply the selected theme and font")
         )
         self.restart_button.activated.connect(self.on_restart_button)
-        self.add_option(Option.LAUNCHER_FONT_SIZE)
+        self.ui_scale = UIScaleSlider(self)
+        self.layout.add(self.ui_scale, fill=True, margin_top=10, margin_bottom=10)
+        self.options_on_page.add(Option.LAUNCHER_FONT_SIZE)
         self.layout.add(self.restart_button, margin_bottom=10)
         LauncherSettings.add_listener(self)
 
