@@ -116,6 +116,10 @@ Explicit selections are saved using display identity rather than a left/right
 guess or enumeration number. Window placement supports reordered and vertically
 stacked displays. A disconnected saved display falls back to the primary display
 without losing the saved choice. Reconnect it to use it again.
+When available, a unique manufacturer/model/serial match follows a monitor
+even when its connector name changes; displays without serials use their
+existing connector identity. The active launch context's monitor choice takes
+precedence over the global launcher selection.
 
 FS-UAE's initial window position is now centred within the selected display,
 not the launcher window. For fullscreen, the launcher also translates the

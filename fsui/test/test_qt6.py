@@ -100,6 +100,14 @@ class TestQt6(WidgetTestCase):
             self.assertIn("HDMI-1", choice.currentText())
             self.assertEqual(choice.get_index(), 1)
             self.assertEqual(settings["monitor"], display_id(second))
+            reconnected = display("HDMI-2", 0)
+            reconnected.serialNumber = second.serialNumber
+            screens[:] = [first, reconnected]
+            choice.refresh()
+            self.assertIn("HDMI-2", choice.currentText())
+            self.assertNotIn("unavailable", choice.currentText())
+            self.assertEqual(choice.get_index(), 2)
+            self.assertEqual(settings["monitor"], display_id(second))
             settings["monitor"] = "right"
             choice.refresh()
             self.assertIn("legacy", choice.currentText())

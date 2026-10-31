@@ -1,4 +1,5 @@
 import json
+import logging
 
 
 def display_id(screen):
@@ -14,6 +15,31 @@ def display_id(screen):
     )
 
 
+def matching_display_index(screens, monitor):
+    for index, screen in enumerate(screens):
+        if display_id(screen) == monitor:
+            return index
+    try:
+        identity = json.loads(monitor[len("display:") :])
+    except (ValueError, TypeError):
+        logging.warning("Invalid saved display identity: %r", monitor)
+        return None
+    if not isinstance(identity, list) or len(identity) != 4:
+        logging.warning("Invalid saved display identity: %r", monitor)
+        return None
+    _, manufacturer, model, serial = identity
+    if serial:
+        matches = [
+            index
+            for index, screen in enumerate(screens)
+            if (screen.manufacturer(), screen.model(), screen.serialNumber())
+            == (manufacturer, model, serial)
+        ]
+        if len(matches) == 1:
+            return matches[0]
+    return None
+
+
 def screen_index(screens, monitor, primary=None):
     if not screens:
         return None
@@ -21,10 +47,8 @@ def screen_index(screens, monitor, primary=None):
         (index for index, screen in enumerate(screens) if screen is primary), 0
     )
     if monitor and monitor.startswith("display:"):
-        for index, screen in enumerate(screens):
-            if display_id(screen) == monitor:
-                return index
-        return primary_index
+        selected = matching_display_index(screens, monitor)
+        return primary_index if selected is None else selected
     positions = {"left": 0, "middle-left": 1, "middle-right": 2, "right": 3}
     if monitor in positions:
         ordered = sorted(
