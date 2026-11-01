@@ -4,7 +4,7 @@ What's left to remove after phase 1 (#67), phase 2 (#78) and the amitools and le
 
 | | |
 |---|---|
-| **Status** | In progress: step 7 (commented-out code) done first in #119; steps 1 and 2 on `chore/remove-unused-modules` |
+| **Status** | In progress: steps 1, 2 and 7 done (#119, #120); step 3 on `chore/python2-leftovers` |
 | **Date** | 2026-10-26 |
 | **Found with** | vulture 2.16 at 60% confidence; ruff `F401`, `F811`, `F841`; an import graph from `fs-uae-launcher` and the test modules; each finding checked by hand with `git grep` |
 | **Out of scope** | `oyoyo/`. The [netplay rooms design](netplay-rooms-design.md) would delete it whole, so pruning it now is wasted work |
@@ -44,8 +44,8 @@ Each package was removed leaf-first, with vulture and ruff rerun after each laye
 
 ### 3. Python 2 leftovers
 
-- [ ] `fsbc/debug.py`: `_thread_bootstrap_2_7`, `AdditionalInfo`, and the `threading._trace_hook` import inside it. They only run when `sys.version` starts with `"2.7"`. On 3.12+, `_let_thread_exceptions_be_unhandled` just prints a warning. Reduce it to that warning, or remove the debugger hook entirely if nobody uses it.
-- [ ] `fsbc/init.py`: the `patch_unicode` parameter of `initialize_application` and its `unicode_patched` flag. It used to call `fsbc.unicode.patch_all()`, which patched `sys.argv`, `subprocess.Popen` and stdout/stderr for Python 2's byte strings, and returned early on Python 3 anyway. The module was deleted in 2.5.23dev (`38637ead`). The only caller (`launcher/apps/__init__.py`) never passes the parameter. Also drop the write-only globals `init_called`, `logging_enabled` and `exception_handler_enabled`, which nothing reads.
+- [x] `fsbc/debug.py`: `_thread_bootstrap_2_7`, `AdditionalInfo`, and the `threading._trace_hook` import inside it, which only ran when `sys.version` started with `"2.7"`. `_let_thread_exceptions_be_unhandled` went too. On 3.12+ it only printed a warning that the debugger wouldn't break on exceptions in other threads, which is wrong since 3.8: uncaught thread exceptions go through `threading.excepthook`, and debuggers hook that. `enable_exception_handler` still skips installing the handler when a debugger is attached.
+- [x] `fsbc/init.py`: the `patch_unicode` parameter of `initialize_application` and its `unicode_patched` flag. It used to call `fsbc.unicode.patch_all()`, which patched `sys.argv`, `subprocess.Popen` and stdout/stderr for Python 2's byte strings, and returned early on Python 3 anyway. The module was deleted in 2.5.23dev (`38637ead`). The only caller (`launcher/apps/__init__.py`) never passed the parameter. The write-only globals `init_called`, `logging_enabled` and `exception_handler_enabled` went with it. The unused `sys` and `platform` imports are left for step 4.
 - [ ] `fsgs/util/gamenameutil.py:591`: `TestGameNameUtil`, a `unittest` class inside a non-test module. pytest never collects it, and its `assertEquals` calls were removed in Python 3.12, so it would fail if it ran. Move it or delete it; see [open question 2](#open-questions).
 
 ### 4. Unused imports and variables

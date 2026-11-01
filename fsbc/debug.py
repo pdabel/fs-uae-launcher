@@ -22,28 +22,11 @@ def enable_exception_handler(force=False):
         print(
             "running in debugger, not enabling exception handler " "after all."
         )
-        _let_thread_exceptions_be_unhandled()
         return False
 
     sys.excepthook = _handle_exception
     _enable_thread_exception_handler()
     return True
-
-
-def _let_thread_exceptions_be_unhandled():
-    """Replace method in Thread class to let exceptions be picked up by
-    the debugger. This is done by replacing the bootstrap function,
-    which normally catches all exceptions."""
-
-    print("let thread exceptions be unhandled (for debugger)")
-    if sys.version.startswith("2.7"):
-        threading.Thread._Thread__bootstrap = _thread_bootstrap_2_7
-    else:
-        print(
-            "WARNING: no Thread bootstrap replacement for this "
-            "python version. The debugger will not break on unhandled"
-            "exceptions in threads other than the main thread."
-        )
 
 
 def _enable_thread_exception_handler():
@@ -101,57 +84,3 @@ def _handle_exception(exc_type, exc_value, exc_traceback):
             Signal("quit").notify()
         except Exception as e:
             print(repr(e))
-
-
-class AdditionalInfo(object):
-    pass
-
-
-def _thread_bootstrap_2_7(self):
-    """This is a replacement "method" for the Thread class in Python 2.7,
-    designed to let an exception fall through to the debugger."""
-
-    # noinspection PyProtectedMember
-    # noinspection PyUnresolvedReferences
-    from threading import _active_limbo_lock, _active, _limbo, _trace_hook
-
-    # noinspection PyProtectedMember
-    # noinspection PyUnresolvedReferences
-    from threading import _profile_hook, _sys, _get_ident
-
-    try:
-        self._set_ident()
-        self._Thread__started.set()
-        with _active_limbo_lock:
-            _active[self._Thread__ident] = self
-            del _limbo[self]
-        if __debug__:
-            self._note("%s.__bootstrap(): thread started", self)
-
-        if _profile_hook:
-            self._note("%s.__bootstrap(): registering profile hook", self)
-            _sys.setprofile(_profile_hook)
-
-        try:
-            self.run()
-        except SystemExit:
-            if __debug__:
-                self._note("%s.__bootstrap(): raised SystemExit", self)
-        else:
-            if __debug__:
-                self._note("%s.__bootstrap(): normal return", self)
-        finally:
-            # Prevent a race in
-            # test_threading.test_no_refcycle_through_target when
-            # the exception keeps the target alive past when we
-            # assert that it's dead.
-            self._Thread__exc_clear()
-    finally:
-        with _active_limbo_lock:
-            self._Thread__stop()
-            try:
-                # We don't call self.__delete() because it also
-                # grabs _active_limbo_lock.
-                del _active[_get_ident()]
-            except:
-                pass
