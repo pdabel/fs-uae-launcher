@@ -4,7 +4,7 @@ What's left to remove after phase 1 (#67), phase 2 (#78) and the amitools and le
 
 | | |
 |---|---|
-| **Status** | In progress: steps 1–4 and 7 done (#119, #120, #138, #139); step 5 done on `chore/dead-branches` |
+| **Status** | In progress: steps 1–5 and 7 done (#119, #120, #138, #139, #140); cx_Freeze path removed on `chore/remove-cx-freeze`; step 6 next |
 | **Date** | 2026-10-26 |
 | **Found with** | vulture 2.16 at 60% confidence; ruff `F401`, `F811`, `F841`; an import graph from `fs-uae-launcher` and the test modules; each finding checked by hand with `git grep` |
 | **Out of scope** | `oyoyo/`. The [netplay rooms design](netplay-rooms-design.md) would delete it whole, so pruning it now is wasted work |
@@ -73,7 +73,7 @@ Each package was removed leaf-first, with vulture and ruff rerun after each laye
 **Leave alone:**
 - `fsui/qt/qt.py`: re-exported through `from fsui.qt.qt import *` in `fsui/qt/__init__.py`, so ruff can't see who uses its names.
 - `fsui/qt/signal.py`: four widgets import `Signal` through it.
-- The two imports after `sys.exit(0)` at the end of `fs-uae-launcher`: see [open question 1](#open-questions).
+- ~~The two imports after `sys.exit(0)` at the end of `fs-uae-launcher`~~: removed with the cx_Freeze path ([open question 1](#open-questions)).
 
 ### 5. Branches that never run *(done)*
 
@@ -91,7 +91,7 @@ Each package was removed leaf-first, with vulture and ruff rerun after each laye
 ### 6. Stop it coming back
 
 - [ ] Add `F401`, `F811` and `F841` to `[tool.ruff.lint] select` in `pyproject.toml`. CI already runs `ruff check`.
-- [ ] Add `per-file-ignores` for `__init__.py` re-exports (`F401`), plus `fs-uae-launcher` if its freezer hints stay. `fsui/qt/qt.py` and `fsui/qt/signal.py` need `F401` ignored too: they're re-exports that step 4 left alone. The `__init__.py` ignore also covers `launcher/res/__init__.py`, whose `gettext` import nothing uses; delete it then if you'd rather.
+- [ ] Add `per-file-ignores` for `__init__.py` re-exports (`F401`). `fs-uae-launcher` needs none: its freezer hints went with the cx_Freeze path, and `ruff check` doesn't look at extensionless files anyway. `fsui/qt/qt.py` and `fsui/qt/signal.py` need `F401` ignored too: they're re-exports that step 4 left alone. The `__init__.py` ignore also covers `launcher/res/__init__.py`, whose `gettext` import nothing uses; delete it then if you'd rather.
 
 This needs steps 1–5 done first, or CI goes red.
 
@@ -108,7 +108,7 @@ Decided: if it isn't in use now, it's removed. Git history keeps it.
   - licence headers, and the format description in `quicksettingspanel.py`
 - [x] Blank lines left behind were tidied, only where the removal created them. Checked: `ruff check`, the CI pytest suites (158 passed, 10 skipped), `fsui/test/test_qt6.py` offscreen (48 passed, the same as `main`), and an import of every changed module. vulture and ruff find no new dead code as a result.
 
-`extra_imports.py` is now just its two-line header comment; it goes or stays with [open question 1](#open-questions).
+`extra_imports.py` was left as just its two-line header comment, and later went with the cx_Freeze path ([open question 1](#open-questions)).
 
 ## Not dead, despite the tools
 
@@ -123,12 +123,11 @@ The import graph also flags these scripts, which are all in use:
 - `docs/netplay-fixtures/extract_fixtures.py`, `po-update.py`: run by hand
 - `fsbuild/fix-qt.py`: run by `fsbuild/build.sh`
 - `fsbuild/standalone.py`: run by `plugin.post.sh`
-- `extra_imports.py`: read by `bootstrap`
 - `config.py`: imported by `bootstrap`
 
 ## Open questions
 
-1. **Is the cx_Freeze path dead?** Official builds use PyInstaller (`fsbuild/build.sh`), and cx_Freeze isn't in the `Pipfile`. Three things exist only for cx_Freeze: the `build_exe` branch in `bootstrap`, `extra_imports.py` (every line is commented out), and the `idna` and `_sysconfigdata` imports after `sys.exit(0)` in `fs-uae-launcher`. But [python-dependency-modernization.md](python-dependency-modernization.md) says Windows freezer recipes "are retained". Is anyone still building Windows with cx_Freeze? If not, all three go, in one commit.
+1. ~~**Is the cx_Freeze path dead?**~~ Decided 2026-11-01: yes. #124 retired the Windows Python 3.6/PyQt5/cx_Freeze recipe and says Windows packaging is unsupported, which removed the reason this was open. Removed in one commit: the `build_exe` branches in `bootstrap`'s `setup.py` template, `extra_imports.py` and its entry in `bootstrap`'s `copy_files`, and the dummy `idna.idnadata` and `_sysconfigdata_m_darwin_darwin` imports after `sys.exit(0)` in `fs-uae-launcher`. The template's `if sys.platform == "win32" and False:` block, which set py2exe's `windows` option, went too. `bootstrap` itself stays: `fsbuild/bootstrap` runs it, and `debian/rules` and the RPM spec use the `setup.py` it generates. Original question: official builds use PyInstaller (`fsbuild/build.sh`), and cx_Freeze isn't in the `Pipfile`, but [python-dependency-modernization.md](python-dependency-modernization.md) said Windows freezer recipes "are retained".
 2. ~~**`TestGameNameUtil`: keep or delete?**~~ Decided 2026-11-01: keep 28 of its 29 cases, in `fsgs/tests`. They cover `extract_index_terms`, which builds the game and config search index, and `extract_search_terms`, which parses the launcher's search box; nothing else tests either. With `assertEquals` fixed, 24 passed and 5 failed:
    - Four `test_search_*` cases checked that the index terms were an exact superset of the search terms. `Database.find_games_new` matches each search term as a prefix (`term like 'x%'`), and indexing adds a `g` to words ending in `n`, so `burn`, `edition` and `alien` failed the test while the real search finds `burng`, `editiong` and `alieng`. They now test prefix matching and pass.
    - `test_variant_with_slash` expected `Tron (8/9).dummy` to parse as `Tron`, but `extract_names_from_file_name` calls `os.path.basename` and returns `9)`. Its only caller turns a config name into a screenshot file prefix, where cutting at the `/` is the safer behaviour, so the case was dropped.
