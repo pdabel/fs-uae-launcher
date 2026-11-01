@@ -130,8 +130,7 @@ class EnumerateHelper(object):
         print("[INPUT] Old-style port device selection:")
         for port in ports:
             for i, device in enumerate(joystick_like_devices):
-                if True:
-                    joystick_like_devices.pop(i)
-                    port.device = device
-                    break
+                joystick_like_devices.pop(i)
+                port.device = device
+                break
             print("[INPUT] Old Selection:", port.name, port.device)
