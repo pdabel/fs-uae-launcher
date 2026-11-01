@@ -24,9 +24,7 @@ class ROMManager(object):
         size = st.st_size
         mtime = int(st.st_mtime)
         log_function(
-            'Adding ROM "{0}" to database (SHA-1: {1})'.format(
-                path, rom["sha1"]
-            )
+            f'Adding ROM "{path}" to database (SHA-1: {rom["sha1"]})'
         )
         database.delete_file(path=path)
         database.add_file(path=path, sha1=rom["sha1"], mtime=mtime, size=size)

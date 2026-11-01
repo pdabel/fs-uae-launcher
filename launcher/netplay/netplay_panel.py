@@ -273,9 +273,8 @@ class NetplayPanel(fsui.Panel):
         else:
             role = gettext("hosting") if session.is_host else gettext("joined")
             self.session_label.set_text(
-                "{0} {1} \u2014 {2}, {3}".format(
-                    gettext("Game"), session.game_id[:8], role, session.state
-                )
+                f"{gettext('Game')} {session.game_id[:8]} \u2014 "
+                f"{role}, {session.state}"
             )
             self.session_list.set_items(session.slot_lines())
         # Not just "ready": an edit the lobby doesn't have yet would start

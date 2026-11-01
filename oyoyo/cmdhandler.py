@@ -36,12 +36,12 @@ class CommandError(Exception):
 
 class NoSuchCommandError(CommandError):
     def __str__(self):
-        return 'No such command "{!s}"'.format(".".join(self.cmd))
+        return f'No such command "{".".join(self.cmd)!s}"'
 
 
 class ProtectedCommandError(CommandError):
     def __str__(self):
-        return 'Command "{!s}" is protected'.format(".".join(self.cmd))
+        return f'Command "{".".join(self.cmd)!s}" is protected'
 
 
 class CommandHandler(object):
@@ -143,7 +143,7 @@ class DefaultBotCommandHandler(CommandHandler):
             commands = self.getVisibleCommands()
             commands.sort()
             helpers.msg(self.client, dest,
-                        'available commands: {!s}'.format(" ".join(commands)))
+                        f'available commands: {" ".join(commands)!s}')
         else:
             try:
                 f = self.get(arg)
@@ -156,7 +156,7 @@ class DefaultBotCommandHandler(CommandHandler):
             if not inspect.ismethod(f):
                 sub_commands = self.getVisibleCommands(f)
                 if sub_commands:
-                    doc += ' [sub commands: {!s}]'.format(" ".join(sub_commands))
+                    doc += f' [sub commands: {" ".join(sub_commands)!s}]'
 
             helpers.msg(self.client, dest, f'{arg!s}: {doc!s}')
 

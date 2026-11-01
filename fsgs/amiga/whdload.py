@@ -165,9 +165,7 @@ def calculate_whdload_args(archive_path: str) -> str:
                 if args:
                     archive_name = path.rsplit("#/", 1)[1]
                     logging.debug(
-                        "[WHDLOAD] %s => %s".format(
-                            archive_name, " ".join(args)
-                        )
+                        "[WHDLOAD] %s => %s", archive_name, " ".join(args)
                     )
                     slave_args[archive_name] = args
     if len(slave_args) == 0:

@@ -482,9 +482,8 @@ class GameContext(object):
                 )
             except LookupError:
                 raise IncompleteGameException(
-                    "Could not find parent {0} of game {1}".format(
-                        doc.get("parent_uuid", ""), doc.get("game_uuid")
-                    )
+                    f"Could not find parent {doc.get('parent_uuid', '')} "
+                    f"of game {doc.get('game_uuid')}"
                 )
             parent_doc.update(doc)
             doc = parent_doc

@@ -206,7 +206,7 @@ class Channel:
             color = IRCColor.POS_MODE
         else:
             color = IRCColor.NEG_MODE
-        self.message("* {0} sets mode {1}".format(who, " ".join(args)), color)
+        self.message(f"* {who} sets mode {' '.join(args)}", color)
         IRCBroadcaster.broadcast("nick_list", {"channel": self.name})
 
     # noinspection SpellCheckingInspection

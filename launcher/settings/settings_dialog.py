@@ -33,7 +33,7 @@ class SettingsDialog(PagedDialog):
         PagedDialog.__init__(
             self,
             parent,
-            "{} - {} Launcher".format(gettext("Settings"), fsgs.product),
+            f"{gettext('Settings')} - {fsgs.product} Launcher",
         )
 
         self.add_page(

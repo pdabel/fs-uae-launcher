@@ -270,7 +270,7 @@ class RefreshRateTool(object):
             "/usr/bin/env",
             "xrandr",
             "-s",
-            "{0}x{1}".format(mode["width"], mode["height"]),
+            f"{mode['width']}x{mode['height']}",
             "-r",
             str(mode["refresh"]),
         ]

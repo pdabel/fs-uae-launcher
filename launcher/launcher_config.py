@@ -574,8 +574,8 @@ class LauncherConfig(object):
             print("__config_name was set")
             config_name = values.get("__config_name", "")
         else:
-            config_name = "{0} ({1})".format(
-                values.get("game_name"), values.get("variant_name")
+            config_name = (
+                f"{values.get('game_name')} ({values.get('variant_name')})"
             )
         LauncherSettings.set("config_path", "")
         if config_name:

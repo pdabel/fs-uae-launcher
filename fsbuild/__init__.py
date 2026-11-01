@@ -317,9 +317,7 @@ def updateConfigureAc(version: Version, commit: str = "") -> None:
                     d = "Full version"
                 line = f"m4_define([{k.lower()}], [{v}])\n"
             if line.startswith("m4_define([fsbuild_commit"):
-                line = "m4_define([{}], [{}])\n".format(
-                    "fsbuild_commit", commit
-                )
+                line = f"m4_define([fsbuild_commit], [{commit}])\n"
             lines.append(line)
     with open("configure.ac", "w", encoding="UTF-8") as f:
         for line in lines:

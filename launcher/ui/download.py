@@ -66,8 +66,8 @@ class DownloadGameWindow(fsui.Window):
             self,
             gettext(
                 "Download to the following directory, and then "
-                "click '{0}':".format(gettext("Scan Downloads"))
-            ),
+                "click '{0}':"
+            ).format(gettext("Scan Downloads")),
         )
         label.set_min_width(500)
         self.layout.add(label, margin_top=20)

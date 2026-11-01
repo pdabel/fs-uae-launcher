@@ -41,6 +41,13 @@ For a side-by-side Python 3.15 installation on Ubuntu without changing the
 system Python, see [the isolated test environment instructions](docs/compiling.md#side-by-side-python-315-on-ubuntu).
 Use a fresh environment for each Python minor version; an interpreter install
 alone does not establish launcher compatibility.
+The local Python 3.14.4 test environment is named `venv-3.14.4`; use
+`source venv-3.14.4/bin/activate` or its interpreter explicitly to distinguish
+it from other test versions. This environment name does not imply validated
+Python 3.14 support.
+The local Python 3.15 test environment is named `venv-3.15` (currently Python
+3.15.1); activate it with `source venv-3.15/bin/activate`. Both versioned
+environment directories are excluded from Git.
 Local Ubuntu checks on Python 3.15.1 installed the existing locked dependencies,
 passed 10 focused Python compatibility tests (one subprocess ResourceWarning),
 and initialized Qt 6.12 offscreen. Full-suite, native desktop, and frozen-build
@@ -82,9 +89,14 @@ theme names fall back to plain Fusion. Emulator, database, and networking
 behavior is unchanged.
 
 It can optionally use the `lhafile` python package to support .lha archives.
-Historical INSTALL and Windows packaging recipes still mention Qt 5. For the
-current Ubuntu/macOS target, use the locked Qt 6 source environment above and
-the platform workflows described in docs/compiling.md.
+The old Windows Python 3.6/PyQt5/cx_Freeze instructions and unused Qt 5
+bundle-cleaning scripts are retired. Supported Ubuntu/macOS packaging uses
+Qt 6/PySide6 through `fsbuild/fix-qt.py` and `fsbuild/build.sh`; Windows
+packaging remains unsupported. Do not mix Qt bindings in one environment.
+Use the locked source environment above and the platform workflows described
+in docs/compiling.md. Packaging policy checks run with:
+
+  pipenv run python -m pytest fsbuild/tests/test_python_support.py
 
 See [the Python and dependency modernization TODO](docs/python-dependency-modernization.md)
 for the reviewed packaging, supported-Python, dependency, and code-quality
@@ -99,11 +111,24 @@ string conversions preserve `%s` behavior for objects with custom formatting.
 Lazy logging arguments and formatting after gettext remain intact.
 
 Ordinary literal `.format()` calls use f-strings. Translated templates keep
-their placeholders and are formatted after gettext. Ruff's UP032 rule guards
-this convention locally and in CI, without enabling unrelated legacy rules:
+their placeholders and are formatted after gettext. Dynamic templates (such
+as media keys, WHDLoad scripts, and SQL debug output) retain `.format()`;
+they cannot be replaced by literal f-strings. Logging uses lazy arguments.
+Ruff's UP032 rule checks eligible conversions locally and in CI, without
+enabling unrelated legacy rules:
 
   venv/bin/python -m pip install ruff==0.17.2
   venv/bin/pipenv run ruff check
+
+The tracked-source regression check includes extensionless Python scripts and
+rejects literal `.format()` calls that Ruff leaves unchanged, including calls
+with joins or dictionary lookups. The bootstrap uses f-strings while retaining
+its generated setup and Makefile contents.
+Output tests cover IRC commands, lazy WHDLoad logging, packaging templates,
+and formatting after translation. Run these
+checks and strict source compilation with:
+
+  pipenv run python -m pytest fsbuild/tests/test_python_support.py
 
 Simple synchronous command helpers use argument lists and `subprocess.run()`;
 their existing output decoding and failure handling are retained. Streaming

@@ -410,7 +410,7 @@ class LauncherApp(ApplicationMixin, fsui.Application):
             cls.start_local_game_amiga()
         else:
             fsui.show_error(
-                "Unsupported platform: {}".format(platform_id or "(none)")
+                f"Unsupported platform: {platform_id or '(none)'}"
             )
 
     @classmethod

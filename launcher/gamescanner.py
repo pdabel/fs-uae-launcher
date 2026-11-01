@@ -384,12 +384,11 @@ class GameScanner(object):
                 search_terms.add("t:thumb")
             if backdrop_sha1:
                 search_terms.add("t:backdrop")
-                backdrop_image = "sha1:{}/{}/{}/{}/{}".format(
-                    backdrop_sha1,
-                    doc.get("backdrop_zoom", "1.0"),
-                    doc.get("backdrop_zoom", "1.0"),
-                    doc.get("backdrop_halign", "0.5"),
-                    doc.get("backdrop_valign", "0.5"),
+                backdrop_image = (
+                    f"sha1:{backdrop_sha1}/{doc.get('backdrop_zoom', '1.0')}/"
+                    f"{doc.get('backdrop_zoom', '1.0')}/"
+                    f"{doc.get('backdrop_halign', '0.5')}/"
+                    f"{doc.get('backdrop_valign', '0.5')}"
                 )
             else:
                 backdrop_image = ""

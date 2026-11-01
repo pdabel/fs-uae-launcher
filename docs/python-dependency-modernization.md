@@ -1,6 +1,6 @@
 # Python and Dependency Modernization TODO
 
-Review date: 2026-10-24
+Review date: 2026-10-25
 
 This is an implementation queue, not a claim that configured jobs have passed.
 The target is Python 3.12+ on Ubuntu 24.04+ and macOS. Windows packaging is
@@ -9,7 +9,9 @@ claim, until dependency installation, tests, and platform builds pass in CI.
 
 ## Stacked Consistency Pass
 
-The stack is based on main at `615cb4d2`, with one commit per branch:
+The previous consistency stack was based on main at `615cb4d2`, with one
+commit per branch. The following table records its historical checks, not
+validation of the current stack:
 
 | Branch | Scope | Local checks on Python 3.12 |
 | --- | --- | --- |
@@ -21,6 +23,13 @@ The stack is based on main at `615cb4d2`, with one commit per branch:
 | `stack/06-form-layout-consistency` | Cosmetic alignment for configuration and Settings forms; single-column memory rows; clear override-label spacing; restart command below theme/font selectors | 138 core tests, 10 skipped; 42 Qt tests, 236 subtests; configuration and Settings previews inspected; Ruff, strict compilation and whitespace pass |
 | `stack/07-netplay-column-layout` | Resizable channel/player, chat, and server/game columns; 25/40/35 initial proportions; saved divider adjustments | 138 core tests, 10 skipped; 45 Qt tests, 283 subtests; 12 nonblank netplay previews; Ruff, strict compilation and whitespace pass |
 | `stack/08-netplay-channel-default` | Game-title/operator-tag channel defaults; tagged/legacy recognition; Private join checkbox and confirmed public lobby announcements | 160 core tests, 10 skipped; 48 Qt tests, 320 subtests; Ruff, strict compilation and whitespace pass |
+
+The new stack starts from main at `e87830d4`:
+
+| Branch | Scope | Local checks |
+| --- | --- | --- |
+| `stack/01-f-string-modernisation` | Remaining literal formatting, extensionless bootstrap, translation boundaries and lazy WHDLoad logging | Seven focused checks on Python 3.12; strict tracked-source compilation, Ruff and whitespace pass; bootstrap output identical to baseline; full pytest/Qt suite not run |
+| `stack/02-qt6-packaging-cleanup` | Retire unused Qt 5 bundle cleaners and obsolete Windows instructions; guard supported PySide6 packaging | 14 packaging tests on Python 3.15.1; PySide6/Qt 6.12 offscreen startup; Python 3.12 strict compilation and policy check; shell syntax, unchanged active bundle content, Ruff and whitespace pass; frozen builds unverified |
 
 The cosmetic layer visits every Settings page in all four themes at 1000 and
 1280 pixel window widths. It checks aligned fields and help buttons, text and
@@ -53,7 +62,7 @@ semantics; 3.15's documentation now undeprecates `getdefaultlocale()`.
 
 | Platform | Python 3.12 | Python 3.15 |
 | --- | --- | --- |
-| Local Ubuntu/Linux | 138 core/API/command/support tests, 10 skipped; 39 Qt tests, 65 subtests; not a frozen-build certification | Interpreter unavailable locally; not run |
+| Local Ubuntu/Linux | Historical: 138 core/API/command/support tests, 10 skipped; 39 Qt tests, 65 subtests; not a frozen-build certification | Current cleanup: 14 packaging tests and PySide6/Qt 6.12 offscreen startup on 3.15.1; prior compatibility checks documented in `docs/compiling.md`; full-suite and frozen-build validation pending |
 | Ubuntu 24.04 CI | Configured, not run for this stack | Configured, not run; support pending |
 | macOS 15 Intel CI | Configured, not run for this stack | Configured, not run; support pending |
 
@@ -70,13 +79,13 @@ and frozen artifacts have not been certified by these local checks.
   QtPy, and QtAwesome, while the lockfile contained PyQt5 and none of those
   three Qt 6 packages. The lock now has them and no PyQt5, and CI runs the
   Qt tests from a clean `pipenv sync --dev`.
-- [ ] Choose one supported Qt binding and version family. Qt 6/PySide6 it
-  is: `fsbuild/fix-qt.py` (was `fix-pyqt5.py`), `fsbuild/build.sh`,
-  `debian/control`, the RPM spec, and the Linux and macOS sections of
-  `docs/compiling.md` now use it. Still Qt 5/PyQt5: the Windows section of
-  `docs/compiling.md` and `fsbuild/bundle-clean-*.sh`, which `bundle.sh` no
-  longer calls. Update or explicitly retire each; do not mix bindings in one
-  environment.
+- [x] Choose one supported Qt binding and version family: Qt 6/PySide6.
+  `fsbuild/fix-qt.py`, `fsbuild/build.sh`, `debian/control`, the RPM spec,
+  and the supported Ubuntu/macOS instructions use it. The unused Qt 5 bundle
+  cleaners and obsolete Windows Python 3.6/PyQt5/cx_Freeze recipe are retired.
+  Windows packaging remains unsupported; no replacement recipe is claimed.
+  Packaging regression checks guard the manifest/lock and active build paths;
+  clean dependency installation and frozen builds remain separate gates.
 - [ ] Regenerate the lockfile from the agreed manifest with the supported
   Python version(s), then verify a clean `pipenv sync --dev` and the CI build.
   Do not hand-edit generated lock data.
@@ -158,14 +167,15 @@ and frozen artifacts have not been certified by these local checks.
 
 ## Review Evidence
 
-- `Pipfile` and `Pipfile.lock`: Qt 6 manifest versus Qt 5 lock mismatch;
-  dependencies are otherwise unconstrained in the manifest.
-- `.github/workflows/linux.yml`, `.github/workflows/macos.yml`, and
-  `.github/workflows/source.yml`: Python 3.12 CI setup.
-- `setup.py` and `debian/control`: legacy packaging and Python `>= 3.2`
-  metadata.
-- `docs/compiling.md`, `fsbuild/fix-pyqt5.py`, and `fsbuild/build.sh`:
-  older Qt 5/Python 3.6 packaging instructions and build assumptions.
+- `Pipfile` and `Pipfile.lock`: PySide6, QtPy and QtAwesome are declared and
+  locked; deliberate manifest version ranges remain open work.
+- `.github/workflows/linux.yml` and `.github/workflows/macos.yml`: Python
+  3.12/3.15 matrices and packaging-policy tests; configuration is not a passed
+  platform build. `.github/workflows/source.yml` uses Python 3.12.
+- `bootstrap` and `debian/control`: Python 3.12 floor; generated setup metadata
+  still uses the legacy setuptools path pending a modern backend migration.
+- `docs/compiling.md`, `fsbuild/fix-qt.py`, and `fsbuild/build.sh`: supported
+  Qt 6 packaging; old Windows instructions and Qt 5 bundle cleaners retired.
 - [Python downloads](https://www.python.org/downloads/) and
   [Python version support status](https://devguide.python.org/versions/):
   Python 3.15.0 released 2026-10-09 and is in bugfix support; Python 3.12 is
