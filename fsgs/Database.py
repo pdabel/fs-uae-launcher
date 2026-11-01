@@ -132,26 +132,6 @@ class Database(BaseDatabase):
             result.append(dict(row))
         return result
 
-    def get_last_game_variant(self, game_uuid):
-        query = "SELECT variant_uuid FROM last_variant WHERE game_uuid = ?"
-        cursor = self.internal_cursor()
-        cursor.execute(query, (game_uuid,))
-        row = cursor.fetchone()
-        if row:
-            return row[0]
-        return ""
-
-    def set_last_game_variant(self, game_uuid, variant_uuid):
-        cursor = self.internal_cursor()
-        cursor.execute(
-            "DELETE FROM last_variant WHERE game_uuid = ?", (game_uuid,)
-        )
-        cursor.execute(
-            "INSERT INTO last_variant (game_uuid, variant_uuid) "
-            "VALUES (?, ?)",
-            (game_uuid, variant_uuid),
-        )
-
     def search_games(self, search):
         self.init()
         query = "SELECT id, name FROM game"

@@ -17,9 +17,6 @@ _cwd = os.getcwd()
 # Key-value store
 _values: Dict[str, str] = {}
 
-# Found Plugin/Python code override directory
-_plugin_code_override = False
-
 logger = logging.getLogger("BOOT")
 perf_counter_epoch = time.perf_counter()
 
@@ -334,10 +331,6 @@ def base_dir() -> str:
     return path
 
 
-def getBaseDirectory() -> str:
-    return base_dir()
-
-
 @lru_cache()
 def development() -> bool:
     # FIXME: Document option
@@ -354,17 +347,6 @@ def is_frozen() -> bool:
 
 def is_macos() -> bool:
     return sys.platform == "darwin"
-
-
-def setup_frozen_python_libs() -> None:
-    return
-
-
-def plugin_code_override() -> bool:
-    return _plugin_code_override
-
-
-# _python_dir: str
 
 
 def setup_python_path_frozen() -> None:

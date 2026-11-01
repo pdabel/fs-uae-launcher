@@ -3,7 +3,6 @@ import traceback
 import fsui
 from launcher.i18n import gettext
 from launcher.launcher_config import LauncherConfig
-from launcher.launcher_settings import LauncherSettings
 from launcher.option import Option
 from launcher.ui.HelpButton import HelpButton
 from launcher.ui.behaviors import OptionsBehavior
@@ -14,19 +13,14 @@ class OptionWidgetFactory(object):
     """Factory for creating user interface groups for options."""
 
     # noinspection PyShadowingBuiltins
-    def __init__(
-        self, check=False, help=False, settings=False, label=True, expand=False
-    ):
+    def __init__(self, check=False, help=False, label=True, expand=False):
         self.check = check
         self.help = help
         self.label_spacing = 10
         self.label = label
         self.expand = expand
         self.option_labels = []
-        if settings:
-            self.options = LauncherSettings
-        else:
-            self.options = LauncherConfig
+        self.options = LauncherConfig
 
     # noinspection PyShadowingBuiltins
     def create(
@@ -183,14 +177,6 @@ class ConfigWidgetFactory(OptionWidgetFactory):
     # noinspection PyShadowingBuiltins
     def __init__(self, check=True, help=False, label=True, expand=False):
         super().__init__(check=check, help=help, label=label, expand=expand)
-
-
-class SettingsWidgetFactory(OptionWidgetFactory):
-    """Factory for creating user interface groups for settings."""
-
-    # noinspection PyShadowingBuiltins
-    def __init__(self, check=False, help=True):
-        super().__init__(check=check, help=help, settings=True)
 
 
 def default_value(key):

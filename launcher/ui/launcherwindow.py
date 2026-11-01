@@ -96,7 +96,6 @@ class LauncherWindow(WindowWithTabs):
         self.main_layout = fsui.VerticalLayout()
 
         self.books = []
-        self.config_browser = None
         self.configurations_panel = None
         self.main_menu_close_time = 0
         self.main_panel = None

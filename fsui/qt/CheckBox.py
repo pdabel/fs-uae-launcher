@@ -28,11 +28,3 @@ class CheckBox(QCheckBox, WidgetMixin):
 
     def on_changed(self):
         self.changed.emit()
-
-
-class HeadingCheckBox(CheckBox):
-    def __init__(self, parent, text=""):
-        CheckBox.__init__(self, parent, text)
-        font = self.get_font()
-        font.set_bold(True)
-        self.set_font(font)
