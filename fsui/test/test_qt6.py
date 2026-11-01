@@ -1051,6 +1051,7 @@ class TestLaunchAndNetplay(WidgetTestCase):
         self.run_dialog()
 
     def test_netplay_action_transitions(self):
+        from fsui.qt import QEvent
         from launcher.netplay.irc import LOBBY_CHANNEL
         from launcher.netplay.netplay_panel import NetplayPanel
 
@@ -1130,7 +1131,9 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 self.assertFalse(panel.recheck_button.visible())
                 self.assertFalse(panel.host_game_button.visible())
             finally:
+                panel.on_destroy()
                 window.close()
+                self.application.sendPostedEvents(None, QEvent.DeferredDelete)
 
 
 class TestDashboard(WidgetTestCase):

@@ -4,7 +4,7 @@ What's left to remove after phase 1 (#67), phase 2 (#78) and the amitools and le
 
 | | |
 |---|---|
-| **Status** | In progress: step 7 (commented-out code) done first in #119; steps 1 and 2 on `chore/remove-unused-modules` |
+| **Status** | In progress: steps 1, 2 and 7 done (#119, #120); step 3 on `chore/python2-leftovers` |
 | **Date** | 2026-10-26 |
 | **Found with** | vulture 2.16 at 60% confidence; ruff `F401`, `F811`, `F841`; an import graph from `fs-uae-launcher` and the test modules; each finding checked by hand with `git grep` |
 | **Out of scope** | `oyoyo/`. The [netplay rooms design](netplay-rooms-design.md) would delete it whole, so pruning it now is wasted work |
@@ -13,7 +13,7 @@ What's left to remove after phase 1 (#67), phase 2 (#78) and the amitools and le
 
 - One commit per step below, each self-contained and green, so the branch can become a stack.
 - Branch from `origin/main` with `--no-track`.
-- Each commit passes what CI runs: `ruff check`, and `python -W default::DeprecationWarning -m pytest fsbc fstd fspy fsbuild/tests launcher/netplay launcher/tests`, plus `pytest fsui/test/test_qt6.py` with `QT_QPA_PLATFORM=offscreen`.
+- Each commit passes what CI runs: `ruff check`, and `python -W default::DeprecationWarning -m pytest fsbc fstd fspy fsgs/tests fsbuild/tests launcher/netplay launcher/tests`, plus `pytest fsui/test/test_qt6.py` with `QT_QPA_PLATFORM=offscreen`.
 - A name counts as dead only when nothing outside its definition refers to it, comments aside. Commented-out callers go in the same commit as the code they call.
 - Line numbers are as of `ee215180`, before step 7. Removing the commented-out code shifts most of them, so search by name.
 
@@ -42,11 +42,11 @@ Each of these was referenced only by its own definition, or by an `__init__.py` 
 
 Each package was removed leaf-first, with vulture and ruff rerun after each layer. A final vulture run finds nothing new, only step 3–4 items and two pytest fixtures it can't see are used.
 
-### 3. Python 2 leftovers
+### 3. Python 2 leftovers *(done)*
 
-- [ ] `fsbc/debug.py`: `_thread_bootstrap_2_7`, `AdditionalInfo`, and the `threading._trace_hook` import inside it. They only run when `sys.version` starts with `"2.7"`. On 3.12+, `_let_thread_exceptions_be_unhandled` just prints a warning. Reduce it to that warning, or remove the debugger hook entirely if nobody uses it.
-- [ ] `fsbc/init.py`: the `patch_unicode` parameter of `initialize_application` and its `unicode_patched` flag. It used to call `fsbc.unicode.patch_all()`, which patched `sys.argv`, `subprocess.Popen` and stdout/stderr for Python 2's byte strings, and returned early on Python 3 anyway. The module was deleted in 2.5.23dev (`38637ead`). The only caller (`launcher/apps/__init__.py`) never passes the parameter. Also drop the write-only globals `init_called`, `logging_enabled` and `exception_handler_enabled`, which nothing reads.
-- [ ] `fsgs/util/gamenameutil.py:591`: `TestGameNameUtil`, a `unittest` class inside a non-test module. pytest never collects it, and its `assertEquals` calls were removed in Python 3.12, so it would fail if it ran. Move it or delete it; see [open question 2](#open-questions).
+- [x] `fsbc/debug.py`: `_thread_bootstrap_2_7`, `AdditionalInfo`, and the `threading._trace_hook` import inside it, which only ran when `sys.version` started with `"2.7"`. `_let_thread_exceptions_be_unhandled` went too. On 3.12+ it only printed a warning that the debugger wouldn't break on exceptions in other threads, which is wrong since 3.8: uncaught thread exceptions go through `threading.excepthook`, and debuggers hook that. `enable_exception_handler` still skips installing the handler when a debugger is attached.
+- [x] `fsbc/init.py`: the `patch_unicode` parameter of `initialize_application` and its `unicode_patched` flag. It used to call `fsbc.unicode.patch_all()`, which patched `sys.argv`, `subprocess.Popen` and stdout/stderr for Python 2's byte strings, and returned early on Python 3 anyway. The module was deleted in 2.5.23dev (`38637ead`). The only caller (`launcher/apps/__init__.py`) never passed the parameter. The write-only globals `init_called`, `logging_enabled` and `exception_handler_enabled` went with it. The unused `sys` and `platform` imports are left for step 4.
+- [x] `fsgs/util/gamenameutil.py`: `TestGameNameUtil`, a `unittest` class inside a non-test module. pytest never collected it, and its `assertEquals` calls were removed in Python 3.12. Moved to `fsgs/tests/test_gamenameutil.py` as plain pytest tests, and `fsgs/tests` added to the CI pytest command. See [open question 2](#open-questions).
 
 ### 4. Unused imports and variables
 
@@ -129,7 +129,9 @@ The import graph also flags these scripts, which are all in use:
 ## Open questions
 
 1. **Is the cx_Freeze path dead?** Official builds use PyInstaller (`fsbuild/build.sh`), and cx_Freeze isn't in the `Pipfile`. Three things exist only for cx_Freeze: the `build_exe` branch in `bootstrap`, `extra_imports.py` (every line is commented out), and the `idna` and `_sysconfigdata` imports after `sys.exit(0)` in `fs-uae-launcher`. But [python-dependency-modernization.md](python-dependency-modernization.md) says Windows freezer recipes "are retained". Is anyone still building Windows with cx_Freeze? If not, all three go, in one commit.
-2. **`TestGameNameUtil`: keep or delete?** Keeping it means moving it into a test module and fixing `assertEquals`. There's no `fsgs/tests` package, and CI doesn't run pytest on `fsgs`, so it would also need a new test directory added to the CI command. Deleting it loses 8 cases for name parsing that nothing else tests.
+2. ~~**`TestGameNameUtil`: keep or delete?**~~ Decided 2026-11-01: keep 28 of its 29 cases, in `fsgs/tests`. They cover `extract_index_terms`, which builds the game and config search index, and `extract_search_terms`, which parses the launcher's search box; nothing else tests either. With `assertEquals` fixed, 24 passed and 5 failed:
+   - Four `test_search_*` cases checked that the index terms were an exact superset of the search terms. `Database.find_games_new` matches each search term as a prefix (`term like 'x%'`), and indexing adds a `g` to words ending in `n`, so `burn`, `edition` and `alien` failed the test while the real search finds `burng`, `editiong` and `alieng`. They now test prefix matching and pass.
+   - `test_variant_with_slash` expected `Tron (8/9).dummy` to parse as `Tron`, but `extract_names_from_file_name` calls `os.path.basename` and returns `9)`. Its only caller turns a config name into a screenshot file prefix, where cutting at the `/` is the safer behaviour, so the case was dropped.
 3. ~~**Is fs-package still used?**~~ Decided 2026-10-27: no. Nothing in the repo, CI or docs runs it. The generated files were last regenerated by Frode in 2021 and have been edited by hand since, so `fsbuild/` is maintained by hand. Regenerating would lose those edits; it's not part of the workflow.
 4. ~~**How hard to cut commented-out code?**~~ Decided 2026-10-26: all of it. See step 7.
 5. ~~**Is `fsgs` an API for plugins?**~~ Decided 2026-10-27: no, treat it as internal. The Python plugin hook is undocumented and hands plugins only the `fsgs` context object. Original question: `LauncherApp._load_plugins` hands every Python plugin `plugin.fsgs = fsgs`, so a third-party plugin could use helpers this plan removes (for example `gamedriver.mapping_name`, or `fsbc.fs` utilities reached through `fsgs`). Are there Python plugins in use beyond the bundled ones? If not, treat everything as internal. If so, keep `fsgs`' public names and limit removals to `launcher`, `fsui` and `workspace`.
