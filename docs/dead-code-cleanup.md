@@ -4,7 +4,7 @@ What's left to remove after phase 1 (#67), phase 2 (#78) and the amitools and le
 
 | | |
 |---|---|
-| **Status** | In progress: steps 1, 2, 3 and 7 done (#119, #120, #138); step 4 done on `chore/unused-imports` |
+| **Status** | In progress: steps 1–4 and 7 done (#119, #120, #138, #139); step 5 on `chore/dead-branches` |
 | **Date** | 2026-10-26 |
 | **Found with** | vulture 2.16 at 60% confidence; ruff `F401`, `F811`, `F841`; an import graph from `fs-uae-launcher` and the test modules; each finding checked by hand with `git grep` |
 | **Out of scope** | `oyoyo/`. The [netplay rooms design](netplay-rooms-design.md) would delete it whole, so pruning it now is wasted work |
@@ -77,7 +77,7 @@ Each package was removed leaf-first, with vulture and ruff rerun after each laye
 
 ### 5. Branches that never run
 
-- [ ] `launcher/panels/quicksettingspanel.py:68`: `if False:` around the old fullscreen-mode button. (The `platforms` local beside it went in step 4.)
+- [x] `launcher/panels/quicksettingspanel.py:68`: `if False:` around the old fullscreen-mode button, disabled in 2.9.10dev (`56ed4776`). It was the only use of `FullscreenModeButton`, so `launcher/settings/fullscreenmodebutton.py` and its three icons (`launcher/res/16x16/fullscreen_{desktop,fullscreen,window}.png`) went with it. (The `platforms` local beside it went in step 4.)
 - [ ] `launcher/ui/TabPanel.py:108, 141, 149`: three `fsbc.system.macosx and False` conditions, an old macOS tab style.
 - [ ] `if True:` wrappers to dedent:
   - `fsbuild/__init__.py:476`
