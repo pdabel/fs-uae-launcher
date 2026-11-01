@@ -4,7 +4,7 @@ What's left to remove after phase 1 (#67), phase 2 (#78) and the amitools and le
 
 | | |
 |---|---|
-| **Status** | In progress: steps 1–5 and 7 done (#119, #120, #138, #139, #140); cx_Freeze path removed on `chore/remove-cx-freeze`; step 6 next |
+| **Status** | Steps done: 1–5 and 7 (#119, #120, #138, #139, #140), the cx_Freeze path (#141), and 6 on `chore/ruff-unused-rules`. Open questions 6–8 remain |
 | **Date** | 2026-10-26 |
 | **Found with** | vulture 2.16 at 60% confidence; ruff `F401`, `F811`, `F841`; an import graph from `fs-uae-launcher` and the test modules; each finding checked by hand with `git grep` |
 | **Out of scope** | `oyoyo/`. The [netplay rooms design](netplay-rooms-design.md) would delete it whole, so pruning it now is wasted work |
@@ -88,12 +88,12 @@ Each package was removed leaf-first, with vulture and ruff rerun after each laye
 
 **Leave alone:** `launcher/ui/config/InputGroup.py:26`. Its `if False:` keeps a `gettext` string in the translation catalogue on purpose.
 
-### 6. Stop it coming back
+### 6. Stop it coming back *(done)*
 
-- [ ] Add `F401`, `F811` and `F841` to `[tool.ruff.lint] select` in `pyproject.toml`. CI already runs `ruff check`.
-- [ ] Add `per-file-ignores` for `__init__.py` re-exports (`F401`). `fs-uae-launcher` needs none: its freezer hints went with the cx_Freeze path, and `ruff check` doesn't look at extensionless files anyway. `fsui/qt/qt.py` and `fsui/qt/signal.py` need `F401` ignored too: they're re-exports that step 4 left alone. The `__init__.py` ignore also covers `launcher/res/__init__.py`, whose `gettext` import nothing uses; delete it then if you'd rather.
+- [x] Add `F401`, `F811` and `F841` to `[tool.ruff.lint] select` in `pyproject.toml`. CI already runs `ruff check`, with ruff 0.17.2 both in `ci.yml` and through the `Pipfile`.
+- [x] Add `per-file-ignores` for `__init__.py` re-exports (`F401`). `fs-uae-launcher` needs none: its freezer hints went with the cx_Freeze path, and `ruff check` doesn't look at extensionless files anyway. `fsui/qt/qt.py` and `fsui/qt/signal.py` need `F401` ignored too: they're re-exports that step 4 left alone. The `__init__.py` ignore also covers `launcher/res/__init__.py`, whose `gettext` import nothing uses; delete it then if you'd rather.
 
-This needs steps 1–5 done first, or CI goes red.
+With those ignores, `ruff check` passes on the whole tree, including `oyoyo/`.
 
 ### 7. Commented-out code *(done first)*
 
@@ -136,3 +136,4 @@ The import graph also flags these scripts, which are all in use:
 5. ~~**Is `fsgs` an API for plugins?**~~ Decided 2026-10-27: no, treat it as internal. The Python plugin hook is undocumented and hands plugins only the `fsgs` context object. Original question: `LauncherApp._load_plugins` hands every Python plugin `plugin.fsgs = fsgs`, so a third-party plugin could use helpers this plan removes (for example `gamedriver.mapping_name`, or `fsbc.fs` utilities reached through `fsgs`). Are there Python plugins in use beyond the bundled ones? If not, treat everything as internal. If so, keep `fsgs`' public names and limit removals to `launcher`, `fsui` and `workspace`.
 6. **Tests that CI never runs.** `launcher/server/tests/test_server_start.py` and everything in `fsui/test/` except `test_qt6.py` aren't in any CI command. They aren't dead code, but they rot the same way. Add them to CI, or check whether they're worth keeping?
 7. **`po-update.py` is broken.** It fails at line 25 on `main`: it writes a `str` to a `NamedTemporaryFile` opened in binary mode, so the translation catalogue can't be updated with Python 3. Fix it (open the temp file in text mode), or delete it if translations are maintained some other way now?
+8. **Scanner extensions for removed platforms.** `launcher/filescanner.py` still adds file extensions for platforms removed in #72, among them `.dsk` (Amstrad CPC), `.chd` (arcade), `.a26`, `.a52` and `.a78` (Atari consoles), and `.st` (Atari ST). Found while dedenting its `if True:` wrapper in step 5. It's not dead code: the scanner still picks up those files. Removing them changes what a scan finds, so it needs checking against what the Amiga-only launcher should index, and it's a separate change.
