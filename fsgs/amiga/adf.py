@@ -88,7 +88,7 @@ class ADFFile(object):
                 data = f.read()
         assert isinstance(data, bytes)
         assert len(data) == B_SIZE * B_COUNT
-        self.blocks = []  # type: List[Block]
+        self.blocks: List[Block] = []
         for i in range(0, B_SIZE * B_COUNT, B_SIZE):
             self.blocks.append(Block(data[i : i + B_SIZE]))
         assert len(self.blocks) == B_COUNT
@@ -96,8 +96,8 @@ class ADFFile(object):
         self.dos = False
         self.ofs = False
         self.ffs = False
-        self.warnings = []  # type: List[str]
-        self.file_map = {}  # type: Dict[str, FileInfo]
+        self.warnings: List[str] = []
+        self.file_map: Dict[str, FileInfo] = {}
         self.root_block_number = 880
         self.bitmap_pages = []
         self._parse()
@@ -294,7 +294,7 @@ class ADFFile(object):
 
         first_data = b.ulong(16)
         next_data = first_data
-        file_blocks_1 = []  # type: List[int]
+        file_blocks_1: List[int] = []
         ofs_accum_size = 0
         k = 0
 
@@ -325,7 +325,7 @@ class ADFFile(object):
             next_data = data_b.ulong(16)
             k += 1
 
-        file_blocks_2 = []  # type: List[int]
+        file_blocks_2: List[int] = []
         extension = block_number
         k = 0
         while extension:
@@ -421,7 +421,7 @@ class ADFFile(object):
         self._parse_directory_content(file_info.path, block_number)
 
     def namelist(self) -> List[str]:
-        names = []  # type: List[str]
+        names: List[str] = []
         keys = sorted(self.file_map.keys())
         for key in keys:
             names.append(self.file_map[key].path)
@@ -439,7 +439,7 @@ class ADFFile(object):
         name = name.lower()
         file_info = self.file_map[name]
         bytes_left = file_info.size
-        data = []  # type: List[bytes]
+        data: List[bytes] = []
         for block_number in file_info.block_list:
             if self.ffs:
                 start_index = 0

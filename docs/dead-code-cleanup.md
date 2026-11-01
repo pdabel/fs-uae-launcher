@@ -4,7 +4,7 @@ What's left to remove after phase 1 (#67), phase 2 (#78) and the amitools and le
 
 | | |
 |---|---|
-| **Status** | In progress: steps 1, 2 and 7 done (#119, #120); step 3 on `chore/python2-leftovers` |
+| **Status** | In progress: steps 1, 2, 3 and 7 done (#119, #120, #138); step 4 on `chore/unused-imports` |
 | **Date** | 2026-10-26 |
 | **Found with** | vulture 2.16 at 60% confidence; ruff `F401`, `F811`, `F841`; an import graph from `fs-uae-launcher` and the test modules; each finding checked by hand with `git grep` |
 | **Out of scope** | `oyoyo/`. The [netplay rooms design](netplay-rooms-design.md) would delete it whole, so pruning it now is wasted work |
@@ -67,7 +67,7 @@ Each package was removed leaf-first, with vulture and ruff rerun after each laye
   - `fsgs/GameNameUtil.py` → `fsgs/amiga/launchhandler.py:27` imports from `fsgs.util.gamenameutil` directly
   - `launcher/ui/behaviors/amigaenablebehavior.py` → `launcher/ui/config/modelgroup.py:10` imports from `platformbehavior` directly
 
-- [ ] **Type comments.** ruff doesn't read `# type:` comments, so it reports the `typing` imports they use as unused, and `--fix` would remove them and break mypy (the `fsbc.signal` mypy test runs in CI). They are `Tuple` in `fsbc/settings.py`, `Dict`, `List`, `Any` and `Tuple` in `fsbc/signal.py`, `List` in `fsboot/__init__.py`, `Dict` in `fsgs/amiga/adf.py`, and `Callable` and `Optional` in `fstd/desktop/__init__.py`. Convert those comments to annotations (`x: Dict[str, Any] = {}`), so ruff sees the uses; step 6 needs it.
+- [x] **Type comments.** ruff doesn't read `# type:` comments, so it reports the `typing` imports they use as unused, and `--fix` would remove them and break mypy (the `fsbc.signal` mypy test runs in CI). They are `Tuple` in `fsbc/settings.py`, `Dict`, `List`, `Any` and `Tuple` in `fsbc/signal.py`, `List` in `fsboot/__init__.py`, `Dict` in `fsgs/amiga/adf.py`, and `Callable` and `Optional` in `fstd/desktop/__init__.py`. All 14 type comments, including an untyped `list [dict]` one in `launcher/ui/VariantsBrowser.py`, are now annotations (`x: Dict[str, Any] = {}`), so ruff sees the uses; step 6 needs it. Done first, before `--fix`.
 - [ ] **`get_data_dir` re-export** in `fsbc/fs.py`: point `fsgs/application.py` at `fsbc.user` directly and drop it, or step 6 flags it.
 
 **Leave alone:**
