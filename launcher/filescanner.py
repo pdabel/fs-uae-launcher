@@ -45,73 +45,72 @@ class FileScanner(object):
         self.extensions.add(".wav")
         self.extensions.add(".fs-uae")
 
-        if True:
-            self.extensions.add(".bin")
+        self.extensions.add(".bin")
 
-            # Amstrad CPC
-            self.extensions.add(".dsk")
+        # Amstrad CPC
+        self.extensions.add(".dsk")
 
-            # Arcade
-            self.extensions.add(".chd")
+        # Arcade
+        self.extensions.add(".chd")
 
-            # Atari 2600
-            self.extensions.add(".a26")
+        # Atari 2600
+        self.extensions.add(".a26")
 
-            # Atari 5200
-            self.extensions.add(".a52")
+        # Atari 5200
+        self.extensions.add(".a52")
 
-            # Atari 7800
-            self.extensions.add(".a78")
+        # Atari 7800
+        self.extensions.add(".a78")
 
-            # Atari ST
-            self.extensions.add(".st")  # disk images
-            self.extensions.add(".img")  # bios images
-            self.extensions.add(".bin")  # bios images
+        # Atari ST
+        self.extensions.add(".st")  # disk images
+        self.extensions.add(".img")  # bios images
+        self.extensions.add(".bin")  # bios images
 
-            # Commodore 64
+        # Commodore 64
 
-            # Game Boy
-            self.extensions.add(".gb")
+        # Game Boy
+        self.extensions.add(".gb")
 
-            # Game Boy Advance
-            self.extensions.add(".gba")
+        # Game Boy Advance
+        self.extensions.add(".gba")
 
-            # Game Boy Color
-            self.extensions.add(".gbc")
+        # Game Boy Color
+        self.extensions.add(".gbc")
 
-            # Master System
-            self.extensions.add(".sms")
+        # Master System
+        self.extensions.add(".sms")
 
-            # Mega Drive
-            self.extensions.add(".md")
-            self.extensions.add(".bin")
-            self.extensions.add(".gen")
-            # FIXME: Is .smd a common extension?
-            self.extensions.add(".smd")
+        # Mega Drive
+        self.extensions.add(".md")
+        self.extensions.add(".bin")
+        self.extensions.add(".gen")
+        # FIXME: Is .smd a common extension?
+        self.extensions.add(".smd")
 
-            # Nintendo
-            self.extensions.add(".nes")
+        # Nintendo
+        self.extensions.add(".nes")
 
-            # Nintendo 64
-            self.extensions.add(".n64")
-            self.extensions.add(".v64")
-            self.extensions.add(".z64")
+        # Nintendo 64
+        self.extensions.add(".n64")
+        self.extensions.add(".v64")
+        self.extensions.add(".z64")
 
-            # Nintendo DS
-            self.extensions.add(".nds")
+        # Nintendo DS
+        self.extensions.add(".nds")
 
-            # Super Nintendo
-            self.extensions.add(".sfc")
-            self.extensions.add(".smc")
+        # Super Nintendo
+        self.extensions.add(".sfc")
+        self.extensions.add(".smc")
 
-            # TurboGrafx-CD system ROM
-            self.extensions.add(".pce")
+        # TurboGrafx-CD system ROM
+        self.extensions.add(".pce")
 
-            # ZX Spectrum
-            self.extensions.add(".dsk")
-            self.extensions.add(".tap")
-            self.extensions.add(".tzx")
-            self.extensions.add(".z80")
+        # ZX Spectrum
+        self.extensions.add(".dsk")
+        self.extensions.add(".tap")
+        self.extensions.add(".tzx")
+        self.extensions.add(".z80")
 
     def stop_check(self):
         if self._stop_check:

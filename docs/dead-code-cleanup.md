@@ -4,7 +4,7 @@ What's left to remove after phase 1 (#67), phase 2 (#78) and the amitools and le
 
 | | |
 |---|---|
-| **Status** | In progress: steps 1, 2, 3 and 7 done (#119, #120, #138); step 4 done on `chore/unused-imports` |
+| **Status** | In progress: steps 1–4 and 7 done (#119, #120, #138, #139); step 5 done on `chore/dead-branches` |
 | **Date** | 2026-10-26 |
 | **Found with** | vulture 2.16 at 60% confidence; ruff `F401`, `F811`, `F841`; an import graph from `fs-uae-launcher` and the test modules; each finding checked by hand with `git grep` |
 | **Out of scope** | `oyoyo/`. The [netplay rooms design](netplay-rooms-design.md) would delete it whole, so pruning it now is wasted work |
@@ -75,16 +75,16 @@ Each package was removed leaf-first, with vulture and ruff rerun after each laye
 - `fsui/qt/signal.py`: four widgets import `Signal` through it.
 - The two imports after `sys.exit(0)` at the end of `fs-uae-launcher`: see [open question 1](#open-questions).
 
-### 5. Branches that never run
+### 5. Branches that never run *(done)*
 
-- [ ] `launcher/panels/quicksettingspanel.py:68`: `if False:` around the old fullscreen-mode button. (The `platforms` local beside it went in step 4.)
-- [ ] `launcher/ui/TabPanel.py:108, 141, 149`: three `fsbc.system.macosx and False` conditions, an old macOS tab style.
-- [ ] `if True:` wrappers to dedent:
+- [x] `launcher/panels/quicksettingspanel.py:68`: `if False:` around the old fullscreen-mode button, disabled in 2.9.10dev (`56ed4776`). It was the only use of `FullscreenModeButton`, so `launcher/settings/fullscreenmodebutton.py` and its three icons (`launcher/res/16x16/fullscreen_{desktop,fullscreen,window}.png`) went with it. (The `platforms` local beside it went in step 4.)
+- [x] `launcher/ui/TabPanel.py:108, 141, 149`: three `fsbc.system.macosx and False` conditions, an old macOS tab style. In two of them the `elif` that followed became the `if`.
+- [x] `if True:` wrappers, dedented (`git diff -w` shows only the `if True:` lines removed):
   - `fsbuild/__init__.py:476`
   - `fsbuild/standalone.py:480`
   - `fsgs/input/enumeratehelper.py:145`
   - `launcher/filescanner.py:48`
-  - `launcher/ui/config/model.py:126`, where a commented-out condition sits above the wrapper; drop it too.
+  - `launcher/ui/config/model.py:126` was already gone: it went with the config tree model in step 2.
 
 **Leave alone:** `launcher/ui/config/InputGroup.py:26`. Its `if False:` keeps a `gettext` string in the translation catalogue on purpose.
 

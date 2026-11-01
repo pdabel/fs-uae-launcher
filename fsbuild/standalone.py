@@ -372,21 +372,20 @@ def fix_windows_binary(path: str, app_dir: str):
         dll_name = src
         print(dll_name)
 
-        if True:
-            src = os.path.join("fsdeps", "_prefix", "bin", dll_name)
+        src = os.path.join("fsdeps", "_prefix", "bin", dll_name)
+        print("Checking", src)
+        if not os.path.exists(src):
+            src = os.environ["MINGW_PREFIX"] + "/bin/" + dll_name
             print("Checking", src)
-            if not os.path.exists(src):
-                src = os.environ["MINGW_PREFIX"] + "/bin/" + dll_name
-                print("Checking", src)
-            print(src)
-            included_libraries.setdefault(src, set()).add(fix_dll_name)
-            dst = os.path.join(app_dir, os.path.basename(src))
-            if not os.path.exists(dst):
-                print("[FSBUILD] Copy", src)
-                print("Needed by:", path)
-                shutil.copy(src, dst)
-                os.chmod(dst, 0o644)
-                changes += 1
+        print(src)
+        included_libraries.setdefault(src, set()).add(fix_dll_name)
+        dst = os.path.join(app_dir, os.path.basename(src))
+        if not os.path.exists(dst):
+            print("[FSBUILD] Copy", src)
+            print("Needed by:", path)
+            shutil.copy(src, dst)
+            os.chmod(dst, 0o644)
+            changes += 1
     if strip:
         command = f'strip "{path}"'
         print(command)
