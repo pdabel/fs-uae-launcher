@@ -1,4 +1,4 @@
-from fsui.qt import QCheckBox, Signal
+from fsui.qt import QCheckBox
 from fsui.qt.signal import Signal, SignalWrapper
 from .widget_mixin import WidgetMixin
 

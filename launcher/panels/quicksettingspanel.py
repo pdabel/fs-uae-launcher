@@ -46,9 +46,7 @@ class QuickSettingsPanel(fsui.Panel):
             if "[" in option:
                 # For future use of e.g.:
                 # option1[platform1,platform2],option2[platform,...]
-                option, platforms = option.split("[", 1)
-            else:
-                platforms = []
+                option = option.split("[", 1)[0]
             if option in options:
                 try:
                     self.add_option(option)

@@ -6,7 +6,7 @@ import subprocess
 import sys
 import time
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 # The original argument list at boot time, before any modifications
 _argv: List[str] = []

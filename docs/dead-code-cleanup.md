@@ -52,17 +52,17 @@ Each package was removed leaf-first, with vulture and ruff rerun after each laye
 
 60 unused imports outside `__init__.py` files, 4 unused locals and 1 duplicate import. `ruff check --select F401,F811,F841 --fix` handles most of them. Review the diff for imports kept for their side effects. In this codebase that would be a module imported to register a class; none of the ones below look like that, but check.
 
-- [ ] Clusters:
+- [x] Clusters (41 fixed by `--fix`, the diff reviewed by hand; every removed module is still imported elsewhere, and none registers anything):
   - `fsgs/ogd/*`: `GzipFile`, `StringIO`, `Request`, `json`, `base64`, `app`, `lru_cache`
   - `typing` names that really are unused: `Any` in `fsboot/__init__.py`, `Dict`, `List` and `Optional` in `fsgs/FSGSDirectories.py`, `Union` in `fsgs/plugins/pluginexecutablefinder.py`
   - `fsbc/init.py` (`sys`, `platform`), `fsgs/FSGameSystemContext.py` (`tempfile`), `fsgs/amiga/fsuae.py`, `fsgs/input/enumeratehelper.py`, `fsgs/network.py`
   - `launcher/launcherapp.py`, `launcher/panels/additionalconfigpanel.py`, `launcher/setup/wizardheader.py`, `launcher/ui/InfoDialog.py`, `launcher/ui/config/WHDLoadGroup.py`, `launcher/ui/launcherwindow.py`
   - `fsui/qt/ImageButton.py`, `fsui/qt/scrollarea.py`, `fsui/qt/widget.py`
-- [ ] Duplicate import: `fsui/qt/CheckBox.py:2` imports `Signal` again after line 1.
-- [ ] Unused locals:
+- [x] Duplicate import: `fsui/qt/CheckBox.py:2` imported `Signal` again after line 1. The second import, from `fsui.qt.signal`, was the one in effect, so line 1's went.
+- [x] Unused locals:
   - `launcher/panels/quicksettingspanel.py:51` (`platforms`)
   - `fsgs/amiga/adffileextractor.py:97` (`l`)
-  - `fsbuild/__init__.py:317` (`d`)
+  - `fsbuild/__init__.py:317` (`d`, assigned in all four branches of `updateConfigureAc`, so ruff no longer flags it, but never read)
 - [ ] One-consumer shims: inline them and delete the module.
   - `fsgs/GameNameUtil.py` → `fsgs/amiga/launchhandler.py:27` imports from `fsgs.util.gamenameutil` directly
   - `launcher/ui/behaviors/amigaenablebehavior.py` → `launcher/ui/config/modelgroup.py:10` imports from `platformbehavior` directly
@@ -77,7 +77,7 @@ Each package was removed leaf-first, with vulture and ruff rerun after each laye
 
 ### 5. Branches that never run
 
-- [ ] `launcher/panels/quicksettingspanel.py:68`: `if False:` around the old fullscreen-mode button. Remove it with the `platforms` local from step 4.
+- [ ] `launcher/panels/quicksettingspanel.py:68`: `if False:` around the old fullscreen-mode button. (The `platforms` local beside it went in step 4.)
 - [ ] `launcher/ui/TabPanel.py:108, 141, 149`: three `fsbc.system.macosx and False` conditions, an old macOS tab style.
 - [ ] `if True:` wrappers to dedent:
   - `fsbuild/__init__.py:476`

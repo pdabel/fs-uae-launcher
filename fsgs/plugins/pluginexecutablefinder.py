@@ -1,6 +1,5 @@
 from os import path
 import platform
-from typing import Union
 
 from fsbc.system import System
 import fsboot

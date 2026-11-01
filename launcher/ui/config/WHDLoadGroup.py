@@ -1,7 +1,6 @@
 import fsui
 from launcher.ui.behaviors.platformbehavior import AmigaEnableBehavior
 from ...launcher_config import LauncherConfig
-from ...i18n import gettext
 from ..HelpButton import HelpButton
 
 

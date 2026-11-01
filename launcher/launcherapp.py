@@ -28,11 +28,9 @@ from launcher.launcher_settings import LauncherSettings
 from launcher.option import Option
 from launcher.startup_scan import StartupScan
 from launcher.ui.behaviors.platformbehavior import AMIGA_PLATFORMS
-from launcher.ui.config.HardDriveGroup import HardDriveGroup
 from launcher.ui.download import DownloadGameWindow, DownloadTermsDialog
 from launcher.ui.launch import LaunchDialog
 from launcher.ui.launcherwindow import LauncherWindow
-from launcher.version import VERSION
 
 
 class StringDict(defaultdict):

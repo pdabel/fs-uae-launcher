@@ -10,7 +10,7 @@ import launcher.ui
 from fsbc.application import Application
 from fsbc.util import unused
 from fsgs.context import default_context
-from fsgs.ogd.locker import is_locker_enabled, open_locker_uri
+from fsgs.ogd.locker import is_locker_enabled
 from launcher.i18n import gettext
 from launcher.implicit_handler import ImplicitConfigHandler
 from launcher.launcher_config import LauncherConfig

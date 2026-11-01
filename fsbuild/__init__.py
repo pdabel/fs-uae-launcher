@@ -302,19 +302,15 @@ def updateConfigureAc(version: Version, commit: str = "") -> None:
                 if "_major" in line:
                     k = "FSBUILD_VERSION_MAJOR"
                     v = str(version.major)
-                    d = "Major version"
                 elif "_minor" in line:
                     k = "FSBUILD_VERSION_MINOR"
                     v = str(version.minor)
-                    d = "Minor version"
                 elif "_revision" in line:
                     k = "FSBUILD_VERSION_REVISION"
                     v = str(version.revision)
-                    d = "Revision"
                 else:
                     k = "FSBUILD_VERSION"
                     v = str(version)
-                    d = "Full version"
                 line = f"m4_define([{k.lower()}], [{v}])\n"
             if line.startswith("m4_define([fsbuild_commit"):
                 line = f"m4_define([fsbuild_commit], [{commit}])\n"
