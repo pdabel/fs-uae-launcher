@@ -148,10 +148,8 @@ Run the core regression slice with:
 
   venv/bin/python -m pytest fsbc fstd fspy launcher/netplay launcher/server/tests
 
-On the stack's main baseline (615cb4d2), the server readiness test has an
-unrelated argument-order expectation failure. It is left unchanged. The API
-layer resolves the three pre-existing invalid-escape warnings; strict tracked
-Python compilation and the scoped Ruff gate pass on local Python 3.12.
+The API layer resolves the three pre-existing invalid-escape warnings; strict
+tracked Python compilation and the scoped Ruff gate pass on local Python 3.12.
 
 The completed stack's local Python 3.12 validation passed 138 core, API,
 command and packaging tests (10 skipped), plus 39 offscreen Qt tests and

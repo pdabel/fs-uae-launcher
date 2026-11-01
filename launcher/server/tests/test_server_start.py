@@ -196,8 +196,8 @@ def test_successful_launch_still_waits_for_readiness(monkeypatch):
         [
             "/server/fsnp-server",
             "--port=25101",
-            "--players=2",
             "--exit-on-stdin-close",
+            "--players=2",
         ],
         stdin=server_module.subprocess.PIPE,
         stdout=server_module.subprocess.PIPE,
