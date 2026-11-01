@@ -89,17 +89,7 @@ class TabPanel(fsui.Panel):
             h += 2
 
         color_1 = Skin.get_background_color()
-        if fsbc.system.macosx and False:
-            if selected:
-                color_2 = color_1
-                color_1 = fsui.Color(0xA7, 0xA7, 0xA7)
-            elif hover:
-                color_1 = fsui.Color(0xA7, 0xA7, 0xA7)
-                color_2 = fsui.Color(0xEF, 0xEF, 0xEF)
-            else:
-                color_1 = fsui.Color(0xA7, 0xA7, 0xA7)
-                color_2 = fsui.Color(0xC0, 0xC0, 0xC0)
-        elif color_1 is not None:
+        if color_1 is not None:
             if selected:
                 color_2 = color_1
             elif hover:
@@ -117,20 +107,10 @@ class TabPanel(fsui.Panel):
                 color_2 = fsui.Color(0x00, 0x00, 0x00, 0x20)
         dc.draw_vertical_gradient(x, y, w, h, color_1, color_2)
 
-        if fsbc.system.macosx and False and not selected and not hover:
-            dc.draw_line(
-                x, y + h - 1, x + w, y + h - 1, fsui.Color(0xA8, 0xA8, 0xA8)
-            )
-
     @classmethod
     def draw_selected_tab(cls, widget, dc):
         line_color_1 = Skin.get_background_color()
-        if fsbc.system.macosx and False:
-            line_color_1 = fsui.Color(0xA7, 0xA7, 0xA7)
-            line_color_2 = Skin.get_background_color().mix(
-                fsui.Color(0xFF, 0xFF, 0xFF)
-            )
-        elif line_color_1 is not None:
+        if line_color_1 is not None:
             line_color_2 = Skin.get_background_color().mix(
                 fsui.Color(0xFF, 0xFF, 0xFF)
             )

@@ -78,7 +78,7 @@ Each package was removed leaf-first, with vulture and ruff rerun after each laye
 ### 5. Branches that never run
 
 - [x] `launcher/panels/quicksettingspanel.py:68`: `if False:` around the old fullscreen-mode button, disabled in 2.9.10dev (`56ed4776`). It was the only use of `FullscreenModeButton`, so `launcher/settings/fullscreenmodebutton.py` and its three icons (`launcher/res/16x16/fullscreen_{desktop,fullscreen,window}.png`) went with it. (The `platforms` local beside it went in step 4.)
-- [ ] `launcher/ui/TabPanel.py:108, 141, 149`: three `fsbc.system.macosx and False` conditions, an old macOS tab style.
+- [x] `launcher/ui/TabPanel.py:108, 141, 149`: three `fsbc.system.macosx and False` conditions, an old macOS tab style. In two of them the `elif` that followed became the `if`.
 - [ ] `if True:` wrappers to dedent:
   - `fsbuild/__init__.py:476`
   - `fsbuild/standalone.py:480`
