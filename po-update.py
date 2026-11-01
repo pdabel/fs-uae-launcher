@@ -1,16 +1,14 @@
-#!/usr/bin/env python
-from __future__ import print_function
-
+#!/usr/bin/env python3
 import os
 import shutil
 import tempfile
 import subprocess
 
-dirs = ["arcade", "fsui", "fsbc", "fsgs", "launcher", "workspace"]
+dirs = ["fsui", "fsbc", "fsgs", "launcher", "workspace"]
 files = []
 extensions = [".py"]
 
-temp = tempfile.NamedTemporaryFile(delete=False)
+temp = tempfile.NamedTemporaryFile("w", encoding="UTF-8", delete=False)
 for dir in dirs:
     for dir_path, dir_names, file_names in os.walk(dir):
         for file in file_names:
@@ -37,12 +35,13 @@ args = [
     "--add-comments=#",
     "--no-location",
     "--sort-output",
-    "--from-code=ISO-8859-1",
+    "--from-code=UTF-8",
 ]
 
 print(args)
 p = subprocess.Popen(args)
 p.wait()
+os.unlink(temp.name)
 shutil.move("po/messages.po", "po/messages.pot")
 
 os.system("find share -name fs-uae.mo -delete")
