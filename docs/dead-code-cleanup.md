@@ -4,7 +4,7 @@ What's left to remove after phase 1 (#67), phase 2 (#78) and the amitools and le
 
 | | |
 |---|---|
-| **Status** | In progress: steps 1, 2, 3 and 7 done (#119, #120, #138); step 4 on `chore/unused-imports` |
+| **Status** | In progress: steps 1, 2, 3 and 7 done (#119, #120, #138); step 4 done on `chore/unused-imports` |
 | **Date** | 2026-10-26 |
 | **Found with** | vulture 2.16 at 60% confidence; ruff `F401`, `F811`, `F841`; an import graph from `fs-uae-launcher` and the test modules; each finding checked by hand with `git grep` |
 | **Out of scope** | `oyoyo/`. The [netplay rooms design](netplay-rooms-design.md) would delete it whole, so pruning it now is wasted work |
@@ -48,7 +48,7 @@ Each package was removed leaf-first, with vulture and ruff rerun after each laye
 - [x] `fsbc/init.py`: the `patch_unicode` parameter of `initialize_application` and its `unicode_patched` flag. It used to call `fsbc.unicode.patch_all()`, which patched `sys.argv`, `subprocess.Popen` and stdout/stderr for Python 2's byte strings, and returned early on Python 3 anyway. The module was deleted in 2.5.23dev (`38637ead`). The only caller (`launcher/apps/__init__.py`) never passed the parameter. The write-only globals `init_called`, `logging_enabled` and `exception_handler_enabled` went with it. The unused `sys` and `platform` imports are left for step 4.
 - [x] `fsgs/util/gamenameutil.py`: `TestGameNameUtil`, a `unittest` class inside a non-test module. pytest never collected it, and its `assertEquals` calls were removed in Python 3.12. Moved to `fsgs/tests/test_gamenameutil.py` as plain pytest tests, and `fsgs/tests` added to the CI pytest command. See [open question 2](#open-questions).
 
-### 4. Unused imports and variables
+### 4. Unused imports and variables *(done)*
 
 60 unused imports outside `__init__.py` files, 4 unused locals and 1 duplicate import. `ruff check --select F401,F811,F841 --fix` handles most of them. Review the diff for imports kept for their side effects. In this codebase that would be a module imported to register a class; none of the ones below look like that, but check.
 
@@ -63,12 +63,12 @@ Each package was removed leaf-first, with vulture and ruff rerun after each laye
   - `launcher/panels/quicksettingspanel.py:51` (`platforms`)
   - `fsgs/amiga/adffileextractor.py:97` (`l`)
   - `fsbuild/__init__.py:317` (`d`, assigned in all four branches of `updateConfigureAc`, so ruff no longer flags it, but never read)
-- [ ] One-consumer shims: inline them and delete the module.
-  - `fsgs/GameNameUtil.py` → `fsgs/amiga/launchhandler.py:27` imports from `fsgs.util.gamenameutil` directly
-  - `launcher/ui/behaviors/amigaenablebehavior.py` → `launcher/ui/config/modelgroup.py:10` imports from `platformbehavior` directly
+- [x] One-consumer shims: inlined and deleted.
+  - `fsgs/GameNameUtil.py`: `fsgs/amiga/launchhandler.py` now imports from `fsgs.util.gamenameutil` directly
+  - `launcher/ui/behaviors/amigaenablebehavior.py`: its one importer, `launcher/ui/config/modelgroup.py`, didn't use what it imported, so that import went too
 
 - [x] **Type comments.** ruff doesn't read `# type:` comments, so it reports the `typing` imports they use as unused, and `--fix` would remove them and break mypy (the `fsbc.signal` mypy test runs in CI). They are `Tuple` in `fsbc/settings.py`, `Dict`, `List`, `Any` and `Tuple` in `fsbc/signal.py`, `List` in `fsboot/__init__.py`, `Dict` in `fsgs/amiga/adf.py`, and `Callable` and `Optional` in `fstd/desktop/__init__.py`. All 14 type comments, including an untyped `list [dict]` one in `launcher/ui/VariantsBrowser.py`, are now annotations (`x: Dict[str, Any] = {}`), so ruff sees the uses; step 6 needs it. Done first, before `--fix`.
-- [ ] **`get_data_dir` re-export** in `fsbc/fs.py`: point `fsgs/application.py` at `fsbc.user` directly and drop it, or step 6 flags it.
+- [x] **`get_data_dir` re-export** in `fsbc/fs.py`: dropped, and `fsgs/application.py` imports it from `fsbc.user` directly.
 
 **Leave alone:**
 - `fsui/qt/qt.py`: re-exported through `from fsui.qt.qt import *` in `fsui/qt/__init__.py`, so ruff can't see who uses its names.
@@ -91,7 +91,7 @@ Each package was removed leaf-first, with vulture and ruff rerun after each laye
 ### 6. Stop it coming back
 
 - [ ] Add `F401`, `F811` and `F841` to `[tool.ruff.lint] select` in `pyproject.toml`. CI already runs `ruff check`.
-- [ ] Add `per-file-ignores` for `__init__.py` re-exports (`F401`), plus `fs-uae-launcher` if its freezer hints stay.
+- [ ] Add `per-file-ignores` for `__init__.py` re-exports (`F401`), plus `fs-uae-launcher` if its freezer hints stay. `fsui/qt/qt.py` and `fsui/qt/signal.py` need `F401` ignored too: they're re-exports that step 4 left alone. The `__init__.py` ignore also covers `launcher/res/__init__.py`, whose `gettext` import nothing uses; delete it then if you'd rather.
 
 This needs steps 1–5 done first, or CI goes red.
 
