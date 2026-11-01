@@ -7,7 +7,6 @@ from launcher.floppy_manager import FloppyManager
 from launcher.i18n import gettext
 from launcher.launcher_config import LauncherConfig
 from launcher.panels.additionalconfigpanel import CustomConfigButton
-from launcher.ui.behaviors.amigaenablebehavior import AmigaEnableBehavior
 from launcher.ui.behaviors.configbehavior import ConfigBehavior
 from launcher.ui.behaviors.platformbehavior import (
     AMIGA_PLATFORMS,

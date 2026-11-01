@@ -1,8 +1,5 @@
 import os
 
-# noinspection PyUnresolvedReferences
-from fsbc.user import get_data_dir
-
 
 def encode_path(path):
     return path

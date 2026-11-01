@@ -16,7 +16,7 @@ class VariantsBrowser(fsui.ItemChoice):
         fsui.ItemChoice.__init__(self, parent)
 
         self.parent_uuid = ""
-        self.items = []  # type: list [dict]
+        self.items: list[dict] = []
 
         self.icon = fsui.Image("launcher:res/fsuae_config_16.png")
         self.adf_icon = fsui.Image("launcher:res/adf_game_16.png")

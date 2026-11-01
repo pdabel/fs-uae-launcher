@@ -3,7 +3,7 @@ import warnings
 
 from fsui.common.layout import Layout
 from fsui.qt import QPoint
-from fsui.qt import Qt, QObject, QFontMetrics, QWidget, QPalette, QCursor
+from fsui.qt import Qt, QObject, QFontMetrics, QWidget, QPalette
 from fsui.qt.Color import Color
 from fsui.qt.DrawingContext import Font
 from fsui.qt.signal import Signal

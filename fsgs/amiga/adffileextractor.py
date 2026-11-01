@@ -94,7 +94,7 @@ def adf_get_rootblock(data):
 
 def adf_hash_name(name):
     name = name.upper().encode("ISO-8859-1")
-    l = hash = len(name)
+    hash = len(name)
     for char in name:
         hash *= 13
         hash += byte_value(char)

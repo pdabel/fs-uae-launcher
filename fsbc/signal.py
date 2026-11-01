@@ -61,8 +61,8 @@ class Signal:
 
     # FIXME: should have type Dict[str, Callable]
     # or # type_xxx: Dict[str, Function]
-    signal_listeners = {}  # type: Dict[str, Any]
-    notifications = []  # type: List[Tuple[str, Any]]
+    signal_listeners: Dict[str, Any] = {}
+    notifications: List[Tuple[str, Any]] = []
     lock = threading.Lock()
 
     quit: "Signal"

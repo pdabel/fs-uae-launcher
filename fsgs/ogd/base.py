@@ -1,8 +1,4 @@
-import json
 import time
-from gzip import GzipFile
-from io import StringIO
-from urllib.request import Request
 import requests
 from fsgs.network import openretro_url_prefix, is_http_url
 from fsgs.res import gettext

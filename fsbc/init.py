@@ -1,5 +1,3 @@
-import sys
-import platform
 import fsbc.debug
 import fsbc.logging
 

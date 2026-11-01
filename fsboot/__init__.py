@@ -6,10 +6,10 @@ import subprocess
 import sys
 import time
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 # The original argument list at boot time, before any modifications
-_argv = []  # type: List[str]
+_argv: List[str] = []
 
 # The current directory when the application was started
 _cwd = os.getcwd()

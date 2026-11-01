@@ -25,7 +25,7 @@ class Settings(object):
     def __init__(self, app=None, path: Optional[str] = None) -> None:
         self.app = app
         self.path = path
-        self.values = {}  # type: Dict[str, str]
+        self.values: Dict[str, str] = {}
         self._provider = SettingsProvider()
         self._loaded = False
         self._loading = False
@@ -174,7 +174,7 @@ class SettingsProvider:
         partial_path = settings.path + ".partial"
         print("[SETTINGS] Writing to", partial_path)
 
-        save_values = {}  # type: Dict[Tuple[str, str], str]
+        save_values: Dict[Tuple[str, str], str] = {}
         for key, value in settings.values.items():
             if key.startswith("__"):
                 # Temporary setting, do not save
