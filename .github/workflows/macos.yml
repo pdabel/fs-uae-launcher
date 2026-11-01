@@ -72,7 +72,7 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
         run: |
-          pipenv run python -W default::DeprecationWarning -m pytest fsbc fstd fspy fsbuild/tests launcher/netplay launcher/tests
+          pipenv run python -W default::DeprecationWarning -m pytest fsbc fstd fspy fsgs/tests fsbuild/tests launcher/netplay launcher/tests
 
       - name: Run Qt tests
         env:
