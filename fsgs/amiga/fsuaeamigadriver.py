@@ -106,7 +106,8 @@ class FSUAEAmigaDriver(GameDriver):
         print("FSUAEAmigaDriver.run, cwd =", self.cwd.path)
         config = self.launch_handler.create_config()
         self.emulator.process, self.temp_config_file = FSUAE.start_with_config(
-            config, cwd=self.cwd.path
+            config, cwd=self.cwd.path,
+            monitor=self.launch_handler.config.get("monitor", ""),
         )
         self.write_emulator_pid_file(
             self.emulator_pid_file(), self.emulator.process
