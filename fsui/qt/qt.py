@@ -181,6 +181,23 @@ def resolve_launcher_theme(launcher_theme):
     return themes.get(launcher_theme or "fusion-modern")
 
 
+def theme_default_point_size(launcher_theme):
+    """Point size a theme uses when launcher_font_size is not overridden."""
+    variant, skin = resolve_launcher_theme(launcher_theme) or ("plain", "")
+    size = 0
+    if variant == "modern":
+        from fsui.qt.modern_theme import default_font_size
+
+        size = default_font_size(skin)
+    elif variant in ("windows311", "workbench"):
+        from fsui.qt.retro_theme import default_font_size
+
+        size = default_font_size(variant)
+    return size or QFontDatabase.systemFont(
+        QFontDatabase.GeneralFont
+    ).pointSize()
+
+
 def apply_launcher_theme(qapplication, launcher_theme, font_size=""):
     """Apply a theme to a running application; unknown names mean Fusion."""
     fusion_variant, skin = resolve_launcher_theme(launcher_theme) or (
