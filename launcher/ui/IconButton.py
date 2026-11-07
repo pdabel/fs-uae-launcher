@@ -22,7 +22,9 @@ class IconButton(ImageButton):
             "16x16/information.png", "info.png"
         ):
             import qtawesome as qta
-            from fsui.qt import QSize
+            from fsui.qt import QSize, modern_theme
 
-            self.widget().setIcon(qta.icon("fa5s.info-circle", color="#9bcce2"))
+            self.widget().setIcon(qta.icon(
+                "fa5s.info-circle", color=modern_theme.palette().icon
+            ))
             self.widget().setIconSize(QSize(18, 18))

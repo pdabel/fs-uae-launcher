@@ -801,6 +801,10 @@ options = {
         "type": "Choice",
         "values": [
             ("fusion-modern", "Modern Dark"),
+            ("fusion-cyberpunk", "Neon City"),
+            ("fusion-synthwave", "Synthwave Sunset"),
+            ("fusion-hologram", "Holo Grid"),
+            ("fusion-terminal", "Phosphor Terminal"),
             ("fusion-plain", "Fusion"),
             ("fusion-windows311", "Windows 3.11"),
             ("fusion-workbench", "Amiga Workbench 1.3"),

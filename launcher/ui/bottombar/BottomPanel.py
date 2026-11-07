@@ -1,5 +1,13 @@
+from qtpy.QtGui import QColor
+
 import fsui
+from fsui.qt import modern_theme
 from ..skin import Skin
+
+
+def modern_color(token):
+    """The active Modern Dark skin's colour for a palette token."""
+    return fsui.Color(QColor(getattr(modern_theme.palette(), token)))
 
 
 class BottomPanel(fsui.Panel):
@@ -35,7 +43,7 @@ class BottomPanel(fsui.Panel):
     def draw_background(self, dc):
         size = self.size()
         if fsui.theme_variant == "modern":
-            dc.draw_rectangle(0, 0, size[0], size[1], fsui.Color(33, 36, 49))
+            dc.draw_rectangle(0, 0, size[0], size[1], modern_color("surface"))
             return
         dc.draw_line(0, 0, size[0], 0, self.line_color_1)
         dc.draw_line(0, 1, size[0], 1, self.line_color_2)

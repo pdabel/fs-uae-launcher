@@ -67,19 +67,25 @@ def init_qt():
 
 
 def initialize_qt_style(qapplication):
+    from fsui.qt.modern_theme import SKINS
+
+    # theme value -> (dashboard variant, modern skin)
     themes = {
-        "fusion-modern": "modern",
-        "fusion-plain": "plain",
-        "fusion-windows311": "windows311",
-        "fusion-workbench": "workbench",
+        "fusion-plain": ("plain", ""),
+        "fusion-windows311": ("windows311", ""),
+        "fusion-workbench": ("workbench", ""),
     }
+    for skin in SKINS:
+        themes["fusion-" + skin] = ("modern", skin)
     launcher_theme = Settings.instance().get(Option.LAUNCHER_THEME)
     for argument in sys.argv[1:]:
         if argument.startswith("--launcher-theme="):
             launcher_theme = argument.split("=", 1)[1]
     if launcher_theme and launcher_theme not in themes:
         Settings.instance().set(Option.LAUNCHER_THEME, "fusion-plain")
-    fusion_variant = themes.get(launcher_theme or "fusion-modern", "plain")
+    fusion_variant, skin = themes.get(
+        launcher_theme or "fusion-modern", ("plain", "")
+    )
     qapplication.setStyleSheet("")
     qapplication.setStyle(QStyleFactory.create("Fusion"))
     qapplication.setPalette(qapplication.style().standardPalette())
@@ -87,7 +93,7 @@ def initialize_qt_style(qapplication):
     if fusion_variant == "modern":
         from fsui.qt.modern_theme import apply_modern_theme
 
-        apply_modern_theme(qapplication)
+        apply_modern_theme(qapplication, skin)
     elif fusion_variant in ("windows311", "workbench"):
         from fsui.qt.retro_theme import apply_retro_theme
 
@@ -105,3 +111,4 @@ def initialize_qt_style(qapplication):
 
     fsui.theme = "fusion"
     fsui.theme_variant = fusion_variant
+    fsui.theme_skin = skin

@@ -3,7 +3,7 @@ from launcher.i18n import gettext
 from ...launcher_config import LauncherConfig
 from ...launcher_settings import LauncherSettings
 from ...game_paths import GamePaths
-from .BottomPanel import BottomPanel
+from .BottomPanel import BottomPanel, modern_color
 from ..Constants import Constants
 from ..ImageLoader import ImageLoader
 from .EditButton import EditButton
@@ -239,16 +239,16 @@ class GameInfoPanel(BottomPanel):
         has_cover = self.image is not None and self.image is not self.default_image
         text_width = width - (Constants.COVER_SIZE[0] + 48 if has_cover else 32)
         metrics = self.widget().fontMetrics()
-        dc.set_text_color(fsui.Color(162, 171, 192))
+        dc.set_text_color(modern_color("muted"))
         dc.draw_text(gettext("SELECTED CONFIGURATION"), 16, 14)
         font = dc.get_font()
         font.set_bold(True)
         dc.set_font(font)
-        dc.set_text_color(fsui.Color(237, 240, 247))
+        dc.set_text_color(modern_color("text"))
         dc.draw_text(metrics.elidedText(self.title, fsui.Qt.ElideRight, text_width), 16, 48)
         font.set_bold(False)
         dc.set_font(font)
-        dc.set_text_color(fsui.Color(162, 171, 192))
+        dc.set_text_color(modern_color("muted"))
         details = " / ".join(value for value in (self.year, self.companies) if value)
         dc.draw_text(metrics.elidedText(details, fsui.Qt.ElideRight, text_width), 16, 80)
         dc.draw_text(metrics.elidedText(self.sub_title, fsui.Qt.ElideRight, text_width), 16, 112)

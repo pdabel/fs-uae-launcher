@@ -6,7 +6,7 @@ from ...game_paths import GamePaths
 from ..Constants import Constants
 from ..ImageLoader import ImageLoader
 from ..skin import Skin
-from .BottomPanel import BottomPanel
+from .BottomPanel import BottomPanel, modern_color
 
 BORDER = 20
 
@@ -99,11 +99,11 @@ class ScreenshotsPanel(BottomPanel):
         size = self.size()
 
         if fsui.theme_variant == "modern":
-            dc.set_text_color(fsui.Color(237, 240, 247))
+            dc.set_text_color(modern_color("text"))
             dc.draw_text(gettext("Screenshots"), 16, 14)
             images = [image for image in self.images if image is not self.default_image]
             if not images:
-                dc.set_text_color(fsui.Color(162, 171, 192))
+                dc.set_text_color(modern_color("muted"))
                 dc.draw_text(gettext("No screenshots available"), 16, 80)
                 return
             content_width = sum(image.size[0] for image in images) + 16 * (len(images) - 1)
