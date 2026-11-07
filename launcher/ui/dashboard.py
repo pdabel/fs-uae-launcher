@@ -10,6 +10,7 @@ from launcher.i18n import gettext
 from launcher.launcher_settings import LauncherSettings
 from launcher.ui.launch import LaunchGroup
 from launcher.ui.navigation_icons import navigation_icon
+from launcher.ui.play_tile import PlayTile
 
 
 MODERN_STYLESHEET = """
@@ -37,6 +38,19 @@ MODERN_STYLESHEET = """
                 border-top: 1px solid @border@; }
             QFrame#library { background: @surface@; }
             QFrame#editor { background: @surface@; }
+            QFrame#playTile { background: @raised@;
+                border: 1px solid @border_strong@; border-radius: @radius@; }
+            QLabel#playTitle { color: @brand@; font-size: 21px;
+                font-weight: 700; }
+            QLabel#playSubtitle { color: @muted@; font-size: 12px; }
+            QPushButton#playButton { background: @accent@; color: @accent_text@;
+                border: 1px solid @accent_hover@; border-radius: @radius@;
+                font-size: 17px; font-weight: 700; padding: 10px 28px; }
+            QPushButton#playButton:hover { background: @accent_hover@; }
+            QPushButton#playButton:disabled { background: @launch_disabled@;
+                color: @disabled_text@; border-color: @border_strong@; }
+            QPushButton#editButton:checked { background: @pressed@;
+                border-color: @accent@; color: @accent_soft@; }
             QToolButton { background: @raised@; color: @text@;
                 border: 1px solid @border_strong@; border-radius: @radius_small@; padding: 8px; }
             QToolButton:hover { background: @hover@; }
@@ -67,6 +81,12 @@ PALETTE_STYLESHEET = """
                     background: palette(highlight); color: palette(highlighted-text); }
                 QFrame#topbar { border-bottom: 2px solid palette(shadow); }
                 QFrame#launchbar { border-top: 2px solid palette(shadow); }
+                QFrame#playTile { background: palette(base);
+                    border: 2px solid palette(shadow); }
+                QLabel#playTitle { font-size: 21px; font-weight: 700; }
+                QLabel#playSubtitle { font-size: 12px; }
+                QPushButton#playButton { font-size: 17px; font-weight: 700;
+                    padding: 10px 28px; }
                 QToolButton { padding: 8px; }
                 QPushButton#launchButton { font-weight: 700; padding: 10px 24px; }
                 QSplitter::handle { background: palette(window); }
@@ -115,6 +135,10 @@ class Dashboard(fsui.Panel):
         self.content_stack.addWidget(self.workspace)
         body_layout.addWidget(self.content_stack, 1)
 
+        self.play_tile = PlayTile(owner)
+        self.play_tile.edit_button.toggled.connect(self._toggle_editor)
+        workspace_layout.addWidget(self.play_tile)
+
         self.splitter = QSplitter(Qt.Horizontal)
         self.splitter.setChildrenCollapsible(False)
         self.splitter.setHandleWidth(16)
@@ -132,6 +156,8 @@ class Dashboard(fsui.Panel):
         self.splitter.setStretchFactor(1, 3)
         self.splitter.setSizes([450, 850])
         workspace_layout.addWidget(self.splitter, 1)
+        self.play_tile.edit_button.setChecked(PlayTile.editor_visible_setting())
+        self.editor.setVisible(self.play_tile.edit_button.isChecked())
 
         self.media = QWidget()
         media_layout = QHBoxLayout(self.media)
@@ -182,6 +208,11 @@ class Dashboard(fsui.Panel):
                         if fsui.theme_variant == "modern"
                         else self._icon(QStyle.SP_MediaPlay)
                     )
+            self.play_tile.restyle_icons()
+
+    def _toggle_editor(self, checked):
+        self.editor.setVisible(checked)
+        PlayTile.remember_editor_visible(checked)
 
     def on_theme_changed(self):
         """Re-measure the scrolled panels after a font change."""
@@ -376,6 +407,9 @@ class Dashboard(fsui.Panel):
         self.library_toggle.setEnabled(True)
         self.quick_toggle.setEnabled(True)
         self.launch_bar.show()
+        if index > 0 and not self.play_tile.edit_button.isChecked():
+            # Choosing a configuration page implies wanting the editor.
+            self.play_tile.edit_button.setChecked(True)
         self.owner.books[2].set_page(index)
         self.page_title.setText(gettext(self.PAGES[index][0]))
         self.nav_buttons[index].setChecked(True)
@@ -440,5 +474,6 @@ class Dashboard(fsui.Panel):
     def _remove_listener(self):
         if self.netplay_page is not None:
             self.netplay_page.shutdown()
+        self.play_tile.shutdown()
         theme_applied.disconnect(self.restyle)
         LauncherSettings.remove_listener(self)
