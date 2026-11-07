@@ -2026,6 +2026,96 @@ class TestDashboard(WidgetTestCase):
             self.application.setStyleSheet(stylesheet)
             self.application.setFont(font)
 
+    def test_plain_language_model_labels(self):
+        from fsui.qt import Qt
+        from launcher.ui.config.model_labels import (
+            MODEL_LABELS, VARIANT_LABELS, model_label, variant_label,
+        )
+        from launcher.ui.config.modelgroup import ModelGroup
+        from fsgs.amiga.amiga import Amiga
+
+        # Every model and variant has an everyday label.
+        families = {model["id"].split("/", 1)[0] for model in Amiga.models}
+        self.assertEqual(families, set(MODEL_LABELS))
+        self.assertEqual({model["id"] for model in Amiga.models}, set(VARIANT_LABELS))
+        self.assertEqual(model_label("A500"), "Amiga 500")
+        self.assertEqual(model_label("unknown"), "unknown")
+        self.assertEqual(variant_label("A1200/1230", "x"), "Blizzard 1230 accelerator")
+        self.assertEqual(variant_label("unknown", "fallback"), "fallback")
+        self.assertNotIn("memory", VARIANT_LABELS["A1200/020"].lower())
+        self.assertIn("68020", VARIANT_LABELS["A1200/020"])
+
+        # xgettext only extracts literals passed directly to a keyword.
+        import ast
+        import inspect
+        from launcher.ui.config import model_labels
+
+        tree = ast.parse(inspect.getsource(model_labels))
+        marked = {
+            node.args[0].value for node in ast.walk(tree)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+            and node.func.id == "N_"
+        }
+        expected = {text for pair in MODEL_LABELS.values() for text in pair}
+        expected |= set(VARIANT_LABELS.values())
+        self.assertEqual(expected - marked, set())
+        for name in ("MODEL_LABELS", "VARIANT_LABELS"):
+            assignment = next(
+                node for node in tree.body
+                if isinstance(node, ast.Assign) and node.targets[0].id == name
+            )
+            wrapped = {
+                id(node.args[0]) for node in ast.walk(assignment.value)
+                if isinstance(node, ast.Call)
+            }
+            keys = {id(key) for key in assignment.value.keys}
+            bare = [
+                node.value for node in ast.walk(assignment.value)
+                if isinstance(node, ast.Constant) and isinstance(node.value, str)
+                and id(node) not in wrapped and id(node) not in keys
+            ]
+            self.assertEqual(bare, [])
+
+        self.setup_dialog()
+        config = {"amiga_model": "", "platform": "amiga", "accuracy": "", "ntsc_mode": ""}
+        with patch("launcher.ui.config.modelgroup.LauncherConfig.get", side_effect=lambda key, default="": config.get(key, default)), \
+                patch("launcher.ui.config.modelgroup.LauncherConfig.set") as set_config, \
+                patch("launcher.ui.behaviors.configbehavior.LauncherConfig.get", side_effect=lambda key, default="": config.get(key, default)), \
+                patch("launcher.ui.behaviors.configbehavior.LauncherConfig.add_listener"), \
+                patch("launcher.ui.config.ConfigCheckBox.LauncherConfig.get", side_effect=lambda key, default="": config.get(key, default)):
+            group = ModelGroup(self.dialog)
+            labels = [group.model_choice.itemText(i) for i in range(group.model_choice.count())]
+            self.assertIn("Amiga 500", labels)
+            self.assertNotIn("A500", labels)
+            self.assertEqual(group.model_choice.currentText(), "Amiga 500")
+            tooltip = group.model_choice.itemData(labels.index("Amiga 500"), Qt.ToolTipRole)
+            self.assertIn("most games", tooltip)
+            self.assertIn("Technical: A500", tooltip)
+            self.assertEqual(
+                group.sub_model_choice.currentText(), "Standard (1 MB total memory)"
+            )
+            self.assertIn(
+                '512 KB "Slow" RAM',
+                group.sub_model_choice.itemData(group.sub_model_choice.currentIndex(), Qt.ToolTipRole),
+            )
+            # Selecting by everyday name still stores the technical id.
+            group.model_choice.set_index(group.model_ids.index("A1200"))
+            set_config.assert_called_with("amiga_model", "A1200")
+            group.on_amiga_model_config("A1200/1230")
+            self.assertEqual(group.model_choice.currentText(), "Amiga 1200")
+            self.assertEqual(group.sub_model_choice.currentText(), "Blizzard 1230 accelerator")
+            self.assertIn("Blizzard 1230", group.sub_model_choice.toolTip())
+            self.assertTrue(group.model_choice.toolTip())
+            # Single-variant families have a disabled combo, so the control
+            # itself carries the technical details.
+            group.on_amiga_model_config("A600")
+            self.assertFalse(group.sub_model_choice.is_enabled())
+            self.assertIn("Technical:", group.sub_model_choice.toolTip())
+            self.assertIn("A600", group.sub_model_choice.toolTip())
+            self.assertTrue(group.accuracy_choice.toolTip())
+            self.assertTrue(group.ntsc_checkbox.toolTip())
+        self.run_dialog()
+
     def test_ui_scale_slider(self):
         from launcher.launcher_settings import LauncherSettings
         from launcher.option import Option
