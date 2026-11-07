@@ -1053,6 +1053,144 @@ class TestLaunchAndNetplay(WidgetTestCase):
                         self.assertEqual(get_setting.call_args_list[1].args, (Option.NETPLAY_TAG,))
         self.run_dialog()
 
+    def test_netplay_command_history_keys_and_clear(self):
+        import tempfile
+        from pathlib import Path
+        from qtpy.QtTest import QTest
+        from fsui.qt import QMessageBox, Qt
+        from launcher.netplay.command_history import CommandHistory
+        from launcher.netplay.netplay_panel import NetplayPanel
+
+        self.setup_dialog()
+        with tempfile.TemporaryDirectory() as temporary, \
+                patch("launcher.netplay.netplay_panel.Netplay") as netplay_class, \
+                patch("launcher.netplay.netplay_panel.CommandHistory", return_value=CommandHistory(Path(temporary) / "history.sqlite")):
+            panel = NetplayPanel(self.dialog, header=False)
+            netplay = netplay_class.return_value
+            netplay.handle_command.return_value = True
+            field = panel.input_field
+            try:
+                for command in ("/join #amiga", "/hostgame localhost:25101 2"):
+                    field.set_text(command)
+                    QTest.keyClick(field, Qt.Key_Return)
+                self.assertEqual(netplay.handle_command.call_count, 2)
+                self.assertEqual(field.get_text(), "")
+                field.set_text("unfinished draft")
+                QTest.keyClick(field, Qt.Key_Up)
+                self.assertEqual(field.get_text(), "/hostgame localhost:25101 2")
+                QTest.keyClick(field, Qt.Key_Up)
+                self.assertEqual(field.get_text(), "/join #amiga")
+                QTest.keyClick(field, Qt.Key_Down)
+                QTest.keyClick(field, Qt.Key_Down)
+                self.assertEqual(field.get_text(), "unfinished draft")
+                self.assertEqual(netplay.handle_command.call_count, 2)
+                QTest.keyClick(field, Qt.Key_Up)
+                QTest.keyClicks(field, " edited")
+                self.assertIsNone(panel.command_history.position)
+                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.No):
+                    panel.clear_history_button.widget().click()
+                self.assertEqual(panel.command_history.previous("draft"), "/hostgame localhost:25101 2")
+                field.set_text("/hostgame localhost:25101 2")
+                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+                    panel.clear_history_button.widget().click()
+                self.assertEqual(field.get_text(), "draft")
+                QTest.keyClick(field, Qt.Key_Up)
+                self.assertEqual(field.get_text(), "draft")
+                self.assertFalse(panel.clear_history_button.widget().icon().isNull())
+            finally:
+                panel.on_destroy()
+        self.run_dialog()
+
+    def test_netplay_history_button_shares_input_row(self):
+        from launcher.netplay.netplay_panel import NetplayPanel
+
+        self.setup_dialog()
+        self.dialog.layout = fsui.VerticalLayout()
+        with patch("launcher.netplay.netplay_panel.Netplay"):
+            panel = NetplayPanel(self.dialog, header=False)
+            self.dialog.layout.add(panel, fill=True, expand=True)
+            self.dialog.show()
+            for width in (540, 800, 1000):
+                with self.subTest(width=width):
+                    self.dialog.set_size((width, 600))
+                    self.application.processEvents()
+                    field = panel.input_field.geometry()
+                    button = panel.clear_history_button.widget().geometry()
+                    self.assertLessEqual(abs(field.center().y() - button.center().y()), 1)
+                    self.assertEqual(button.left() - field.right() - 1, 10)
+                    self.assertGreater(field.width(), 120)
+                    self.assertLess(button.right(), panel.widget().width())
+                    self.assertLess(button.bottom(), panel.widget().height())
+                    self.assertFalse(field.intersects(button))
+        self.run_dialog()
+
+    def test_netplay_history_icon_is_centered(self):
+        from fsui.qt.modern_theme import apply_modern_theme
+        from launcher.netplay.netplay_panel import NetplayPanel
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        self.setup_dialog()
+        try:
+            apply_modern_theme(self.application)
+            with patch("launcher.netplay.netplay_panel.Netplay"):
+                panel = NetplayPanel(self.dialog, header=False)
+                button = panel.clear_history_button.widget()
+                try:
+                    image = button.grab().toImage()
+                    pixels = [
+                        (horizontal, vertical)
+                        for horizontal in range(4, image.width() - 4)
+                        for vertical in range(4, image.height() - 4)
+                        if all(channel > 170 for channel in image.pixelColor(horizontal, vertical).getRgb()[:3])
+                    ]
+                    self.assertTrue(pixels)
+                    for axis, size in ((0, image.width()), (1, image.height())):
+                        center = (min(pixel[axis] for pixel in pixels) + max(pixel[axis] for pixel in pixels)) / 2
+                        self.assertAlmostEqual(center, (size - 1) / 2, delta=1.5)
+                finally:
+                    panel.on_destroy()
+        finally:
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+        self.run_dialog()
+
+    def test_netplay_history_failure_does_not_block_commands(self):
+        import sqlite3
+        from qtpy.QtTest import QTest
+        from fsui.qt import QMessageBox, Qt
+        from launcher.netplay.netplay_panel import NetplayPanel
+
+        self.setup_dialog()
+        with patch("launcher.netplay.netplay_panel.Netplay") as netplay_class, \
+                patch("launcher.netplay.netplay_panel.CommandHistory") as history_class:
+            panel = NetplayPanel(self.dialog, header=False)
+            netplay = netplay_class.return_value
+            netplay.handle_command.return_value = False
+            history = history_class.return_value
+            history.add.side_effect = sqlite3.OperationalError("Database locked")
+            history.previous.side_effect = sqlite3.OperationalError("Database locked")
+            try:
+                panel.input_field.set_text("/join #amiga")
+                QTest.keyClick(panel.input_field, Qt.Key_Return)
+                netplay.irc.handle_command.assert_called_once_with("/join #amiga")
+                self.assertEqual(panel.input_field.get_text(), "")
+                panel.input_field.set_text("keep this draft")
+                QTest.keyClick(panel.input_field, Qt.Key_Up)
+                self.assertEqual(panel.input_field.get_text(), "keep this draft")
+                self.assertEqual(netplay.irc.warning.call_count, 2)
+                history.clear.side_effect = sqlite3.OperationalError("Database locked")
+                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes), \
+                        patch("fsui.show_error") as error:
+                    panel.clear_history_button.widget().click()
+                    error.assert_called_once()
+                self.assertEqual(panel.input_field.get_text(), "keep this draft")
+            finally:
+                panel.on_destroy()
+        self.run_dialog()
+
     def test_join_channel_private_checkbox(self):
         from launcher.netplay.netplay_panel import NetplayPanel
         from launcher.option import Option
