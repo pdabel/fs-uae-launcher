@@ -278,6 +278,16 @@ The completed stack's local Python 3.12 validation passed 138 core, API,
 command and packaging tests (10 skipped), plus 39 offscreen Qt tests and
 65 subtests. This does not certify frozen builds or another platform/version.
 
+## Empty-State Guidance
+
+An empty library no longer shows a blank box. `launcher/ui/empty_state.py`
+overlays "No games yet — Scan a folder with your Amiga disks and games" with a
+"Scan a folder…" button that opens the Update File Database dialog. When a
+search has no hits it says "Nothing matches your search" and offers "Clear
+search" instead. The overlay follows the list's model, so it hides as soon as
+rows appear. Floppy, CD, tape and cartridge slots show placeholder text such
+as "No disk inserted — click the folder to choose one" when empty.
+
 ## Play Tile
 
 The Overview workspace opens with a Play card above the library: the
@@ -390,8 +400,13 @@ The interface size is a Smaller / Default / Larger slider
 (`launcher/settings/ui_scale.py`) with a "Use Default Size" button; it still
 stores a point size in `launcher_font_size`, so existing preferences and
 Reset to Defaults behave as before. Dragging previews on release.
-Icon sets and window sizes chosen at startup are refreshed by clicking
-Restart Launcher. After confirmation, preferences are saved and the launcher
+Default size follows the selected theme's unoverridden font, rather than
+assuming the desktop's font size. "Use Default Size" clears a stored override,
+even when it already equals the default. Font-only changes preserve an active
+command-line theme; existing controls, label columns, navigation rows and
+scroll-area minimum sizes are remeasured without a manual window resize.
+Restart Launcher remains available for a full restart. After confirmation,
+preferences are saved and the launcher
 reopens with the selected theme and font. The current base directory is
 preserved; old theme overrides and game/disk command-line arguments are not
 repeated. Active netplay sessions and hosted servers are stopped. Save

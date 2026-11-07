@@ -14,6 +14,7 @@ from ..launcher_config import LauncherConfig
 from ..launcher_settings import LauncherSettings
 from launcher.configuration_scanner import ConfigurationScanner
 from launcher.i18n import gettext
+from launcher.ui.empty_state import EmptyStateOverlay
 
 
 class ConfigurationItemDelegate(QStyledItemDelegate):
@@ -62,6 +63,55 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
         self.platform_icons = {}
         self._delete_pressed = None
         self.setItemDelegate(ConfigurationItemDelegate(self))
+        self.empty_state = EmptyStateOverlay(
+            self,
+            gettext("No games yet"),
+            gettext(
+                "Scan a folder with your Amiga disks and games to fill "
+                "the library."
+            ),
+            gettext("Scan a folder…"),
+            self.on_empty_state_action,
+        )
+        self.update_empty_state()
+
+    def on_empty_state_action(self):
+        if LauncherSettings.get("config_search").strip():
+            LauncherSettings.set("config_search", "")
+            return
+        if LauncherSettings.get("game_list_uuid"):
+            LauncherSettings.set("game_list_uuid", "")
+            return
+        from launcher.ui.scan import ScanDialog
+
+        ScanDialog(self.get_window()).show()
+
+    def update_empty_state(self):
+        if LauncherSettings.get("config_search").strip():
+            self.empty_state.set_text(
+                gettext("Nothing matches your search"),
+                gettext("Try a shorter name, or clear the search box."),
+            )
+            self.empty_state.button.setText(gettext("Clear search"))
+        elif LauncherSettings.get("game_list_uuid"):
+            self.empty_state.set_text(
+                gettext("This list is empty"),
+                gettext(
+                    "Nothing has been added to the selected list yet. "
+                    "Switch back to see all your games and configurations."
+                ),
+            )
+            self.empty_state.button.setText(gettext("Show Configs and Games"))
+        else:
+            self.empty_state.set_text(
+                gettext("No games yet"),
+                gettext(
+                    "Scan a folder with your Amiga disks and games to fill "
+                    "the library."
+                ),
+            )
+            self.empty_state.button.setText(gettext("Scan a folder…"))
+        self.empty_state.refresh()
 
     def can_delete_configuration(self, index):
         if index is None or not 0 <= index < len(self.items):
@@ -218,6 +268,8 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
         self.items = items
         self.model.endResetModel()
         self.update()
+        if hasattr(self, "empty_state"):
+            self.update_empty_state()
 
     def get_item_count(self):
         return len(self.items)
