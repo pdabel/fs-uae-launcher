@@ -1,5 +1,6 @@
 import fsui
 from fsui.qt import modern_theme
+from fsui.qt.qt import theme_applied
 from fsui.qt import (
     Qt, QSize, QButtonGroup, QFrame, QHBoxLayout, QLabel, QPushButton,
     QScrollArea, QSizePolicy, QSplitter, QStyle, QToolButton, QVBoxLayout,
@@ -11,26 +12,7 @@ from launcher.ui.launch import LaunchGroup
 from launcher.ui.navigation_icons import navigation_icon
 
 
-class Dashboard(fsui.Panel):
-    PAGES = (
-        ("Overview", QStyle.SP_ComputerIcon),
-        ("Floppy drives", QStyle.SP_DriveFDIcon),
-        ("CD-ROM drives", QStyle.SP_DriveCDIcon),
-        ("Hard drives", QStyle.SP_DriveHDIcon),
-        ("ROM & memory", QStyle.SP_FileDialogDetailedView),
-        ("Controllers", QStyle.SP_DesktopIcon),
-        ("Expansions", QStyle.SP_FileDialogContentsView),
-        ("Advanced", QStyle.SP_FileDialogListView),
-    )
-
-    def __init__(self, owner):
-        super().__init__(owner)
-        self.owner = owner
-        self.netplay_page = None
-        self._restore_library_after_quick = False
-        self.widget().setObjectName("dashboard")
-        self.set_min_size((1000, 720))
-        self.widget().setStyleSheet(modern_theme.render("""
+MODERN_STYLESHEET = """
             QWidget#dashboard { background: @window@; }
             QFrame#navigation { background: @nav@;
                 border-right: 1px solid @nav_border@; }
@@ -68,9 +50,9 @@ class Dashboard(fsui.Panel):
             QSplitter::handle { background: @window@; }
             QSplitter::handle:hover { background: @accent@; }
             QScrollArea { border: 0; background: @surface@; }
-        """))
-        if fsui.theme_variant != "modern":
-            self.widget().setStyleSheet("""
+        """
+
+PALETTE_STYLESHEET = """
                 QWidget#dashboard, QFrame#navigation {
                     background: palette(window); color: palette(window-text); }
                 QFrame#navigation { border-right: 2px solid palette(shadow); }
@@ -90,7 +72,29 @@ class Dashboard(fsui.Panel):
                 QSplitter::handle { background: palette(window); }
                 QSplitter::handle:hover { background: palette(highlight); }
                 QScrollArea { border: 0; background: palette(window); }
-            """)
+            """
+
+
+class Dashboard(fsui.Panel):
+    PAGES = (
+        ("Overview", QStyle.SP_ComputerIcon),
+        ("Floppy drives", QStyle.SP_DriveFDIcon),
+        ("CD-ROM drives", QStyle.SP_DriveCDIcon),
+        ("Hard drives", QStyle.SP_DriveHDIcon),
+        ("ROM & memory", QStyle.SP_FileDialogDetailedView),
+        ("Controllers", QStyle.SP_DesktopIcon),
+        ("Expansions", QStyle.SP_FileDialogContentsView),
+        ("Advanced", QStyle.SP_FileDialogListView),
+    )
+
+    def __init__(self, owner):
+        super().__init__(owner)
+        self.owner = owner
+        self.netplay_page = None
+        self._restore_library_after_quick = False
+        self.widget().setObjectName("dashboard")
+        self.set_min_size((1000, 720))
+        self.restyle()
         root = QHBoxLayout(self.widget())
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
@@ -152,9 +156,46 @@ class Dashboard(fsui.Panel):
         status.show()
         body_layout.setSpacing(12)
         LauncherSettings.add_listener(self)
+        theme_applied.connect(self.restyle)
         owner.closed.connect(self._remove_listener)
         self.on_setting("config_name", LauncherSettings.get("config_name"))
         self._show_page(0)
+
+    def restyle(self):
+        """Re-render theme colours; called again after a live theme change."""
+        if fsui.theme_variant == "modern":
+            self.widget().setStyleSheet(modern_theme.render(MODERN_STYLESHEET))
+        else:
+            self.widget().setStyleSheet(PALETTE_STYLESHEET)
+        if hasattr(self, "nav_buttons"):
+            for button, (_, icon) in zip(self.nav_buttons, self.PAGES):
+                button.setIcon(self._icon(icon))
+            self.netplay_button.setIcon(self._icon(QStyle.SP_DriveNetIcon))
+            for button, icon in self._extra_icons:
+                button.setIcon(self._icon(icon))
+            self.library_toggle.setIcon(self._icon(QStyle.SP_FileDialogContentsView))
+            self.quick_toggle.setIcon(self._icon(QStyle.SP_FileDialogDetailedView))
+            for button in self.launch_host.widget().findChildren(QPushButton):
+                if button.objectName() == "launchButton":
+                    button.setIcon(
+                        navigation_icon("fa5s.play", on_accent=True)
+                        if fsui.theme_variant == "modern"
+                        else self._icon(QStyle.SP_MediaPlay)
+                    )
+
+    def on_theme_changed(self):
+        """Re-measure the scrolled panels after a font change."""
+        for panel in (self.owner.books[1], self.owner.books[2]):
+            widget = panel.widget()
+            widget.setMinimumSize(
+                max(280, panel.get_min_width()), max(100, panel.get_min_height())
+            )
+        quick_area = getattr(self, "quick_area", None)
+        if quick_area is not None and quick_area.widget() is not None:
+            panel = self.owner.quick_settings_panel
+            quick_area.widget().setMinimumSize(
+                max(280, panel.get_min_width()), max(100, panel.get_min_height())
+            )
 
     def _icon(self, standard_icon):
         names = {
@@ -188,6 +229,7 @@ class Dashboard(fsui.Panel):
         layout.addSpacing(30)
         self.nav_group = QButtonGroup(frame)
         self.nav_buttons = []
+        self._extra_icons = []
         icon_size = QSize(24, 24) if fsui.theme_variant in (
             "windows311", "workbench"
         ) else QSize(20, 20)
@@ -229,6 +271,7 @@ class Dashboard(fsui.Panel):
             button.setIconSize(icon_size)
             button.clicked.connect(callback)
             layout.addWidget(button)
+            self._extra_icons.append((button, icon))
         return frame
 
     def _topbar(self):
@@ -397,4 +440,5 @@ class Dashboard(fsui.Panel):
     def _remove_listener(self):
         if self.netplay_page is not None:
             self.netplay_page.shutdown()
+        theme_applied.disconnect(self.restyle)
         LauncherSettings.remove_listener(self)
