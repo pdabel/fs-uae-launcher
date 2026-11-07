@@ -93,3 +93,22 @@ def test_manual_join_and_configuration_commands_are_recalled(tmp_path):
         == "/set floppy_drive_0 $BASE/Floppies/My Game.adf"
     )
     assert history.previous("") == "/joingame localhost:25101 game-id"
+
+
+@pytest.mark.parametrize("operation", ["add", "previous", "clear"])
+def test_locked_history_fails_without_waiting(tmp_path, operation):
+    history = CommandHistory(tmp_path / "history.sqlite")
+    history.add("/recheck")
+    with closing(sqlite3.connect(history.path)) as locked:
+        locked.execute("BEGIN EXCLUSIVE")
+        with pytest.raises(sqlite3.OperationalError, match="locked"):
+            with history.connect() as connection:
+                assert connection.execute("PRAGMA busy_timeout").fetchone() == (0,)
+        with pytest.raises(sqlite3.OperationalError, match="locked"):
+            if operation == "clear":
+                history.clear()
+            else:
+                getattr(history, operation)("/recheck")
+        locked.rollback()
+    with history.connect() as connection:
+        assert connection.execute("PRAGMA busy_timeout").fetchone() == (0,)
