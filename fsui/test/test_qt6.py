@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import Mock, call, patch
 
 import fsui
-from fsui.qt import QDialog, QEvent, QFontMetrics, QImage, QPainter, QTimer
+from fsui.qt import QDialog, QEvent, QFont, QFontMetrics, QImage, QPainter, QTimer
 from fsui.qt.DrawingContext import DrawingContext
 from fsui.qt.qt import configure_qt_environment
 from .WidgetTestCase import WidgetTestCase
@@ -2025,6 +2025,132 @@ class TestDashboard(WidgetTestCase):
             self.application.setPalette(palette)
             self.application.setStyleSheet(stylesheet)
             self.application.setFont(font)
+
+    def test_ui_scale_slider(self):
+        from launcher.launcher_settings import LauncherSettings
+        from launcher.option import Option
+        from launcher.settings.launchersettingspage import LauncherSettingsPage
+        from launcher.settings.ui_scale import UIScaleSlider
+
+        settings = {"launcher_font_size": ""}
+        listeners = []
+
+        def set_setting(key, value):
+            settings[key] = value
+            for listener in list(listeners):
+                listener.on_setting(key, value)
+
+        self.setup_dialog()
+        application = Mock(qapplication=self.application)
+        with patch.object(LauncherSettings, "get", side_effect=lambda key: settings.get(key, "")), \
+                patch.object(LauncherSettings, "set", side_effect=set_setting), \
+                patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
+                patch.object(LauncherSettings, "remove_listener", side_effect=listeners.remove), \
+                patch("launcher.settings.option_ui.app", application), \
+                patch("launcher.settings.launchersettingspage.app", application), \
+                patch("launcher.settings.ui_scale.default_point_size", return_value=12), \
+                patch("launcher.settings.launchersettingspage.apply_launcher_theme"):
+            page = LauncherSettingsPage(self.dialog)
+            slider = page.ui_scale
+            self.assertEqual(slider.default, 12)
+            self.assertIsInstance(slider, UIScaleSlider)
+            self.assertIn(Option.LAUNCHER_FONT_SIZE, page.options_on_page)
+            self.assertEqual(slider.value(), slider.default)
+            self.assertTrue(slider.caption.text().startswith("Default"))
+            self.assertFalse(slider.reset_button.is_enabled())
+            self.assertEqual((slider.slider.minimum(), slider.slider.maximum()), (6, 18))
+
+            slider.slider.setValue(slider.default + 3)
+            self.assertEqual(settings["launcher_font_size"], str(slider.default + 3))
+            self.assertTrue(slider.caption.text().startswith("Larger"))
+            self.assertTrue(slider.reset_button.is_enabled())
+
+            # Dragging only commits on release.
+            slider.slider.setSliderDown(True)
+            slider.slider.setValue(slider.default - 2)
+            self.assertEqual(settings["launcher_font_size"], str(slider.default + 3))
+            self.assertTrue(slider.caption.text().startswith("Smaller"))
+            slider.slider.setSliderDown(False)
+            slider.slider.sliderReleased.emit()
+            self.assertEqual(settings["launcher_font_size"], str(slider.default - 2))
+
+            slider.reset_button.widget().click()
+            self.assertEqual(settings["launcher_font_size"], "")
+            self.assertEqual(slider.value(), slider.default)
+
+            # External changes (Reset to Defaults, other pages) move the slider.
+            set_setting("launcher_font_size", "16")
+            self.assertEqual(slider.value(), 16)
+            set_setting("launcher_font_size", "garbage")
+            self.assertEqual(slider.value(), slider.default)
+            set_setting("launcher_font_size", "99")
+            self.assertEqual(slider.value(), 18)
+            page.reset_to_defaults()
+            self.assertEqual(settings["launcher_font_size"], "")
+            self.assertEqual(slider.value(), slider.default)
+        self.run_dialog()
+
+    def test_ui_scale_default_follows_theme_and_clamps(self):
+        from fsui.qt.qt import apply_launcher_theme, theme_default_point_size
+        from launcher.launcher_settings import LauncherSettings
+        from launcher.settings.ui_scale import UIScaleSlider
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        state = fsui.theme, fsui.theme_variant, fsui.theme_skin
+        settings = {"launcher_font_size": "", "launcher_theme": "fusion-plain"}
+        listeners = []
+
+        def set_setting(key, value):
+            settings[key] = value
+            for listener in list(listeners):
+                listener.on_setting(key, value)
+
+        self.setup_dialog()
+        try:
+            with patch.object(LauncherSettings, "get", side_effect=lambda key: settings.get(key, "")), \
+                    patch.object(LauncherSettings, "set", side_effect=set_setting), \
+                    patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
+                    patch.object(LauncherSettings, "remove_listener", side_effect=listeners.remove):
+                system = Mock(return_value=QFont("DejaVu Sans", 9))
+                with patch("fsui.qt.qt.QFontDatabase.systemFont", system):
+                    apply_launcher_theme(self.application, "fusion-plain", "")
+                    slider = UIScaleSlider(self.dialog)
+                    self.assertEqual(slider.default, 9)
+                    modern = theme_default_point_size("fusion-modern")
+                    apply_launcher_theme(self.application, "fusion-modern", "")
+                    self.assertEqual(slider.default, modern)
+                    self.assertEqual(slider.value(), modern)
+
+                    # With a modern 10 pt default, 9 pt is an explicit choice.
+                    if modern == 10:
+                        slider.slider.setValue(9)
+                        self.assertEqual(settings["launcher_font_size"], "9")
+
+                    # An override equal to the default can still be cleared.
+                    set_setting("launcher_font_size", str(slider.default))
+                    self.assertTrue(slider.reset_button.is_enabled())
+                    slider.slider.setValue(slider.default)
+                    slider.reset_button.widget().click()
+                    self.assertEqual(settings["launcher_font_size"], "")
+                    self.assertFalse(slider.reset_button.is_enabled())
+
+                    # Boundary defaults clamp into the slider range.
+                    with patch("launcher.settings.ui_scale.default_point_size", return_value=30):
+                        slider.refresh_default()
+                        self.assertEqual(slider.default, 18)
+                        slider.slider.setValue(18)
+                        self.assertEqual(settings["launcher_font_size"], "")
+                        slider.slider.setValue(17)
+                        self.assertEqual(settings["launcher_font_size"], "17")
+                slider.on_destroy()
+        finally:
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+            fsui.theme, fsui.theme_variant, fsui.theme_skin = state
+        self.finish_dialog()
 
     def test_live_theme_preview(self):
         from fsui.qt import QPalette, modern_theme
