@@ -1,9 +1,43 @@
+import os
+import sqlite3
+import time
+
+import qtawesome as qta
+from qtpy.QtCore import QEvent, QRect, Qt
+from qtpy.QtWidgets import QStyle, QStyledItemDelegate, QStyleOptionViewItem, QToolTip
+
 from fsgs.Database import Database
 from fsgs.platform import PlatformHandler
 from fsgs.util.gamenameutil import GameNameUtil
 import fsui
 from ..launcher_config import LauncherConfig
 from ..launcher_settings import LauncherSettings
+from launcher.configuration_scanner import ConfigurationScanner
+from launcher.i18n import gettext
+
+
+class ConfigurationItemDelegate(QStyledItemDelegate):
+    @staticmethod
+    def delete_rect(rect):
+        return QRect(rect.right() - 31, rect.top(), 32, rect.height())
+
+    def paint(self, painter, option, index):
+        browser = self.parent()
+        if not browser.can_delete_configuration(index.row()):
+            super().paint(painter, option, index)
+            return
+        style = browser.style()
+        style.drawPrimitive(QStyle.PE_PanelItemViewItem, option, painter, browser)
+        text_option = QStyleOptionViewItem(option)
+        text_option.rect.adjust(0, 0, -32, 0)
+        super().paint(painter, text_option, index)
+        selected = bool(option.state & QStyle.State_Selected)
+        color = option.palette.highlightedText().color() if selected else option.palette.text().color()
+        icon = qta.icon("fa5s.trash-alt", color=color.name())
+        rect = self.delete_rect(option.rect)
+        icon_rect = QRect(0, 0, 16, 16)
+        icon_rect.moveCenter(rect.center())
+        icon.paint(painter, icon_rect)
 
 
 class ConfigurationsBrowser(fsui.VerticalItemView):
@@ -26,6 +60,101 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
         self.unpublished_color = fsui.Color(0xCC, 0x00, 0x00)
 
         self.platform_icons = {}
+        self._delete_pressed = None
+        self.setItemDelegate(ConfigurationItemDelegate(self))
+
+    def can_delete_configuration(self, index):
+        if index is None or not 0 <= index < len(self.items):
+            return False
+        item = self.items[index]
+        return not item["uuid"] and bool(item["path"]) and item["path"].lower().endswith(".fs-uae")
+
+    def delete_index_at(self, position):
+        index = self.indexAt(position)
+        if index.isValid() and self.can_delete_configuration(index.row()):
+            rect = ConfigurationItemDelegate.delete_rect(self.visualRect(index))
+            if rect.contains(position):
+                return index.row()
+        return None
+
+    def mousePressEvent(self, event):
+        index = self.delete_index_at(event.position().toPoint())
+        if event.button() == Qt.LeftButton and index is not None:
+            self._delete_pressed = self.items[index]["path"]
+            event.accept()
+            return
+        self._delete_pressed = None
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        pressed = self._delete_pressed
+        self._delete_pressed = None
+        index = self.delete_index_at(event.position().toPoint())
+        if event.button() == Qt.LeftButton and pressed is not None:
+            if index is not None and self.items[index]["path"] == pressed:
+                self.delete_configuration(index)
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
+    def mouseDoubleClickEvent(self, event):
+        if self.delete_index_at(event.position().toPoint()) is not None:
+            event.accept()
+            return
+        super().mouseDoubleClickEvent(event)
+
+    def viewportEvent(self, event):
+        if event.type() == QEvent.ToolTip and self.delete_index_at(event.pos()) is not None:
+            QToolTip.showText(event.globalPos(), gettext("Delete Configuration"), self.viewport())
+            return True
+        return super().viewportEvent(event)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Delete and event.modifiers() == Qt.NoModifier:
+            index = self.get_index()
+            if self.can_delete_configuration(index):
+                self.delete_configuration(index)
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+    def delete_configuration(self, index):
+        from fsui.qt import QMessageBox
+        from fsui.qt.helpers import QParent
+        from launcher.scanner import Scanner
+
+        if not self.can_delete_configuration(index):
+            return
+        if Scanner.running:
+            fsui.show_error(gettext("Wait for the database scan to finish before deleting a configuration."), gettext("Delete Configuration"), parent=self)
+            return
+        item = self.items[index]
+        database = Database.get_instance()
+        path = database.decode_path(item["path"])
+        answer = QMessageBox.question(
+            QParent(self), gettext("Delete Configuration"),
+            gettext(
+                "Permanently delete this configuration file?\n\n{path}\n\n"
+                "Game disks, ROMs, and save data will not be deleted. "
+                "If this configuration is open, its unsaved changes will also be discarded."
+            ).format(path=path),
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+        )
+        if answer != QMessageBox.Yes:
+            return
+        if Scanner.running:
+            fsui.show_error(gettext("Wait for the database scan to finish before deleting a configuration."), gettext("Delete Configuration"), parent=self)
+            return
+        try:
+            ConfigurationScanner.delete_configuration(database, path)
+        except (OSError, sqlite3.Error, ValueError) as error:
+            fsui.show_error(str(error), gettext("Unable to delete configuration"), parent=self)
+            return
+        active_path = LauncherSettings.get("config_path")
+        if active_path and os.path.normcase(os.path.abspath(active_path)) == os.path.normcase(os.path.abspath(path)):
+            LauncherConfig.load_default_config()
+            LauncherSettings.set("parent_uuid", "")
+        LauncherSettings.set("__config_deleted", str(time.time_ns()))
 
     def on_destroy(self):
         LauncherSettings.remove_listener(self)
@@ -56,6 +185,20 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
                 if LauncherSettings.get("parent_uuid"):
                     LauncherSettings.set("parent_uuid", "")
                     LauncherConfig.load_default_config()
+        elif key == "__config_deleted":
+            index = self.get_index()
+            selected = self.items[index] if index is not None and 0 <= index < len(self.items) else None
+            self.update_search()
+            if selected is not None:
+                for index, item in enumerate(self.items):
+                    if item["uuid"] == selected["uuid"] and item["path"] == selected["path"]:
+                        selection = self.selectionModel()
+                        blocked = selection.blockSignals(True)
+                        try:
+                            self.select_item(index)
+                        finally:
+                            selection.blockSignals(blocked)
+                        break
         elif key == "__config_refresh":
             self.update_search()
             self.select_item(None)
@@ -71,7 +214,9 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
                 self.select_item(None)
 
     def set_items(self, items):
+        self.model.beginResetModel()
         self.items = items
+        self.model.endResetModel()
         self.update()
 
     def get_item_count(self):
