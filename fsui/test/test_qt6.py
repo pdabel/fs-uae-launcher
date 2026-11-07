@@ -607,6 +607,46 @@ class TestQt6(WidgetTestCase):
             self.application.setFont(font)
             fsui.theme, fsui.theme_variant, fsui.theme_skin = state
 
+    def test_modern_skin_colours_reach_media_strip(self):
+        from types import SimpleNamespace
+        from fsui.qt import QWidget, modern_theme
+        from launcher.ui.bottombar.BottomPanel import BottomPanel
+        from launcher.ui.bottombar.GameInfoPanel import GameInfoPanel
+        from launcher.ui.bottombar.ScreenshotsPanel import ScreenshotsPanel
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        widget = QWidget()
+        try:
+            for name in modern_theme.SKINS:
+                with self.subTest(skin=name):
+                    modern_theme.apply_modern_theme(self.application, name)
+                    skin = modern_theme.palette()
+                    dc = Mock()
+                    # Just what the modern painters read, without the
+                    # settings listeners and image loaders the panels start.
+                    panel = SimpleNamespace(
+                        size=lambda: (400, 160), widget=lambda: widget,
+                        create_dc=lambda: dc, images=[], default_image=None,
+                        image=None, x_offset=0, title="Title", year="1990",
+                        companies="Company", sub_title="Variant",
+                    )
+                    panel.draw_background = lambda dc: BottomPanel.draw_background(panel, dc)
+                    with patch.object(fsui, "theme_variant", "modern"):
+                        ScreenshotsPanel.on_paint(panel)
+                        GameInfoPanel.draw_modern_info(panel, dc)
+                    self.assertEqual(dc.draw_rectangle.call_args.args[4].name(), skin.surface)
+                    self.assertEqual(
+                        [c.args[0].name() for c in dc.set_text_color.call_args_list],
+                        [skin.text, skin.muted, skin.muted, skin.text, skin.muted],
+                    )
+        finally:
+            modern_theme.apply_modern_theme(self.application, "modern")
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+
     def test_retro_theme_selection(self):
         from fsui.qt import QPalette
         from fsui.qt.qt import initialize_qt_style
