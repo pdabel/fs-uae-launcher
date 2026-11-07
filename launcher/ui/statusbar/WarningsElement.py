@@ -41,9 +41,10 @@ class WarningsElement(StatusElement):
         self.notice_icon = Image("launcher:res/16x16/information.png")
         if fsui.theme_variant == "modern":
             import qtawesome as qta
+            from fsui.qt import modern_theme
 
             self.notice_icon = Image(object=qta.icon(
-                "fa5s.info-circle", color="#9bcce2"
+                "fa5s.info-circle", color=modern_theme.palette().icon
             ).pixmap(16, 16).toImage())
         self.icons = [self.error_icon, self.warning_icon, self.notice_icon]
         self.coordinates = []
