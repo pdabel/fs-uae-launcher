@@ -11,7 +11,7 @@ pylint = "*"
 pytest = "*"
 pytest-mypy = "*"
 rope = "*"
-ruff = "==0.17.2"
+ruff = "==0.17.3"
 setuptools = "*"
 
 [packages]
