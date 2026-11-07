@@ -10,7 +10,7 @@ from fsbc.system import windows
 
 class FSUAE(object):
     @classmethod
-    def start_with_config(cls, config, cwd=None):
+    def start_with_config(cls, config, cwd=None, monitor=None):
         print("FSUAE.start_with_config:")
         tf = tempfile.NamedTemporaryFile(suffix=".fs-uae", delete=False)
         config_file = tf.name
@@ -20,10 +20,10 @@ class FSUAE(object):
                 tf.write(line.encode("UTF-8"))
                 tf.write(b"\n")
         args = [config_file]
-        return cls.start_with_args(args, cwd=cwd), config_file
+        return cls.start_with_args(args, cwd=cwd, monitor=monitor), config_file
 
     @classmethod
-    def start_with_args(cls, args, cwd=None, **kwargs):
+    def start_with_args(cls, args, cwd=None, monitor=None, **kwargs):
         print("FSUAE.start_with_args:", args)
         exe = PluginExecutableFinder().find_executable("fs-uae")
         if exe is None:
@@ -42,7 +42,7 @@ class FSUAE(object):
         env = os.environ.copy()
         print(repr(env))
         try:
-            cls.center_window(args, env)
+            cls.center_window(args, env, monitor=monitor)
         except Exception:
             traceback.print_exc()
         cls.add_environment_from_settings(env)
@@ -72,7 +72,7 @@ class FSUAE(object):
                 env[key] = value
 
     @classmethod
-    def center_window(cls, args, env):
+    def center_window(cls, args, env, monitor=None):
         # FIXME: does not really belong here (dependency loop)
         from launcher.launcher_config import LauncherConfig
         from launcher.launcher_settings import LauncherSettings
@@ -91,17 +91,17 @@ class FSUAE(object):
             height = int(height)
         except:
             height = 540
-        from launcher.ui.launcherwindow import LauncherWindow
+        from fsgs.drivers.gamedriver import GameDriver
 
-        if LauncherWindow.current() is None:
-            return
-
-        main_w, main_h = LauncherWindow.current().get_size()
-        main_x, main_y = LauncherWindow.current().get_position()
-
-        x = main_x + (main_w - width) // 2
-        y = main_y + (main_h - height) // 2
+        if monitor is None:
+            monitor = LauncherConfig.get("monitor") or LauncherSettings.get("monitor")
+        screen_x, screen_y, screen_w, screen_h = GameDriver.screen_rect_for_monitor(monitor)
+        x = screen_x + max(0, (screen_w - width) // 2)
+        y = screen_y + max(0, (screen_h - height) // 2)
 
         env[str("SDL_VIDEO_WINDOW_POS")] = str(f"{x},{y}")
+        native_monitor = GameDriver.fsuae_monitor_for_monitor(monitor)
+        if native_monitor is not None:
+            args.append("--monitor=" + native_monitor)
         args.append(f"--window-x={x}")
         args.append(f"--window-y={y}")
