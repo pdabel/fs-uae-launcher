@@ -127,6 +127,14 @@ sequenceDiagram
 
 ## Main window composition
 
+Empty-library overlay controls are parented to the overlay before their
+visibility is set. This prevents hint labels and action buttons from briefly
+appearing as standalone windows and generating stray Wayland startup activation
+requests.
+The library search field receives initial focus before the main window is
+maximized, avoiding Qt 6.12's Wayland text-input warnings for an initially
+focused non-editable control.
+
 ```mermaid
 flowchart LR
     LW["LauncherWindow<br/>(launcher/ui/launcherwindow.py)"]
