@@ -21,6 +21,8 @@ class PlayTile(QFrame):
         super().__init__(parent)
         self.owner = owner
         self._name = ""
+        self._running = False
+        self._progress = ""
         self.setObjectName("playTile")
         layout = QHBoxLayout(self)
         layout.setContentsMargins(16, 14, 16, 14)
@@ -39,6 +41,7 @@ class PlayTile(QFrame):
         self.subtitle = QLabel()
         self.subtitle.setObjectName("playSubtitle")
         self.subtitle.setTextFormat(Qt.PlainText)
+        self.subtitle.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         text.addWidget(self.subtitle)
         layout.addLayout(text, 1)
         self.play_button = QPushButton(self.play_icon(), gettext("Play"))
@@ -51,7 +54,7 @@ class PlayTile(QFrame):
         LauncherSettings.add_listener(self)
         self.on_setting("config_name", LauncherSettings.get("config_name"))
         self._update_subtitle()
-        ConfigBehavior(self, ["__running"])
+        ConfigBehavior(self, ["__running", "__progress"])
 
     def shutdown(self):
         LauncherSettings.remove_listener(self)
@@ -73,8 +76,16 @@ class PlayTile(QFrame):
         self.set_running(value == "1")
 
     def set_running(self, running):
+        self._running = running
+        if not running:
+            self._progress = ""
         self.play_button.setEnabled(not running)
         self.play_button.setText(gettext("Running") if running else gettext("Play"))
+        self._update_subtitle()
+
+    def on___progress_config(self, value):
+        self._progress = value if self._running else ""
+        self._update_subtitle()
 
     def on_setting(self, key, value):
         if key == "config_name":
@@ -84,12 +95,15 @@ class PlayTile(QFrame):
             self._update_subtitle()
 
     def _update_subtitle(self):
-        if LauncherSettings.get("parent_uuid"):
+        if self._running and self._progress:
+            self.subtitle.setText(self._progress)
+        elif LauncherSettings.get("parent_uuid"):
             self.subtitle.setText(gettext("Game from the online database"))
         elif LauncherSettings.get("config_path"):
             self.subtitle.setText(gettext("Your saved configuration"))
         else:
             self.subtitle.setText(gettext("Pick a game from the library below"))
+        self.subtitle.setToolTip(self.subtitle.text())
 
     def play_icon(self):
         import fsui

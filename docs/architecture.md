@@ -154,6 +154,8 @@ Fullscreen and V-Sync share a left-aligned checkbox row below Game Monitor.
 Display settings appears immediately above Advanced in the navigation rail. The panel
 replaces the quick-settings sidebar and the bottom fullscreen/launch bar; the
 Play tile is the workspace's sole launch action.
+During launch, its subtitle displays preparation/download progress and emulator
+status from `__progress`. When the launch ends, the game's source hint returns.
 
 ## Theme engine
 

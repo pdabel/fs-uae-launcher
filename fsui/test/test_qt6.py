@@ -443,7 +443,7 @@ class TestQt6(WidgetTestCase):
 
     def test_numeric_fields_align_with_dropdowns_across_modern_skins(self):
         from fsui.qt import (
-            QComboBox, QStyle, QStyleOptionComboBox, QStyleOptionFrame,
+            QComboBox, QSignalBlocker, QStyle, QStyleOptionComboBox, QStyleOptionFrame,
             modern_theme,
         )
         from fsui.qt.qt import apply_launcher_theme
@@ -502,14 +502,32 @@ class TestQt6(WidgetTestCase):
                                         )
                                         image.fill(0)
                                         control.render(image)
-                                        text_positions.append(min(
+                                        # Compare with blank text so antialiased
+                                        # glyphs need not contain a solid pixel.
+                                        blank = QImage(image.size(), image.format())
+                                        blank.fill(0)
+                                        with QSignalBlocker(spin.widget()), QSignalBlocker(editor):
+                                            if control is spin.widget():
+                                                text = editor.text()
+                                                editor.setText("")
+                                                control.render(blank)
+                                                editor.setText(text)
+                                            else:
+                                                text = choice.itemText(0)
+                                                choice.setItemText(0, "")
+                                                control.render(blank)
+                                                choice.setItemText(0, text)
+                                        text_pixels = [
                                             x
                                             for x in range(2, 100)
                                             for y in range(10, 40)
-                                            if image.pixelColor(x, y).name()
-                                            == modern_theme.palette().text
-                                        ))
-                                    self.assertEqual(*text_positions)
+                                            if image.pixel(x, y) != blank.pixel(x, y)
+                                        ]
+                                        self.assertTrue(text_pixels, (theme, type(control).__name__))
+                                        text_positions.append(min(text_pixels))
+                                    self.assertLessEqual(
+                                        abs(text_positions[0] - text_positions[1]), 1
+                                    )
                             self.assertGreater(editor.width(), 0)
                     spin.widget().setEnabled(True)
                     spin.widget().stepUp()
@@ -2390,8 +2408,24 @@ class TestDashboard(WidgetTestCase):
             tile.on___running_config("1")
             self.assertFalse(tile.play_button.isEnabled())
             self.assertEqual(tile.play_button.text(), "Running")
+            tile.on___progress_config("Preparing: Downloading game (25%)")
+            self.assertEqual(tile.subtitle.text(), "Preparing: Downloading game (25%)")
+            self.assertEqual(tile.subtitle.toolTip(), tile.subtitle.text())
+            set_setting("config_path", "/configs/current.fs-uae")
+            self.assertEqual(tile.subtitle.text(), "Preparing: Downloading game (25%)")
+            tile.on___progress_config("Running: Emulator")
+            self.assertEqual(tile.subtitle.text(), "Running: Emulator")
             tile.on___running_config("0")
             self.assertTrue(tile.play_button.isEnabled())
+            self.assertIn("online database", tile.subtitle.text())
+            tile.on___progress_config("Late progress from completed launch")
+            self.assertIn("online database", tile.subtitle.text())
+            tile.on___running_config("1")
+            self.assertNotIn("Late progress", tile.subtitle.text())
+            tile.on___progress_config("")
+            self.assertIn("online database", tile.subtitle.text())
+            tile.on___running_config("0")
+            set_setting("config_path", "")
 
             dashboard.edit_toggle.click()
             self.assertFalse(dashboard.editor.isHidden())
