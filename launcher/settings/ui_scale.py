@@ -20,7 +20,7 @@ def default_point_size():
 
 
 class UIScaleSlider(fsui.Panel):
-    """A Smaller / Default / Larger slider that stores launcher_font_size.
+    """Synchronized slider and numeric control for launcher_font_size.
 
     Dragging previews live through the LauncherSettings listener in the
     settings page; the stored value stays a point size so existing
@@ -38,8 +38,8 @@ class UIScaleSlider(fsui.Panel):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
         header = QHBoxLayout()
-        title = QLabel(gettext("Interface size"))
-        header.addWidget(title)
+        self.title = QLabel(gettext("Interface Font Size"))
+        header.addWidget(self.title)
         header.addStretch(1)
         self.caption = QLabel()
         self.caption.setObjectName("uiScaleCaption")
@@ -55,14 +55,24 @@ class UIScaleSlider(fsui.Panel):
         self.slider.setPageStep(2)
         self.slider.setTickPosition(QSlider.TicksBelow)
         self.slider.setTickInterval(1)
-        self.slider.setAccessibleName(gettext("Interface size"))
+        self.slider.setAccessibleName(gettext("Interface Font Size"))
         self.slider.setToolTip(gettext(
-            "Make text and controls smaller or larger. "
-            "The middle notch is your system's default size."
+            "Adjust the interface font size in points. "
+            "Use Default Size restores the selected theme's default."
         ))
         row.addWidget(self.slider, 1)
         larger = QLabel(gettext("Larger"))
         row.addWidget(larger)
+        self.spin_control = fsui.SpinCtrl(
+            self, self.minimum, self.maximum, self.default
+        )
+        self.spinbox = self.spin_control.widget()
+        self.spinbox.setSuffix(gettext(" pt"))
+        self.spinbox.setKeyboardTracking(False)
+        self.spinbox.setAccessibleName(gettext("Interface Font Size"))
+        self.spinbox.setToolTip(self.slider.toolTip())
+        self.spin_control.on_changed = self.on_spin_changed
+        row.addWidget(self.spinbox)
         layout.addLayout(row)
         self.reset_button = fsui.Button(self, gettext("Use Default Size"))
         self.reset_button.activated.connect(self.on_reset)
@@ -109,12 +119,17 @@ class UIScaleSlider(fsui.Panel):
         return f"{label} ({value} pt)"
 
     def on_value_changed(self, value):
+        with QSignalBlocker(self.spinbox):
+            self.spinbox.setValue(value)
         self.caption.setText(self.describe(value))
         self.reset_button.set_enabled(
             value != self.default or self.has_override()
         )
         if not self.slider.isSliderDown():
             self.commit()
+
+    def on_spin_changed(self):
+        self.slider.setValue(self.spinbox.value())
 
     def has_override(self):
         return bool(str(LauncherSettings.get(Option.LAUNCHER_FONT_SIZE)).strip())
@@ -134,8 +149,9 @@ class UIScaleSlider(fsui.Panel):
         except (TypeError, ValueError):
             point_size = self.default
         point_size = max(self.minimum, min(self.maximum, point_size))
-        with QSignalBlocker(self.slider):
+        with QSignalBlocker(self.slider), QSignalBlocker(self.spinbox):
             self.slider.setValue(point_size)
+            self.spinbox.setValue(point_size)
         self.caption.setText(self.describe(point_size))
         self.reset_button.set_enabled(
             point_size != self.default or bool(str(value or "").strip())

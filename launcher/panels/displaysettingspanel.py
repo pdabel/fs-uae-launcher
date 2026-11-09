@@ -3,12 +3,15 @@ import traceback
 import fsui
 from fsgs.option import Option
 from launcher.i18n import gettext
+from launcher.launcher_settings import LauncherSettings
 from launcher.option import options
 from launcher.settings.monitorbutton import MonitorChoice
 from launcher.settings.option_ui import OptionUI
+from launcher.settings.override_warning import OverrideWarning
 from launcher.settings.settings_dialog import SettingsDialog
 from launcher.settings.videosynccheckbox import VideoSyncCheckBox
 from launcher.ui.IconButton import IconButton
+from launcher.ui.launch import ScreenInfoLabel
 from launcher.ui.behaviors.configbehavior import ConfigBehavior
 from launcher.ui.behaviors.platformbehavior import (
     PlatformShowBehavior,
@@ -18,15 +21,14 @@ from launcher.ui.behaviors.platformbehavior import (
 from launcher.ui.behaviors.settingsbehavior import SettingsBehavior
 
 
-class QuickSettingsPanel(fsui.Panel):
-    def __init__(self, parent, fsgc):
-        self.fsgc = fsgc
+class DisplaySettingsPanel(fsui.Panel):
+    def __init__(self, parent):
         super().__init__(parent)
         self.layout = fsui.VerticalLayout()
 
         hori_layout = fsui.HorizontalLayout()
         self.layout.add(hori_layout, fill=True)
-        heading_label = fsui.HeadingLabel(self, gettext("Settings"))
+        heading_label = fsui.HeadingLabel(self, gettext("Display settings"))
         hori_layout.add(heading_label, margin=10)
         hori_layout.add_spacer(0, expand=True)
         settings_button = IconButton(self, "16x16/more.png")
@@ -39,7 +41,7 @@ class QuickSettingsPanel(fsui.Panel):
         self.add_option(Option.BEZEL, text=None, enable=AMIGA_PLATFORMS)
         self.add_option(Option.ZOOM, text=None, platforms=AMIGA_PLATFORMS)
 
-        quick_settings = fsgc.settings[Option.QUICK_SETTINGS_OPTIONS]
+        quick_settings = LauncherSettings.get(Option.QUICK_SETTINGS_OPTIONS)
         for option in quick_settings.split(","):
             option = option.strip().lower()
             if "[" in option:
@@ -53,22 +55,30 @@ class QuickSettingsPanel(fsui.Panel):
                     print("Error adding quick setting")
                     traceback.print_exc()
 
-        self.layout.add_spacer(expand=True)
-
         self.layout.add(fsui.Label(self, gettext("Game Monitor")), margin=10, margin_bottom=0)
         self.monitor_choice = MonitorChoice(self)
         self.monitor_button = self.monitor_choice
         self.layout.add(self.monitor_choice, fill=True, margin=10)
 
-        hori_layout = fsui.HorizontalLayout()
-        hori_layout.add_spacer(expand=True)
+        fullscreen_layout = fsui.HorizontalLayout()
+        self.fullscreen_checkbox = fsui.CheckBox(self, gettext("Fullscreen"))
+        self.fullscreen_checkbox.on_changed = self.on_fullscreen_changed
+        fullscreen_layout.add(self.fullscreen_checkbox)
+        self.fullscreen_warning = OverrideWarning(self, Option.FULLSCREEN)
+        fullscreen_layout.add(self.fullscreen_warning, margin_left=10)
         self.video_sync_checkbox = VideoSyncCheckBox(self)
-        hori_layout.add(self.video_sync_checkbox, margin_right=10)
-        self.layout.add(hori_layout, fill=True)
-        self.layout.add_spacer(10)
+        fullscreen_layout.add(self.video_sync_checkbox, margin_left=20)
+        fullscreen_layout.add_spacer(0, expand=True)
+        self.layout.add(fullscreen_layout, fill=True, margin=10)
+        self.screen_info_label = ScreenInfoLabel(self)
+        # fsui does not relayout when the initially empty label gains text.
+        self.screen_info_label.set_min_height(
+            self.screen_info_label.measure_text(" ")[1]
+        )
+        self.layout.add(self.screen_info_label, fill=True, margin=10)
 
         ConfigBehavior(self, [Option.PLATFORM])
-        SettingsBehavior(self, [Option.G_SYNC])
+        SettingsBehavior(self, [Option.G_SYNC, Option.FULLSCREEN])
 
     def add_option(self, option, platforms=None, enable=None, text=""):
         panel = fsui.Panel(self)
@@ -91,10 +101,15 @@ class QuickSettingsPanel(fsui.Panel):
     def on_g_sync_setting(self, value):
         self.video_sync_checkbox.enable(value != "1")
 
+    def on_fullscreen_setting(self, value):
+        with self.fullscreen_checkbox.changed.inhibit:
+            self.fullscreen_checkbox.check(value == "1")
+
+    def on_fullscreen_changed(self):
+        LauncherSettings.set(
+            Option.FULLSCREEN,
+            "1" if self.fullscreen_checkbox.is_checked() else "0",
+        )
+
     def on_settings_button(self):
         SettingsDialog.open(self.window)
-
-    def get_min_height(self):
-        # Because we add a lot of controls, force min size to 0 to avoid
-        # this control reporting too large min height at startup.
-        return 0

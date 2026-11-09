@@ -8,7 +8,6 @@ from fsui.qt import (
 )
 from launcher.i18n import gettext
 from launcher.launcher_settings import LauncherSettings
-from launcher.ui.launch import LaunchGroup
 from launcher.ui.navigation_icons import navigation_icon
 from launcher.ui.play_tile import PlayTile
 
@@ -34,8 +33,6 @@ MODERN_STYLESHEET = """
             QPushButton[nav="true"]:checked { background: @pressed@;
                 color: @accent_soft@; border-left: 3px solid @accent@; }
             QFrame#topbar { border-bottom: 1px solid @nav_border@; }
-            QFrame#launchbar { background: @surface@;
-                border-top: 1px solid @border@; }
             QFrame#library { background: @surface@; }
             QFrame#editor { background: @surface@; }
             QFrame#playTile { background: @raised@;
@@ -49,8 +46,6 @@ MODERN_STYLESHEET = """
             QPushButton#playButton:hover { background: @accent_hover@; }
             QPushButton#playButton:disabled { background: @launch_disabled@;
                 color: @disabled_text@; border-color: @border_strong@; }
-            QPushButton#editButton:checked { background: @pressed@;
-                border-color: @accent@; color: @accent_soft@; }
             QWidget#emptyState { background: transparent; }
             QLabel#emptyStateTitle { color: @brand@; font-size: 17px;
                 font-weight: 600; }
@@ -62,12 +57,6 @@ MODERN_STYLESHEET = """
                 border: 1px solid @border_strong@; border-radius: @radius_small@; padding: 8px; }
             QToolButton:hover { background: @hover@; }
             QToolButton:checked { background: @highlight@; border-color: @accent@; }
-            QPushButton#launchButton { background: @accent@; color: @accent_text@;
-                border: 1px solid @accent_hover@; font-weight: 700;
-                padding: 10px 24px; }
-            QPushButton#launchButton:hover { background: @accent_hover@; }
-            QPushButton#launchButton:disabled { background: @launch_disabled@;
-                color: @disabled_text@; border-color: @border_strong@; }
             QSplitter::handle { background: @window@; }
             QSplitter::handle:hover { background: @accent@; }
             QScrollArea { border: 0; background: @surface@; }
@@ -87,7 +76,6 @@ PALETTE_STYLESHEET = """
                 QPushButton[nav="true"]:checked {
                     background: palette(highlight); color: palette(highlighted-text); }
                 QFrame#topbar { border-bottom: 2px solid palette(shadow); }
-                QFrame#launchbar { border-top: 2px solid palette(shadow); }
                 QFrame#playTile { background: palette(base);
                     border: 2px solid palette(shadow); }
                 QLabel#playTitle { font-size: 21px; font-weight: 700; }
@@ -98,7 +86,6 @@ PALETTE_STYLESHEET = """
                 QLabel#emptyStateTitle { font-size: 17px; font-weight: 600; }
                 QLabel#emptyStateHint { font-size: 12px; }
                 QToolButton { padding: 8px; }
-                QPushButton#launchButton { font-weight: 700; padding: 10px 24px; }
                 QSplitter::handle { background: palette(window); }
                 QSplitter::handle:hover { background: palette(highlight); }
                 QScrollArea { border: 0; background: palette(window); }
@@ -114,6 +101,7 @@ class Dashboard(fsui.Panel):
         ("ROM & memory", QStyle.SP_FileDialogDetailedView),
         ("Controllers", QStyle.SP_DesktopIcon),
         ("Expansions", QStyle.SP_FileDialogContentsView),
+        ("Display settings", QStyle.SP_TitleBarMaxButton),
         ("Advanced", QStyle.SP_FileDialogListView),
     )
 
@@ -121,7 +109,6 @@ class Dashboard(fsui.Panel):
         super().__init__(owner)
         self.owner = owner
         self.netplay_page = None
-        self._restore_library_after_quick = False
         self.widget().setObjectName("dashboard")
         self.set_min_size((1000, 720))
         self.restyle()
@@ -146,7 +133,6 @@ class Dashboard(fsui.Panel):
         body_layout.addWidget(self.content_stack, 1)
 
         self.play_tile = PlayTile(owner)
-        self.play_tile.edit_button.toggled.connect(self._toggle_editor)
         workspace_layout.addWidget(self.play_tile)
 
         self.splitter = QSplitter(Qt.Horizontal)
@@ -166,8 +152,8 @@ class Dashboard(fsui.Panel):
         self.splitter.setStretchFactor(1, 3)
         self.splitter.setSizes([450, 850])
         workspace_layout.addWidget(self.splitter, 1)
-        self.play_tile.edit_button.setChecked(PlayTile.editor_visible_setting())
-        self.editor.setVisible(self.play_tile.edit_button.isChecked())
+        self.edit_toggle.setChecked(PlayTile.editor_visible_setting())
+        self.editor.setVisible(self.edit_toggle.isChecked())
 
         self.media = QWidget()
         media_layout = QHBoxLayout(self.media)
@@ -184,8 +170,6 @@ class Dashboard(fsui.Panel):
             information.show()
         self.media.setFixedHeight(220)
         workspace_layout.addWidget(self.media)
-        self.launch_bar = self._launchbar()
-        body_layout.addWidget(self.launch_bar)
         status = owner.status_bar.widget()
         status.setFixedHeight(30)
         body_layout.addWidget(status)
@@ -210,14 +194,7 @@ class Dashboard(fsui.Panel):
             for button, icon in self._extra_icons:
                 button.setIcon(self._icon(icon))
             self.library_toggle.setIcon(self._icon(QStyle.SP_FileDialogContentsView))
-            self.quick_toggle.setIcon(self._icon(QStyle.SP_FileDialogDetailedView))
-            for button in self.launch_host.widget().findChildren(QPushButton):
-                if button.objectName() == "launchButton":
-                    button.setIcon(
-                        navigation_icon("fa5s.play", on_accent=True)
-                        if fsui.theme_variant == "modern"
-                        else self._icon(QStyle.SP_MediaPlay)
-                    )
+            self.edit_toggle.setIcon(self._icon(QStyle.SP_FileDialogDetailedView))
             self.play_tile.restyle_icons()
 
     def _toggle_editor(self, checked):
@@ -231,12 +208,6 @@ class Dashboard(fsui.Panel):
             widget.setMinimumSize(
                 max(280, panel.get_min_width()), max(100, panel.get_min_height())
             )
-        quick_area = getattr(self, "quick_area", None)
-        if quick_area is not None and quick_area.widget() is not None:
-            panel = self.owner.quick_settings_panel
-            quick_area.widget().setMinimumSize(
-                max(280, panel.get_min_width()), max(100, panel.get_min_height())
-            )
 
     def _icon(self, standard_icon):
         names = {
@@ -246,6 +217,7 @@ class Dashboard(fsui.Panel):
             QStyle.SP_DriveHDIcon: "fa5s.hdd",
             QStyle.SP_FileDialogDetailedView: "fa5s.sliders-h",
             QStyle.SP_DesktopIcon: "fa5s.gamepad",
+            QStyle.SP_TitleBarMaxButton: "fa5s.desktop",
             QStyle.SP_FileDialogContentsView: "fa5s.th-large",
             QStyle.SP_FileDialogListView: "fa5s.code",
             QStyle.SP_DriveNetIcon: "fa5s.network-wired",
@@ -280,7 +252,7 @@ class Dashboard(fsui.Panel):
             )
             button.setProperty("nav", True)
             button.setCheckable(True)
-            button.setMinimumHeight(44)
+            button.setMinimumHeight(42)
             button.setIconSize(icon_size)
             button.setToolTip(gettext(title))
             self.nav_group.addButton(button, index)
@@ -348,12 +320,12 @@ class Dashboard(fsui.Panel):
         self.library_toggle.setChecked(True)
         self.library_toggle.toggled.connect(self._toggle_library)
         layout.addWidget(self.library_toggle)
-        self.quick_toggle = self._tool(
-            QStyle.SP_FileDialogDetailedView, gettext("Quick settings")
+        self.edit_toggle = self._tool(
+            QStyle.SP_FileDialogDetailedView, gettext("Edit configuration")
         )
-        self.quick_toggle.setCheckable(True)
-        self.quick_toggle.toggled.connect(self._toggle_quick_settings)
-        layout.addWidget(self.quick_toggle)
+        self.edit_toggle.setCheckable(True)
+        self.edit_toggle.toggled.connect(self._toggle_editor)
+        layout.addWidget(self.edit_toggle)
         return frame
 
     def _tool(self, icon, tooltip):
@@ -386,40 +358,16 @@ class Dashboard(fsui.Panel):
         widget.show()
         return area
 
-    def _launchbar(self):
-        frame = QFrame()
-        frame.setObjectName("launchbar")
-        layout = QHBoxLayout(frame)
-        layout.setContentsMargins(16, 10, 16, 10)
-        self.launch_host = fsui.Panel(self)
-        self.launch_host.layout = fsui.VerticalLayout()
-        self.launch_group = LaunchGroup(self.launch_host, self.owner.gsc)
-        self.launch_host.layout.add(self.launch_group, fill=True, expand=True)
-        self.launch_host.widget().setMinimumHeight(48)
-        for button in self.launch_host.widget().findChildren(QPushButton):
-            if button.text().strip() == gettext("Start"):
-                button.setObjectName("launchButton")
-                button.setText(gettext("Launch Amiga"))
-                button.setIcon(
-                    navigation_icon("fa5s.play", on_accent=True)
-                    if fsui.theme_variant == "modern"
-                    else self._icon(QStyle.SP_MediaPlay)
-                )
-        layout.addWidget(self.launch_host.widget(), 1)
-        self.launch_host.widget().show()
-        return frame
-
     def _show_page(self, index):
         if index == len(self.PAGES):
             self.show_netplay()
             return
         self.content_stack.setCurrentWidget(self.workspace)
         self.library_toggle.setEnabled(True)
-        self.quick_toggle.setEnabled(True)
-        self.launch_bar.show()
-        if index > 0 and not self.play_tile.edit_button.isChecked():
+        self.edit_toggle.setEnabled(True)
+        if index > 0 and not self.edit_toggle.isChecked():
             # Choosing a configuration page implies wanting the editor.
-            self.play_tile.edit_button.setChecked(True)
+            self.edit_toggle.setChecked(True)
         self.owner.books[2].set_page(index)
         self.page_title.setText(gettext(self.PAGES[index][0]))
         self.nav_buttons[index].setChecked(True)
@@ -437,8 +385,7 @@ class Dashboard(fsui.Panel):
         self.netplay_button.setChecked(True)
         self.page_title.setText(gettext("Net play"))
         self.library_toggle.setEnabled(False)
-        self.quick_toggle.setEnabled(False)
-        self.launch_bar.hide()
+        self.edit_toggle.setEnabled(False)
         self.netplay_page.on_show()
 
     def _tools(self):
@@ -446,32 +393,12 @@ class Dashboard(fsui.Panel):
         menu.qmenu.exec(self.navigation.mapToGlobal(QPoint(16, self.navigation.height() - 60)))
 
     def _toggle_library(self, checked):
-        if checked and self.widget().width() < 1400:
-            self.quick_toggle.setChecked(False)
         self.library.setVisible(checked)
-
-    def _toggle_quick_settings(self, checked):
-        if not hasattr(self, "quick_area"):
-            self.quick_area = self._scroll(self.owner.quick_settings_panel)
-            self.quick_area.setMinimumWidth(240)
-            self.quick_area.setMaximumWidth(300)
-            self.splitter.addWidget(self.quick_area)
-        self.quick_area.setVisible(checked)
-        if checked and self.widget().width() < 1400:
-            self._restore_library_after_quick = self.library_toggle.isChecked()
-            self.library_toggle.setChecked(False)
-        elif not checked and self._restore_library_after_quick:
-            self._restore_library_after_quick = False
-            self.library_toggle.setChecked(True)
 
     def on_resize(self):
         super().on_resize()
         if hasattr(self, "media"):
             self.media.setVisible(self.widget().height() >= 820)
-            if self.widget().width() < 1400 and self.quick_toggle.isChecked():
-                if self.library_toggle.isChecked():
-                    self._restore_library_after_quick = True
-                    self.library_toggle.setChecked(False)
 
     def on_setting(self, key, value):
         if key == "config_name":

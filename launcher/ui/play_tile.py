@@ -1,8 +1,8 @@
 """One-click Play card shown above the library in the Modern Dark dashboard.
 
 Non-technical users see the selected game's name and a single large Play
-button; the configuration editor is tucked behind an "Edit configuration"
-toggle whose state is remembered in launcher settings.
+button; the dashboard toolbar provides the configuration editor toggle,
+whose state is remembered in launcher settings.
 """
 
 from fsui.qt import (
@@ -12,7 +12,6 @@ from fsui.qt import (
 from launcher.i18n import gettext
 from launcher.launcher_settings import LauncherSettings
 from launcher.ui.behaviors.configbehavior import ConfigBehavior
-from launcher.ui.navigation_icons import navigation_icon
 
 EDITOR_SETTING = "launcher_show_editor"
 
@@ -22,6 +21,8 @@ class PlayTile(QFrame):
         super().__init__(parent)
         self.owner = owner
         self._name = ""
+        self._running = False
+        self._progress = ""
         self.setObjectName("playTile")
         layout = QHBoxLayout(self)
         layout.setContentsMargins(16, 14, 16, 14)
@@ -40,6 +41,7 @@ class PlayTile(QFrame):
         self.subtitle = QLabel()
         self.subtitle.setObjectName("playSubtitle")
         self.subtitle.setTextFormat(Qt.PlainText)
+        self.subtitle.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         text.addWidget(self.subtitle)
         layout.addLayout(text, 1)
         self.play_button = QPushButton(self.play_icon(), gettext("Play"))
@@ -49,20 +51,10 @@ class PlayTile(QFrame):
         self.play_button.setToolTip(gettext("Start the selected game or configuration"))
         self.play_button.clicked.connect(self.on_play)
         layout.addWidget(self.play_button)
-        self.edit_button = QPushButton(
-            navigation_icon("fa5s.sliders-h"), gettext("Edit configuration")
-        )
-        self.edit_button.setObjectName("editButton")
-        self.edit_button.setCheckable(True)
-        self.edit_button.setMinimumHeight(40)
-        self.edit_button.setToolTip(gettext(
-            "Show or hide the detailed configuration pages for this game"
-        ))
-        layout.addWidget(self.edit_button)
         LauncherSettings.add_listener(self)
         self.on_setting("config_name", LauncherSettings.get("config_name"))
         self._update_subtitle()
-        ConfigBehavior(self, ["__running"])
+        ConfigBehavior(self, ["__running", "__progress"])
 
     def shutdown(self):
         LauncherSettings.remove_listener(self)
@@ -84,8 +76,16 @@ class PlayTile(QFrame):
         self.set_running(value == "1")
 
     def set_running(self, running):
+        self._running = running
+        if not running:
+            self._progress = ""
         self.play_button.setEnabled(not running)
         self.play_button.setText(gettext("Running") if running else gettext("Play"))
+        self._update_subtitle()
+
+    def on___progress_config(self, value):
+        self._progress = value if self._running else ""
+        self._update_subtitle()
 
     def on_setting(self, key, value):
         if key == "config_name":
@@ -95,12 +95,15 @@ class PlayTile(QFrame):
             self._update_subtitle()
 
     def _update_subtitle(self):
-        if LauncherSettings.get("parent_uuid"):
+        if self._running and self._progress:
+            self.subtitle.setText(self._progress)
+        elif LauncherSettings.get("parent_uuid"):
             self.subtitle.setText(gettext("Game from the online database"))
         elif LauncherSettings.get("config_path"):
             self.subtitle.setText(gettext("Your saved configuration"))
         else:
             self.subtitle.setText(gettext("Pick a game from the library below"))
+        self.subtitle.setToolTip(self.subtitle.text())
 
     def play_icon(self):
         import fsui
@@ -116,11 +119,11 @@ class PlayTile(QFrame):
     def _update_title(self):
         name = self._name or gettext("Amiga 500 (default setup)")
         metrics = self.title.fontMetrics()
-        buttons = sum(
-            max(button.minimumWidth(), button.sizeHint().width())
-            for button in (self.play_button, self.edit_button)
+        button_width = max(
+            self.play_button.minimumWidth(),
+            self.play_button.sizeHint().width(),
         )
-        available = self.width() - buttons - 16 * 2 - 16 * 2
+        available = self.width() - button_width - 16 * 2 - 16
         width = max(160, available)
         self.title.setText(metrics.elidedText(name, Qt.ElideRight, width))
         self.title.setToolTip(name)
@@ -138,7 +141,6 @@ class PlayTile(QFrame):
 
     def restyle_icons(self):
         self.play_button.setIcon(self.play_icon())
-        self.edit_button.setIcon(navigation_icon("fa5s.sliders-h"))
 
 
 __all__ = ["PlayTile", "EDITOR_SETTING"]

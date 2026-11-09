@@ -19,12 +19,12 @@ from launcher.launcher_signal import LauncherSignal
 from launcher.option import Option
 from launcher.panels.additionalconfigpanel import AdditionalConfigPanel
 from launcher.panels.cdpanel import CDPanel
+from launcher.panels.displaysettingspanel import DisplaySettingsPanel
 from launcher.panels.expansionspanel import ExpansionsPanel
 from launcher.panels.floppiespanel import FloppiesPanel
 from launcher.panels.harddrivespanel import HardDrivesPanel
 from launcher.panels.inputpanel import InputPanel
 from launcher.panels.mainpanel import MainPanel
-from launcher.panels.quicksettingspanel import QuickSettingsPanel
 from launcher.panels.romrampanel import RomRamPanel
 from launcher.ui.aboutdialog import AboutDialog
 from launcher.ui.book import Book
@@ -46,7 +46,6 @@ from workspace.apps.login import LoginWindow
 from workspace.apps.logout import LogoutWindow
 from workspace.apps.refresh import RefreshWindow
 
-QUICK_SETTINGS_WIDTH = 200
 GAME_INFO_PANEL_MIN_WIDTH = 500
 
 
@@ -101,7 +100,6 @@ class LauncherWindow(WindowWithTabs):
         self.main_panel = None
         self._menu = None
         self.menu_button = None
-        self.quick_settings_panel = None
         self.tab_panels = []
         self.user_button = None
         self.user_menu_close_time = 0
@@ -313,22 +311,6 @@ class LauncherWindow(WindowWithTabs):
 
             hor_layout_2.add(book, fill=True, expand=True)
 
-            if column == 2:
-                self.quick_settings_panel = QuickSettingsPanel(self, self.fsgs)
-                self.quick_settings_panel.set_min_width(QUICK_SETTINGS_WIDTH)
-
-                # Adding to hor_layout_2 will make it appear "one level"
-                # further in.
-                if LauncherSettings.get(Option.QUICK_SETTINGS) != "1":
-                    self.quick_settings_panel.hide()
-
-                hor_layout.add(
-                    self.quick_settings_panel,
-                    fill=True,
-                    margin=0,
-                    margin_top=0,
-                )
-
             self.books.append(book)
             self.add_column_content(column)
         else:
@@ -414,6 +396,13 @@ class LauncherWindow(WindowWithTabs):
             )
             self.add_scroll_page(
                 column,
+                DisplaySettingsPanel,
+                "32/quick-settings-sidebar",
+                gettext("Display settings"),
+                gettext("Display settings"),
+            )
+            self.add_scroll_page(
+                column,
                 AdditionalConfigPanel,
                 "32x32/system-shutdown",
                 gettext("Additional Configuration"),
@@ -421,13 +410,6 @@ class LauncherWindow(WindowWithTabs):
             )
 
             self.add_tab_spacer(0, expand=True)
-            self.add_tab_spacer(10)
-            self.add_tab_button(
-                self.toggle_quick_settings_sidebar,
-                fsui.Image("launcher:res/32/quick-settings-sidebar.png"),
-                gettext("Toggle quick settings sidebar"),
-                right_padding=5,
-            )
 
             # column - 1 is the group id of the tab group
             self.select_tab(default_page_index, column - 1)
@@ -543,16 +525,6 @@ class LauncherWindow(WindowWithTabs):
         if fsui.System.windows:
             self.main_menu_close_time = time.time()
         return self._menu
-
-    def toggle_quick_settings_sidebar(self):
-        print("Toggling settings sidebar")
-        if self.quick_settings_panel.visible():
-            self.quick_settings_panel.hide()
-            LauncherSettings.set(Option.QUICK_SETTINGS, "0")
-        else:
-            self.quick_settings_panel.show()
-            LauncherSettings.set(Option.QUICK_SETTINGS, "1")
-        self.layout.update()
 
     def add_user_menu_content(self, menu):
         if LauncherSettings.get(Option.DATABASE_AUTH):
