@@ -441,6 +441,89 @@ class TestQt6(WidgetTestCase):
         for control in (checkbox, choice, spinbox):
             control.deleteLater()
 
+    def test_numeric_fields_align_with_dropdowns_across_modern_skins(self):
+        from fsui.qt import (
+            QComboBox, QStyle, QStyleOptionComboBox, QStyleOptionFrame,
+            modern_theme,
+        )
+        from fsui.qt.qt import apply_launcher_theme
+
+        palette = self.application.palette()
+        stylesheet = self.application.styleSheet()
+        font = self.application.font()
+        state = fsui.theme, fsui.theme_variant, fsui.theme_skin
+        self.setup_dialog()
+        spin = fsui.SpinCtrl(self.dialog, 0, 100, 25)
+        choice = QComboBox(self.dialog.get_container())
+        choice.addItem("25")
+        spin.widget().show()
+        choice.show()
+        try:
+            for theme in [
+                *("fusion-" + skin for skin in modern_theme.SKINS),
+                "fusion-plain", "fusion-windows311", "fusion-workbench",
+                "fusion-cyberpunk",
+            ]:
+                with self.subTest(theme=theme):
+                    apply_launcher_theme(self.application, theme)
+                    for enabled in (True, False):
+                        spin.widget().setEnabled(enabled)
+                        choice.setEnabled(enabled)
+                        for width in (160, 400):
+                            spin.widget().resize(width, 50)
+                            choice.resize(width, 50)
+                            self.application.processEvents()
+                            editor = spin.widget().lineEdit()
+                            option = QStyleOptionFrame()
+                            option.initFrom(spin.widget())
+                            contents = spin.widget().style().subElementRect(
+                                QStyle.SE_LineEditContents, option, spin.widget()
+                            )
+                            self.assertGreaterEqual(
+                                editor.x(), max(0, contents.x() - 2)
+                            )
+                            if fsui.theme_variant == "modern":
+                                combo_option = QStyleOptionComboBox()
+                                choice.initStyleOption(combo_option)
+                                combo_contents = choice.style().subControlRect(
+                                    QStyle.CC_ComboBox, combo_option,
+                                    QStyle.SC_ComboBoxEditField, choice,
+                                )
+                                self.assertEqual(
+                                    editor.x() + 2, combo_contents.x()
+                                )
+                                if enabled and width == 400:
+                                    editor.deselect()
+                                    text_positions = []
+                                    for control in (spin.widget(), choice):
+                                        image = QImage(
+                                            control.size(),
+                                            QImage.Format_ARGB32,
+                                        )
+                                        image.fill(0)
+                                        control.render(image)
+                                        text_positions.append(min(
+                                            x
+                                            for x in range(2, 100)
+                                            for y in range(10, 40)
+                                            if image.pixelColor(x, y).name()
+                                            == modern_theme.palette().text
+                                        ))
+                                    self.assertEqual(*text_positions)
+                            self.assertGreater(editor.width(), 0)
+                    spin.widget().setEnabled(True)
+                    spin.widget().stepUp()
+                    self.assertEqual(spin.get_value(), 26)
+                    spin.set_value(25)
+        finally:
+            choice.deleteLater()
+            self.run_dialog()
+            modern_theme.apply_modern_theme(self.application, "modern")
+            self.application.setPalette(palette)
+            self.application.setStyleSheet(stylesheet)
+            self.application.setFont(font)
+            fsui.theme, fsui.theme_variant, fsui.theme_skin = state
+
     def test_navigation_icon_variants(self):
         from fsui.qt import QIcon, QSize
         from launcher.ui.navigation_icons import navigation_icon
@@ -2109,6 +2192,132 @@ class TestDashboard(WidgetTestCase):
         ConfigurationsPanel.on_setting(panel, "config_search", "abc")
         panel.text_field.set_text.assert_not_called()
 
+    def test_display_settings_controls_and_fullscreen(self):
+        from launcher.launcher_settings import LauncherSettings
+        from launcher.panels.displaysettingspanel import DisplaySettingsPanel
+        from launcher.settings.option_ui import OptionUI
+        from launcher.ui.config.configscrollarea import ConfigScrollArea
+
+        settings = {"fullscreen": "0", "quick_settings_options": "scanlines"}
+        listeners = []
+
+        def set_setting(key, value):
+            settings[key] = value
+            for listener in list(listeners):
+                listener.on_setting(key, value)
+
+        self.setup_dialog()
+        with patch.object(LauncherSettings, "get", side_effect=lambda key: settings.get(key, "")), \
+                patch.object(LauncherSettings, "set", side_effect=set_setting) as write_setting, \
+                patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
+                patch.object(LauncherSettings, "remove_listener"), \
+                patch("launcher.ui.behaviors.configbehavior.LauncherConfig.add_listener"), \
+                patch("launcher.ui.behaviors.configbehavior.LauncherConfig.get", return_value=""), \
+                patch("launcher.ui.launch.GameDriver.screen_rect_for_monitor", return_value=(0, 0, 1920, 1080)), \
+                patch("launcher.ui.launch.GameDriver.screen_refresh_rate_for_monitor", return_value=60), \
+                patch.object(OptionUI, "create_group", wraps=OptionUI.create_group) as create_group:
+            area = ConfigScrollArea(self.dialog)
+            panel = DisplaySettingsPanel(area)
+            area.set_widget(panel)
+            self.dialog.layout = fsui.VerticalLayout()
+            self.dialog.layout.add(area, fill=True, expand=True)
+            self.assertEqual(
+                [args[0][1] for args in create_group.call_args_list],
+                ["scale", "stretch", "bezel", "zoom", "scanlines"],
+            )
+            scale = create_group.call_args_list[0].args[0]
+            self.assertTrue(scale.is_enabled())
+            self.assertFalse(panel.fullscreen_checkbox.is_checked())
+            self.assertEqual(panel.screen_info_label.text(), "")
+            self.assertTrue(panel.fullscreen_warning.widget().isHidden())
+            write_setting.assert_not_called()
+            panel.fullscreen_checkbox.click()
+            self.assertEqual(settings["fullscreen"], "1")
+            self.assertTrue(panel.fullscreen_checkbox.is_checked())
+            self.assertIn("1920x1080", panel.screen_info_label.text())
+            panel.fullscreen_checkbox.click()
+            self.assertEqual(settings["fullscreen"], "0")
+            self.assertFalse(panel.fullscreen_checkbox.is_checked())
+            self.assertEqual(panel.screen_info_label.text(), "")
+            write_setting.reset_mock()
+            set_setting("fullscreen", "1")
+            self.assertTrue(panel.fullscreen_checkbox.is_checked())
+            set_setting("fullscreen", "0")
+            self.assertFalse(panel.fullscreen_checkbox.is_checked())
+            set_setting("fullscreen", "")
+            self.assertFalse(panel.fullscreen_checkbox.is_checked())
+            write_setting.assert_not_called()
+            self.assertEqual(panel.screen_info_label.text(), "")
+            panel.fullscreen_warning.on_config("1")
+            self.assertFalse(panel.fullscreen_warning.widget().isHidden())
+            panel.fullscreen_warning.on_config("")
+            self.assertTrue(panel.fullscreen_warning.widget().isHidden())
+            set_setting("video_sync", "1")
+            self.assertTrue(panel.video_sync_checkbox.is_checked())
+            set_setting("g_sync", "1")
+            self.assertFalse(panel.video_sync_checkbox.is_enabled())
+            set_setting("g_sync", "")
+            self.assertTrue(panel.video_sync_checkbox.is_enabled())
+            self.assertGreater(panel.monitor_choice.count(), 0)
+            with patch("launcher.panels.displaysettingspanel.SettingsDialog.open") as open_settings:
+                panel.on_settings_button()
+                open_settings.assert_called_once_with(panel.window)
+            self.dialog.set_size((420, 360))
+            self.dialog.show()
+            self.application.processEvents()
+            self.assertEqual(panel.fullscreen_checkbox.x(), 10)
+            self.assertEqual(
+                panel.fullscreen_checkbox.y(),
+                panel.video_sync_checkbox.y(),
+            )
+            self.assertLess(
+                panel.fullscreen_checkbox.x()
+                + panel.fullscreen_checkbox.width(),
+                panel.video_sync_checkbox.x(),
+            )
+            self.assertLessEqual(
+                panel.monitor_choice.y() + panel.monitor_choice.height(),
+                panel.fullscreen_checkbox.y(),
+            )
+            self.assertEqual(
+                panel.fullscreen_checkbox.x(),
+                panel.monitor_choice.x(),
+            )
+            panel.fullscreen_checkbox.click()
+            self.application.processEvents()
+            self.assertLessEqual(
+                panel.fullscreen_checkbox.y()
+                + panel.fullscreen_checkbox.height(),
+                panel.screen_info_label.y(),
+            )
+            self.assertGreater(area.verticalScrollBar().maximum(), 0)
+            self.assertEqual(area.horizontalScrollBar().maximum(), 0)
+            self.run_dialog()
+
+    def test_display_settings_registered_in_configuration_book(self):
+        from launcher.panels.displaysettingspanel import DisplaySettingsPanel
+        from launcher.panels.additionalconfigpanel import AdditionalConfigPanel
+        from launcher.ui.dashboard import Dashboard
+        from launcher.ui.launcherwindow import LauncherWindow
+
+        owner = Mock(books=[None, Mock(), Mock()])
+        pages = []
+
+        def register_page(column, content_class, icon_name, title, tooltip=""):
+            pages.append(content_class)
+            LauncherWindow._add_page(
+                owner, owner.books[column], Mock(), icon_name, title, tooltip
+            )
+
+        owner.add_page.side_effect = register_page
+        owner.add_scroll_page.side_effect = register_page
+        LauncherWindow.add_column_content(owner, 2)
+        self.assertEqual(len(pages), len(Dashboard.PAGES))
+        self.assertIs(pages[-2], DisplaySettingsPanel)
+        self.assertIs(pages[-1], AdditionalConfigPanel)
+        self.assertEqual(Dashboard.PAGES[-2][0], "Display settings")
+        self.assertEqual(Dashboard.PAGES[-1][0], "Advanced")
+
     def test_play_tile_and_editor_toggle(self):
         from launcher.launcher_settings import LauncherSettings
         from launcher.ui.book import Book
@@ -2123,22 +2332,15 @@ class TestDashboard(WidgetTestCase):
             for listener in list(listeners):
                 listener.on_setting(key, value)
 
-        def create_launch_group(parent, context):
-            group = fsui.Group(parent)
-            group.layout = fsui.VerticalLayout()
-            group.layout.add(fsui.Button(group, "Start"), fill=True)
-            return group
-
         def make_owner():
             owner = fsui.Window(None, title="Play tile")
             owner.gsc = object()
             owner.books = [None, Book(owner), Book(owner)]
             owner.books[1].add_page(fsui.Panel(owner.books[1]))
             owner.books[1].set_page(0)
-            for _ in range(8):
+            for _ in Dashboard.PAGES:
                 owner.books[2].add_page(fsui.Panel(owner.books[2]))
             owner.screenshots_panel = None
-            owner.quick_settings_panel = fsui.Panel(owner)
             owner.status_bar = fsui.Panel(owner)
             owner.on_settings_button = Mock()
             return owner
@@ -2148,8 +2350,7 @@ class TestDashboard(WidgetTestCase):
                 patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
                 patch.object(LauncherSettings, "remove_listener", side_effect=listeners.remove), \
                 patch("launcher.ui.behaviors.configbehavior.LauncherConfig.add_listener"), \
-                patch("launcher.ui.behaviors.configbehavior.LauncherConfig.get", return_value=""), \
-                patch("launcher.ui.dashboard.LaunchGroup", create_launch_group):
+                patch("launcher.ui.behaviors.configbehavior.LauncherConfig.get", return_value=""):
             owner = make_owner()
             dashboard = Dashboard(owner)
             owner.layout = fsui.VerticalLayout()
@@ -2162,21 +2363,25 @@ class TestDashboard(WidgetTestCase):
             settings["config_name"] = "A very long game title " * 12
             tile._name = settings["config_name"]
             tile._update_title()
-            reserved = (
-                max(tile.play_button.minimumWidth(), tile.play_button.sizeHint().width())
-                + max(tile.edit_button.minimumWidth(), tile.edit_button.sizeHint().width())
+            reserved = max(
+                tile.play_button.minimumWidth(),
+                tile.play_button.sizeHint().width(),
             )
             self.assertGreaterEqual(tile.play_button.minimumWidth(), 132)
             self.assertLessEqual(
                 tile.title.fontMetrics().horizontalAdvance(tile.title.text()),
-                max(160, tile.width() - reserved - 64),
+                max(160, tile.width() - reserved - 48),
             )
             set_setting("config_name", "Lotus Turbo Challenge 2")
             self.assertEqual(tile.play_button.text(), "Play")
             self.assertTrue(tile.play_button.isEnabled())
             # Editor hidden by default for a clean first impression.
-            self.assertFalse(tile.edit_button.isChecked())
+            self.assertFalse(dashboard.edit_toggle.isChecked())
             self.assertTrue(dashboard.editor.isHidden())
+            self.assertEqual(dashboard.edit_toggle.toolTip(), "Edit configuration")
+            self.assertFalse(hasattr(tile, "edit_button"))
+            self.assertFalse(hasattr(dashboard, "launch_bar"))
+            self.assertFalse(hasattr(dashboard, "quick_toggle"))
 
             with patch("launcher.launcherapp.LauncherApp.start_game") as start:
                 tile.play_button.click()
@@ -2188,18 +2393,30 @@ class TestDashboard(WidgetTestCase):
             tile.on___running_config("0")
             self.assertTrue(tile.play_button.isEnabled())
 
-            tile.edit_button.click()
+            dashboard.edit_toggle.click()
             self.assertFalse(dashboard.editor.isHidden())
             self.assertEqual(settings[EDITOR_SETTING], "1")
-            tile.edit_button.click()
+            dashboard.edit_toggle.click()
             self.assertTrue(dashboard.editor.isHidden())
             self.assertEqual(settings[EDITOR_SETTING], "0")
 
             # Picking a configuration page from the rail reveals the editor.
             dashboard.nav_buttons[3].click()
-            self.assertTrue(tile.edit_button.isChecked())
+            self.assertTrue(dashboard.edit_toggle.isChecked())
             self.assertFalse(dashboard.editor.isHidden())
             self.assertIs(owner.books[2].current_page, owner.books[2].pages[3])
+
+            display_index = len(Dashboard.PAGES) - 2
+            dashboard.edit_toggle.click()
+            dashboard.nav_buttons[display_index].click()
+            self.assertEqual(dashboard.page_title.text(), "Display settings")
+            self.assertTrue(dashboard.edit_toggle.isChecked())
+            self.assertFalse(dashboard.editor.isHidden())
+            self.assertFalse(dashboard.library.isHidden())
+            self.assertIs(
+                owner.books[2].current_page,
+                owner.books[2].pages[display_index],
+            )
 
             set_setting("parent_uuid", "")
             set_setting("config_name", "")
@@ -2223,7 +2440,7 @@ class TestDashboard(WidgetTestCase):
             # The remembered state is restored for the next window.
             owner = make_owner()
             dashboard = Dashboard(owner)
-            self.assertTrue(dashboard.play_tile.edit_button.isChecked())
+            self.assertTrue(dashboard.edit_toggle.isChecked())
             self.assertFalse(dashboard.editor.isHidden())
             owner.closed.emit()
 
@@ -2350,17 +2567,42 @@ class TestDashboard(WidgetTestCase):
             self.assertTrue(slider.caption.text().startswith("Default"))
             self.assertFalse(slider.reset_button.is_enabled())
             self.assertEqual((slider.slider.minimum(), slider.slider.maximum()), (6, 18))
+            self.assertEqual(slider.title.text(), "Interface Font Size")
+            self.assertEqual(slider.slider.accessibleName(), "Interface Font Size")
+            self.assertEqual(slider.spinbox.accessibleName(), "Interface Font Size")
+            self.assertEqual((slider.spinbox.minimum(), slider.spinbox.maximum()), (6, 18))
+            self.assertEqual(slider.spinbox.value(), slider.default)
+            self.assertEqual(slider.spinbox.suffix(), " pt")
+
+            slider.spinbox.stepUp()
+            self.assertEqual(slider.value(), 13)
+            self.assertEqual(settings["launcher_font_size"], "13")
+            slider.spinbox.stepDown()
+            self.assertEqual(slider.value(), 12)
+            self.assertEqual(settings["launcher_font_size"], "")
+            slider.spinbox.lineEdit().setText("14 pt")
+            slider.spinbox.interpretText()
+            self.assertEqual(slider.value(), 14)
+            self.assertEqual(settings["launcher_font_size"], "14")
+            slider.spinbox.setValue(slider.spinbox.minimum())
+            slider.spinbox.stepDown()
+            self.assertEqual(slider.value(), 6)
+            slider.spinbox.setValue(slider.spinbox.maximum())
+            slider.spinbox.stepUp()
+            self.assertEqual(slider.value(), 18)
 
             slider.slider.setValue(slider.default + 3)
             self.assertEqual(settings["launcher_font_size"], str(slider.default + 3))
             self.assertTrue(slider.caption.text().startswith("Larger"))
             self.assertTrue(slider.reset_button.is_enabled())
+            self.assertEqual(slider.spinbox.value(), slider.default + 3)
 
             # Dragging only commits on release.
             slider.slider.setSliderDown(True)
             slider.slider.setValue(slider.default - 2)
             self.assertEqual(settings["launcher_font_size"], str(slider.default + 3))
             self.assertTrue(slider.caption.text().startswith("Smaller"))
+            self.assertEqual(slider.spinbox.value(), slider.default - 2)
             slider.slider.setSliderDown(False)
             slider.slider.sliderReleased.emit()
             self.assertEqual(settings["launcher_font_size"], str(slider.default - 2))
@@ -2368,14 +2610,18 @@ class TestDashboard(WidgetTestCase):
             slider.reset_button.widget().click()
             self.assertEqual(settings["launcher_font_size"], "")
             self.assertEqual(slider.value(), slider.default)
+            self.assertEqual(slider.spinbox.value(), slider.default)
 
             # External changes (Reset to Defaults, other pages) move the slider.
             set_setting("launcher_font_size", "16")
             self.assertEqual(slider.value(), 16)
+            self.assertEqual(slider.spinbox.value(), 16)
             set_setting("launcher_font_size", "garbage")
             self.assertEqual(slider.value(), slider.default)
+            self.assertEqual(slider.spinbox.value(), slider.default)
             set_setting("launcher_font_size", "99")
             self.assertEqual(slider.value(), 18)
+            self.assertEqual(slider.spinbox.value(), 18)
             page.reset_to_defaults()
             self.assertEqual(settings["launcher_font_size"], "")
             self.assertEqual(slider.value(), slider.default)
@@ -2472,8 +2718,7 @@ class TestDashboard(WidgetTestCase):
                     patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
                     patch.object(LauncherSettings, "remove_listener", side_effect=listeners.remove), \
                     patch("launcher.settings.option_ui.app", application), \
-                    patch("launcher.settings.launchersettingspage.app", application), \
-                    patch("launcher.ui.dashboard.LaunchGroup", lambda parent, context: fsui.Group(parent)):
+                    patch("launcher.settings.launchersettingspage.app", application):
                 modern_theme.apply_modern_theme(self.application, "modern")
                 fsui.theme_variant, fsui.theme_skin = "modern", "modern"
                 owner = fsui.Window(None, title="Preview")
@@ -2481,10 +2726,9 @@ class TestDashboard(WidgetTestCase):
                 owner.books = [None, Book(owner), Book(owner)]
                 owner.books[1].add_page(fsui.Panel(owner.books[1]))
                 owner.books[1].set_page(0)
-                for _ in range(8):
+                for _ in Dashboard.PAGES:
                     owner.books[2].add_page(fsui.Panel(owner.books[2]))
                 owner.screenshots_panel = None
-                owner.quick_settings_panel = fsui.Panel(owner)
                 owner.status_bar = fsui.Panel(owner)
                 owner.on_settings_button = Mock()
                 dashboard = Dashboard(owner)
@@ -2892,25 +3136,18 @@ class TestDashboard(WidgetTestCase):
         owner.books = [None, Book(owner), Book(owner)]
         owner.books[1].add_page(fsui.Panel(owner.books[1]))
         owner.books[1].set_page(0)
-        for index in range(8):
+        for _ in Dashboard.PAGES:
             panel = fsui.Panel(owner.books[2])
             panel.layout = fsui.VerticalLayout()
             panel.layout.add_spacer(400, 200)
             owner.books[2].add_page(panel)
         owner.screenshots_panel = fsui.Panel(owner)
         owner.game_info_panel = fsui.Panel(owner)
-        owner.quick_settings_panel = fsui.Panel(owner)
         owner.status_bar = fsui.Panel(owner)
         owner.on_net_play = Mock()
         owner.on_settings_button = Mock()
 
-        def create_launch_group(parent, context):
-            group = fsui.Group(parent)
-            group.layout = fsui.VerticalLayout()
-            group.layout.add(fsui.Button(group, "Start"), fill=True)
-            return group
-
-        with patch("launcher.ui.dashboard.LaunchGroup", create_launch_group):
+        with patch("launcher.ui.play_tile.ConfigBehavior"):
             with patch("launcher.ui.dashboard.LauncherSettings") as settings:
                 settings.get.return_value = "Test configuration"
                 dashboard = Dashboard(owner)
@@ -2930,20 +3167,15 @@ class TestDashboard(WidgetTestCase):
                     self.assertLessEqual(dashboard.widget().width(), size[0])
                     self.assertLessEqual(dashboard.widget().height(), size[1])
                     self.assertEqual(dashboard.media.isHidden(), size[1] < 820)
-                    dashboard.quick_toggle.click()
-                    self.application.processEvents()
-                    self.assertEqual(dashboard.library.isHidden(), size[0] < 1400)
-                    self.assertLessEqual(dashboard.widget().width(), size[0])
-                    dashboard.quick_toggle.click()
                     self.assertFalse(dashboard.library.isHidden())
                 dashboard.library_toggle.click()
                 self.assertTrue(dashboard.library.isHidden())
                 dashboard.library_toggle.click()
                 self.assertFalse(dashboard.library.isHidden())
-                dashboard.quick_toggle.click()
-                self.assertFalse(dashboard.quick_area.isHidden())
-                dashboard.quick_toggle.click()
-                self.assertTrue(dashboard.quick_area.isHidden())
+                dashboard.edit_toggle.click()
+                self.assertTrue(dashboard.editor.isHidden())
+                dashboard.edit_toggle.click()
+                self.assertFalse(dashboard.editor.isHidden())
                 with patch("launcher.netplay.irc.IRC.connect") as connect:
                     with patch("launcher.netplay.netplay.ConnectionTester"):
                         dashboard.netplay_button.click()
@@ -2954,12 +3186,12 @@ class TestDashboard(WidgetTestCase):
                             self.assertNotIn("#212431", page.server_details.styleSheet())
                             self.assertNotIn("#171923", dashboard.widget().styleSheet())
                         self.assertTrue(dashboard.netplay_button.isChecked())
-                        self.assertTrue(dashboard.launch_bar.isHidden())
+                        self.assertFalse(dashboard.edit_toggle.isEnabled())
                         self.assertFalse(dashboard.library_toggle.isEnabled())
                         page.panel.text_area.append_text("Persistent chat")
                         dashboard.nav_buttons[0].click()
                         self.assertIs(dashboard.content_stack.currentWidget(), dashboard.workspace)
-                        self.assertFalse(dashboard.launch_bar.isHidden())
+                        self.assertTrue(dashboard.edit_toggle.isEnabled())
                         dashboard.netplay_button.click()
                         self.assertIs(dashboard.netplay_page, page)
                         self.assertIn("Persistent chat", page.panel.text_area.get_text())

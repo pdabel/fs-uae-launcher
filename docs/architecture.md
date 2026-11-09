@@ -137,13 +137,23 @@ flowchart LR
     STACK --> WS["Workspace"]
     STACK --> NP["NetplayPage<br/>(launcher/netplay/netplay_page.py)"]
     WS --> LIB["ConfigurationsPanel<br/>(library / search)"]
-    WS --> ED["Editor book<br/>MainPanel, Floppies, CD-ROM,<br/>Hard drives, ROM & RAM,<br/>Input, Expansions, Additional"]
+    WS --> ED["Editor book<br/>MainPanel, Floppies, CD-ROM,<br/>Hard drives, ROM & RAM,<br/>Input, Expansions,<br/>Display settings, Additional"]
     WS --> MEDIA["Bottom bar<br/>GameInfoPanel, ScreenshotsPanel"]
-    DB --> LAUNCH["Launch bar<br/>LaunchGroup, StartButton"]
+    WS --> PLAY["PlayTile<br/>single Play action"]
     NP --> PANEL["NetplayPanel<br/>chat, players, commands"]
     NP --> SD["ServerDetails<br/>hosted fsnp-server status"]
     LW --> SET["SettingsDialog<br/>(launcher/settings/*)"]
 ```
+
+The top toolbar's **Edit configuration** toggle shows or hides the editor and
+remembers its state. Selecting a configuration page in the navigation rail also
+reveals the editor. **Display settings** lives in that same editor book and
+combines scaling, aspect ratio, bezel, zoom, configurable extra options,
+fullscreen mode, screen information, game monitor selection, and V-Sync.
+Fullscreen and V-Sync share a left-aligned checkbox row below Game Monitor.
+Display settings appears immediately above Advanced in the navigation rail. The panel
+replaces the quick-settings sidebar and the bottom fullscreen/launch bar; the
+Play tile is the workspace's sole launch action.
 
 ## Theme engine
 
@@ -166,8 +176,15 @@ Modern Dark and its skins share one stylesheet template; `modern_theme.render()`
 substitutes `@token@` placeholders from the active `ModernPalette`, so adding a
 skin is a palette record plus an option label.
 
+The shared `SpinCtrl` keeps its editor inside the style's content bounds,
+including on live theme changes. This preserves numeric-field padding alongside
+dropdowns even on Qt 6.12, whose spinbox layout can discard the left inset.
+
 The Settings page offers a *Restart Launcher* button; `LauncherApp.request_restart()`
 saves settings and re-executes the process so a new theme applies cleanly.
+**Interface Font Size** provides a synchronized slider and numeric up/down
+control in points. Both preview changes immediately; dragging the slider commits
+on release. **Use Default Size** restores the selected theme's font size.
 
 ## Data and external processes
 
