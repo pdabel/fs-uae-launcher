@@ -170,9 +170,24 @@ def test_player_joins_another_operators_tagged_channel(ui, launchers):
 
 @pytest.mark.parametrize(
     "entered,expected",
-    [("#barbarian-hst", "#barbarian-hst"), ("barbarian-hst", "#barbarian-hst")],
+    [
+        ("#barbarian-hst", "#barbarian-hst"),
+        ("barbarian-hst", "#barbarian-hst"),
+        ("barbarian-game", "#barbarian-game"),
+        ("barbarian-anyoldshite", "#barbarian-anyoldshite"),
+        ("#barbarian", "#barbarian-hst"),
+        ("barbarian", "#barbarian-hst"),
+        ("  barbarian  ", "#barbarian-hst"),
+        ("&barbarian", "&barbarian-hst"),
+        (None, None),
+        ("", None),
+        ("   ", None),
+    ],
 )
-def test_join_game_channel_preserves_custom_channel(monkeypatch, entered, expected):
+@pytest.mark.parametrize("private", [False, True])
+def test_join_game_channel_tags_plain_names(
+    monkeypatch, entered, expected, private
+):
     settings = {Option.CONFIG_NAME: "Barbarian", Option.NETPLAY_TAG: "HST"}
     monkeypatch.setattr(
         netplay_panel.LauncherSettings, "get", lambda key: settings[key]
@@ -189,13 +204,13 @@ def test_join_game_channel_preserves_custom_channel(monkeypatch, entered, expect
         irc=SimpleNamespace(
             join=lambda channel, private=False: joined.append((channel, private))
         ),
-        private_checkbox=None,
+        private_checkbox=SimpleNamespace(is_checked=lambda: private),
     )
 
     netplay_panel.JoinChannelButton.on_activated(button)
 
     assert dialog["default"] == "#barbarian-hst"
-    assert joined == [(expected, False)]
+    assert joined == ([(expected, private)] if expected else [])
 
 
 @pytest.mark.parametrize("private", [False, True])
