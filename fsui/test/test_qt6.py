@@ -56,6 +56,67 @@ class TestQtEnvironment(unittest.TestCase):
 
 
 class TestQt6(WidgetTestCase):
+    def test_empty_state_controls_never_show_as_top_level_windows(self):
+        from fsui.qt import QApplication, QListView, QObject, QWidget
+        from launcher.ui.empty_state import EmptyStateOverlay
+
+        shown_windows = []
+
+        class ShowObserver(QObject):
+            def eventFilter(self, watched, event):
+                if (
+                    event.type() == QEvent.Show
+                    and isinstance(watched, QWidget)
+                    and watched.isWindow()
+                ):
+                    shown_windows.append(watched)
+                return False
+
+        self.setup_dialog()
+        view = QListView(self.dialog)
+        observer = ShowObserver()
+        application = QApplication.instance()
+        application.installEventFilter(observer)
+        try:
+            for hint, action in (("Hint", "Scan"), ("", "")):
+                with self.subTest(hint=hint, action=action):
+                    clicked = Mock()
+                    overlay = EmptyStateOverlay(
+                        view, "No games", hint, action, clicked
+                    )
+                    self.assertEqual(shown_windows, [])
+                    for child in (overlay.title, overlay.hint, overlay.button):
+                        self.assertIs(child.parentWidget(), overlay)
+                        self.assertFalse(child.isWindow())
+                    self.assertEqual(overlay.hint.isHidden(), not bool(hint))
+                    self.assertEqual(overlay.button.isHidden(), not bool(action))
+                    overlay.button.click()
+                    clicked.assert_called_once()
+                    overlay.set_text("No matches", "Try again")
+                    self.assertFalse(overlay.hint.isHidden())
+                    overlay.set_text("No matches")
+                    self.assertTrue(overlay.hint.isHidden())
+                    overlay.deleteLater()
+        finally:
+            application.removeEventFilter(observer)
+        self.run_dialog()
+
+    def test_dashboard_focuses_search_before_mapping_window(self):
+        from fsui.qt import QWidget
+        from launcher.ui.launcherwindow import LauncherWindow
+
+        owner = Mock()
+        owner.real_widget.return_value = QWidget()
+        owner.real_window.return_value.screen.return_value.availableGeometry.return_value = Mock(
+            width=lambda: 1280, height=lambda: 800
+        )
+        order = Mock()
+        order.attach_mock(owner.configurations_panel.text_field.focus, "focus")
+        order.attach_mock(owner.maximize, "maximize")
+        with patch("launcher.ui.dashboard.Dashboard"):
+            LauncherWindow.install_dashboard(owner)
+        self.assertEqual(order.mock_calls, [call.focus(), call.maximize()])
+
     def test_detected_monitor_choices_persist_and_handle_disconnect(self):
         from types import SimpleNamespace
         from fsui.qt import QRect
