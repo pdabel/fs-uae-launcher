@@ -444,6 +444,8 @@ class JoinChannelButton(fsui.Button):
         )
         channel = normalize_game_channel(channel or "")
         if channel:
+            if "-" not in channel[1:]:
+                channel = f"{channel}-{tag}"
             private = (
                 self.private_checkbox is not None
                 and self.private_checkbox.is_checked()
