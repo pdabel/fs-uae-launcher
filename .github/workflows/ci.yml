@@ -69,3 +69,9 @@ jobs:
     permissions:
       contents: read
     secrets: inherit
+
+  check-agent-instructions:
+    name: Check Agent Instructions
+    uses: ./.github/workflows/agent-instructions.yml
+    permissions:
+      contents: read
