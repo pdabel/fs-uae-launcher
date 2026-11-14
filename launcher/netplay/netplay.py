@@ -147,7 +147,9 @@ class Netplay:
             return
         self.session.start_game()
 
-    def begin_session(self, client, game_id, slot, player_token, **host):
+    def begin_session(
+        self, client, game_id, slot, player_token, on_initial_config=None, **host
+    ):
         """Follow a lobby game; host passes host_token and sync_keys."""
         self.end_session()
         self.session = NetplaySession(
@@ -162,6 +164,7 @@ class Netplay:
             later=call_later,
             on_change=self.on_session_change,
             on_message=self.session_message,
+            on_initial_config=on_initial_config,
             **host,
         )
         self.session.start()
@@ -343,6 +346,15 @@ class Netplay:
                 ("__netplay_addresses", ",".join(created["addresses"])),
             ]
         )
+        def announce_created_game():
+            if self.session_lobby != announce or self.session is None:
+                return
+            channel.info(
+                f"started game id: {created['id']} password: {created['password']} "
+                f"server: {','.join(created['addresses'])} port: {created['port']}"
+            )
+            self.announce_session()
+
         self.begin_session(
             client,
             created["id"],
@@ -350,13 +362,9 @@ class Netplay:
             created["player_token"],
             host_token=created["host_token"],
             sync_keys=LauncherConfig.sync_keys_list,
+            on_initial_config=announce_created_game,
         )
         self.session_lobby = announce
-        channel.info(
-            f"started game id: {created['id']} password: {created['password']} "
-            f"server: {','.join(created['addresses'])} port: {created['port']}"
-        )
-        self.announce_session()
         return True
 
     # --- Config and IRC ---------------------------------------------------

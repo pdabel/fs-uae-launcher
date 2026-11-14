@@ -32,20 +32,25 @@ def write_atomic(path, content):
 
 
 class PortableModeChange:
-    def __init__(self, source, destination, marker, enabled, normal_path):
+    def __init__(
+        self, source, destination, marker, enabled, normal_path, copy_data=True
+    ):
         self.source = Path(source).resolve()
         self.destination = Path(destination).resolve()
         self.marker = Path(marker)
         self.enabled = enabled
         self.normal_path = Path(normal_path)
+        self.copy_data = copy_data
 
     def validate(self):
         if not self.source.is_dir():
             raise OSError("The current data folder is no longer available.")
-        if self.enabled and self.destination == self.source:
+        if self.enabled and self.destination == self.source and self.copy_data:
             raise OSError(
                 "Choose a new empty folder so the original data can be kept unchanged."
             )
+        if not self.copy_data and not self.destination.is_dir():
+            raise OSError("The selected existing data folder is unavailable.")
         if self.destination != self.source:
             if (
                 self.source in self.destination.parents
@@ -54,9 +59,12 @@ class PortableModeChange:
                 raise OSError(
                     "Choose a folder outside the current data folder."
                 )
-            if self.destination.exists() and (
-                not self.destination.is_dir()
-                or any(self.destination.iterdir())
+            if self.destination.exists() and not self.destination.is_dir():
+                raise OSError("Choose a folder for the launcher data.")
+            if (
+                self.copy_data
+                and self.destination.exists()
+                and any(self.destination.iterdir())
             ):
                 raise OSError(
                     "Choose an empty folder. Existing files will not be overwritten."
@@ -91,7 +99,7 @@ class PortableModeChange:
 
     def apply(self, progress=lambda message: None):
         self.validate()
-        copied = self.destination != self.source
+        copied = self.copy_data and self.destination != self.source
         staging = None
         previous_normal = (
             self.normal_path.read_bytes()

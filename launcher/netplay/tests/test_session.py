@@ -392,6 +392,55 @@ def test_the_host_applies_and_reports_its_own_current_document():
     assert len(h.client.named("report_ready")) == 1
 
 
+def test_host_hash_mismatch_identifies_keys_without_values():
+    h = Harness(host=True)
+    h.local["amiga_model"] = "A1200"
+    h.session._apply = lambda snapshot: ("local-hash", {})
+    h.session._apply_and_report(
+        {
+            "config_version": 1,
+            "config": {"amiga_model": "A1200", "chip_memory": "512"},
+            "hash": "lobby-hash",
+            "keys": {"checksum": ["amiga_model", "chip_memory"]},
+        }
+    )
+
+    assert h.warnings() == [
+        "host config differs from the lobby for: checksum calculation"
+    ]
+
+
+def test_host_republishes_config_changed_while_applying():
+    h = Harness(host=True)
+    key = "x_kickstart_file_sha1"
+    h.session.sync_keys.append(key)
+    h.local[key] = "old-sha"
+
+    def apply(snapshot):
+        h.local[key] = "new-sha"
+        return "local-hash", {}
+
+    h.session._apply = apply
+    h.session.start()
+    h.executor.run_all()
+    h.session._handle(
+        {
+            "state": "configuring",
+            "config_version": 1,
+            "config": {**HOST_DOC, key: "old-sha"},
+            "hash": "lobby-hash",
+            "keys": {"checksum": ["amiga_model", "chip_memory", key]},
+            "slots": [],
+        }
+    )
+    h.executor.run_all()
+
+    pushes = h.client.named("set_config")
+    assert len(pushes) == 2
+    assert pushes[1][-1][key] == "new-sha"
+    assert h.client.named("report_ready") == []
+
+
 def test_start_waits_for_an_edit_to_reach_the_lobby():
     h = Harness(host=True)
     h.session.start()

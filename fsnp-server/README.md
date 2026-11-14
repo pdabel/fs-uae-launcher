@@ -69,6 +69,10 @@ GET /healthz
 
 The session API, for launchers that keep the game's config on the server rather than in IRC (phase three of [the design](../docs/netplay-go-server-design.md#future-the-session-owns-the-config)). JSON in and out; calls marked *host* or *slot* need `Authorization: Bearer <token>` from the create or join reply. A `POST /game` game's password is reserved at once but reaches no emulator until `start`.
 
+The host launcher publishes the initial config before announcing the game to other players. Later config edits continue to replace the server document through `PUT /game/{id}/config`.
+
+If the host's local checksum does not match the lobby document after applying it, the launcher reports differing checksum key names without logging their values.
+
 ```
 POST   /game                          {players, password, tag, keys:{sync, checksum}}
   201  {id, password, players, port, addresses, host_token, slot: 0, player_token}

@@ -10,7 +10,7 @@ import pytest
 from launcher.portable import PortableModeChange
 
 
-def make_change(tmp_path, enabled=True):
+def make_change(tmp_path, enabled=True, copy_data=True):
     source = tmp_path / "original"
     source.mkdir()
     launcher = tmp_path / "launcher"
@@ -21,6 +21,7 @@ def make_change(tmp_path, enabled=True):
         launcher / "Portable.ini",
         enabled,
         tmp_path / "preferences" / "base-dir",
+        copy_data=copy_data,
     )
 
 
@@ -39,6 +40,23 @@ def test_enable_copies_data_and_writes_relative_marker(tmp_path):
     config.read(change.marker)
     assert config["launcher"]["base_dir"] == "Amiga Data"
     assert not change.normal_path.exists()
+
+
+def test_existing_data_folder_is_used_without_copying_or_overwriting(
+    tmp_path,
+):
+    change = make_change(tmp_path, copy_data=False)
+    (change.source / "keep").write_text("current data")
+    change.destination.mkdir()
+    (change.destination / "keep").write_text("existing data")
+
+    change.apply()
+
+    assert (change.source / "keep").read_text() == "current data"
+    assert (change.destination / "keep").read_text() == "existing data"
+    config = ConfigParser()
+    config.read(change.marker)
+    assert config["launcher"]["base_dir"] == "Amiga Data"
 
 
 def test_disable_preserves_marker_backup_and_sets_normal_folder(tmp_path):

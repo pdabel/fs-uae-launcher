@@ -194,7 +194,9 @@ commands from being sent.
 ## Portable Mode
 
 Open Settings -> FS-UAE Launcher -> Data Location and select Portable mode.
-Choose a new empty data folder, then confirm the copy and restart.
+Choose a new empty data folder to copy the current data, or select a folder
+that already contains FS-UAE data and choose Use Existing Data. Existing folder
+contents are never overwritten when adopted. Confirm the change and restart.
 No manual configuration file is required.
 Choose Data Folder changes an existing portable setup's data location.
 Clear Portable mode to select a normal data folder and restart again.
@@ -224,6 +226,10 @@ folder preferences. Legacy empty Portable.ini files remain supported.
 The source tree does not include an active portable marker. Disabling in place
 is rejected when the startup marker also contains custom directory mappings;
 choose a new folder so those mappings can be preserved.
+
+When applying the lobby config updates a host sync value, such as a kickstart
+hash, the host publishes the updated config as a new version for all players
+to apply before starting.
 
 ## Python Consistency Checks
 

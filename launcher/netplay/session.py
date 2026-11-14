@@ -77,6 +77,7 @@ class NetplaySession:
         later,
         on_change=lambda session: None,
         on_message=lambda text, warning=False: None,
+        on_initial_config=None,
         executor=None,
         watcher_factory=SessionWatcher,
     ):
@@ -100,6 +101,10 @@ class NetplaySession:
         self._later = later
         self._on_change = on_change
         self._on_message = on_message
+        self._on_initial_config = on_initial_config
+        self._initial_config_pending = (
+            self.is_host and on_initial_config is not None
+        )
         self._executor = executor or ThreadPoolExecutor(
             max_workers=1, thread_name_prefix="lobby"
         )
@@ -208,6 +213,30 @@ class NetplaySession:
                 f"could not find {describe_missing(missing)}; add the "
                 f"files and press Re-check",
                 True,
+            )
+        elif (
+            self.is_host
+            and snapshot.get("hash") is not None
+            and config_hash != snapshot["hash"]
+        ):
+            if not self._is_local_document(snapshot):
+                self._message(
+                    "host config changed while applying; publishing the "
+                    "updated config to players"
+                )
+                self._push_if_changed()
+                return
+            differing = sorted(
+                {
+                    key
+                    for key in snapshot["keys"]["checksum"]
+                    if str(self._local_value(key))
+                    != snapshot["config"].get(key)
+                }
+            )
+            detail = ", ".join(differing) or "checksum calculation"
+            self._message(
+                f"host config differs from the lobby for: {detail}", True
             )
         self._call(
             self.client.report_ready,
@@ -333,6 +362,10 @@ class NetplaySession:
                 self._last_pushed = None
             elif result:
                 self._pushed_version = result.get("config_version", 0)
+                if self._initial_config_pending:
+                    self._initial_config_pending = False
+                    if not self.ended:
+                        self._on_initial_config()
             if self._push_again:
                 self._push_again = False
                 self._push_if_changed()
