@@ -124,6 +124,7 @@ class NetplaySession:
         self._push_scheduled = False
         self._applying = False
         self._restore_scheduled = False
+        self._missing_host_media = {}
 
     @property
     def is_host(self):
@@ -208,24 +209,31 @@ class NetplaySession:
         version = snapshot["config_version"]
         config_hash, missing = self._apply_quietly(snapshot)
         self.applied_version = version
+        if self.is_host:
+            self._missing_host_media = {
+                key: (value, str(self._local_value(key)))
+                for key, value in missing.items()
+                if key in self.sync_keys
+            }
         if missing:
             self._message(
                 f"could not find {describe_missing(missing)}; add the "
                 f"files and press Re-check",
                 True,
             )
-        elif (
+        if self.is_host and not self._is_local_document(snapshot):
+            self._message(
+                "host config changed while applying; publishing the "
+                "updated config to players"
+            )
+            self._push_if_changed()
+            return
+        if (
             self.is_host
+            and not missing
             and snapshot.get("hash") is not None
             and config_hash != snapshot["hash"]
         ):
-            if not self._is_local_document(snapshot):
-                self._message(
-                    "host config changed while applying; publishing the "
-                    "updated config to players"
-                )
-                self._push_if_changed()
-                return
             differing = sorted(
                 {
                     key
@@ -265,6 +273,7 @@ class NetplaySession:
         if not self.is_host:
             self._player_changed(key)
             return
+        self._missing_host_media.pop(key, None)
         if key not in self.sync_keys or self._push_scheduled:
             return
         self._push_scheduled = True
@@ -308,7 +317,13 @@ class NetplaySession:
         self._later(PUSH_DELAY_MS, restore)
 
     def _local_document(self):
-        return {key: str(self._local_value(key)) for key in self.sync_keys}
+        document = {key: str(self._local_value(key)) for key in self.sync_keys}
+        # Applying an unresolved media slot can clear its local SHA-1; keep
+        # the requested value until the user changes that key.
+        for key, (requested, local) in self._missing_host_media.items():
+            if document[key] == local:
+                document[key] = requested
+        return document
 
     def _is_local_document(self, snapshot):
         """Host: whether snapshot's config is this launcher's current one."""

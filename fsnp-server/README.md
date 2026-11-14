@@ -72,6 +72,7 @@ The session API, for launchers that keep the game's config on the server rather 
 The host launcher publishes the initial config before announcing the game to other players. Later config edits continue to replace the server document through `PUT /game/{id}/config`.
 
 If the host's local checksum does not match the lobby document after applying it, the launcher reports differing checksum key names without logging their values.
+When applying the host's config changes a sync value, the updated config is published even if media is missing; unresolved media hashes remain in the document until changed by the host.
 
 ```
 POST   /game                          {players, password, tag, keys:{sync, checksum}}
