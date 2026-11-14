@@ -346,9 +346,11 @@ class Netplay:
                 ("__netplay_addresses", ",".join(created["addresses"])),
             ]
         )
+
         def announce_created_game():
-            if self.session_lobby != announce or self.session is None:
+            if self.session is None or self.session.game_id != created["id"]:
                 return
+            self.session_lobby = announce
             channel.info(
                 f"started game id: {created['id']} password: {created['password']} "
                 f"server: {','.join(created['addresses'])} port: {created['port']}"
@@ -364,7 +366,6 @@ class Netplay:
             sync_keys=LauncherConfig.sync_keys_list,
             on_initial_config=announce_created_game,
         )
-        self.session_lobby = announce
         return True
 
     # --- Config and IRC ---------------------------------------------------

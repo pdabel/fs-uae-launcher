@@ -237,6 +237,28 @@ def test_failed_push_is_retried_on_the_next_change():
     assert len(h.client.named("set_config")) == 2
 
 
+@pytest.mark.parametrize("with_snapshot", [False, True])
+def test_recheck_retries_failed_initial_publication(with_snapshot):
+    h = Harness(host=True)
+    published = []
+    h.session._on_initial_config = lambda: published.append(True)
+    h.session._initial_config_pending = True
+    h.client.results["set_config"] = {"config_version": 1}
+    h.client.fail["set_config"] = ConnectionError("offline")
+    h.session.start()
+    h.executor.run_all()
+    if with_snapshot:
+        h.see("created", version=0, config=False)
+    assert published == []
+    assert any("could not send config" in warning for warning in h.warnings())
+
+    del h.client.fail["set_config"]
+    h.session.recheck()
+    h.executor.run_all()
+    assert len(h.client.named("set_config")) == 2
+    assert published == [True]
+
+
 def test_running_launches_once():
     h = Harness()
     h.session.start()

@@ -59,6 +59,35 @@ def test_existing_data_folder_is_used_without_copying_or_overwriting(
     assert config["launcher"]["base_dir"] == "Amiga Data"
 
 
+@pytest.mark.parametrize("enabled", [True, False])
+def test_existing_folder_containing_marker_is_rejected(tmp_path, enabled):
+    change = make_change(tmp_path, enabled=enabled, copy_data=False)
+    change.destination = change.marker.parent
+    change.marker.write_text("[launcher]\nbase_dir = old\n")
+    before = change.marker.read_bytes()
+
+    with pytest.raises(OSError, match="startup file"):
+        change.apply()
+
+    assert change.marker.read_bytes() == before
+    assert list(change.marker.parent.glob("Portable.ini.disabled-*")) == []
+    assert not change.normal_path.exists()
+
+
+def test_existing_folder_containing_normal_preference_is_rejected(tmp_path):
+    change = make_change(tmp_path, enabled=False, copy_data=False)
+    change.destination.mkdir()
+    change.marker.write_text("[launcher]\nbase_dir = old\n")
+    change.normal_path = change.destination / "base-dir"
+    change.normal_path.write_text("existing preference")
+
+    with pytest.raises(OSError, match="preference"):
+        change.apply()
+
+    assert change.normal_path.read_text() == "existing preference"
+    assert change.marker.is_file()
+
+
 def test_disable_preserves_marker_backup_and_sets_normal_folder(tmp_path):
     change = make_change(tmp_path, enabled=False)
     change.marker.write_text("[directories]\nfloppies_dir = Disks\n")

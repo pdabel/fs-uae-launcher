@@ -51,6 +51,18 @@ class PortableModeChange:
             )
         if not self.copy_data and not self.destination.is_dir():
             raise OSError("The selected existing data folder is unavailable.")
+        if not self.copy_data:
+            if self.marker.parent.resolve().is_relative_to(self.destination):
+                raise OSError(
+                    "Choose a folder that does not contain the portable startup file."
+                )
+            if (
+                not self.enabled
+                and self.normal_path.parent.resolve().is_relative_to(self.destination)
+            ):
+                raise OSError(
+                    "Choose a folder that does not contain the data-folder preference."
+                )
         if self.destination != self.source:
             if (
                 self.source in self.destination.parents

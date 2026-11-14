@@ -364,6 +364,24 @@ def test_host_and_player_start_together(lobby_port, ui, launchers, monkeypatch, 
     ]
 
 
+def test_join_does_not_announce_before_initial_config(lobby_port, ui, launchers):
+    host = launchers("HST", ops={"HST"})
+    lobby = format_lobby("127.0.0.1", lobby_port)
+    assert host.create_session(
+        host.irc.active_channel(), LobbyClient("127.0.0.1", lobby_port),
+        2, "", lobby,
+    )
+    join = {"channel": CHANNEL, "nick": "PL2"}
+    host.on_irc("join", join)
+    assert host.irc.sent == []
+
+    ui.pump_until(lambda: bool(host.irc.sent))
+    announcement = f"__session {lobby} {host.session.game_id}"
+    assert host.irc.sent == [announcement]
+    host.on_irc("join", join)
+    assert host.irc.sent == [announcement, announcement]
+
+
 def test_host_moving_on_keeps_a_running_game(lobby_port, ui, launchers):
     host = launchers("HST", ops={"HST"})
     player = launchers("PL2", ops={"HST"})

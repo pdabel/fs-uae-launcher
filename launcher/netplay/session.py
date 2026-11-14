@@ -250,7 +250,9 @@ class NetplaySession:
         )
 
     def recheck(self):
-        """Apply the current document again, after adding missing files."""
+        """Retry host publication and reapply the current document."""
+        if self.is_host:
+            self._push_if_changed()
         if self.snapshot and self.state in PRE_START:
             self.applied_version = 0
             self._handle(self.snapshot)

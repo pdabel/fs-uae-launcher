@@ -226,6 +226,8 @@ folder preferences. Legacy empty Portable.ini files remain supported.
 The source tree does not include an active portable marker. Disabling in place
 is rejected when the startup marker also contains custom directory mappings;
 choose a new folder so those mappings can be preserved.
+When using existing data without copying, select a folder that does not contain
+the portable startup marker or, when disabling, the data-folder preference.
 
 When applying the lobby config updates a host sync value, such as a kickstart
 hash, the host publishes the updated config as a new version for all players
