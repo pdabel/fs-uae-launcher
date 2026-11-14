@@ -1405,6 +1405,10 @@ class TestLaunchAndNetplay(WidgetTestCase):
                         self.assertEqual(
                             session_class.call_args.kwargs["host_token"], "host-token"
                         )
+                        channel.info.assert_not_called()
+                        channel.privmsg.assert_not_called()
+                        session_class.call_args.kwargs["on_initial_config"]()
+                        channel.info.assert_called_once()
                         # Players are pointed at the public address.
                         channel.privmsg.assert_called_once_with(
                             f"__session host.example:{HOST_PORT} {CREATED['id']}"
@@ -1481,6 +1485,9 @@ class TestLaunchAndNetplay(WidgetTestCase):
                         dict(set_config.call_args.args[0])["__netplay_password"],
                         CREATED["password"],
                     )
+                    channel.info.assert_not_called()
+                    channel.privmsg.assert_not_called()
+                    session_class.call_args.kwargs["on_initial_config"]()
                     channel.info.assert_called_once()
                     channel.privmsg.assert_called_once_with(
                         f"__session lobby.example:25101 {CREATED['id']}"
