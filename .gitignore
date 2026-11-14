@@ -27,7 +27,9 @@ Lib
 *.pyo
 /setup.py
 *.swp
+.obsidian
 venv
+/venv-3.12/
 /venv-3.14.4/
 /venv-3.15/
 __pycache__/
