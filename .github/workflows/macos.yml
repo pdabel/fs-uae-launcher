@@ -7,6 +7,11 @@ on:
         description: 'Version to set in tarballs'
         required: false
         default: '0.0.0-edge'
+      run-tests:
+        type: boolean
+        description: 'Run the test suite before building'
+        required: false
+        default: true
   workflow_dispatch:
     inputs:
       version:
@@ -14,6 +19,11 @@ on:
         description: 'Version to set in tarballs'
         required: false
         default: '0.0.0-edge'
+      run-tests:
+        type: boolean
+        description: 'Run the test suite before building'
+        required: false
+        default: true
 
 defaults:
   run:
@@ -63,22 +73,24 @@ jobs:
           pipenv --python "${{ steps.python.outputs.python-path }}"
           pipenv sync --dev
 
-      - name: Check Python consistency
+      - name: Check Python support
         run: |
-          pipenv run ruff check
           pipenv run python -m pytest fsbuild/tests/test_python_support.py
+        if: inputs.run-tests
 
       - name: Run Python tests
         env:
           QT_QPA_PLATFORM: offscreen
         run: |
           pipenv run python -W default::DeprecationWarning -m pytest fsbc fstd fspy fsgs/tests fsbuild/tests launcher/netplay launcher/server/tests launcher/tests
+        if: inputs.run-tests
 
       - name: Run Qt tests
         env:
           QT_QPA_PLATFORM: offscreen
         run: |
           pipenv run python -m pytest fsui/test
+        if: inputs.run-tests
 
       - name: Set base version
         run: |

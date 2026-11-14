@@ -146,6 +146,8 @@ and frozen artifacts have not been certified by these local checks.
 
 - [x] Establish a scoped Ruff UP032 consistency gate in `pyproject.toml` and
   CI. Broader lint and formatter migration remains a separate task.
+- [ ] Migrate internal `get_window()` calls to the `window` property and
+  resolve the deprecation warning before removing the compatibility method.
 - [ ] Add CI checks for formatting, linting, and the project's existing
   type-checking approach. Begin with changed files or a documented baseline
   so legacy findings do not obscure new regressions.
