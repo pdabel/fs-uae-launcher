@@ -98,6 +98,104 @@ def test_actual_save_uses_base_values_with_unrelated_edits(
     assert context.config.get("monitor") == ""
 
 
+@pytest.mark.parametrize("base_edit", ["edited-monitor", "other-monitor", ""])
+def test_custom_options_edits_preserve_base_and_active_override(
+    game_config, monkeypatch, base_edit
+):
+    import launcher.ui.config.CustomOptionsPage as custom_options
+
+    context, _, _ = game_config
+    monkeypatch.setattr(custom_options, "fsgs", context)
+    LauncherConfig.apply_game_overrides()
+    LauncherConfig.set_game_override("monitor", "other-monitor")
+    assert "monitor = base-monitor" in custom_options.initial_text()
+    editor = Mock()
+    editor.text_area.get_text.return_value = f"monitor = {base_edit}\n"
+
+    custom_options.CustomOptionsPage.update_config(editor)
+
+    assert LauncherConfig.copy_for_save()["monitor"] == base_edit
+    assert LauncherConfig.get_game_base_value("monitor") == base_edit
+    assert context.config.get("monitor") == "other-monitor"
+    assert context.config.get("__changed") == "1"
+    assert context.config.get("__ready") == "0"
+    LauncherConfig.clear_game_override("monitor")
+    assert context.config.get("monitor") == base_edit
+
+
+def test_custom_options_noop_does_not_replace_base_with_overlay(
+    game_config, monkeypatch
+):
+    import launcher.ui.config.CustomOptionsPage as custom_options
+
+    context, _, _ = game_config
+    monkeypatch.setattr(custom_options, "fsgs", context)
+    LauncherConfig.apply_game_overrides()
+    LauncherConfig.set_game_override("monitor", "other-monitor")
+    editor = Mock()
+    editor.text_area.get_text.return_value = custom_options.initial_text()
+
+    custom_options.CustomOptionsPage.update_config(editor)
+
+    assert LauncherConfig.copy_for_save()["monitor"] == "base-monitor"
+    assert context.config.get("monitor") == "other-monitor"
+    assert context.config.get("__changed") == "0"
+
+
+def test_base_edit_before_first_override_is_restored(game_config):
+    context, _, _ = game_config
+    LauncherConfig.apply_game_overrides()
+    LauncherConfig.set("monitor", "new-base")
+    LauncherConfig.set_game_override("monitor", "other-monitor")
+    LauncherConfig.clear_game_override("monitor")
+    assert context.config.get("monitor") == "new-base"
+
+
+def test_base_edit_is_written_to_config_and_override_remains_in_database(
+    game_config, tmp_path, monkeypatch
+):
+    from launcher.ui.savebutton import SaveButton
+
+    context, store, settings = game_config
+    settings["config_name"] = "Example"
+    monkeypatch.setattr(LauncherSettings, "set", settings.__setitem__)
+    monkeypatch.setattr(
+        "launcher.ui.savebutton.FSGSDirectories.get_configurations_dir",
+        lambda: str(tmp_path),
+    )
+    monkeypatch.setattr(
+        "launcher.ui.savebutton.Database.get_instance", lambda: Mock()
+    )
+    monkeypatch.setattr(
+        "launcher.ui.savebutton.FileDatabase.get_instance", lambda: Mock()
+    )
+    LauncherConfig.apply_game_overrides()
+    LauncherConfig.set_game_override("monitor", "other-monitor")
+    LauncherConfig.set("monitor", "edited-monitor")
+    SaveButton.save_config()
+
+    assert "monitor = edited-monitor" in (tmp_path / "Example.fs-uae").read_text()
+    assert store.get(LauncherConfig.game_override_identity()) == {
+        "monitor": "other-monitor"
+    }
+    assert context.config.get("monitor") == "other-monitor"
+    LauncherConfig.clear_game_override("monitor")
+    assert context.config.get("monitor") == "edited-monitor"
+
+
+def test_base_edit_refreshes_per_game_context(game_config):
+    context, _, _ = game_config
+    LauncherConfig.apply_game_overrides()
+    LauncherConfig.set_game_override("monitor", "other-monitor")
+    context.signal.notify.reset_mock()
+
+    LauncherConfig.set("monitor", "edited-monitor")
+
+    assert ("config", ("__game_override_context", "")) in [
+        call.args for call in context.signal.notify.call_args_list
+    ]
+
+
 def test_failed_override_read_preserves_base_and_disables_editing(
     game_config, monkeypatch, caplog
 ):

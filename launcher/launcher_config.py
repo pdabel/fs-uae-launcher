@@ -269,11 +269,32 @@ class LauncherConfig(object):
 
     @classmethod
     def set(cls, key, value):
-        fsgs.config.set(key, value)
+        cls.set_multiple([(key, value)])
 
     @classmethod
     def set_multiple(cls, items):
-        fsgs.config.set(items)
+        items = list(items)
+        if not cls.game_overrides_available():
+            fsgs.config.set(items)
+            return
+
+        updates = []
+        overridden_base_changed = False
+        base_changed = False
+        for key, value in items:
+            if not key.startswith("__"):
+                if cls._game_base_values.get(key, "") != value:
+                    base_changed = True
+                    if key in cls._game_override_values:
+                        overridden_base_changed = True
+                cls._game_base_values[key] = value
+            if key not in cls._game_override_values:
+                updates.append((key, value))
+        fsgs.config.set(updates)
+        if overridden_base_changed:
+            fsgs.config.set([("__ready", "0"), ("__changed", "1")])
+        if base_changed:
+            cls.notify_game_override_context()
 
     @classmethod
     def update_from_config_dict(cls, config_dict):
