@@ -258,6 +258,13 @@ class LauncherConfig(object):
         return fsgs.config.get(key, default)
 
     @classmethod
+    def effective_monitor(cls):
+        monitor = cls.get("monitor")
+        if monitor or "monitor" in cls.get_game_overrides():
+            return monitor
+        return LauncherSettings.get("monitor")
+
+    @classmethod
     def add_listener(cls, listener):
         # deprecated
         Signal("fsgs:config").connect(getattr(listener, "on_config"))

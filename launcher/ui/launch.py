@@ -9,6 +9,7 @@ from launcher.launcher_settings import LauncherSettings
 from launcher.option import Option
 from launcher.netplay.netplay import Netplay
 from launcher.settings.override_warning import OverrideWarning
+from launcher.ui.behaviors.configbehavior import ConfigBehavior
 from launcher.ui.behaviors.settingsbehavior import SettingsBehavior
 
 
@@ -85,6 +86,7 @@ class ScreenInfoLabel(fsui.Label):
         SettingsBehavior(
             self, ["fullscreen", "monitor", "assume_refresh_rate"]
         )
+        ConfigBehavior(self, ["monitor", "__game_override_context"])
 
     def on_fullscreen_setting(self, _):
         self.update_info()
@@ -103,14 +105,19 @@ class ScreenInfoLabel(fsui.Label):
         self.update_info()
 
     def on_monitor_setting(self, value):
-        self.update_info(value=value)
+        self.update_info()
 
-    def update_info(self, value=None):
+    def on_monitor_config(self, value):
+        self.update_info()
+
+    def on___game_override_context_config(self, value):
+        self.update_info()
+
+    def update_info(self):
         if LauncherSettings.get("fullscreen") != "1":
             self.set_text("")
             return
-        if value is None:
-            value = LauncherSettings.get("monitor")
+        value = LauncherConfig.effective_monitor()
         x, y, w, h = GameDriver.screen_rect_for_monitor(value)
         refresh_rate = GameDriver.screen_refresh_rate_for_monitor(value)
         assume_refresh_rate = LauncherSettings.get("assume_refresh_rate")

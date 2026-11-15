@@ -212,7 +212,9 @@ class LauncherWindow(WindowWithTabs):
         )
         if target is None:
             return
-        window_handle = self.real_window().windowHandle()
+        window = self.real_window()
+        window.winId()
+        window_handle = window.windowHandle()
         if window_handle is not None:
             window_handle.setScreen(screens[target])
 

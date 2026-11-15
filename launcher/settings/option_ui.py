@@ -98,7 +98,11 @@ class OptionUI(object):
             if not per_game or not hasattr(group, "value_control"):
                 return
             game_enabled = LauncherConfig.game_overrides_available()
-            group.value_control.set_enabled(game_enabled)
+            value_enabled = game_enabled and not (
+                name == Option.VIDEO_SYNC
+                and LauncherSettings.get(Option.G_SYNC) == "1"
+            )
+            group.value_control.set_enabled(value_enabled)
             if hasattr(group, "default_checkbox"):
                 group.default_checkbox.set_enabled(game_enabled)
             if hasattr(group, "reset_button"):

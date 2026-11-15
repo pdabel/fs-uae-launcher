@@ -94,12 +94,7 @@ class FSUAE(object):
         from fsgs.drivers.gamedriver import GameDriver
 
         if monitor is None:
-            config_monitor = LauncherConfig.get("monitor")
-            game_overrides = LauncherConfig.get_game_overrides()
-            if config_monitor or "monitor" in game_overrides:
-                monitor = config_monitor
-            else:
-                monitor = LauncherSettings.get("monitor")
+            monitor = LauncherConfig.effective_monitor()
         screen_x, screen_y, screen_w, screen_h = GameDriver.screen_rect_for_monitor(monitor)
         x = screen_x + max(0, (screen_w - width) // 2)
         y = screen_y + max(0, (screen_h - height) // 2)

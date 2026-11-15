@@ -117,6 +117,74 @@ class TestQt6(WidgetTestCase):
             LauncherWindow.install_dashboard(owner)
         self.assertEqual(order.mock_calls, [call.focus(), call.maximize()])
 
+    def test_preferred_screen_creates_native_handle_before_show(self):
+        from fsui.qt import QWidget
+        from launcher.ui.launcherwindow import LauncherWindow
+
+        window = QWidget()
+        owner = Mock()
+        owner.real_window.return_value = window
+        self.assertIsNone(window.windowHandle())
+        with patch("launcher.ui.launcherwindow.LauncherSettings.get", return_value=""):
+            LauncherWindow.move_to_preferred_screen(owner)
+        self.assertIsNotNone(window.windowHandle())
+        self.assertIs(window.windowHandle().screen(), self.application.primaryScreen())
+        self.assertFalse(window.isVisible())
+        window.close()
+
+    def test_preferred_screen_targets_saved_display_before_show(self):
+        from launcher.ui.launcherwindow import LauncherWindow
+
+        primary = Mock()
+        selected = Mock()
+        application = Mock()
+        application.screens.return_value = [primary, selected]
+        application.primaryScreen.return_value = primary
+        window = Mock()
+        handle = window.windowHandle.return_value
+        order = Mock()
+        order.attach_mock(window.winId, "create")
+        order.attach_mock(handle.setScreen, "set_screen")
+        owner = Mock()
+        owner.real_window.return_value = window
+        with patch("fsui.qt.init_qt", return_value=application), \
+                patch("fsgs.displays.screen_index", return_value=1) as lookup, \
+                patch("launcher.ui.launcherwindow.LauncherSettings.get", return_value="saved"):
+            LauncherWindow.move_to_preferred_screen(owner)
+        lookup.assert_called_once_with([primary, selected], "saved", primary)
+        self.assertEqual(order.mock_calls, [call.create(), call.set_screen(selected)])
+
+    def test_screen_info_follows_effective_game_monitor(self):
+        from fsbc.signal import Signal
+        from launcher.ui.launch import ScreenInfoLabel
+
+        state = {"monitor": "game", "overrides": {"monitor": "game"}}
+        settings = {"fullscreen": "1", "monitor": "global"}
+        self.setup_dialog()
+        with patch("launcher.launcher_config.LauncherConfig.get", side_effect=lambda key: state.get(key, "")), \
+                patch("launcher.launcher_config.LauncherConfig.get_game_overrides", side_effect=lambda: state["overrides"]), \
+                patch("launcher.launcher_settings.LauncherSettings.get", side_effect=lambda key: settings.get(key, "")), \
+                patch("launcher.ui.launch.GameDriver.screen_rect_for_monitor", side_effect=lambda monitor: (0, 0, {"game": 1000, "global": 2000, "": 3000}[monitor], 800)), \
+                patch("launcher.ui.launch.GameDriver.screen_refresh_rate_for_monitor", return_value=60):
+            label = ScreenInfoLabel(self.dialog)
+            self.assertIn("1000x800", label.text())
+            settings["monitor"] = ""
+            label.on_monitor_setting("")
+            self.assertIn("1000x800", label.text())
+            settings["monitor"] = "global"
+            state["monitor"] = ""
+            state["overrides"] = {"monitor": ""}
+            Signal("fsgs:config").notify("__game_override_context", "")
+            self.assertIn("3000x800", label.text())
+            state["overrides"] = {}
+            Signal("fsgs:config").notify("__game_override_context", "")
+            self.assertIn("2000x800", label.text())
+            state["monitor"] = "game"
+            Signal("fsgs:config").notify("monitor", "game")
+            self.assertIn("1000x800", label.text())
+        self.run_dialog()
+        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+
     def test_detected_monitor_choices_persist_and_handle_disconnect(self):
         from types import SimpleNamespace
         from fsui.qt import QRect
@@ -2405,6 +2473,8 @@ class TestDashboard(WidgetTestCase):
             panel.fullscreen_warning.on_config("")
             self.assertTrue(panel.fullscreen_warning.widget().isHidden())
             set_setting("g_sync", "1")
+            self.assertFalse(panel.video_sync_group.value_control.is_enabled())
+            set_setting("video_sync", "1")
             self.assertFalse(panel.video_sync_group.value_control.is_enabled())
             set_setting("g_sync", "")
             self.assertTrue(panel.video_sync_group.value_control.is_enabled())
