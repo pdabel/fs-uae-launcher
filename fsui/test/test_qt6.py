@@ -117,6 +117,74 @@ class TestQt6(WidgetTestCase):
             LauncherWindow.install_dashboard(owner)
         self.assertEqual(order.mock_calls, [call.focus(), call.maximize()])
 
+    def test_preferred_screen_creates_native_handle_before_show(self):
+        from fsui.qt import QWidget
+        from launcher.ui.launcherwindow import LauncherWindow
+
+        window = QWidget()
+        owner = Mock()
+        owner.real_window.return_value = window
+        self.assertIsNone(window.windowHandle())
+        with patch("launcher.ui.launcherwindow.LauncherSettings.get", return_value=""):
+            LauncherWindow.move_to_preferred_screen(owner)
+        self.assertIsNotNone(window.windowHandle())
+        self.assertIs(window.windowHandle().screen(), self.application.primaryScreen())
+        self.assertFalse(window.isVisible())
+        window.close()
+
+    def test_preferred_screen_targets_saved_display_before_show(self):
+        from launcher.ui.launcherwindow import LauncherWindow
+
+        primary = Mock()
+        selected = Mock()
+        application = Mock()
+        application.screens.return_value = [primary, selected]
+        application.primaryScreen.return_value = primary
+        window = Mock()
+        handle = window.windowHandle.return_value
+        order = Mock()
+        order.attach_mock(window.winId, "create")
+        order.attach_mock(handle.setScreen, "set_screen")
+        owner = Mock()
+        owner.real_window.return_value = window
+        with patch("fsui.qt.init_qt", return_value=application), \
+                patch("fsgs.displays.screen_index", return_value=1) as lookup, \
+                patch("launcher.ui.launcherwindow.LauncherSettings.get", return_value="saved"):
+            LauncherWindow.move_to_preferred_screen(owner)
+        lookup.assert_called_once_with([primary, selected], "saved", primary)
+        self.assertEqual(order.mock_calls, [call.create(), call.set_screen(selected)])
+
+    def test_screen_info_follows_effective_game_monitor(self):
+        from fsbc.signal import Signal
+        from launcher.ui.launch import ScreenInfoLabel
+
+        state = {"monitor": "game", "overrides": {"monitor": "game"}}
+        settings = {"fullscreen": "1", "monitor": "global"}
+        self.setup_dialog()
+        with patch("launcher.launcher_config.LauncherConfig.get", side_effect=lambda key: state.get(key, "")), \
+                patch("launcher.launcher_config.LauncherConfig.get_game_overrides", side_effect=lambda: state["overrides"]), \
+                patch("launcher.launcher_settings.LauncherSettings.get", side_effect=lambda key: settings.get(key, "")), \
+                patch("launcher.ui.launch.GameDriver.screen_rect_for_monitor", side_effect=lambda monitor: (0, 0, {"game": 1000, "global": 2000, "": 3000}[monitor], 800)), \
+                patch("launcher.ui.launch.GameDriver.screen_refresh_rate_for_monitor", return_value=60):
+            label = ScreenInfoLabel(self.dialog)
+            self.assertIn("1000x800", label.text())
+            settings["monitor"] = ""
+            label.on_monitor_setting("")
+            self.assertIn("1000x800", label.text())
+            settings["monitor"] = "global"
+            state["monitor"] = ""
+            state["overrides"] = {"monitor": ""}
+            Signal("fsgs:config").notify("__game_override_context", "")
+            self.assertIn("3000x800", label.text())
+            state["overrides"] = {}
+            Signal("fsgs:config").notify("__game_override_context", "")
+            self.assertIn("2000x800", label.text())
+            state["monitor"] = "game"
+            Signal("fsgs:config").notify("monitor", "game")
+            self.assertIn("1000x800", label.text())
+        self.run_dialog()
+        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+
     def test_detected_monitor_choices_persist_and_handle_disconnect(self):
         from types import SimpleNamespace
         from fsui.qt import QRect
@@ -178,6 +246,70 @@ class TestQt6(WidgetTestCase):
         from fsui.qt import QEvent
 
         self.dialog.deleteLater()
+        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+
+    def test_per_game_controls_refresh_when_context_changes(self):
+        from fsbc.signal import Signal
+        from fsui.qt import QRect
+        from fsgs.displays import display_id
+        from launcher.settings.monitorbutton import MonitorChoice
+        from launcher.settings.option_ui import OptionUI
+
+        def display(name, serial):
+            return SimpleNamespace(
+                name=lambda: name, manufacturer=lambda: "Test",
+                model=lambda: "Test Display", serialNumber=lambda: serial,
+                geometry=lambda: QRect(0, 0, 1920, 1080),
+                geometryChanged=Mock(),
+            )
+
+        from types import SimpleNamespace
+
+        original = display("HDMI-1", "serial")
+        reconnected = display("HDMI-2", "serial")
+        ambiguous = display("HDMI-3", "serial")
+        screens = [reconnected, ambiguous]
+        application = Mock()
+        application.screens.side_effect = lambda: screens
+        application.primaryScreen.side_effect = lambda: screens[0]
+        state = {
+            "base": {"scale": "custom-a"},
+            "overrides": {"monitor": display_id(original)},
+            "available": True,
+        }
+        self.setup_dialog()
+        with patch("launcher.settings.monitorbutton.init_qt", return_value=application), \
+                patch("launcher.launcher_config.LauncherConfig.get", return_value=""), \
+                patch("launcher.launcher_config.LauncherConfig.game_override_identity", return_value=("variant_uuid", "game")), \
+                patch("launcher.launcher_config.LauncherConfig.game_overrides_available", side_effect=lambda: state["available"]), \
+                patch("launcher.launcher_config.LauncherConfig.get_game_overrides", side_effect=lambda: state["overrides"].copy()), \
+                patch("launcher.launcher_config.LauncherConfig.get_game_base_value", side_effect=lambda key: state["base"].get(key, "")), \
+                patch("launcher.settings.option_ui.LauncherSettings.get", return_value=""), \
+                patch("launcher.settings.monitorbutton.LauncherSettings.get", return_value=""):
+            monitor = MonitorChoice(self.dialog, per_game=True)
+            scale = OptionUI.create_group(
+                self.dialog, "scale", help_button=False, per_game=True
+            )
+            self.assertIn("unavailable", monitor.currentText())
+            self.assertEqual(monitor.values[monitor.get_index()], display_id(original))
+            self.assertIn("custom-a", scale.widget.currentText())
+            screens[:] = [reconnected]
+            state["base"]["scale"] = "custom-b"
+            Signal("fsgs:config").notify("__game_override_context", "")
+            self.assertIn("HDMI-2", monitor.currentText())
+            self.assertNotIn("unavailable", monitor.currentText())
+            self.assertIn("custom-b", scale.widget.currentText())
+            state["overrides"] = {}
+            state["base"] = {}
+            Signal("fsgs:config").notify("__game_override_context", "")
+            self.assertIsNone(monitor.values[monitor.get_index()])
+            self.assertIn("Default", scale.widget.currentText())
+            state["available"] = False
+            Signal("fsgs:config").notify("__game_override_context", "")
+            self.assertFalse(monitor.isEnabled())
+            self.assertFalse(scale.value_control.isEnabled())
+            self.assertEqual(scale.game_state_label.text(), "Overrides unavailable")
+        self.run_dialog()
         self.application.sendPostedEvents(None, QEvent.DeferredDelete)
 
     def test_monitor_highlight_previews_without_saving_and_times_out(self):
@@ -2299,6 +2431,8 @@ class TestDashboard(WidgetTestCase):
                 patch.object(LauncherSettings, "remove_listener"), \
                 patch("launcher.ui.behaviors.configbehavior.LauncherConfig.add_listener"), \
                 patch("launcher.ui.behaviors.configbehavior.LauncherConfig.get", return_value=""), \
+                patch("launcher.launcher_config.LauncherConfig.game_override_identity", return_value=("variant_uuid", "game")), \
+                patch("launcher.launcher_config.LauncherConfig.game_overrides_available", return_value=True), \
                 patch("launcher.ui.launch.GameDriver.screen_rect_for_monitor", return_value=(0, 0, 1920, 1080)), \
                 patch("launcher.ui.launch.GameDriver.screen_refresh_rate_for_monitor", return_value=60), \
                 patch.object(OptionUI, "create_group", wraps=OptionUI.create_group) as create_group:
@@ -2309,7 +2443,7 @@ class TestDashboard(WidgetTestCase):
             self.dialog.layout.add(area, fill=True, expand=True)
             self.assertEqual(
                 [args[0][1] for args in create_group.call_args_list],
-                ["scale", "stretch", "bezel", "zoom", "scanlines"],
+                ["scale", "stretch", "bezel", "zoom", "scanlines", "video_sync"],
             )
             scale = create_group.call_args_list[0].args[0]
             self.assertTrue(scale.is_enabled())
@@ -2338,12 +2472,12 @@ class TestDashboard(WidgetTestCase):
             self.assertFalse(panel.fullscreen_warning.widget().isHidden())
             panel.fullscreen_warning.on_config("")
             self.assertTrue(panel.fullscreen_warning.widget().isHidden())
-            set_setting("video_sync", "1")
-            self.assertTrue(panel.video_sync_checkbox.is_checked())
             set_setting("g_sync", "1")
-            self.assertFalse(panel.video_sync_checkbox.is_enabled())
+            self.assertFalse(panel.video_sync_group.value_control.is_enabled())
+            set_setting("video_sync", "1")
+            self.assertFalse(panel.video_sync_group.value_control.is_enabled())
             set_setting("g_sync", "")
-            self.assertTrue(panel.video_sync_checkbox.is_enabled())
+            self.assertTrue(panel.video_sync_group.value_control.is_enabled())
             self.assertGreater(panel.monitor_choice.count(), 0)
             with patch("launcher.panels.displaysettingspanel.SettingsDialog.open") as open_settings:
                 panel.on_settings_button()
@@ -2352,15 +2486,6 @@ class TestDashboard(WidgetTestCase):
             self.dialog.show()
             self.application.processEvents()
             self.assertEqual(panel.fullscreen_checkbox.x(), 10)
-            self.assertEqual(
-                panel.fullscreen_checkbox.y(),
-                panel.video_sync_checkbox.y(),
-            )
-            self.assertLess(
-                panel.fullscreen_checkbox.x()
-                + panel.fullscreen_checkbox.width(),
-                panel.video_sync_checkbox.x(),
-            )
             self.assertLessEqual(
                 panel.monitor_choice.y() + panel.monitor_choice.height(),
                 panel.fullscreen_checkbox.y(),

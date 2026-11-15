@@ -68,6 +68,7 @@ class LauncherSettings(object):
         "last_scan": "",
         "last_tape_dir": "",
         "last_settings_page": "",
+        "launcher_monitor": "",
         Option.LAUNCHER_CLOSE_BUTTONS: "",
         Option.LAUNCHER_THEME: "",
         "low_latency_vsync": "",

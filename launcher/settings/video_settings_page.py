@@ -11,12 +11,24 @@ class VideoSettingsPage(SettingsPage):
         title = gettext("Video")
         subtitle = ""
         self.add_header(icon, title, subtitle)
+        self.layout.add(
+            fsui.MultiLineLabel(
+                self,
+                gettext(
+                    "These are global defaults. Quick Settings can override "
+                    "them for individual games."
+                ),
+                640,
+            ),
+            fill=True,
+            margin_bottom=10,
+        )
 
         self.add_option("fullscreen")
-        self.add_option("monitor")
+        self.add_option("monitor", gettext("Default game monitor"))
 
         self.add_section(gettext("Scaling & Filters"))
-        self.add_option("zoom")
+        self.add_option("zoom", gettext("Default zoom"))
         self.add_option("keep_aspect")
 
         self.add_option("scanlines")
@@ -34,4 +46,6 @@ class VideoSettingsPage(SettingsPage):
             640,
         )
         self.layout.add(label, fill=True, margin_top=0)
-        self.video_sync_group = self.add_option("video_sync")
+        self.video_sync_group = self.add_option(
+            "video_sync", gettext("Default video synchronization")
+        )

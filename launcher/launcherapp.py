@@ -194,8 +194,10 @@ class LauncherApp(ApplicationMixin, fsui.Application):
                         "[STARTUP] Try auto-detecting variant, uuid =",
                         archive_uuid,
                     )
+                    LauncherSettings.set("config_path", "")
                     if fsgs.load_game_variant(archive_uuid):
                         print("[STARTUP] Auto-detected variant", archive_uuid)
+                        LauncherConfig.apply_game_overrides()
                         print("[STARTUP] Adding archive files to file index")
                         for archive_file in archive.list_files():
                             stream = archive.open(archive_file)
@@ -255,6 +257,7 @@ class LauncherApp(ApplicationMixin, fsui.Application):
         if config_uuid:
             print("[STARTUP] Config uuid given:", config_uuid)
             variant_uuid = config_uuid
+            LauncherSettings.set("config_path", "")
             if fsgs.load_game_variant(variant_uuid):
                 print("[STARTUP] Loaded variant")
             else:
@@ -263,6 +266,7 @@ class LauncherApp(ApplicationMixin, fsui.Application):
                 variant_uuid = fsgs.find_preferred_game_variant(game_uuid)
                 print("[STARTUP] Preferred variant:", variant_uuid)
                 fsgs.load_game_variant(variant_uuid)
+            LauncherConfig.apply_game_overrides()
             fsgs.config.add_from_argv()
             LauncherConfig.post_load_values(fsgs.config)
             return cls.run_config_directly()
@@ -274,6 +278,7 @@ class LauncherApp(ApplicationMixin, fsui.Application):
 
     @classmethod
     def run_config_directly_with_values(cls, values):
+        LauncherSettings.set("config_path", "")
         LauncherConfig.load(values)
         LauncherConfig.post_load_values(values)
         return cls.run_config_directly()
@@ -521,6 +526,14 @@ class LauncherApp(ApplicationMixin, fsui.Application):
         for key, value in original_config.items():
             if value:
                 config[key] = value
+
+        empty_game_overrides = {
+            key
+            for key, value in LauncherConfig.get_game_overrides().items()
+            if value == "" and not original_config.get(key, "")
+        }
+        for key in empty_game_overrides:
+            config[key] = ""
 
         if not config["joystick_port_0_mode"]:
             config["joystick_port_0_mode"] = "mouse"

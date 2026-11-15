@@ -158,7 +158,8 @@ remembers its state. Selecting a configuration page in the navigation rail also
 reveals the editor. **Display settings** lives in that same editor book and
 combines scaling, aspect ratio, bezel, zoom, configurable extra options,
 fullscreen mode, screen information, game monitor selection, and V-Sync.
-Fullscreen and V-Sync share a left-aligned checkbox row below Game Monitor.
+Per-game display overrides use stable game/config identities; the Settings
+dialog retains global defaults. Fullscreen remains a global default control.
 Display settings appears immediately above Advanced in the navigation rail. The panel
 replaces the quick-settings sidebar and the bottom fullscreen/launch bar; the
 Play tile is the workspace's sole launch action.

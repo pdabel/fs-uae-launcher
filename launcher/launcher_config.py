@@ -1,5 +1,7 @@
 import hashlib
+import logging
 import os
+import sqlite3
 import traceback
 from configparser import ConfigParser, NoSectionError
 
@@ -168,9 +170,22 @@ def build_cfg():
 
 
 cfg = build_cfg()
+LOCAL_DISPLAY_OPTIONS = {
+    Option.BEZEL,
+    Option.MONITOR,
+    Option.SCALE,
+    Option.STRETCH,
+    Option.VIDEO_SYNC,
+    Option.ZOOM,
+}
 
 
 class LauncherConfig(object):
+    _game_base_identity = None
+    _game_base_values = {}
+    _game_override_values = {}
+    _game_overrides_available = False
+
     config_keys = [x[0] for x in cfg]
 
     default_config = {}
@@ -179,7 +194,11 @@ class LauncherConfig(object):
 
     key_order = [x[0] for x in cfg]
     checksum_keys = [x[0] for x in cfg if "checksum" in x]
-    sync_keys_list = [x[0] for x in cfg if "sync" in x]
+    sync_keys_list = [
+        x[0]
+        for x in cfg
+        if "sync" in x and x[0] not in LOCAL_DISPLAY_OPTIONS
+    ]
     sync_keys_set = set(sync_keys_list)
     no_custom_config = [x[0] for x in cfg if "custom" not in x]
 
@@ -227,8 +246,23 @@ class LauncherConfig(object):
         return fsgs.config.copy()
 
     @classmethod
+    def copy_for_save(cls):
+        values = cls.copy()
+        if cls._game_base_identity == cls.game_override_identity():
+            for key in cls._game_override_values:
+                values[key] = cls._game_base_values.get(key, "")
+        return values
+
+    @classmethod
     def get(cls, key, default=""):
         return fsgs.config.get(key, default)
+
+    @classmethod
+    def effective_monitor(cls):
+        monitor = cls.get("monitor")
+        if monitor or "monitor" in cls.get_game_overrides():
+            return monitor
+        return LauncherSettings.get("monitor")
 
     @classmethod
     def add_listener(cls, listener):
@@ -242,11 +276,32 @@ class LauncherConfig(object):
 
     @classmethod
     def set(cls, key, value):
-        fsgs.config.set(key, value)
+        cls.set_multiple([(key, value)])
 
     @classmethod
     def set_multiple(cls, items):
-        fsgs.config.set(items)
+        items = list(items)
+        if not cls.game_overrides_available():
+            fsgs.config.set(items)
+            return
+
+        updates = []
+        overridden_base_changed = False
+        base_changed = False
+        for key, value in items:
+            if not key.startswith("__"):
+                if cls._game_base_values.get(key, "") != value:
+                    base_changed = True
+                    if key in cls._game_override_values:
+                        overridden_base_changed = True
+                cls._game_base_values[key] = value
+            if key not in cls._game_override_values:
+                updates.append((key, value))
+        fsgs.config.set(updates)
+        if overridden_base_changed:
+            fsgs.config.set([("__ready", "0"), ("__changed", "1")])
+        if base_changed:
+            cls.notify_game_override_context()
 
     @classmethod
     def update_from_config_dict(cls, config_dict):
@@ -352,12 +407,21 @@ class LauncherConfig(object):
             cls.load({Option.PLATFORM: platform})
         else:
             cls.load({})
+        cls._game_base_identity = None
+        cls._game_base_values = {}
+        cls._game_override_values = {}
+        cls._game_overrides_available = False
         LauncherSettings.set(Option.CONFIG_NAME, "Unnamed Configuration")
         LauncherSettings.set("config_path", "")
         LauncherSettings.set("config_xml_path", "")
+        cls.notify_game_override_context()
 
     @classmethod
     def load(cls, config):
+        cls._game_base_identity = None
+        cls._game_base_values = {}
+        cls._game_override_values = {}
+        cls._game_overrides_available = False
         update_config = {}
         for key, value in cls.default_config.items():
             update_config[key] = value
@@ -559,10 +623,12 @@ class LauncherConfig(object):
         LauncherSettings.set(Option.CONFIG_NAME, config_name)
         LauncherSettings.set("config_xml_path", config_xml_path)
         cls.set("__changed", changed)
+        cls.apply_game_overrides()
         return True
 
     @classmethod
     def load_values(cls, values, uuid=""):
+        LauncherSettings.set("config_path", "")
         platform_id = values.get("platform", "").lower()
 
         if platform_id in ["amiga", "cdtv", "cd32"]:
@@ -574,6 +640,90 @@ class LauncherConfig(object):
         else:
             raise Exception(f"Unsupported platform: {platform_id}")
         cls.post_load_values(values)
+        cls.apply_game_overrides()
+
+    @classmethod
+    def game_override_identity(cls):
+        config_path = LauncherSettings.get("config_path")
+        if config_path:
+            path = os.path.realpath(Paths.expand_path(config_path))
+            return "config_path", os.path.normcase(path)
+        variant_uuid = cls.get("variant_uuid")
+        if variant_uuid:
+            return "variant_uuid", variant_uuid.lower()
+        return None
+
+    @classmethod
+    def apply_game_overrides(cls):
+        from .game_overrides import game_override_store
+
+        identity = cls.game_override_identity()
+        cls._game_base_identity = identity
+        cls._game_base_values = fsgs.config.values.copy()
+        cls._game_override_values = {}
+        cls._game_overrides_available = False
+        if identity is not None:
+            try:
+                cls._game_override_values = game_override_store.get(identity)
+            except (OSError, sqlite3.Error):
+                logging.exception(
+                    "Could not load game overrides for %r; "
+                    "using the game configuration without overrides",
+                    identity,
+                )
+            else:
+                cls._game_overrides_available = True
+                fsgs.config.set(
+                    cls._game_override_values.items(), mark_changed=False
+                )
+        cls.notify_game_override_context()
+
+    @classmethod
+    def notify_game_override_context(cls):
+        fsgs.signal.notify("config", ("__game_override_context", ""))
+
+    @classmethod
+    def game_overrides_available(cls):
+        return (
+            cls._game_overrides_available
+            and cls._game_base_identity == cls.game_override_identity()
+        )
+
+    @classmethod
+    def get_game_base_value(cls, key):
+        if cls._game_base_identity != cls.game_override_identity():
+            return ""
+        return cls._game_base_values.get(key, "")
+
+    @classmethod
+    def get_game_overrides(cls):
+        if cls.game_overrides_available():
+            return cls._game_override_values.copy()
+        return {}
+
+    @classmethod
+    def set_game_override(cls, key, value):
+        from .game_overrides import game_override_store
+
+        identity = cls.game_override_identity()
+        if identity is None or not cls.game_overrides_available():
+            raise ValueError("Game overrides are not available")
+        game_override_store.set(identity, key, value)
+        cls._game_override_values[key] = value
+        fsgs.config.set(key, value, mark_changed=False)
+        cls.notify_game_override_context()
+
+    @classmethod
+    def clear_game_override(cls, key):
+        from .game_overrides import game_override_store
+
+        identity = cls.game_override_identity()
+        if identity is None or not cls.game_overrides_available():
+            raise ValueError("Game overrides are not available")
+        game_override_store.clear(identity, key)
+        cls._game_override_values.pop(key, None)
+        fsgs.config.set(key, cls.get_game_base_value(key), mark_changed=False)
+        cls.notify_game_override_context()
 
     @classmethod
     def post_load_values(cls, values):

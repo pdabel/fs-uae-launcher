@@ -63,7 +63,7 @@ class Config(ContextAware):
     def load_from_file(self):
         pass
 
-    def set(self, *values):
+    def set(self, *values, mark_changed=True):
         if len(values) == 1:
             items = list(values[0])
         elif len(values) == 2:
@@ -103,12 +103,13 @@ class Config(ContextAware):
         changed_key_list = [x[1] for x in changed_keys]
 
         if len(changed_keys) > 0:
-            if "__ready" not in changed_key_list:
+            if mark_changed and "__ready" not in changed_key_list:
                 change("__ready", "0")
-            for key in changed_key_list:
-                if not key.startswith("__implicit_"):
-                    change("__changed", "1")
-                    break
+            if mark_changed:
+                for key in changed_key_list:
+                    if not key.startswith("__implicit_"):
+                        change("__changed", "1")
+                        break
             for priority, key in sorted(changed_keys):
                 value = self.get(key)
                 self.context.signal.notify("config", (key, value))

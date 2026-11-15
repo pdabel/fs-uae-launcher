@@ -210,6 +210,8 @@ class Dashboard(fsui.Panel):
             )
 
     def _icon(self, standard_icon):
+        if isinstance(standard_icon, str):
+            return navigation_icon(standard_icon)
         names = {
             QStyle.SP_ComputerIcon: "fa5s.home",
             QStyle.SP_DriveFDIcon: "fa5s.save",
@@ -272,8 +274,7 @@ class Dashboard(fsui.Panel):
         self.nav_group.addButton(self.netplay_button, len(self.PAGES))
         layout.addWidget(self.netplay_button)
         for title, icon, callback in (
-            ("Settings", QStyle.SP_FileDialogDetailedView,
-             self.owner.on_settings_button),
+            ("Settings", "fa5s.cog", self.owner.on_settings_button),
             ("Tools & account", QStyle.SP_TitleBarMenuButton, self._tools),
         ):
             button = QPushButton(

@@ -11,7 +11,6 @@ from launcher.ui.IconButton import IconButton
 from fsgs.Database import Database
 from fsgs.FSGSDirectories import FSGSDirectories
 from fsgs.filedatabase import FileDatabase
-from fsgs.context import fsgs
 
 
 class SaveButton(IconButton):
@@ -54,9 +53,10 @@ class SaveButton(IconButton):
                 f"# Last saved: {datetime.datetime.today():%Y-%m-%d %H:%M:%S}\n"
             )
             f.write("\n[fs-uae]\n")
-            keys = sorted(fsgs.config.values.keys())
+            config = LauncherConfig.copy_for_save()
+            keys = sorted(config)
             for key in keys:
-                value = LauncherConfig.get(key)
+                value = config[key]
                 if key.startswith("__"):
                     continue
                 if key in LauncherConfig.no_save_keys_set:

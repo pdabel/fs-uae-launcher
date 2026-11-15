@@ -152,7 +152,7 @@ class SettingsDialog(PagedDialog):
         names = {
             "language-settings": "fa5s.globe",
             "gamepad": "fa5s.gamepad",
-            "settings": "fa5s.sliders-h",
+            "settings": "fa5s.cog",
             "fs-uae": "fa5s.microchip",
             "keyboard-settings": "fa5s.keyboard",
             "mouse-settings": "fa5s.mouse",
