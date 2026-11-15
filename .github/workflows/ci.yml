@@ -34,9 +34,24 @@ jobs:
       - run: python -m pip install ruff==0.17.2
       - run: ruff check
 
+  test-linux:
+    name: Test Linux
+    uses: ./.github/workflows/linux-test.yml
+    permissions:
+      contents: read
+
+  test-macos:
+    name: Test macOS
+    uses: ./.github/workflows/macos-test.yml
+    permissions:
+      contents: read
+
   build-linux:
     name: Build Linux
     uses: ./.github/workflows/linux.yml
+    needs: [test-linux]
+    with:
+      run-tests: false
     permissions:
       contents: read
     secrets: inherit
@@ -44,6 +59,9 @@ jobs:
   build-macos-x86:
     name: Build MacOS x86
     uses: ./.github/workflows/macos.yml
+    needs: [test-macos]
+    with:
+      run-tests: false
     permissions:
       contents: read
     secrets: inherit

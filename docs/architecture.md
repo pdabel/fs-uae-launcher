@@ -233,17 +233,27 @@ Custom portable directory mappings can also change the subfolders shown above.
 
 | Suite | Command | Platform |
 |---|---|---|
-| Core | `python -W default::DeprecationWarning -m pytest fsbc fstd fspy fsbuild/tests launcher/netplay launcher/tests` | any |
-| Qt widgets, panels and themes | `QT_QPA_PLATFORM=offscreen python -m pytest fsui/test/test_qt6.py` | offscreen |
-| Lint | `ruff check` | any |
-| Go server | `make -C fsnp-server check` | Go toolchain |
+| Python support | `python -m pytest fsbuild/tests/test_python_support.py` | Linux and macOS |
+| Python | `python -W default::DeprecationWarning -m pytest fsbc fstd fspy fsgs/tests fsbuild/tests launcher/netplay launcher/server/tests launcher/tests` | Linux and macOS |
+| Qt widgets, panels and themes | `QT_QPA_PLATFORM=offscreen python -m pytest fsui/test` | Linux and macOS, offscreen |
+| Lint | `ruff check` | Ubuntu |
+| Go server | `make -C fsnp-server check` | Ubuntu with Go |
 
-Python, Qt and Ruff checks run in
-[.github/workflows/linux.yml](../.github/workflows/linux.yml).
-The Go server checks run in
-[.github/workflows/netplay-server.yml](../.github/workflows/netplay-server.yml);
-[.github/workflows/ci.yml](../.github/workflows/ci.yml) calls the workflows
-separately.
+CI runs the Python support, Python, and Qt suites in separate reusable
+[Linux test](../.github/workflows/linux-test.yml) and
+[macOS test](../.github/workflows/macos-test.yml) workflows. Both use a
+Python 3.12/3.15 matrix. The top-level
+[CI workflow](../.github/workflows/ci.yml) shows testing and building as
+separate jobs: each platform build waits for its corresponding test job to
+pass, while source and container builds and the Go server check are separate
+jobs as well. The Linux and macOS
+[build workflows](../.github/workflows/linux.yml) and
+[build workflows](../.github/workflows/macos.yml) still build for both Python
+versions; when called by CI they skip tests already run by the test jobs.
+Release and manual builds run tests by default.
+
+Ruff runs as its own job in `ci.yml`. The Go server checks run in
+[netplay-server.yml](../.github/workflows/netplay-server.yml).
 
 The Qt suite tests widgets, settings panels, theme components, and dashboard
 composition. Dashboard tests construct a generic `fsui.Window` with stubbed

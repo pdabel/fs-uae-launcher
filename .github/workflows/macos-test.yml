@@ -1,0 +1,61 @@
+name: macOS Tests
+
+on:
+  workflow_call:
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  macOS_Tests:
+    name: macOS tests (Python ${{ matrix.python-version }})
+    runs-on: macos-15-intel
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.15"]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: fsnp-server/go.mod
+          cache: false
+
+      - name: Set up Python ${{ matrix.python-version }}
+        id: python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install pip and pipenv
+        run: |
+          python -m pip install pipenv
+
+      - name: Run pipenv sync --dev
+        run: |
+          pipenv --python "${{ steps.python.outputs.python-path }}"
+          pipenv sync --dev
+
+      - name: Check Python support
+        run: |
+          pipenv run python -m pytest fsbuild/tests/test_python_support.py
+
+      - name: Run Python tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          pipenv run python -W default::DeprecationWarning -m pytest fsbc fstd fspy fsgs/tests fsbuild/tests launcher/netplay launcher/server/tests launcher/tests
+
+      - name: Run Qt tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          pipenv run python -m pytest fsui/test
