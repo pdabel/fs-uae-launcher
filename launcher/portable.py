@@ -140,6 +140,7 @@ class PortableModeChange:
                 self.rebase_directories(staging)
                 self.rebase_preferences(staging)
                 self.rebase_configurations(staging)
+                self.rebase_game_overrides(staging)
                 os.rename(staging, self.destination)
                 staging = None
             if self.enabled:
@@ -290,6 +291,39 @@ class PortableModeChange:
             if changed:
                 with path.open("w", encoding="UTF-8") as stream:
                     config.write(stream)
+
+    def rebase_game_overrides(self, root):
+        for path in root.rglob("GameOverrides.sqlite"):
+            if (
+                path.parent.name != "Databases"
+                or not path.resolve().is_relative_to(root)
+            ):
+                continue
+            with closing(sqlite3.connect(path)) as connection, connection:
+                exists = connection.execute(
+                    "SELECT 1 FROM sqlite_master "
+                    "WHERE type = 'table' AND name = 'game_config_override'"
+                ).fetchone()
+                if not exists:
+                    continue
+                rows = list(
+                    connection.execute(
+                        "SELECT DISTINCT identity FROM game_config_override "
+                        "WHERE identity_type = 'config_path'"
+                    )
+                )
+                for (identity,) in rows:
+                    suffix = internal_path(identity, self.source)
+                    if suffix is not None:
+                        destination = os.path.normcase(
+                            os.path.realpath(self.destination / suffix)
+                        )
+                        connection.execute(
+                            "UPDATE game_config_override SET identity = ? "
+                            "WHERE identity_type = 'config_path' "
+                            "AND identity = ?",
+                            (destination, identity),
+                        )
 
     def rebase_directories(self, root):
         marker = root / "Portable.ini"

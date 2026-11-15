@@ -114,7 +114,9 @@ class DisplaySettingsPanel(fsui.Panel):
         )
         self.layout.add(self.screen_info_label, fill=True, margin=10)
 
-        ConfigBehavior(self, [Option.PLATFORM, Option.MONITOR])
+        ConfigBehavior(
+            self, [Option.PLATFORM, Option.MONITOR, "__game_override_context"]
+        )
         SettingsBehavior(self, [Option.G_SYNC, Option.FULLSCREEN])
 
     def add_option(
@@ -147,12 +149,15 @@ class DisplaySettingsPanel(fsui.Panel):
     def on_g_sync_setting(self, value):
         self.video_sync_group.value_control.enable(
             value != "1"
-            and LauncherConfig.game_override_identity() is not None
+            and LauncherConfig.game_overrides_available()
         )
 
     def on_monitor_config(self, value):
         self.on_g_sync_setting(LauncherSettings.get(Option.G_SYNC))
         self.update_fullscreen_enabled()
+
+    def on___game_override_context_config(self, value):
+        self.on_monitor_config(value)
 
     def update_fullscreen_enabled(self):
         self.fullscreen_checkbox.enable(

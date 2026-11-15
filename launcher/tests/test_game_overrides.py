@@ -1,9 +1,134 @@
 from types import SimpleNamespace
+import sqlite3
+from unittest.mock import Mock
 
+import pytest
+
+from fsgs.Config import Config
 from launcher.game_overrides import GameOverrideStore
 from launcher.launcherapp import LauncherApp
 from launcher.launcher_config import LOCAL_DISPLAY_OPTIONS, LauncherConfig
 from launcher.launcher_settings import LauncherSettings
+
+
+@pytest.fixture
+def game_config(tmp_path, monkeypatch):
+    import launcher.game_overrides as overrides
+    import launcher.launcher_config as launcher_config
+
+    signal = Mock()
+    context = Mock()
+    context.signal = signal
+    config = Config(context)
+    context.config = config
+    config.values.update(
+        {"monitor": "base-monitor", "__changed": "0", "__ready": "1"}
+    )
+    store = GameOverrideStore(tmp_path / "overrides.sqlite")
+    settings = {"config_path": str(tmp_path / "game.fs-uae")}
+    monkeypatch.setattr(launcher_config, "fsgs", context)
+    monkeypatch.setattr(overrides, "game_override_store", store)
+    monkeypatch.setattr(
+        LauncherSettings, "get", lambda key: settings.get(key, "")
+    )
+    for key, value in (
+        ("_game_base_identity", None),
+        ("_game_base_values", {}),
+        ("_game_override_values", {}),
+        ("_game_overrides_available", False),
+    ):
+        monkeypatch.setattr(LauncherConfig, key, value)
+    return context, store, settings
+
+
+@pytest.mark.parametrize("override", ["other-monitor", ""])
+def test_saved_config_preserves_base_and_override_edits_stay_clean(
+    game_config, override
+):
+    context, store, _ = game_config
+    LauncherConfig.apply_game_overrides()
+    LauncherConfig.set_game_override("monitor", override)
+    assert context.config.get("monitor") == override
+    assert context.config.get("__changed") == "0"
+    assert context.config.get("__ready") == "1"
+    assert LauncherConfig.copy_for_save()["monitor"] == "base-monitor"
+
+    LauncherConfig.clear_game_override("monitor")
+    assert context.config.get("monitor") == "base-monitor"
+    assert context.config.get("__changed") == "0"
+    assert store.get(LauncherConfig.game_override_identity()) == {}
+
+
+def test_override_edits_preserve_existing_dirty_state(game_config):
+    context, _, _ = game_config
+    context.config.values["__changed"] = "1"
+    LauncherConfig.apply_game_overrides()
+    LauncherConfig.set_game_override("monitor", "other-monitor")
+    LauncherConfig.clear_game_override("monitor")
+    assert context.config.get("__changed") == "1"
+
+
+def test_actual_save_uses_base_values_with_unrelated_edits(
+    game_config, tmp_path, monkeypatch
+):
+    from launcher.ui.savebutton import SaveButton
+
+    context, _, settings = game_config
+    settings["config_name"] = "Example"
+    monkeypatch.setattr(LauncherSettings, "set", settings.__setitem__)
+    monkeypatch.setattr(
+        "launcher.ui.savebutton.FSGSDirectories.get_configurations_dir",
+        lambda: str(tmp_path),
+    )
+    monkeypatch.setattr(
+        "launcher.ui.savebutton.Database.get_instance", lambda: Mock()
+    )
+    monkeypatch.setattr(
+        "launcher.ui.savebutton.FileDatabase.get_instance", lambda: Mock()
+    )
+    LauncherConfig.apply_game_overrides()
+    LauncherConfig.set_game_override("monitor", "")
+    context.config.set("title", "Changed game")
+
+    SaveButton.save_config()
+
+    saved = (tmp_path / "Example.fs-uae").read_text()
+    assert "monitor = base-monitor" in saved
+    assert "title = Changed game" in saved
+    assert context.config.get("monitor") == ""
+
+
+def test_failed_override_read_preserves_base_and_disables_editing(
+    game_config, monkeypatch, caplog
+):
+    context, store, _ = game_config
+    monkeypatch.setattr(
+        store, "get", Mock(side_effect=sqlite3.DatabaseError("corrupt"))
+    )
+
+    LauncherConfig.apply_game_overrides()
+
+    assert context.config.get("monitor") == "base-monitor"
+    assert LauncherConfig.get_game_overrides() == {}
+    assert not LauncherConfig.game_overrides_available()
+    assert "Could not load game overrides" in caplog.text
+    with pytest.raises(ValueError, match="not available"):
+        LauncherConfig.set_game_override("monitor", "other-monitor")
+
+
+def test_context_notified_after_load_and_even_unchanged_edits(game_config):
+    context, _, _ = game_config
+    LauncherConfig.apply_game_overrides()
+    assert context.signal.notify.call_args.args == (
+        "config", ("__game_override_context", "")
+    )
+    LauncherConfig.set_game_override("monitor", "base-monitor")
+    LauncherConfig.clear_game_override("monitor")
+    events = [
+        call.args for call in context.signal.notify.call_args_list
+        if call.args == ("config", ("__game_override_context", ""))
+    ]
+    assert len(events) == 3
 
 
 def test_display_overrides_are_not_netplay_sync_keys():

@@ -154,6 +154,40 @@ def test_sqlite_backup_includes_wal_data(tmp_path):
     ).exists()
 
 
+@pytest.mark.parametrize("enabled", [True, False])
+def test_game_override_config_paths_are_rebased_in_copy(tmp_path, enabled):
+    from launcher.game_overrides import GameOverrideStore
+
+    change = make_change(tmp_path, enabled=enabled)
+    if not enabled:
+        change.marker.write_text("[launcher]\nbase_dir = old\n")
+    original = GameOverrideStore(
+        change.source / "Data" / "Databases" / "GameOverrides.sqlite"
+    )
+    internal = ("config_path", str(change.source / "Configurations" / "a.fs-uae"))
+    external = ("config_path", str(tmp_path / "external.fs-uae"))
+    variant = ("variant_uuid", "abc")
+    original.set(internal, "monitor", "")
+    original.set(internal, "zoom", "120")
+    original.set(external, "monitor", "external-monitor")
+    original.set(variant, "monitor", "variant-monitor")
+
+    change.apply()
+
+    copied = GameOverrideStore(
+        change.destination / "Data" / "Databases" / "GameOverrides.sqlite"
+    )
+    moved = (
+        "config_path",
+        str(change.destination / "Configurations" / "a.fs-uae"),
+    )
+    assert copied.get(moved) == {"monitor": "", "zoom": "120"}
+    assert copied.get(internal) == {}
+    assert copied.get(external) == {"monitor": "external-monitor"}
+    assert copied.get(variant) == {"monitor": "variant-monitor"}
+    assert original.get(internal) == {"monitor": "", "zoom": "120"}
+
+
 def test_preferences_inside_root_are_rebased(tmp_path):
     change = make_change(tmp_path)
     data = change.source / "Data"

@@ -144,7 +144,7 @@ class MonitorChoice(fsui.Choice):
         for screen in self.application.screens():
             self.watch_screen(screen)
         if per_game:
-            ConfigBehavior(self, ["monitor"])
+            ConfigBehavior(self, ["monitor", "__game_override_context"])
             SettingsBehavior(self, ["monitor"])
         else:
             SettingsBehavior(self, [setting_key])
@@ -160,6 +160,9 @@ class MonitorChoice(fsui.Choice):
         self.refresh()
 
     def on_monitor_config(self, value):
+        self.refresh()
+
+    def on___game_override_context_config(self, value):
         self.refresh()
 
     def on_settings(self, key, value):
@@ -200,10 +203,13 @@ class MonitorChoice(fsui.Choice):
                 (display_id(screen), display_label(screen))
                 for screen in screens
             )
-            if has_override and current:
+            if current.startswith("display:"):
+                selected_index = matching_display_index(screens, current)
+            else:
                 selected_index = screen_index(
                     screens, current, self.application.primaryScreen()
                 )
+            if has_override and current:
                 if selected_index is not None:
                     value, label = entries[selected_index + 2]
                     entries[selected_index + 2] = (
@@ -217,9 +223,6 @@ class MonitorChoice(fsui.Choice):
             elif has_override and current == "":
                 selected = 1
             else:
-                selected_index = screen_index(
-                    screens, current, self.application.primaryScreen()
-                )
                 selected = (
                     selected_index + 2
                     if selected_index is not None
@@ -275,9 +278,7 @@ class MonitorChoice(fsui.Choice):
                 )
             self.set_index(selected)
         if self.per_game:
-            self.set_enabled(
-                LauncherConfig.game_override_identity() is not None
-            )
+            self.set_enabled(LauncherConfig.game_overrides_available())
 
     def on_changed(self):
         index = self.get_index()

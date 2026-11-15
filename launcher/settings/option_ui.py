@@ -62,7 +62,7 @@ class OptionUI(object):
             )
             if has_override and stored_value == "":
                 current_value = option_default_value
-            game_enabled = LauncherConfig.game_override_identity() is not None
+            game_enabled = LauncherConfig.game_overrides_available()
         else:
             current_value = LauncherSettings.get(name)
             game_enabled = True
@@ -97,9 +97,7 @@ class OptionUI(object):
             nonlocal current_value, game_enabled
             if not per_game or not hasattr(group, "value_control"):
                 return
-            game_enabled = (
-                LauncherConfig.game_override_identity() is not None
-            )
+            game_enabled = LauncherConfig.game_overrides_available()
             group.value_control.set_enabled(game_enabled)
             if hasattr(group, "default_checkbox"):
                 group.default_checkbox.set_enabled(game_enabled)
@@ -115,7 +113,9 @@ class OptionUI(object):
             base_value = LauncherConfig.get_game_base_value(name)
             if not game_enabled:
                 group.game_state_label.set_text(
-                    gettext("Load a game")
+                    gettext("Overrides unavailable")
+                    if LauncherConfig.game_override_identity()
+                    else gettext("Load a game")
                 )
             elif name in overrides:
                 group.game_state_label.set_text(gettext("Override"))
@@ -171,6 +171,24 @@ class OptionUI(object):
                             value_description(effective_global_value())
                         ),
                     )
+                    if (
+                        current_value not in {
+                            inherit_value,
+                            option_default_value,
+                        }
+                        and all(
+                            value != current_value
+                            for value, _ in choice_values
+                        )
+                    ):
+                        choice_values.append(
+                            (
+                                current_value,
+                                gettext("{value} (Game config)").format(
+                                    value=current_value
+                                ),
+                            )
+                        )
                     selected_override = (
                         name in overrides and overrides[name] != ""
                     )
@@ -399,6 +417,9 @@ class OptionUI(object):
 
         if per_game:
             group.game_state_label.on_settings = on_per_game_settings
+            group.game_state_label.on___game_override_context_config = (
+                on_per_game_config
+            )
             setattr(
                 group.game_state_label,
                 f"on_{name}_config",
@@ -407,7 +428,10 @@ class OptionUI(object):
             from launcher.ui.behaviors.configbehavior import ConfigBehavior
             from launcher.ui.behaviors.settingsbehavior import SettingsBehavior
 
-            ConfigBehavior(group.game_state_label, [name])
+            ConfigBehavior(
+                group.game_state_label,
+                [name, "__game_override_context"],
+            )
             SettingsBehavior(group.game_state_label, [name])
             refresh_per_game_widget()
 
