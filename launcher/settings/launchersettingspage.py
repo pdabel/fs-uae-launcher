@@ -51,6 +51,27 @@ class LauncherSettingsPage(SettingsPage):
 
         self.add_option(Option.LAUNCHER_CLOSE_BUTTONS)
 
+        self.add_section(gettext("Window Placement"))
+        from launcher.settings.monitorbutton import MonitorChoice
+
+        monitor_group = fsui.Group(self)
+        monitor_group.layout = fsui.HorizontalLayout()
+        monitor_group.layout.add(
+            fsui.Label(
+                monitor_group,
+                gettext("Preferred launcher display") + ":",
+            ),
+            margin_right=10,
+        )
+        self.launcher_monitor_choice = MonitorChoice(
+            monitor_group, setting_key="launcher_monitor"
+        )
+        self.options_on_page.add("launcher_monitor")
+        monitor_group.layout.add(self.launcher_monitor_choice, expand=True)
+        self.layout.add(
+            monitor_group, fill=True, margin_top=10, margin_bottom=10
+        )
+
         self.add_section(gettext("Data Location"))
         self.portable_checkbox = fsui.CheckBox(
             self, gettext("Portable mode"), check=fsboot.is_portable()

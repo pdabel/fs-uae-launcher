@@ -191,12 +191,30 @@ class LauncherWindow(WindowWithTabs):
         self.layout = fsui.VerticalLayout()
         self.layout.add(self.dashboard, fill=True, expand=True)
         self.dashboard.show()
+        self.move_to_preferred_screen()
         geometry = self.real_window().screen().availableGeometry()
         self.real_window().setMinimumSize(1000, 720)
         self.set_size((min(1920, geometry.width()), min(1040, geometry.height())))
         self.center_on_screen()
         self.configurations_panel.text_field.focus()
         self.maximize()
+
+    def move_to_preferred_screen(self):
+        from fsui.qt import init_qt
+        from fsgs.displays import screen_index
+
+        application = init_qt()
+        screens = application.screens()
+        target = screen_index(
+            screens,
+            LauncherSettings.get("launcher_monitor"),
+            application.primaryScreen(),
+        )
+        if target is None:
+            return
+        window_handle = self.real_window().windowHandle()
+        if window_handle is not None:
+            window_handle.setScreen(screens[target])
 
     def on_destroy(self):
         # FIXME: Is this being run?
@@ -270,9 +288,13 @@ class LauncherWindow(WindowWithTabs):
         self.set_title(title)
 
     def on_setting(self, key, value):
-        unused(value)
         if key == Option.DATABASE_AUTH:
             self.update_title()
+        elif key == "launcher_monitor":
+            self.move_to_preferred_screen()
+            self.center_on_screen()
+        else:
+            unused(value)
 
     def is_editor_enabled(self):
         return "--editor" in sys.argv

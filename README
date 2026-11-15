@@ -105,7 +105,14 @@ data stores, see [docs/architecture.md](docs/architecture.md).
 
 ## Game Monitor Selection
 
-Select Game Monitor in the main window's quick settings or Settings -> Video.
+Quick Settings selects a monitor for the loaded game. This per-game choice is
+stored in the launcher's `Databases/GameOverrides.sqlite` database and follows
+database variants or
+configuration-file paths when switching games. Settings -> Video controls the
+global default monitor used when a game has no monitor value or override.
+Settings -> FS-UAE Launcher -> Window Placement can separately prefer a
+display for the launcher window itself.
+
 The dropdown lists detected display names, model names when available,
 resolutions, and desktop coordinates. The default is the system primary display.
 Hovering over a dropdown entry shows a compact monitor-layout diagram inside
@@ -119,8 +126,18 @@ stacked displays. A disconnected saved display falls back to the primary display
 without losing the saved choice. Reconnect it to use it again.
 When available, a unique manufacturer/model/serial match follows a monitor
 even when its connector name changes; displays without serials use their
-existing connector identity. The active launch context's monitor choice takes
-precedence over the global launcher selection.
+existing connector identity. A per-game override takes precedence over the
+game configuration, which takes precedence over the global monitor default.
+An override can also request the emulator's own display default, and can be
+cleared to return to the game's configuration/default.
+Scale, stretch, bezel, zoom, Video Sync, and configured extra Quick Settings
+use the same per-game override store. Video settings remain global defaults;
+fullscreen in Quick Settings is explicitly a global default control.
+
+Quick Settings are unavailable when there is no loaded game with a stable
+identity. Unmatched archives and raw floppy/CD image launches do not have a
+persistent per-game identity and therefore do not store Quick Settings
+overrides.
 
 FS-UAE's initial window position is now centred within the selected display,
 not the launcher window. For fullscreen, the launcher also translates the

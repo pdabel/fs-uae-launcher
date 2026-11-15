@@ -11,7 +11,9 @@ from fsgs.displays import (
     screen_index,
 )
 from launcher.i18n import gettext
+from launcher.launcher_config import LauncherConfig
 from launcher.launcher_settings import LauncherSettings
+from launcher.ui.behaviors.configbehavior import ConfigBehavior
 from launcher.ui.behaviors.settingsbehavior import SettingsBehavior
 
 
@@ -117,24 +119,35 @@ class MonitorHighlight(QWidget):
 
 
 class MonitorChoice(fsui.Choice):
-    def __init__(self, parent):
+    def __init__(self, parent, setting_key="monitor", per_game=False):
         super().__init__(parent)
         self.setMinimumContentsLength(12)
         self.setSizeAdjustPolicy(
             self.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
         )
+        self.setting_key = setting_key
+        self.per_game = per_game
         self.values = []
         self.monitor_highlight = None
         self.application = init_qt()
         self.highlighted.connect(self.on_highlighted)
         self.activated.connect(self.on_monitor_activated)
-        self.set_tooltip(gettext("Monitor used when starting a game"))
+        tooltip = (
+            "Display preferred for the launcher window"
+            if setting_key == "launcher_monitor"
+            else "Monitor used when starting a game"
+        )
+        self.set_tooltip(gettext(tooltip))
         self.application.screenAdded.connect(self.on_screen_added)
         self.application.screenRemoved.connect(self.refresh)
         self.application.primaryScreenChanged.connect(self.refresh)
         for screen in self.application.screens():
             self.watch_screen(screen)
-        SettingsBehavior(self, ["monitor"])
+        if per_game:
+            ConfigBehavior(self, ["monitor"])
+            SettingsBehavior(self, ["monitor"])
+        else:
+            SettingsBehavior(self, [setting_key])
 
     def watch_screen(self, screen):
         screen.geometryChanged.connect(self.refresh)
@@ -146,32 +159,94 @@ class MonitorChoice(fsui.Choice):
     def on_monitor_setting(self, value):
         self.refresh()
 
+    def on_monitor_config(self, value):
+        self.refresh()
+
+    def on_settings(self, key, value):
+        if key == self.setting_key:
+            self.refresh()
+
     def refresh(self, *arguments):
         if self.monitor_highlight is not None:
             self.monitor_highlight.timer.stop()
             self.monitor_highlight.hide()
-        current = LauncherSettings.get("monitor")
-        entries = [("", gettext("Primary display (*)"))]
-        for screen in self.application.screens():
-            entries.append((display_id(screen), display_label(screen)))
-        if current == "primary":
-            selected = 0
-        else:
-            selected = next(
-                (
-                    index
-                    for index, entry in enumerate(entries)
-                    if entry[0] == current
-                ),
-                None,
+        screens = self.application.screens()
+        if self.per_game:
+            overrides = LauncherConfig.get_game_overrides()
+            has_override = "monitor" in overrides
+            current = (
+                overrides.get("monitor", "")
+                if has_override
+                else LauncherConfig.get_game_base_value("monitor")
             )
-        if selected is None:
-            if current.startswith("display:"):
-                matching = matching_display_index(
-                    self.application.screens(), current
+            global_monitor = LauncherSettings.get("monitor")
+            global_index = screen_index(
+                screens, global_monitor, self.application.primaryScreen()
+            )
+            if global_index is None:
+                default_name = gettext("Primary display")
+            else:
+                default_name = display_label(screens[global_index])
+            entries = [
+                (
+                    None,
+                    gettext("Default ({display})").format(
+                        display=default_name
+                    ),
+                ),
+                ("", gettext("Use FS-UAE default")),
+            ]
+            entries.extend(
+                (display_id(screen), display_label(screen))
+                for screen in screens
+            )
+            if has_override and current:
+                selected_index = screen_index(
+                    screens, current, self.application.primaryScreen()
                 )
-                if matching is not None:
-                    selected = matching + 1
+                if selected_index is not None:
+                    value, label = entries[selected_index + 2]
+                    entries[selected_index + 2] = (
+                        value,
+                        gettext("{display} (Game override)").format(
+                            display=label
+                        ),
+                    )
+            if not has_override and not current:
+                selected = 0
+            elif has_override and current == "":
+                selected = 1
+            else:
+                selected_index = screen_index(
+                    screens, current, self.application.primaryScreen()
+                )
+                selected = (
+                    selected_index + 2
+                    if selected_index is not None
+                    else None
+                )
+        else:
+            current = LauncherSettings.get(self.setting_key)
+            entries = [("", gettext("Primary display (*)"))]
+            entries.extend(
+                (display_id(screen), display_label(screen))
+                for screen in screens
+            )
+            if current == "primary" or not current:
+                selected = 0
+            else:
+                selected = next(
+                    (
+                        index
+                        for index, entry in enumerate(entries)
+                        if entry[0] == current
+                    ),
+                    None,
+                )
+                if selected is None and current.startswith("display:"):
+                    matching = matching_display_index(screens, current)
+                    if matching is not None:
+                        selected = matching + 1
         if selected is None:
             legacy = {
                 "left": gettext("Left"),
@@ -184,7 +259,9 @@ class MonitorChoice(fsui.Choice):
                     position=legacy[current]
                 )
                 if current in legacy
-                else gettext("Saved display unavailable; using primary")
+                else gettext(
+                    "{display} (saved display unavailable; using primary)"
+                ).format(display=current)
             )
             entries.append((current, label))
             selected = len(entries) - 1
@@ -197,28 +274,36 @@ class MonitorChoice(fsui.Choice):
                     self.count() - 1, label, fsui.qt.Qt.ToolTipRole
                 )
             self.set_index(selected)
+        if self.per_game:
+            self.set_enabled(
+                LauncherConfig.game_override_identity() is not None
+            )
 
     def on_changed(self):
         index = self.get_index()
         if 0 <= index < len(self.values):
             value = self.values[index]
-            if (
-                fsuae_monitor(
+            if self.per_game:
+                if value is None:
+                    LauncherConfig.clear_game_override("monitor")
+                else:
+                    LauncherConfig.set_game_override("monitor", value)
+                self.show_monitor_highlight(self.get_index(), 1800)
+            else:
+                if self.setting_key == "monitor" and fsuae_monitor(
                     self.application.screens(),
                     value,
                     self.application.primaryScreen(),
-                )
-                is None
-            ):
-                fsui.show_warning(
-                    gettext(
-                        "FS-UAE 3.x cannot uniquely select this monitor in fullscreen with the current display layout. Windowed placement will be requested, but the desktop may override it."
-                    ),
-                    gettext("Game Monitor"),
-                    parent=self,
-                )
-            LauncherSettings.set("monitor", value)
-            self.show_monitor_highlight(self.get_index(), 1800)
+                ) is None:
+                    fsui.show_warning(
+                        gettext(
+                            "FS-UAE 3.x cannot uniquely select this monitor in fullscreen with the current display layout. Windowed placement will be requested, but the desktop may override it."
+                        ),
+                        gettext("Game Monitor"),
+                        parent=self,
+                    )
+                LauncherSettings.set(self.setting_key, value)
+                self.show_monitor_highlight(self.get_index(), 1800)
 
     def showPopup(self):
         super().showPopup()
@@ -243,7 +328,13 @@ class MonitorChoice(fsui.Choice):
             return
         screens = self.application.screens()
         target = screen_index(
-            screens, self.values[index], self.application.primaryScreen()
+            screens,
+            (
+                LauncherSettings.get("monitor")
+                if self.per_game and self.values[index] is None
+                else self.values[index]
+            ),
+            self.application.primaryScreen(),
         )
         if target is None:
             if self.monitor_highlight is not None:

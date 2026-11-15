@@ -168,9 +168,21 @@ def build_cfg():
 
 
 cfg = build_cfg()
+LOCAL_DISPLAY_OPTIONS = {
+    Option.BEZEL,
+    Option.MONITOR,
+    Option.SCALE,
+    Option.STRETCH,
+    Option.VIDEO_SYNC,
+    Option.ZOOM,
+}
 
 
 class LauncherConfig(object):
+    _game_base_identity = None
+    _game_base_values = {}
+    _game_override_values = {}
+
     config_keys = [x[0] for x in cfg]
 
     default_config = {}
@@ -179,7 +191,11 @@ class LauncherConfig(object):
 
     key_order = [x[0] for x in cfg]
     checksum_keys = [x[0] for x in cfg if "checksum" in x]
-    sync_keys_list = [x[0] for x in cfg if "sync" in x]
+    sync_keys_list = [
+        x[0]
+        for x in cfg
+        if "sync" in x and x[0] not in LOCAL_DISPLAY_OPTIONS
+    ]
     sync_keys_set = set(sync_keys_list)
     no_custom_config = [x[0] for x in cfg if "custom" not in x]
 
@@ -352,12 +368,18 @@ class LauncherConfig(object):
             cls.load({Option.PLATFORM: platform})
         else:
             cls.load({})
+        cls._game_base_identity = None
+        cls._game_base_values = {}
+        cls._game_override_values = {}
         LauncherSettings.set(Option.CONFIG_NAME, "Unnamed Configuration")
         LauncherSettings.set("config_path", "")
         LauncherSettings.set("config_xml_path", "")
 
     @classmethod
     def load(cls, config):
+        cls._game_base_identity = None
+        cls._game_base_values = {}
+        cls._game_override_values = {}
         update_config = {}
         for key, value in cls.default_config.items():
             update_config[key] = value
@@ -559,10 +581,12 @@ class LauncherConfig(object):
         LauncherSettings.set(Option.CONFIG_NAME, config_name)
         LauncherSettings.set("config_xml_path", config_xml_path)
         cls.set("__changed", changed)
+        cls.apply_game_overrides()
         return True
 
     @classmethod
     def load_values(cls, values, uuid=""):
+        LauncherSettings.set("config_path", "")
         platform_id = values.get("platform", "").lower()
 
         if platform_id in ["amiga", "cdtv", "cd32"]:
@@ -574,6 +598,66 @@ class LauncherConfig(object):
         else:
             raise Exception(f"Unsupported platform: {platform_id}")
         cls.post_load_values(values)
+        cls.apply_game_overrides()
+
+    @classmethod
+    def game_override_identity(cls):
+        config_path = LauncherSettings.get("config_path")
+        if config_path:
+            path = os.path.realpath(Paths.expand_path(config_path))
+            return "config_path", os.path.normcase(path)
+        variant_uuid = cls.get("variant_uuid")
+        if variant_uuid:
+            return "variant_uuid", variant_uuid.lower()
+        return None
+
+    @classmethod
+    def apply_game_overrides(cls):
+        from .game_overrides import game_override_store
+
+        identity = cls.game_override_identity()
+        cls._game_base_identity = identity
+        cls._game_base_values = fsgs.config.values.copy()
+        cls._game_override_values = game_override_store.get(identity)
+        for key, value in cls._game_override_values.items():
+            cls.set(key, value)
+
+    @classmethod
+    def get_game_base_value(cls, key):
+        if cls._game_base_identity != cls.game_override_identity():
+            return ""
+        return cls._game_base_values.get(key, "")
+
+    @classmethod
+    def get_game_overrides(cls):
+        from .game_overrides import game_override_store
+
+        identity = cls.game_override_identity()
+        if identity == cls._game_base_identity:
+            return cls._game_override_values.copy()
+        return game_override_store.get(identity)
+
+    @classmethod
+    def set_game_override(cls, key, value):
+        from .game_overrides import game_override_store
+
+        identity = cls.game_override_identity()
+        if identity is None:
+            raise ValueError("A stable game identity is required")
+        game_override_store.set(identity, key, value)
+        cls._game_override_values[key] = value
+        cls.set(key, value)
+
+    @classmethod
+    def clear_game_override(cls, key):
+        from .game_overrides import game_override_store
+
+        identity = cls.game_override_identity()
+        if identity is None:
+            raise ValueError("A stable game identity is required")
+        game_override_store.clear(identity, key)
+        cls._game_override_values.pop(key, None)
+        cls.set(key, cls.get_game_base_value(key))
 
     @classmethod
     def post_load_values(cls, values):
