@@ -77,6 +77,7 @@ class NetplaySession:
         later,
         on_change=lambda session: None,
         on_message=lambda text, warning=False: None,
+        on_initial_config=None,
         executor=None,
         watcher_factory=SessionWatcher,
     ):
@@ -100,6 +101,10 @@ class NetplaySession:
         self._later = later
         self._on_change = on_change
         self._on_message = on_message
+        self._on_initial_config = on_initial_config
+        self._initial_config_pending = (
+            self.is_host and on_initial_config is not None
+        )
         self._executor = executor or ThreadPoolExecutor(
             max_workers=1, thread_name_prefix="lobby"
         )
@@ -119,6 +124,7 @@ class NetplaySession:
         self._push_scheduled = False
         self._applying = False
         self._restore_scheduled = False
+        self._missing_host_media = {}
 
     @property
     def is_host(self):
@@ -203,11 +209,42 @@ class NetplaySession:
         version = snapshot["config_version"]
         config_hash, missing = self._apply_quietly(snapshot)
         self.applied_version = version
+        if self.is_host:
+            self._missing_host_media = {
+                key: (value, str(self._local_value(key)))
+                for key, value in missing.items()
+                if key in self.sync_keys
+            }
         if missing:
             self._message(
                 f"could not find {describe_missing(missing)}; add the "
                 f"files and press Re-check",
                 True,
+            )
+        if self.is_host and not self._is_local_document(snapshot):
+            self._message(
+                "host config changed while applying; publishing the "
+                "updated config to players"
+            )
+            self._push_if_changed()
+            return
+        if (
+            self.is_host
+            and not missing
+            and snapshot.get("hash") is not None
+            and config_hash != snapshot["hash"]
+        ):
+            differing = sorted(
+                {
+                    key
+                    for key in snapshot["keys"]["checksum"]
+                    if str(self._local_value(key))
+                    != snapshot["config"].get(key)
+                }
+            )
+            detail = ", ".join(differing) or "checksum calculation"
+            self._message(
+                f"host config differs from the lobby for: {detail}", True
             )
         self._call(
             self.client.report_ready,
@@ -221,7 +258,9 @@ class NetplaySession:
         )
 
     def recheck(self):
-        """Apply the current document again, after adding missing files."""
+        """Retry host publication and reapply the current document."""
+        if self.is_host:
+            self._push_if_changed()
         if self.snapshot and self.state in PRE_START:
             self.applied_version = 0
             self._handle(self.snapshot)
@@ -234,6 +273,7 @@ class NetplaySession:
         if not self.is_host:
             self._player_changed(key)
             return
+        self._missing_host_media.pop(key, None)
         if key not in self.sync_keys or self._push_scheduled:
             return
         self._push_scheduled = True
@@ -277,7 +317,13 @@ class NetplaySession:
         self._later(PUSH_DELAY_MS, restore)
 
     def _local_document(self):
-        return {key: str(self._local_value(key)) for key in self.sync_keys}
+        document = {key: str(self._local_value(key)) for key in self.sync_keys}
+        # Applying an unresolved media slot can clear its local SHA-1; keep
+        # the requested value until the user changes that key.
+        for key, (requested, local) in self._missing_host_media.items():
+            if document[key] == local:
+                document[key] = requested
+        return document
 
     def _is_local_document(self, snapshot):
         """Host: whether snapshot's config is this launcher's current one."""
@@ -333,6 +379,10 @@ class NetplaySession:
                 self._last_pushed = None
             elif result:
                 self._pushed_version = result.get("config_version", 0)
+                if self._initial_config_pending:
+                    self._initial_config_pending = False
+                    if not self.ended:
+                        self._on_initial_config()
             if self._push_again:
                 self._push_again = False
                 self._push_if_changed()

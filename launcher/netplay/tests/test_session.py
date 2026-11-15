@@ -2,6 +2,7 @@
 
 import pytest
 
+from launcher.netplay.config_apply import resolve_config
 from launcher.netplay.lobby_client import LobbyError
 from launcher.netplay.session import NetplaySession, describe_missing
 
@@ -237,6 +238,28 @@ def test_failed_push_is_retried_on_the_next_change():
     assert len(h.client.named("set_config")) == 2
 
 
+@pytest.mark.parametrize("with_snapshot", [False, True])
+def test_recheck_retries_failed_initial_publication(with_snapshot):
+    h = Harness(host=True)
+    published = []
+    h.session._on_initial_config = lambda: published.append(True)
+    h.session._initial_config_pending = True
+    h.client.results["set_config"] = {"config_version": 1}
+    h.client.fail["set_config"] = ConnectionError("offline")
+    h.session.start()
+    h.executor.run_all()
+    if with_snapshot:
+        h.see("created", version=0, config=False)
+    assert published == []
+    assert any("could not send config" in warning for warning in h.warnings())
+
+    del h.client.fail["set_config"]
+    h.session.recheck()
+    h.executor.run_all()
+    assert len(h.client.named("set_config")) == 2
+    assert published == [True]
+
+
 def test_running_launches_once():
     h = Harness()
     h.session.start()
@@ -390,6 +413,144 @@ def test_the_host_applies_and_reports_its_own_current_document():
     h.see("configuring", version=1, config=dict(HOST_DOC))
     assert h.applied == [1]
     assert len(h.client.named("report_ready")) == 1
+
+
+def test_host_hash_mismatch_identifies_keys_without_values():
+    h = Harness(host=True)
+    h.local["amiga_model"] = "A1200"
+    h.session._apply = lambda snapshot: ("local-hash", {})
+    h.session._apply_and_report(
+        {
+            "config_version": 1,
+            "config": {"amiga_model": "A1200", "chip_memory": "512"},
+            "hash": "lobby-hash",
+            "keys": {"checksum": ["amiga_model", "chip_memory"]},
+        }
+    )
+
+    assert h.warnings() == [
+        "host config differs from the lobby for: checksum calculation"
+    ]
+
+
+def test_host_republishes_config_changed_while_applying():
+    h = Harness(host=True)
+    key = "x_kickstart_file_sha1"
+    h.session.sync_keys.append(key)
+    h.local[key] = "old-sha"
+
+    def apply(snapshot):
+        h.local[key] = "new-sha"
+        return "local-hash", {}
+
+    h.session._apply = apply
+    h.session.start()
+    h.executor.run_all()
+    h.session._handle(
+        {
+            "state": "configuring",
+            "config_version": 1,
+            "config": {**HOST_DOC, key: "old-sha"},
+            "hash": "lobby-hash",
+            "keys": {"checksum": ["amiga_model", "chip_memory", key]},
+            "slots": [],
+        }
+    )
+    h.executor.run_all()
+
+    pushes = h.client.named("set_config")
+    assert len(pushes) == 2
+    assert pushes[1][-1][key] == "new-sha"
+    assert h.client.named("report_ready") == []
+
+
+@pytest.mark.parametrize("changed", [False, True])
+def test_host_preserves_missing_media_when_applying_config(changed):
+    h = Harness(host=True)
+    missing_key = "x_floppy_drive_0_sha1"
+    requested = "d" * 40
+    h.session.sync_keys.append(missing_key)
+    h.local[missing_key] = requested
+    document = {**HOST_DOC, missing_key: requested}
+
+    def apply(snapshot):
+        updates, missing = resolve_config(
+            snapshot["config"], set(h.session.sync_keys), lambda sha1: None
+        )
+        h.local.update(updates)
+        if changed:
+            h.local["chip_memory"] = "1024"
+        return "local-hash", missing
+
+    h.session._apply = apply
+    h.session.start()
+    h.executor.run_all()
+    h.session._handle({
+        "state": "configuring",
+        "config_version": 1,
+        "config": document,
+        "hash": "lobby-hash",
+        "keys": {"checksum": list(document)},
+        "slots": [],
+    })
+    h.executor.run_all()
+
+    pushes = h.client.named("set_config")
+    assert len(pushes) == (2 if changed else 1)
+    assert pushes[-1][-1][missing_key] == requested
+    assert pushes[-1][-1]["chip_memory"] == ("1024" if changed else "512")
+    assert any("floppy_drive_0" in warning for warning in h.warnings())
+    if not changed:
+        assert h.client.named("report_ready")[0][-1] == {missing_key: requested}
+        assert not h.session.sending_config
+    else:
+        published = dict(pushes[-1][-1])
+        h.session._handle({
+            "state": "configuring",
+            "config_version": 2,
+            "config": published,
+            "hash": "new-hash",
+            "keys": {"checksum": list(published)},
+            "slots": [],
+        })
+        h.executor.run_all()
+        assert len(h.client.named("set_config")) == 2
+        assert h.client.named("report_ready")[-1][-1] == {missing_key: requested}
+        assert not h.session.sending_config
+
+    h.local[missing_key] = "e" * 40
+    h.session.config_changed(missing_key)
+    h.later.pop()()
+    h.executor.run_all()
+    assert h.client.named("set_config")[-1][-1][missing_key] == "e" * 40
+
+
+def test_host_can_explicitly_clear_an_unresolved_media_slot():
+    h = Harness(host=True)
+    key = "x_floppy_drive_0_sha1"
+    requested = "d" * 40
+    h.session.sync_keys.append(key)
+    h.local[key] = requested
+
+    def apply(snapshot):
+        h.local[key] = ""
+        return "local-hash", {key: requested}
+
+    h.session._apply = apply
+    h.session.start()
+    h.executor.run_all()
+    h.session._handle({
+        "state": "configuring",
+        "config_version": 1,
+        "config": {**HOST_DOC, key: requested},
+        "slots": [],
+    })
+    h.executor.run_all()
+
+    h.session.config_changed(key)
+    h.later.pop()()
+    h.executor.run_all()
+    assert h.client.named("set_config")[-1][-1][key] == ""
 
 
 def test_start_waits_for_an_edit_to_reach_the_lobby():

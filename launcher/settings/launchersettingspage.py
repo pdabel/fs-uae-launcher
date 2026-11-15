@@ -164,6 +164,34 @@ class LauncherSettingsPage(SettingsPage):
         destination = fsui.pick_directory(parent=self.get_window())
         if not destination:
             return
+        copy_data = True
+        while os.path.isdir(destination) and os.listdir(destination):
+            dialog = QMessageBox(QParent(self))
+            dialog.setWindowTitle(gettext("Data Folder Already Exists"))
+            dialog.setText(
+                gettext(
+                    "This folder already contains files. Use it as the data "
+                    "folder without copying, or choose another folder to copy "
+                    "your current data there?\n\n{folder}"
+                ).format(folder=destination)
+            )
+            use_existing = dialog.addButton(
+                gettext("Use Existing Data"), QMessageBox.AcceptRole
+            )
+            choose_new = dialog.addButton(
+                gettext("Choose New Folder"), QMessageBox.ActionRole
+            )
+            dialog.addButton(QMessageBox.Cancel)
+            dialog.setDefaultButton(dialog.button(QMessageBox.Cancel))
+            dialog.exec()
+            if dialog.clickedButton() == use_existing:
+                copy_data = False
+                break
+            if dialog.clickedButton() != choose_new:
+                return
+            destination = fsui.pick_directory(parent=self.get_window())
+            if not destination:
+                return
         override = os.environ.get("FS_UAE_BASE_DIR")
         if not enabled and override and os.path.realpath(override) != os.path.realpath(destination):
             fsui.show_error(
@@ -176,19 +204,29 @@ class LauncherSettingsPage(SettingsPage):
             fsboot.base_dir(), destination,
             os.path.join(marker_root, "Portable.ini"), enabled,
             os.path.join(fsboot.app_config_dir("fs-uae-launcher"), "base-dir"),
+            copy_data=copy_data,
         )
         try:
             change.validate()
             title = gettext("Enable Portable Mode") if enabled else gettext("Disable Portable Mode")
+            if copy_data:
+                message = gettext(
+                    "Copy launcher data to this folder and restart?\n\n"
+                    "{folder}\n\nOriginal files will be kept. Files outside "
+                    "the current data folder will stay in their current "
+                    "locations."
+                ).format(folder=destination)
+            else:
+                message = gettext(
+                    "Use the data already in this folder and restart?\n\n"
+                    "{folder}\n\nIts existing contents will not be changed."
+                ).format(folder=destination)
             answer = QMessageBox.question(
                 QParent(self), title,
-                gettext(
-                    "Copy launcher data to this folder and restart?\n\n{folder}\n\n"
-                    "Original files will be kept. Files outside the current data "
-                    "folder will stay in their current locations.\n\n"
-                    "Active netplay sessions and hosted servers will stop. "
-                    "Unsaved configuration changes may be lost."
-                ).format(folder=destination),
+                message + gettext(
+                    "\n\nActive netplay sessions and hosted servers will "
+                    "stop. Unsaved configuration changes may be lost."
+                ),
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
             )
             if answer == QMessageBox.Yes:

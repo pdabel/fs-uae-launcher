@@ -76,14 +76,21 @@ class LauncherApp(ApplicationMixin, fsui.Application):
                 from qtpy.QtCore import Qt
                 from qtpy.QtWidgets import QProgressDialog
 
-                progress = QProgressDialog("Copying launcher data...", "", 0, 0)
+                progress_message = (
+                    "Copying launcher data..."
+                    if change.copy_data
+                    else "Updating data location..."
+                )
+                progress = QProgressDialog(progress_message, "", 0, 0)
                 progress.setCancelButton(None)
                 progress.setWindowModality(Qt.ApplicationModal)
                 progress.setMinimumDuration(0)
                 progress.show()
 
                 def update(path):
-                    progress.setLabelText("Copying launcher data...\n" + os.path.basename(path))
+                    progress.setLabelText(
+                        progress_message + "\n" + os.path.basename(path)
+                    )
                     self.qapplication.processEvents()
 
                 try:

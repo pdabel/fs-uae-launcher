@@ -326,9 +326,12 @@ def test_host_and_player_start_together(lobby_port, ui, launchers, monkeypatch, 
         "",
         lobby,
     )
+    assert host.irc.sent == []
+    ui.pump_until(lambda: bool(host.irc.sent))
     game_id = host.session.game_id
     announce = host.irc.sent[-1]
     assert announce == f"__session {lobby} {game_id}"
+    assert LobbyClient("127.0.0.1", lobby_port).game(game_id)["config"]
 
     # A non-op's announcement is ignored; the op's is joined.
     player.on_irc(
@@ -361,10 +364,28 @@ def test_host_and_player_start_together(lobby_port, ui, launchers, monkeypatch, 
     ]
 
 
+def test_join_does_not_announce_before_initial_config(lobby_port, ui, launchers):
+    host = launchers("HST", ops={"HST"})
+    lobby = format_lobby("127.0.0.1", lobby_port)
+    assert host.create_session(
+        host.irc.active_channel(), LobbyClient("127.0.0.1", lobby_port),
+        2, "", lobby,
+    )
+    join = {"channel": CHANNEL, "nick": "PL2"}
+    host.on_irc("join", join)
+    assert host.irc.sent == []
+
+    ui.pump_until(lambda: bool(host.irc.sent))
+    announcement = f"__session {lobby} {host.session.game_id}"
+    assert host.irc.sent == [announcement]
+    host.on_irc("join", join)
+    assert host.irc.sent == [announcement, announcement]
+
+
 def test_host_moving_on_keeps_a_running_game(lobby_port, ui, launchers):
     host = launchers("HST", ops={"HST"})
     player = launchers("PL2", ops={"HST"})
-    announce = hosted_game(host, lobby_port)
+    announce = hosted_game(host, lobby_port, ui)
     first = host.session.game_id
     player.on_irc(
         "privmsg", {"channel": CHANNEL, "nick": "HST", "message": announce}
@@ -426,6 +447,7 @@ def test_host_moving_on_keeps_a_running_hosted_game(
     host.parent = SimpleNamespace(create_server_view=view.present)
 
     host.handle_command("/hostgame 127.0.0.1:0 2")
+    ui.pump_until(lambda: bool(host.irc.sent))
     lobby = view.server
     first = host.session.game_id
     player.on_irc(
@@ -497,7 +519,7 @@ def test_reset_ends_the_hosted_game(lobby_port, ui, launchers):
         raise AssertionError("game still in the lobby after /reset")
 
 
-def hosted_game(host, lobby_port, players=2):
+def hosted_game(host, lobby_port, ui, players=2):
     host.create_session(
         host.irc.active_channel(),
         LobbyClient("127.0.0.1", lobby_port),
@@ -505,6 +527,7 @@ def hosted_game(host, lobby_port, players=2):
         "",
         format_lobby("127.0.0.1", lobby_port),
     )
+    ui.pump_until(lambda: bool(host.irc.sent))
     return host.irc.sent[-1]
 
 
@@ -526,7 +549,7 @@ def test_a_join_overtaken_by_reset_gives_its_slot_back(
 ):
     host = launchers("HST", ops={"HST"})
     player = launchers("PL2", ops={"HST"})
-    announce = hosted_game(host, lobby_port)
+    announce = hosted_game(host, lobby_port, ui)
     game_id = host.session.game_id
 
     player.on_irc(
@@ -544,7 +567,7 @@ def test_an_announcement_repeated_during_a_join_joins_once(
 ):
     host = launchers("HST", ops={"HST"})
     player = launchers("PL2", ops={"HST"})
-    announce = hosted_game(host, lobby_port, players=3)
+    announce = hosted_game(host, lobby_port, ui, players=3)
     game_id = host.session.game_id
 
     for _ in range(2):
