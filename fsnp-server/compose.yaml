@@ -21,6 +21,8 @@ services:
     #   MAX_GAMES: "64"
     #   GAME_LAUNCH_TIMEOUT: "900"
     #   IDLE_TIMEOUT: "600"
+    #   LOBBY_NAME: "Amiga Friday"        # shown in the launcher's Net Play browser
+    #   PRESENCE: "1"                     # show browsers who else is online
     restart: unless-stopped
 
   irc:

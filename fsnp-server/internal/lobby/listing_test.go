@@ -1,6 +1,7 @@
 package lobby
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -178,4 +179,91 @@ func TestListingRequests(t *testing.T) {
 	if st := h.call("POST", "/game", "", long, nil); st != http.StatusBadRequest {
 		t.Fatalf("title too long: %d, want 400", st)
 	}
+}
+
+func TestPresence(t *testing.T) {
+	saved := longPollWait
+	longPollWait = 300 * time.Millisecond
+	t.Cleanup(func() { longPollWait = saved })
+
+	h := startLobby(t, Config{Presence: true, PresenceTimeout: 200 * time.Millisecond})
+	l := h.listing(ListingRequest{Member: "m-dave", Name: "Dave"})
+	if !l.Presence || len(l.Online) != 1 || l.Online[0] != "Dave" {
+		t.Fatalf("first member: presence %v, online %v", l.Presence, l.Online)
+	}
+
+	// Sam coming online wakes Dave's poll.
+	got := make(chan Listing, 1)
+	go func() {
+		var l2 Listing
+		h.call("POST", "/lobby", "", ListingRequest{Member: "m-dave", Name: "Dave", Since: l.Revision}, &l2)
+		got <- l2
+	}()
+	time.Sleep(50 * time.Millisecond)
+	h.listing(ListingRequest{Member: "m-sam", Name: "Sam"})
+	l = waitListing(t, got, "a member coming online")
+	if strings.Join(l.Online, ",") != "Dave,Sam" {
+		t.Fatalf("online %v, want Dave,Sam", l.Online)
+	}
+
+	// Two launchers with one name stay separate; a nameless caller with
+	// no member isn't counted.
+	h.listing(ListingRequest{Member: "m-sam-2", Name: "Sam"})
+	h.listing(ListingRequest{})
+	if l = h.listing(ListingRequest{}); strings.Join(l.Online, ",") != "Dave,Sam,Sam" {
+		t.Fatalf("online %v, want Dave,Sam,Sam", l.Online)
+	}
+
+	// Dave keeps a poll open; the others go quiet and expire, which wakes
+	// Dave's poll.
+	rev := l.Revision
+	got = make(chan Listing, 1)
+	go func() {
+		for {
+			var l2 Listing
+			h.call("POST", "/lobby", "", ListingRequest{Member: "m-dave", Name: "Dave", Since: rev}, &l2)
+			if l2.Revision > rev && len(l2.Online) == 1 {
+				got <- l2
+				return
+			}
+			rev = l2.Revision
+		}
+	}()
+	l = waitListing(t, got, "members expiring")
+	if l.Online[0] != "Dave" {
+		t.Fatalf("online %v, want only Dave, who is polling", l.Online)
+	}
+}
+
+func TestPresenceOff(t *testing.T) {
+	h := startLobby(t, Config{})
+	l := h.listing(ListingRequest{Member: "m-dave", Name: "Dave"})
+	if l.Presence || l.Online != nil {
+		t.Fatalf("presence off: presence %v, online %v", l.Presence, l.Online)
+	}
+	var raw map[string]any
+	h.mustCall(http.StatusOK, "POST", "/lobby", "", ListingRequest{Member: "m-dave", Name: "Dave"}, &raw)
+	if _, ok := raw["online"]; ok {
+		t.Fatalf("presence off: online sent as %v", raw["online"])
+	}
+}
+
+func TestPresenceLimits(t *testing.T) {
+	h := startLobby(t, Config{Presence: true})
+	if st := h.call("POST", "/lobby", "", ListingRequest{Member: "m", Name: strings.Repeat("x", maxTagLength+1)}, nil); st != http.StatusBadRequest {
+		t.Fatalf("long name: %d, want 400", st)
+	}
+	if st := h.call("POST", "/lobby", "", ListingRequest{Member: strings.Repeat("m", maxMemberLength+1)}, nil); st != http.StatusBadRequest {
+		t.Fatalf("long member: %d, want 400", st)
+	}
+	for i := range MaxMembers {
+		h.listing(ListingRequest{Member: fmt.Sprintf("m-%d", i), Name: "P"})
+	}
+	if st := h.call("POST", "/lobby", "", ListingRequest{Member: "one-too-many", Name: "P"}, nil); st != http.StatusServiceUnavailable {
+		t.Fatalf("member past the cap: %d, want 503", st)
+	}
+	// A member already counted still gets through, as does a caller with
+	// no member.
+	h.listing(ListingRequest{Member: "m-0", Name: "P"})
+	h.listing(ListingRequest{})
 }

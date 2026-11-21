@@ -48,6 +48,7 @@ Each flag can also be set through its environment variable, which is how you con
 | `--idle-timeout` | `IDLE_TIMEOUT` | `600` | seconds a `POST /game` game may sit untouched (no join, config, ready or poll) before it starts |
 | `--public-addresses` | `PUBLIC_ADDRESSES` | — | comma-separated addresses to give players. Unset, they get the host name the op used in `/startgame` |
 | `--name` | `LOBBY_NAME` | — | a name shown to launchers browsing the lobby's games |
+| `--presence` | `PRESENCE` | `false` | show launchers browsing the lobby who else is browsing it. Off by default so a public lobby doesn't show strangers' names |
 | `--log-file` | `LOG_FILE` | — | also append the log here |
 | `--log-input` | — | `true` | log every relayed input event |
 | `--verbose` | — | `false` | debug logging |
@@ -85,13 +86,13 @@ PUT    /game/{id}/config              host: {config:{key: value}} → {config_ve
 POST   /game/{id}/players/{n}/ready   slot: {config_version, hash, missing:{key: sha1}}
 POST   /game/{id}/start               host: 409 unless every slot is ready
 DELETE /game/{id}                     host: end it
-POST   /lobby                         {since} → {id, name, revision, games:[…]}; with since, waits up to 25 s
+POST   /lobby                         {member, name, since} → {id, name, revision, presence, online, games:[…]}; with since, waits up to 25 s
 
 errors {"error": "…"}: 400 invalid, 403 wrong token, 404 no game or slot,
        409 wrong state for the call, 503 too many games or shutting down
 ```
 
-`POST /lobby` is what the launcher's Net Play browser polls. It lists the games created with `"listed": true`, from creation until they end: each one's `id`, `title`, `host` (slot 0's tag), `state`, `players`, `joined` and `created`. It carries no passwords, tokens, configs or addresses; joining still goes through `POST /game/{id}/players`. A game is unlisted when `listed` is absent, so older launchers' games stay private. The lobby's `id` is random per run, so a launcher that reaches one lobby at two addresses can tell. See [the lobby browser design](../docs/netplay-rooms-design.md).
+`POST /lobby` is what the launcher's Net Play browser polls. It lists the games created with `"listed": true`, from creation until they end: each one's `id`, `title`, `host` (slot 0's tag), `state`, `players`, `joined` and `created`. It carries no passwords, tokens, configs or addresses; joining still goes through `POST /game/{id}/players`. A game is unlisted when `listed` is absent, so older launchers' games stay private. The lobby's `id` is random per run, so a launcher that reaches one lobby at two addresses can tell. With `--presence`, a caller that sends a `member` (a random id per launcher run) and a `name` counts as online while it has a poll open or had one answered in the last 35 s, and `online` lists those names. Without it, `presence` is `false`, `online` is absent and `member` and `name` are ignored. At most 256 members are tracked; past that, `503`. See [the lobby browser design](../docs/netplay-rooms-design.md).
 
 ## Lobby and IRC together
 

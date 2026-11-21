@@ -39,6 +39,13 @@ const (
 	// join, config, ready or poll — before it started.
 	DefaultIdleTimeout = 10 * time.Minute
 
+	// DefaultPresenceTimeout is how long a member counts as online after
+	// its last poll answered: the 25 s long-poll wait, plus margin.
+	DefaultPresenceTimeout = 35 * time.Second
+
+	// MaxMembers caps how many members presence tracks at once.
+	MaxMembers = 256
+
 	// MaxPasswordLength caps a password supplied to /game/create.
 	MaxPasswordLength = 128
 
@@ -58,6 +65,8 @@ type Config struct {
 	LaunchTimeout   time.Duration // per game, from when it runs; 0 = DefaultLaunchTimeout
 	IdleTimeout     time.Duration // per session game before start; 0 = DefaultIdleTimeout
 	PublicAddresses []string      // reported to clients; empty = the request's Host
+	Presence        bool          // report who is browsing the listing
+	PresenceTimeout time.Duration // 0 = DefaultPresenceTimeout
 	Clock           game.Clock    // nil = game.RealClock, passed to every game
 	Logger          *slog.Logger  // nil = slog.Default()
 	LogInput        bool          // passed to every game
@@ -70,6 +79,7 @@ var (
 	ErrPasswordLength = fmt.Errorf("lobby: password longer than %d bytes", MaxPasswordLength)
 	ErrPlayers        = fmt.Errorf("lobby: players must be 1..%d", game.MaxPlayers)
 	ErrClosed         = errors.New("lobby: shutting down")
+	ErrTooManyMembers = fmt.Errorf("lobby: more than %d launchers browsing", MaxMembers)
 )
 
 // Info is what Create reports about a new game.
@@ -104,6 +114,7 @@ type Lobby struct {
 	// changed is closed and replaced on each one, to wake long-polls.
 	revision uint64
 	changed  chan struct{}
+	members  map[string]*member // with Config.Presence: who is browsing
 }
 
 // New creates a lobby. It hosts nothing until Serve is called, but Create
@@ -117,6 +128,9 @@ func New(cfg Config) *Lobby {
 	}
 	if cfg.IdleTimeout <= 0 {
 		cfg.IdleTimeout = DefaultIdleTimeout
+	}
+	if cfg.PresenceTimeout <= 0 {
+		cfg.PresenceTimeout = DefaultPresenceTimeout
 	}
 	if cfg.Clock == nil {
 		cfg.Clock = game.RealClock{}
@@ -135,6 +149,7 @@ func New(cfg Config) *Lobby {
 		byHash:   make(map[uint32]*entry),
 		revision: 1,
 		changed:  make(chan struct{}),
+		members:  make(map[string]*member),
 	}
 }
 

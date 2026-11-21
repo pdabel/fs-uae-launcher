@@ -290,7 +290,7 @@ func writeSessionError(w http.ResponseWriter, err error) {
 		errors.Is(err, errStale), errors.Is(err, errNotReady), errors.Is(err, errHostSlot),
 		errors.Is(err, ErrPasswordInUse):
 		status = http.StatusConflict
-	case errors.Is(err, ErrFull), errors.Is(err, ErrClosed):
+	case errors.Is(err, ErrFull), errors.Is(err, ErrClosed), errors.Is(err, ErrTooManyMembers):
 		status = http.StatusServiceUnavailable
 	}
 	writeError(w, status, err.Error())
