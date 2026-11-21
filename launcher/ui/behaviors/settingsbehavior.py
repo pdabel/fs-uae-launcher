@@ -20,7 +20,6 @@ class SettingsBehavior:
             self.on_setting(name, LauncherSettings.get(name))
 
     def on_parent_destroyed(self):
-        print("SettingsBehavior: remove_listener", self._parent())
         LauncherSettings.remove_listener(self)
 
     def on_setting(self, key, value):

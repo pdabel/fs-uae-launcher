@@ -1116,6 +1116,33 @@ class TestQt6(WidgetTestCase):
             painter.end()
         self.assertEqual(image.pixelColor(15, 35), fsui.Color(255, 0, 0))
 
+    def test_behaviors_stop_listening_when_their_widget_is_deleted(self):
+        import shiboken6
+        from fsui.qt import QWidget
+        from launcher.launcher_config import LauncherConfig
+        from launcher.launcher_settings import LauncherSettings
+        from launcher.ui.behaviors.configbehavior import ConfigBehavior
+        from launcher.ui.behaviors.settingsbehavior import SettingsBehavior
+
+        class Watcher(QWidget):
+            def on_zoom_config(self, value):
+                pass
+
+            def on_zoom_setting(self, value):
+                pass
+
+        for behavior_class, store in (
+            (ConfigBehavior, LauncherConfig),
+            (SettingsBehavior, LauncherSettings),
+        ):
+            with self.subTest(behavior=behavior_class.__name__):
+                widget = Watcher()
+                behavior = behavior_class(widget, ["zoom"])
+                with patch.object(store, "remove_listener") as remove_listener:
+                    # The C++ object is gone by the time destroyed fires.
+                    shiboken6.delete(widget)
+                remove_listener.assert_called_once_with(behavior)
+
 
 class TestLaunchAndNetplay(WidgetTestCase):
     def test_configuration_row_delete_confirmation_and_refresh(self):
