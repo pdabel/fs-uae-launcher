@@ -234,8 +234,6 @@ class Option(object):
     INT_UAE_BOOT_ROM = "int_uae_boot_rom"
     INT_Z3CHIPMEM_SIZE = "int_z3chipmem_size"
     INT_Z3FASTMEM_SIZE = "int_z3fastmem_size"
-    IRC_NICK = "irc_nick"
-    IRC_SERVER = "irc_server"
     JIT_COMPILER = "jit_compiler"
     JIT_MEMORY = "jit_memory"
     JOYSTICK_PORT_0 = "joystick_port_0"

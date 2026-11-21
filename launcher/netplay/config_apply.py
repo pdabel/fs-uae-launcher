@@ -113,18 +113,15 @@ def resolve_config(document, sync_keys, find_by_sha1):
     return updates, missing
 
 
-def apply_config(document, sync_keys=None):
-    """Apply a document to LauncherConfig and return what's missing.
-
-    sync_keys defaults to this launcher's own, which is right only for
-    config that didn't come with a key list (the IRC path).
-    """
+def apply_config(document, sync_keys):
+    """Apply a document's sync_keys to LauncherConfig and return what's
+    missing."""
     from fsgs.context import fsgs
     from launcher.launcher_config import LauncherConfig
 
     updates, missing = resolve_config(
         document,
-        LauncherConfig.sync_keys_set if sync_keys is None else sync_keys,
+        sync_keys,
         lambda sha1: fsgs.file.find_by_sha1(sha1=sha1),
     )
     if updates:

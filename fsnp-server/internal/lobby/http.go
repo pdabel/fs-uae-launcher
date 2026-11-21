@@ -17,11 +17,11 @@ import (
 //	GET /healthz
 //	  → 200 text/plain  ok
 //
-// /game/create's response is form-encoded because that is what /startgame
-// in launcher/netplay/netplay.py parses (parse_qs). Every game is on the
-// lobby's own port, so port is the one the client reached the lobby on. A
-// game created this way runs at once and has no session: its config is
-// agreed over IRC.
+// /game/create is for launchers from before the session API, whose
+// /startgame parsed the form-encoded response with parse_qs. Every game is
+// on the lobby's own port, so port is the one the client reached the lobby
+// on. A game created this way runs at once and has no session: its players
+// agree the config among themselves.
 func (l *Lobby) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /game/create", l.handleCreate)

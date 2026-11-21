@@ -47,32 +47,7 @@ How to Use Netplay:
 5. Once every player has joined and is ready, FS-UAE starts for everyone.
    Nobody presses Start.
 
-Games hosted with IRC commands in a game channel still work as before:
-the host presses 'Start Game' once every player is ready.
-
-If required, you can use the netplay command box to enter manual IRC or netplay commands.
-
-You can also use IRC commands directly in the command box as follows:
-(Replace text within <> as appropriate)
-
-Create a game channel (make sure the -game is appended):
-/join #<game-name>-game
-Once in the channel, host a game using the FQDN to allow players to either
-use public DNS resolution or a static host file entry.
-To host the game here for a specific number of players (in this case 2):
-/hostgame <host.domain.com>:<port> <players>
-Or create it on a netplay server (lobby) elsewhere:
-/startgame <lobby.domain.com>[:<port>] <players>
-
-Players join automatically. If an announcement was missed:
-/joingame <host>:<port> <game-id>
-
-Other commands:
-
-/recheck        apply the game's config again
-/reset          leave the game (the host ends it)
-/resetconfig    reset your config (the host's reaches every player)
-/set <key> <value>
+To run a lobby server of your own, see fsnp-server/README.md.
 
 More info @ https://fs-uae.net/launcher-net-play
 """

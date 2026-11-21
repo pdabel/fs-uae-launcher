@@ -249,3 +249,11 @@ def test_lobby_listing():
         lobby_client.CONNECT_TIMEOUT,
         lobby_client.POLL_TIMEOUT,
     )
+
+
+def test_create_game_unlisted_keeps_its_title():
+    # A player who joins by ID still sees what the game is.
+    c, s = client(FakeResponse(201, {"id": "g1"}))
+    c.create_game(2, "", "HST", ["a"], ["a"], title="Speedball 2")
+    body = s.requests[0]["json"]
+    assert body["title"] == "Speedball 2" and "listed" not in body

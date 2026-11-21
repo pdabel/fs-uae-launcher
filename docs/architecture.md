@@ -8,7 +8,7 @@ render on GitHub and in VS Code's Markdown preview.
 |---|---|
 | **Date** | 2026-10-31 |
 | **Scope** | The Python launcher (`fs-uae-launcher`). The Go netplay server has its own notes in [fsnp-server/README.md](../fsnp-server/README.md) and [netplay-go-server-design.md](netplay-go-server-design.md). |
-| **Out of scope** | `venv-*/`, `oyoyo/` internals |
+| **Out of scope** | `venv-*/` |
 
 ## Responsibility groups
 
@@ -46,7 +46,7 @@ flowchart TB
         qt["Qt 6 / PySide6 / QtAwesome"]
         fsuae["FS-UAE emulator process"]
         fsnp["fsnp-server (Go)"]
-        irc["IRC lobby (oyoyo/)"]
+        lobbies["Lobby servers<br/>(fsnp-server --lobby)"]
         openretro["OpenRetro / oagd.net"]
     end
 
@@ -54,7 +54,7 @@ flowchart TB
     launcher --> fsgs
     launcher --> fsbc
     launcher --> fsboot
-    launcher --> irc
+    launcher --> lobbies
     launcher --> fsnp
     launcher --> workspace
     workspace --> fsui
@@ -86,7 +86,6 @@ flowchart TB
 | `amitools/` | Vendored Amiga tooling used for ADF/HDF and ROM inspection. | `amitools/fs`, `amitools/rom` |
 | `launcher/` | The application: `LauncherApp`, `LauncherWindow`, the dashboard shell, configuration panels, the Settings dialog, startup scans, netplay client, option metadata. | [launcherapp.py](../launcher/launcherapp.py), [ui/launcherwindow.py](../launcher/ui/launcherwindow.py), [ui/dashboard.py](../launcher/ui/dashboard.py), [option.py](../launcher/option.py) |
 | `workspace/` | Secondary tool windows opened from the launcher (ADF and HDF creators, joystick configuration, OpenRetro login/logout, locker upload, refresh), with their own small widget set in `workspace/ui`. | [workspace/apps](../workspace/apps) |
-| `oyoyo/` | Vendored IRC client used by the netplay lobby. | |
 | `fsnp-server/` | Go netplay server, run as a child process when hosting a game. | [fsnp-server/README.md](../fsnp-server/README.md) |
 | `fsbuild/` | Build and packaging scripts (PyInstaller, DMG, deb). Not imported at runtime. | |
 
@@ -148,8 +147,7 @@ flowchart LR
     WS --> ED["Editor book<br/>MainPanel, Floppies, CD-ROM,<br/>Hard drives, ROM & RAM,<br/>Input, Expansions,<br/>Display settings, Additional"]
     WS --> MEDIA["Bottom bar<br/>GameInfoPanel, ScreenshotsPanel"]
     WS --> PLAY["PlayTile<br/>single Play action"]
-    NP --> PANEL["NetplayPanel<br/>chat, players, commands"]
-    NP --> SD["ServerDetails<br/>hosted fsnp-server status"]
+    NP --> PANEL["LobbyBrowserPanel<br/>servers, games, the game you're in,<br/>activity"]
     LW --> SET["SettingsDialog<br/>(launcher/settings/*)"]
 ```
 
@@ -180,7 +178,7 @@ flowchart TD
     INIT -->|"fusion-plain"| PLAIN["Fusion standard palette"]
     INIT -->|"fusion-windows311<br/>fusion-workbench"| RETRO["retro_theme.apply_retro_theme()<br/>bevelled palette + QSS"]
     INIT --> VAR["fsui.theme_variant =<br/>modern | plain | windows311 | workbench<br/>fsui.theme_skin = modern | cyberpunk | ..."]
-    VAR --> UI["Dashboard, PagedDialog, ServerDetails,<br/>MonitorHighlight, navigation_icons, IconButton,<br/>WarningsElement read modern_theme.palette()"]
+    VAR --> UI["Dashboard, PagedDialog, LobbyBrowserPanel,<br/>MonitorHighlight, navigation_icons, IconButton,<br/>WarningsElement read modern_theme.palette()"]
 ```
 
 Modern Dark and its skins share one stylesheet template; `modern_theme.render()`
@@ -208,7 +206,6 @@ flowchart LR
         db2[("Data/Databases/&lt;platform&gt;.sqlite<br/>fsgs/GameDatabase.py<br/>OpenRetro metadata")]
         db3[("Data/Databases/Files.sqlite<br/>fsgs/filedatabase.py<br/>SHA-1 → path")]
         db4[("Data/Databases/Locker.sqlite<br/>fsgs/LockerDatabase.py")]
-        hist[("Data/Databases/NetplayHistory.sqlite<br/>launcher/netplay/command_history.py")]
         media["Kickstarts/, Floppies/, CD-ROMs/,<br/>Hard Drives/, Cache/"]
     end
 
@@ -219,7 +216,7 @@ flowchart LR
     launch["LaunchHandler<br/>(fsgs/amiga/launchhandler.py)"] --> cfgw["ConfigWriter"]
     cfgw --> fsuae["FS-UAE process"]
     launch --> media
-    np["Netplay<br/>(launcher/netplay/netplay.py)"] <--> irc["IRC server"]
+    np["Netplay<br/>(launcher/netplay/netplay.py)"] <--> lobbies["Lobby servers<br/>(POST /lobby, the session API)"]
     np --> fsnp["fsnp-server child process<br/>(launcher/server/Server.py)"]
 ```
 
@@ -258,6 +255,6 @@ Ruff runs as its own job in `ci.yml`. The Go server checks run in
 
 The Qt suite tests widgets, settings panels, theme components, and dashboard
 composition. Dashboard tests construct a generic `fsui.Window` with stubbed
-books and panels, and mock IRC transport and the server process. Some launcher
+books and panels, and mock the lobby and the server process. Some launcher
 handlers are called on that test owner, but the suite does not construct a
 real `LauncherWindow` and is not an end-to-end launcher integration test.

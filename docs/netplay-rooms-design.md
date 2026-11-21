@@ -4,7 +4,7 @@ Design proposal for finding, setting up and joining netplay games without IRC. T
 
 | | |
 |---|---|
-| **Status** | Draft for review |
+| **Status** | Implemented, and IRC removed |
 | **Date** | 2026-11-21 (replaces the 2026-10-25 *rooms* draft) |
 | **Builds on** | [netplay-go-server-design.md](netplay-go-server-design.md): the lobby, the session API and config in the session (phase three) |
 | **Scope** | A server list in settings. A netplay panel that browses, hosts and joins games. `fsnp-server` gains a game listing, presence and auto-start |
@@ -344,7 +344,7 @@ Each step is its own commit (or PR), green on its own, and leaves netplay usable
 6. **Join from the list.** `join_game` split out of `on_session_announce`, plus **Join**, **Join by ID…**, **Leave** and the joined view.
 7. **Host from the panel.** `host_game`, the Host dialog, the local lobby lifecycle with `--presence`, the hosting view, and `auto_start` on games hosted from the panel.
 
-After this design: **remove IRC.** Delete the IRC modules, `oyoyo`, the InspIRCd service and the IRC settings, as the rooms draft planned.
+After this design: **remove IRC.** Delete the IRC modules, `oyoyo`, the InspIRCd service and the IRC settings, as the rooms draft planned. *Done: the IRC panel, its command box and the server details column went too, leaving the browser as the whole Net Play tab, and the IRC settings are cleared at startup once `irc_nick` has been copied to the netplay name.*
 
 ## Alternatives considered
 

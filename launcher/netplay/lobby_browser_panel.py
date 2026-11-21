@@ -8,6 +8,7 @@ them is shown as plain text.
 import time
 
 import fsui
+import qtawesome as qta
 from fsui.qt import modern_theme
 from fsui.qt.qt import theme_applied
 from fsui.qt import (
@@ -116,17 +117,32 @@ def game_action(game):
 
 
 class LobbyBrowserPanel(QFrame):
-    def __init__(self, netplay, open_settings=None, parent=None):
+    def __init__(
+        self, netplay, open_settings=None, show_info=None, parent=None
+    ):
         super().__init__(parent)
         self.netplay = netplay
         self.open_settings = open_settings
+        self.show_info = show_info
         self.setObjectName("lobbyBrowser")
-        self.restyle()
-        theme_applied.connect(self.restyle)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 16, 20, 16)
         layout.setSpacing(8)
+
+        header = QHBoxLayout()
+        layout.addLayout(header)
+        header.addWidget(plain_label(gettext("Net Play"), "sectionTitle"))
+        header.addStretch(1)
+        self.info_button = QPushButton()
+        self.info_button.setToolTip(gettext("Show instructions for Netplay"))
+        self.info_button.setAccessibleName(gettext("Netplay instructions"))
+        self.info_button.setFlat(True)
+        self.info_button.clicked.connect(self.on_info)
+        self.info_button.setVisible(show_info is not None)
+        header.addWidget(self.info_button)
+        self.restyle()
+        theme_applied.connect(self.restyle)
 
         # Browsing, or the game this launcher is in.
         self.pages = QStackedWidget()
@@ -304,6 +320,9 @@ class LobbyBrowserPanel(QFrame):
         self.on_session(netplay.session)
 
     def restyle(self):
+        self.info_button.setIcon(
+            qta.icon("fa5s.info-circle", color=modern_theme.palette().icon)
+        )
         if fsui.theme_variant == "modern":
             self.setStyleSheet(modern_theme.render("""
                 QFrame#lobbyBrowser { background: @surface@; }
@@ -431,7 +450,7 @@ class LobbyBrowserPanel(QFrame):
         self.no_games.setVisible(not games)
 
     def _render_lobby_row(self):
-        server = self.netplay.running_hosted_server()
+        server = self.netplay.running_local_lobby()
         self.lobby_row.setVisible(server is not None)
         if server is None:
             return
@@ -618,13 +637,17 @@ class LobbyBrowserPanel(QFrame):
         self.refresh()
 
     def on_recheck(self):
-        self.netplay.command_recheck([])
+        self.netplay.recheck()
 
     def on_leave(self):
         self.netplay.leave_game()
 
     def on_retry(self, key):
         self.netplay.browser.retry(key)
+
+    def on_info(self):
+        if self.show_info is not None:
+            self.show_info()
 
     def on_add_server(self):
         if self.open_settings is not None:

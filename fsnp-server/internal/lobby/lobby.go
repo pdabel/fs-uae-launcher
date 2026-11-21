@@ -31,7 +31,7 @@ const (
 
 	// DefaultLaunchTimeout reaps a running game whose players have not all
 	// joined. A game from /game/create runs from the moment it is created,
-	// so this is also how long its players have to agree a config over IRC;
+	// so this is also how long its players have to agree a config;
 	// a session game runs from its start, when every launcher is ready.
 	DefaultLaunchTimeout = 15 * time.Minute
 
@@ -154,7 +154,7 @@ func New(cfg Config) *Lobby {
 }
 
 // Create starts a game for players players, routable at once: the
-// /game/create path, where the config is agreed over IRC. An empty password
+// /game/create path, where the players agree the config. An empty password
 // means the lobby generates one: a lobby game can't be passwordless, because
 // the hash is how a connection finds its game. A supplied password whose
 // hash matches a live game's is refused with ErrPasswordInUse.
@@ -365,7 +365,7 @@ func newPassword() string {
 	return string(b[:])
 }
 
-// newID returns a random UUIDv4, the same shape /hostgame puts in
+// newID returns a random UUIDv4, the shape the launcher expects in
 // __netplay_game.
 func newID() string {
 	var b [16]byte

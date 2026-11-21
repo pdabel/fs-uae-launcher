@@ -481,8 +481,8 @@ func TestShutdownStopsGames(t *testing.T) {
 	}
 }
 
-// TestResponseParsesInLauncher pins the body format to what /startgame's
-// parse_qs reads: four keys, form-encoded, a password with reserved
+// TestResponseParsesInLauncher pins the body format to what older
+// launchers' /startgame read with parse_qs: four keys, form-encoded, a password with reserved
 // characters surviving the round trip.
 func TestResponseParsesInLauncher(t *testing.T) {
 	h := startLobby(t, Config{})

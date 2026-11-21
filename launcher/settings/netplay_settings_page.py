@@ -14,6 +14,7 @@ class NetplaySettingsPage(SettingsPage):
         self.add_header(icon, title, subtitle)
 
         self.add_option("netplay_name")
+        self.add_option("netplay_tag")
         self.lobby_servers_group = LobbyServersGroup(self)
         self.layout.add(
             self.lobby_servers_group,
@@ -31,7 +32,3 @@ class NetplaySettingsPage(SettingsPage):
             ),
             margin_bottom=10,
         )
-
-        self.add_section(gettext("IRC"))
-        self.add_option("netplay_tag")
-        self.add_option("irc_server")

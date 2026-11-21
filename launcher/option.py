@@ -680,16 +680,6 @@ options = {
         "description": N_("Grab Input on FS-UAE Startup"),
         "type": "boolean",
     },
-    Option.IRC_NICK: {
-        "default": "",
-        "description": N_("IRC nickname"),
-        "type": "string",
-    },
-    Option.IRC_SERVER: {
-        "default": "irc.fs-uae.net",
-        "description": N_("Custom IRC Server"),
-        "type": "String",
-    },
     Option.JIT_COMPILER: {
         "default": "0",
         "description": N_("JIT Compiler"),

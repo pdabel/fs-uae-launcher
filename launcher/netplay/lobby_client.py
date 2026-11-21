@@ -84,8 +84,8 @@ class LobbyClient:
         is empty), players, port, addresses, host_token, slot and
         player_token. checksum_keys is used as given, order and duplicates
         included, since the hash runs over it. listed puts the game in the
-        lobby's listing under title; auto_start starts it once every slot
-        is ready.
+        lobby's listing; title names it there and to whoever joins by ID;
+        auto_start starts it once every slot is ready.
         """
         body = {
             "players": players,
@@ -99,6 +99,7 @@ class LobbyClient:
         extras = {}
         if listed:
             extras["listed"] = True
+        if title:
             extras["title"] = title
         if auto_start:
             extras["auto_start"] = True

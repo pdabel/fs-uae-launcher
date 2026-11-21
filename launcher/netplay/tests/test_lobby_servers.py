@@ -77,6 +77,12 @@ def settings(monkeypatch):
     return s
 
 
+def test_the_irc_settings_are_old_keys():
+    assert {"irc_nick", "irc_server", "irc_nickserv_pass"} <= (
+        LauncherSettings.old_keys
+    )
+
+
 def test_irc_nick_is_copied_to_an_empty_netplay_name(settings):
     settings.set("irc_nick", "Dave")
     LauncherSettings.copy_irc_nick_to_netplay_name()
@@ -87,12 +93,13 @@ def test_irc_nick_is_copied_to_an_empty_netplay_name(settings):
     assert settings.get("netplay_name") == "Dave"
 
 
-def test_netplay_name(settings):
-    settings.set("irc_nick", "Nick")
-    assert LauncherSettings.get_netplay_name() == "Nick"
+def test_netplay_name(settings, monkeypatch):
+    from launcher import launcher_settings
+
+    monkeypatch.setattr(launcher_settings, "get_user_name", lambda: "paul")
+    assert LauncherSettings.get_netplay_name() == "paul"
     settings.set("netplay_name", "  Dave  ")
     assert LauncherSettings.get_netplay_name() == "Dave"
-    assert LauncherSettings.get_irc_nick() == "Dave"
     # The lobby allows 32 bytes: a multi-byte name is cut on a character.
     settings.set("netplay_name", "é" * 20)
     assert LauncherSettings.get_netplay_name() == "é" * 16

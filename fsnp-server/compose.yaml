@@ -1,9 +1,9 @@
-# Everything an FS-UAE netplay host runs: the game lobby and an IRC server for
-# the players' launchers to meet in. See README.md.
+# The FS-UAE netplay lobby. See README.md.
 #
 #   docker compose up -d        from this directory
 #
-# Then forward TCP 25101 (lobby and games) and 6667 (IRC) to this machine.
+# Then forward TCP 25101 (lobby and games) to this machine, and give players
+# its address to add in the launcher's Settings > Net Play.
 name: fs-uae-netplay
 
 services:
@@ -14,7 +14,7 @@ services:
     image: fs-uae-netplay:local
     ports:
       # The container always listens on 25101. Players are told the port the
-      # op's /startgame used, so a different host port works too.
+      # host's launcher reached it on, so a different host port works too.
       - "${LOBBY_PORT:-25101}:25101"
     # environment:
     #   PUBLIC_ADDRESSES: "203.0.113.4"   # what to tell players; see README.md
@@ -23,13 +23,4 @@ services:
     #   IDLE_TIMEOUT: "600"
     #   LOBBY_NAME: "Amiga Friday"        # shown in the launcher's Net Play browser
     #   PRESENCE: "1"                     # show browsers who else is online
-    restart: unless-stopped
-
-  irc:
-    image: inspircd/inspircd-docker:4.12.1
-    ports:
-      # The launcher only connects to 6667, in plain text.
-      - "6667:6667"
-    volumes:
-      - ./irc/netplay.conf:/inspircd/conf.d/netplay.conf:ro
     restart: unless-stopped

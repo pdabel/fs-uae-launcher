@@ -13,7 +13,6 @@ package_map = {
     "fstd": ".",
     "fsui": ".",
     "launcher": ".",
-    "oyoyo": ".",
     "workspace": ".",
 }
 packages = sorted(package_map.keys())

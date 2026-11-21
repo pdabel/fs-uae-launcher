@@ -6,7 +6,7 @@
 // exits on its own when the game ends or on SIGTERM.
 //
 // With --lobby it instead hosts many games on the one port: an HTTP API
-// (GET /game/create, what /startgame calls) and every game it creates share
+// (POST /game, and GET /game/create for older launchers) and every game it creates share
 // the listener, and connections find their game by password hash. It runs
 // until SIGTERM. See internal/lobby.
 //
@@ -124,7 +124,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) 
 	if err != nil {
 		log.Error("listen failed", "err", err)
 		// Reported on stdout too, where the launcher reads the readiness
-		// line, so it can tell a port in use (which the op can do something
+		// line, so it can tell a port in use (which the host can do something
 		// about) from any other failure. The bind is the authoritative test:
 		// a pre-check from the launcher can't match this listener's
 		// SO_REUSEADDR, and refused ports still in TIME_WAIT after a game.
