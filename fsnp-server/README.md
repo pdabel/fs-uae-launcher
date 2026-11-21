@@ -47,6 +47,7 @@ Each flag can also be set through its environment variable, which is how you con
 | `--game-launch-timeout` | `GAME_LAUNCH_TIMEOUT` | `900` | seconds a running game may wait for all its players before it's removed. A `/game/create` game runs from creation; a `POST /game` game from its start |
 | `--idle-timeout` | `IDLE_TIMEOUT` | `600` | seconds a `POST /game` game may sit untouched (no join, config, ready or poll) before it starts |
 | `--public-addresses` | `PUBLIC_ADDRESSES` | — | comma-separated addresses to give players. Unset, they get the host name the op used in `/startgame` |
+| `--name` | `LOBBY_NAME` | — | a name shown to launchers browsing the lobby's games |
 | `--log-file` | `LOG_FILE` | — | also append the log here |
 | `--log-input` | — | `true` | log every relayed input event |
 | `--verbose` | — | `false` | debug logging |
@@ -75,7 +76,7 @@ If the host's local checksum does not match the lobby document after applying it
 When applying the host's config changes a sync value, the updated config is published even if media is missing; unresolved media hashes remain in the document until changed by the host.
 
 ```
-POST   /game                          {players, password, tag, keys:{sync, checksum}}
+POST   /game                          {players, password, tag, keys:{sync, checksum}, listed, title}
   201  {id, password, players, port, addresses, host_token, slot: 0, player_token}
 GET    /game/{id}[?since=revision]    snapshot; with since, waits up to 25 s for a change
 POST   /game/{id}/players             {tag} → 201 {slot, player_token}; 409 when full
@@ -84,10 +85,13 @@ PUT    /game/{id}/config              host: {config:{key: value}} → {config_ve
 POST   /game/{id}/players/{n}/ready   slot: {config_version, hash, missing:{key: sha1}}
 POST   /game/{id}/start               host: 409 unless every slot is ready
 DELETE /game/{id}                     host: end it
+POST   /lobby                         {since} → {id, name, revision, games:[…]}; with since, waits up to 25 s
 
 errors {"error": "…"}: 400 invalid, 403 wrong token, 404 no game or slot,
        409 wrong state for the call, 503 too many games or shutting down
 ```
+
+`POST /lobby` is what the launcher's Net Play browser polls. It lists the games created with `"listed": true`, from creation until they end: each one's `id`, `title`, `host` (slot 0's tag), `state`, `players`, `joined` and `created`. It carries no passwords, tokens, configs or addresses; joining still goes through `POST /game/{id}/players`. A game is unlisted when `listed` is absent, so older launchers' games stay private. The lobby's `id` is random per run, so a launcher that reaches one lobby at two addresses can tell. See [the lobby browser design](../docs/netplay-rooms-design.md).
 
 ## Lobby and IRC together
 

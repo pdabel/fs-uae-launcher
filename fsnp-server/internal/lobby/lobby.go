@@ -53,6 +53,7 @@ const (
 
 // Config describes a lobby.
 type Config struct {
+	Name            string        // shown to launchers browsing it; may be empty
 	MaxGames        int           // 0 = DefaultMaxGames
 	LaunchTimeout   time.Duration // per game, from when it runs; 0 = DefaultLaunchTimeout
 	IdleTimeout     time.Duration // per session game before start; 0 = DefaultIdleTimeout
@@ -80,7 +81,8 @@ type Info struct {
 
 // Lobby is a registry of live games, keyed by id and by password hash.
 // A running game's own state is owned by its goroutine as always; the mutex
-// guards the two maps, the closed flag, and every entry's session state.
+// guards the two maps, the closed flag, the listing's revision, and every
+// entry's session state.
 type Lobby struct {
 	cfg Config
 	log *slog.Logger
@@ -89,10 +91,19 @@ type Lobby struct {
 	cancel context.CancelFunc
 	wg     sync.WaitGroup // one per running game and per idle reaper
 
+	// id is random per run, so a launcher can tell two addresses are one
+	// lobby.
+	id string
+
 	mu     sync.Mutex
 	closed bool
 	byID   map[string]*entry
 	byHash map[uint32]*entry // reserved hashes; routed only once entry.g is set
+
+	// revision counts every change to the listing (see listing.go);
+	// changed is closed and replaced on each one, to wake long-polls.
+	revision uint64
+	changed  chan struct{}
 }
 
 // New creates a lobby. It hosts nothing until Serve is called, but Create
@@ -115,12 +126,15 @@ func New(cfg Config) *Lobby {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Lobby{
-		cfg:    cfg,
-		log:    cfg.Logger,
-		ctx:    ctx,
-		cancel: cancel,
-		byID:   make(map[string]*entry),
-		byHash: make(map[uint32]*entry),
+		cfg:      cfg,
+		log:      cfg.Logger,
+		ctx:      ctx,
+		cancel:   cancel,
+		id:       newID(),
+		byID:     make(map[string]*entry),
+		byHash:   make(map[uint32]*entry),
+		revision: 1,
+		changed:  make(chan struct{}),
 	}
 }
 
@@ -174,6 +188,8 @@ func (l *Lobby) reserveLocked(players int, password string) (*entry, error) {
 	}
 
 	e := newEntry(newID(), hash, password, players)
+	e.lobby = l
+	e.created = l.cfg.Clock.Now()
 	l.byID[e.id] = e
 	l.byHash[hash] = e
 	return e, nil

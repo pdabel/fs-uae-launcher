@@ -59,6 +59,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) 
 		gameTimeout     = fs.Int("game-launch-timeout", envInt("GAME_LAUNCH_TIMEOUT", int(lobby.DefaultLaunchTimeout/time.Second)), "lobby: seconds a game may wait for its players before it is reaped")
 		idleTimeout     = fs.Int("idle-timeout", envInt("IDLE_TIMEOUT", int(lobby.DefaultIdleTimeout/time.Second)), "lobby: seconds a session game may sit untouched before it starts")
 		publicAddresses = fs.String("public-addresses", envOr("PUBLIC_ADDRESSES", ""), "lobby: comma-separated addresses to tell players; empty = the host name the creator used")
+		lobbyName       = fs.String("name", envOr("LOBBY_NAME", ""), "lobby: a name to show launchers browsing its games")
 	)
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -94,6 +95,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) 
 			}
 		})
 		l = lobby.New(lobby.Config{
+			Name:            *lobbyName,
 			MaxGames:        *maxGames,
 			LaunchTimeout:   time.Duration(*gameTimeout) * time.Second,
 			IdleTimeout:     time.Duration(*idleTimeout) * time.Second,
@@ -139,7 +141,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) 
 		log.Info("listening", "mode", mode, "host", *host, "port", actualPort,
 			"network", listenNetwork(*host), "max_games", *maxGames,
 			"game_launch_timeout", time.Duration(*gameTimeout)*time.Second, "idle_timeout", time.Duration(*idleTimeout)*time.Second,
-			"public_addresses", *publicAddresses, "log_input", *logInput)
+			"public_addresses", *publicAddresses, "name", *lobbyName, "log_input", *logInput)
 	} else {
 		log.Info("listening", "mode", mode, "host", *host, "port", actualPort, "players", *players,
 			"network", listenNetwork(*host), "log_input", *logInput,

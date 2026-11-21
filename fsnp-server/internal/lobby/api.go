@@ -30,6 +30,7 @@ var longPollWait = 25 * time.Second
 //	POST   /game/{id}/players/{n}/ready  slot n: what applying it produced
 //	POST   /game/{id}/start              host: route and run the FSNP game
 //	DELETE /game/{id}                    host: end it
+//	POST   /lobby                        listed games; long-polls past revision
 //
 // Errors are {"error": "..."} with a status: 400 invalid, 403 bad token,
 // 404 no such game or slot, 409 wrong state for the call, 503 full or
@@ -43,6 +44,7 @@ func (l *Lobby) sessionRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /game/{id}/players/{n}/ready", l.handleReady)
 	mux.HandleFunc("POST /game/{id}/start", l.handleStart)
 	mux.HandleFunc("DELETE /game/{id}", l.handleEnd)
+	mux.HandleFunc("POST /lobby", l.handleListing)
 }
 
 func (l *Lobby) handleSessionCreate(w http.ResponseWriter, r *http.Request) {
@@ -251,13 +253,17 @@ func slotParam(w http.ResponseWriter, r *http.Request) (int, bool) {
 // decodeJSON reads one JSON object into v, refusing unknown fields so a
 // misspelt key is an error rather than a silent default.
 func decodeJSON(w http.ResponseWriter, r *http.Request, v any) bool {
-	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxBodyBytes))
-	dec.DisallowUnknownFields()
-	if err := dec.Decode(v); err != nil {
+	if err := decoder(w, r).Decode(v); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 		return false
 	}
 	return true
+}
+
+func decoder(w http.ResponseWriter, r *http.Request) *json.Decoder {
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxBodyBytes))
+	dec.DisallowUnknownFields()
+	return dec
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
