@@ -50,8 +50,13 @@ def main():
 
     socket.setdefaulttimeout(30.0)
     from fsbc.init import initialize_application
+    from fsgs.FSGSDirectories import FSGSDirectories
 
-    initialize_application(app_name, version=launcher.version.VERSION)
+    initialize_application(
+        app_name,
+        version=launcher.version.VERSION,
+        logs_dir=FSGSDirectories.get_logs_dir(),
+    )
 
     if app_main is None:
         print("No valid app specified", file=sys.stderr)

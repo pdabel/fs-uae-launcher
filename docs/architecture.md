@@ -12,11 +12,12 @@ render on GitHub and in VS Code's Markdown preview.
 
 ## Responsibility groups
 
-These are responsibility groups, not strict import layers. The diagram shows
-selected dependencies rather than an exhaustive import graph. Cross-group
-imports exist in both directions: for example, `fsbc.settings` imports
-`launcher.version` and `fsgs.amiga.amiga`, while `fsgs.drivers.gamedriver`
-imports `launcher.option`.
+These are responsibility groups, not yet strict import layers. The diagram
+shows selected dependencies rather than an exhaustive import graph. `fsbc`
+imports nothing above it, which `fsbc/tests/test_layering.py` enforces: the
+launcher passes in its version and logs directory through
+`initialize_application()`. Other cross-group imports still go both ways: for
+example, `fsgs.drivers.gamedriver` imports `launcher.option`.
 
 ```mermaid
 flowchart TB
@@ -65,8 +66,6 @@ flowchart TB
     fsui --> fsbc
     fsui --> qt
     fsbc --> fsboot
-    fsbc -. "version metadata" .-> launcher
-    fsbc -. "Amiga settings defaults" .-> fsgs
 ```
 
 ### Package responsibilities

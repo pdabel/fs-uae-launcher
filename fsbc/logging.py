@@ -73,7 +73,7 @@ class NullOutput(object):
         pass
 
 
-def setup_logging(log_name):
+def setup_logging(log_name, logs_dir):
     if sys.platform == "win32" and "FS_FORCE_STDOUT" not in os.environ:
         # noinspection PyUnresolvedReferences
         if hasattr(sys, "frozen"):
@@ -81,10 +81,6 @@ def setup_logging(log_name):
             sys.stdout = NullOutput()
             sys.stderr = NullOutput()
 
-    # FIXME: remove dependency on fsgs here!
-    from fsgs.FSGSDirectories import FSGSDirectories
-
-    logs_dir = FSGSDirectories.get_logs_dir()
     log_file = os.path.join(logs_dir, log_name)
     print("[LOGGING] Logging to", log_file)
     try:

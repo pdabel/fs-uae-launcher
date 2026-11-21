@@ -7,11 +7,12 @@ from fsbc.application import Application
 def initialize_application(
     name=None,
     version=None,
+    logs_dir=None,
     enable_logging=True,
     enable_exception_handler=True,
 ):
-    if name and enable_logging:
-        fsbc.logging.setup_logging(name + ".log.txt")
+    if name and logs_dir and enable_logging:
+        fsbc.logging.setup_logging(name + ".log.txt", logs_dir)
 
     if name is not None:
         Application.app_name = name
