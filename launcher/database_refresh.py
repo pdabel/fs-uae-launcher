@@ -5,8 +5,10 @@ from fsbc.signal import Signal
 from fsbc.task import Task
 from fsgs.Database import Database
 from fsgs.ogd.context import SynchronizerContext
+from fsgs.ogd.game_rating_synchronizer import GameRatingSynchronizer
 from fsgs.ogd.lists import ListsSynchronizer
 from fsgs.ogd.meta import MetaSynchronizer
+from launcher.gamescanner import GameScanner
 
 
 class DatabaseRefreshTask(Task):
@@ -21,10 +23,6 @@ class DatabaseRefreshTask(Task):
             self._run(database)
 
     def _run(self, database):
-        # FIXME, dependency on fs_uae_launcher
-        from fsgs.ogd.game_rating_synchronizer import GameRatingSynchronizer
-        from launcher.gamescanner import GameScanner
-
         context = SynchronizerContext()
 
         synchronizer = MetaSynchronizer(
