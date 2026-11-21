@@ -718,3 +718,23 @@ def test_a_host_in_step_launches_without_reapplying():
     applied = list(h.applied)
     h.see("running", version=1, config=dict(HOST_DOC))
     assert h.launched and h.applied == applied and h.warnings() == []
+
+
+def test_a_players_mismatch_names_the_keys_without_values():
+    h = Harness()
+    h.local.update(joystick_port_1_mode="", __netplay_password="secret")
+    h.session._apply = lambda snapshot: ("local-hash", {})
+    h.session._apply_and_report(
+        {
+            "config_version": 1,
+            "config": {
+                "joystick_port_1_mode": "joystick",
+                "__netplay_password": "secret",
+            },
+            "hash": "lobby-hash",
+            "keys": {"checksum": ["joystick_port_1_mode", "__netplay_password"]},
+        }
+    )
+    assert h.warnings() == [
+        "your config differs from the host's for: joystick_port_1_mode"
+    ]

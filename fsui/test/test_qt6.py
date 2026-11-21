@@ -1810,6 +1810,44 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 panel.deleteLater()
         self.run_dialog()
 
+    def test_netplay_config_survives_the_input_editor(self):
+        # The joystick mode editor writes "" back for a default mode as
+        # the mode moves under it; a player must still end up with the
+        # host's value, or their config differs from the host's.
+        from fsgs.context import fsgs
+        from launcher.launcher_config import LauncherConfig
+        from launcher.netplay.config_apply import apply_document
+        from launcher.ui.config.InputSelector import InputSelector
+
+        keys = ["amiga_model", "joystick_port_1_mode"]
+        doc = {
+            "config_version": 1,
+            "config": {"amiga_model": "A500", "joystick_port_1_mode": "joystick"},
+            "keys": {"sync": keys, "checksum": keys},
+        }
+        self.setup_dialog()
+        with patch.object(fsgs.config, "values", dict(fsgs.config.values)):
+            fsgs.config.values.update(
+                {"amiga_model": "A500", "joystick_port_1_mode": "nothing"}
+            )
+            selector = InputSelector(self.dialog, 1)
+            try:
+                # Without putting the echo back, this is what applying left.
+                LauncherConfig.set("joystick_port_1_mode", "nothing")
+                LauncherConfig.set("joystick_port_1_mode", "joystick")
+                self.assertEqual(fsgs.config.get("joystick_port_1_mode"), "")
+                LauncherConfig.set("joystick_port_1_mode", "nothing")
+
+                config_hash, missing = apply_document(doc)
+                self.assertEqual(missing, {})
+                self.assertEqual(fsgs.config.get("joystick_port_1_mode"), "joystick")
+                self.assertEqual(
+                    config_hash, LauncherConfig.checksum_config(doc["config"], keys)
+                )
+            finally:
+                selector.on_destroy()
+        self.run_dialog()
+
     def test_netplay_settings_page(self):
         from fsbc.settings import Settings
         from launcher.settings.netplay_settings_page import NetplaySettingsPage

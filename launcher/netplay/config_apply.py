@@ -126,7 +126,27 @@ def apply_config(document, sync_keys):
     )
     if updates:
         LauncherConfig.set_from_netplay(updates)
+        put_back_echoes(updates, fsgs.config.get, LauncherConfig.set_from_netplay)
     return missing
+
+
+# Rounds of put_back_echoes before giving up on a key.
+ECHO_ROUNDS = 3
+
+
+def put_back_echoes(updates, get, set_multiple):
+    """Set again any key a config editor changed as it was applied.
+
+    An editor showing a key writes back what it shows when the key moves
+    under it, normalised: a joystick mode set to its default comes back
+    as "". The host sent the value, so this launcher's would hash
+    differently. Set again, the editor already shows it and leaves it.
+    """
+    for _ in range(ECHO_ROUNDS):
+        changed = [(key, value) for key, value in updates if get(key) != value]
+        if not changed:
+            return
+        set_multiple(changed)
 
 
 def apply_document(snapshot):

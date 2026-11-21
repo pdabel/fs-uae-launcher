@@ -243,11 +243,11 @@ class NetplaySession:
             self._push_if_changed()
             return
         if (
-            self.is_host
-            and not missing
+            not missing
             and snapshot.get("hash") is not None
             and config_hash != snapshot["hash"]
         ):
+            # Names only: values include the game's password.
             differing = sorted(
                 {
                     key
@@ -257,9 +257,11 @@ class NetplaySession:
                 }
             )
             detail = ", ".join(differing) or "checksum calculation"
-            self._message(
-                f"host config differs from the lobby for: {detail}", True
-            )
+            if self.is_host:
+                text = f"host config differs from the lobby for: {detail}"
+            else:
+                text = f"your config differs from the host's for: {detail}"
+            self._message(text, True)
         self._call(
             self.client.report_ready,
             self.game_id,
