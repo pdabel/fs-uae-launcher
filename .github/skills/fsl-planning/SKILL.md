@@ -32,7 +32,7 @@ description: 'Task planning and approach strategy for FS-UAE Launcher. Use when 
 - [ ] Changes FSNP bytes on the wire? -> stop and confirm against `netplay.c` at `v3.1.66`; add a golden test.
 - [ ] Adds a `fsnp-server` flag? -> flag, env var, README table, and `Server.py` if the launcher passes it.
 - [ ] Touches a panel or settings page? -> works in every launcher theme (`LAUNCHER_THEME` in `launcher/option.py`); run `fsui/test`.
-- [ ] Adds user-visible text? -> through `gettext` from `launcher.i18n`.
+- [ ] Adds user-visible text? -> through `gettext` from `launcher.i18n` (`fsui.res` or `fsgs.res` below the launcher).
 - [ ] Adds network or disk I/O reachable from the UI? -> worker thread + `call_after`, with a timeout.
 - [ ] Adds a Python dependency? -> `Pipfile` and `Pipfile.lock`, and check PyInstaller still bundles it.
 - [ ] Adds a Go dependency? -> don't; the module is standard-library only.

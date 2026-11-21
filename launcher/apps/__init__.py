@@ -51,11 +51,13 @@ def main():
     socket.setdefaulttimeout(30.0)
     from fsbc.init import initialize_application
     from fsgs.FSGSDirectories import FSGSDirectories
+    from launcher.i18n import gettext
 
     initialize_application(
         app_name,
         version=launcher.version.VERSION,
         logs_dir=FSGSDirectories.get_logs_dir(),
+        gettext=gettext,
     )
 
     if app_main is None:

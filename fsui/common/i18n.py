@@ -1,4 +1,1 @@
-try:
-    from launcher.i18n import gettext
-except ImportError:
-    gettext = lambda x: x
+from fsbc.i18n import gettext  # noqa: F401

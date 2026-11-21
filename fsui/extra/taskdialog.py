@@ -1,6 +1,6 @@
 import fsui
 from fsui.extra.iconheader import IconHeader
-from launcher.res import gettext
+from fsui.res import gettext
 
 
 class TaskDialog(fsui.Window):
