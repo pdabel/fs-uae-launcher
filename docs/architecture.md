@@ -19,7 +19,7 @@ launcher passes in its version, logs directory and translation function
 through `initialize_application()`. `fsui` and `fsgs` translate through that
 hook (`fsui.res.gettext`, `fsgs.res.gettext`), not `launcher.i18n`. Other
 cross-group imports still go both ways: for example,
-`fsgs.drivers.gamedriver` imports `launcher.option`.
+`fsgs.input.enumeratehelper` imports `launcher.devicemanager`.
 
 ```mermaid
 flowchart TB
@@ -61,7 +61,7 @@ flowchart TB
     workspace --> fsui
     workspace --> fsgs
     fsgs --> fsbc
-    fsgs -. "launcher option metadata" .-> launcher
+    fsgs -. "device manager, game scanner" .-> launcher
     fsgs --> fspy
     fsgs --> fsuae
     fsgs --> openretro
@@ -78,7 +78,7 @@ flowchart TB
 | `fsbc/` | Framework base: `Application`, `Settings` (persisted key/value), `Signal`, `Task`, path and desktop helpers, logging setup. | [application.py](../fsbc/application.py), [settings.py](../fsbc/settings.py), [signal.py](../fsbc/signal.py), [init.py](../fsbc/init.py) |
 | `fspy/`, `fstd/` | Small stdlib patches and desktop-environment helpers. | [fspy/zipfile.py](../fspy/zipfile.py) |
 | `fsui/` | Toolkit-neutral widget API (`Panel`, `Button`, `Choice`, layouts, dialogs) implemented on Qt in `fsui/qt/`. Owns the theme engine. | [fsui/qt/qt.py](../fsui/qt/qt.py), [modern_theme.py](../fsui/qt/modern_theme.py), [retro_theme.py](../fsui/qt/retro_theme.py) |
-| `fsgs/` | Game and emulator services: the `fsgs` context singleton, platforms and drivers, SQLite databases, archive reading, file scanning, OpenRetro sync, plugin discovery. Some driver code also depends on launcher options and Qt display information. | [context.py](../fsgs/context.py), [Database.py](../fsgs/Database.py), [amiga/launchhandler.py](../fsgs/amiga/launchhandler.py), [drivers/gamedriver.py](../fsgs/drivers/gamedriver.py) |
+| `fsgs/` | Game and emulator services: the `fsgs` context singleton, platforms and drivers, SQLite databases, archive reading, file scanning, OpenRetro sync, plugin discovery. Some driver code also depends on Qt display information. | [context.py](../fsgs/context.py), [Database.py](../fsgs/Database.py), [amiga/launchhandler.py](../fsgs/amiga/launchhandler.py), [drivers/gamedriver.py](../fsgs/drivers/gamedriver.py) |
 | `launcher/` | The application: `LauncherApp`, `LauncherWindow`, the dashboard shell, configuration panels, the Settings dialog, startup scans, netplay client, option metadata. | [launcherapp.py](../launcher/launcherapp.py), [ui/launcherwindow.py](../launcher/ui/launcherwindow.py), [ui/dashboard.py](../launcher/ui/dashboard.py), [option.py](../launcher/option.py) |
 | `workspace/` | Secondary tool windows opened from the launcher (ADF and HDF creators, joystick configuration, OpenRetro login/logout, locker upload, refresh), with their own small widget set in `workspace/ui`. | [workspace/apps](../workspace/apps) |
 | `fsnp-server/` | Go netplay server, run as a child process when hosting a game. | [fsnp-server/README.md](../fsnp-server/README.md) |

@@ -24,12 +24,14 @@ AMIGA_PORTS = [
         "description": "Joystick Port",
         "types": [AMIGA_JOYSTICK, AMIGA_MOUSE, CD32_CONTROLLER],
         "type_option": "joystick_port_1_mode",
+        "type_default": "joystick",
         "device_option": "joystick_port_1",
     },
     {
         "description": "Mouse Port",
         "types": [AMIGA_JOYSTICK, AMIGA_MOUSE, CD32_CONTROLLER],
         "type_option": "joystick_port_0_mode",
+        "type_default": "mouse",
         "device_option": "joystick_port_0",
     },
     # FIXME: ADDITIONAL PORTS...

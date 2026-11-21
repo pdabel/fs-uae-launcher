@@ -25,6 +25,20 @@ def display(name, horizontal=0, vertical=0, serial=""):
     )
 
 
+def use_window_settings(monkeypatch, settings, config=None):
+    """Stub what GameDriver.window_size() reads: the game config, then the
+    launcher settings."""
+    from fsbc.settings import Settings
+    from fsgs.context import fsgs
+
+    monkeypatch.setattr(
+        Settings,
+        "get",
+        lambda self, key, default="": settings.get(key, default),
+    )
+    monkeypatch.setattr(fsgs.config, "values", dict(config or {}))
+
+
 def test_selected_display_survives_enumeration_and_position_changes():
     first = display("DP-1", -1920)
     second = display("HDMI-1", serial="second")
@@ -89,8 +103,6 @@ def test_fsuae_starts_on_selected_display_not_launcher_monitor(monkeypatch):
 
     from fsgs.amiga.fsuae import FSUAE
     from fsgs.drivers.gamedriver import GameDriver
-    from launcher.launcher_config import LauncherConfig
-    from launcher.launcher_settings import LauncherSettings
 
     first = display("DP-1")
     selected = display("HDMI-1", -1920)
@@ -100,15 +112,12 @@ def test_fsuae_starts_on_selected_display_not_launcher_monitor(monkeypatch):
     monkeypatch.setattr(
         importlib.import_module("fsui.qt"), "init_qt", lambda: application
     )
-    monkeypatch.setattr(LauncherConfig, "get", lambda key: "")
     settings = {
         "monitor": display_id(selected),
         "window_width": "960",
         "window_height": "540",
     }
-    monkeypatch.setattr(
-        LauncherSettings, "get", lambda key: settings.get(key, "")
-    )
+    use_window_settings(monkeypatch, settings)
     assert GameDriver.screen_rect_for_monitor(settings["monitor"]) == (
         -1920,
         0,
@@ -118,7 +127,7 @@ def test_fsuae_starts_on_selected_display_not_launcher_monitor(monkeypatch):
     assert GameDriver.screen_index_for_monitor(settings["monitor"]) == 1
     args = []
     environment = {}
-    FSUAE.center_window(args, environment)
+    FSUAE.center_window(args, environment, monitor=settings["monitor"])
     assert args == ["--monitor=left", "--window-x=-1440", "--window-y=270"]
     assert environment["SDL_VIDEO_WINDOW_POS"] == "-1440,270"
 
@@ -137,19 +146,11 @@ def test_actual_fsuae_process_receives_selected_screen_position(monkeypatch):
     from unittest.mock import Mock
     from fsgs.amiga.fsuae import FSUAE
     from fsgs.drivers.gamedriver import GameDriver
-    from launcher.launcher_config import LauncherConfig
-    from launcher.launcher_settings import LauncherSettings
 
     selected = display_id(display("HDMI-1"))
-    settings = {
-        "monitor": selected,
-        "window_width": "960",
-        "window_height": "540",
-    }
-    monkeypatch.setattr(
-        LauncherSettings, "get", lambda key: settings.get(key, "")
+    use_window_settings(
+        monkeypatch, {"window_width": "960", "window_height": "540"}
     )
-    monkeypatch.setattr(LauncherConfig, "get", lambda key: "")
     monkeypatch.setattr(
         GameDriver,
         "screen_rect_for_monitor",
@@ -169,7 +170,7 @@ def test_actual_fsuae_process_receives_selected_screen_position(monkeypatch):
     monkeypatch.delenv("__GL_SYNC_TO_VBLANK", raising=False)
     process = Mock()
     monkeypatch.setattr("fsgs.amiga.fsuae.subprocess.Popen", process)
-    FSUAE.start_with_args(["/temporary/config.fs-uae"])
+    FSUAE.start_with_args(["/temporary/config.fs-uae"], monitor=selected)
     args = process.call_args.args[0]
     assert args == [
         "/emulator/fs-uae",
@@ -185,16 +186,34 @@ def test_actual_fsuae_process_receives_selected_screen_position(monkeypatch):
 
 def test_generic_driver_uses_same_monitor_for_window_placement(monkeypatch):
     from fsgs.drivers.gamedriver import GameDriver
-    from launcher.launcher_config import LauncherConfig
-    from launcher.launcher_settings import LauncherSettings
 
-    monkeypatch.setattr(LauncherConfig, "get", lambda key: "")
-    monkeypatch.setattr(LauncherSettings, "get", lambda key: "")
-    driver = SimpleNamespace(screen_rect=lambda: (-1920, 0, 1920, 1080))
+    use_window_settings(monkeypatch, {})
+    driver = SimpleNamespace(
+        window_size=GameDriver.window_size,
+        screen_rect=lambda: (-1920, 0, 1920, 1080),
+    )
     environment = {}
     GameDriver.update_environment_with_centering_info(driver, environment)
     assert environment["SDL_VIDEO_WINDOW_POS"] == "-1440,270"
     assert environment["FSGS_WINDOW_CENTER"] == "-960,540"
+
+
+def test_window_size_prefers_the_game_config(monkeypatch):
+    from fsgs.drivers.gamedriver import GameDriver
+
+    use_window_settings(
+        monkeypatch,
+        {"window_width": "1280", "window_height": "720"},
+        config={"window_width": "640", "window_height": ""},
+    )
+    assert GameDriver.window_size() == (640, 720)
+
+
+def test_window_size_defaults_when_unset_or_invalid(monkeypatch):
+    from fsgs.drivers.gamedriver import GameDriver
+
+    use_window_settings(monkeypatch, {"window_width": "wide"})
+    assert GameDriver.window_size() == (960, 540)
 
 
 def test_refresh_rate_uses_selected_qt_screen_when_xrandr_does_not_match(
