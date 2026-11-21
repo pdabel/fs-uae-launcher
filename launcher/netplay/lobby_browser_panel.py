@@ -12,6 +12,7 @@ from fsui.qt import modern_theme
 from fsui.qt.qt import theme_applied
 from fsui.qt import (
     Qt,
+    QApplication,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -21,6 +22,7 @@ from fsui.qt import (
 )
 from qtpy.QtWidgets import (
     QAbstractItemView,
+    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -35,6 +37,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 from launcher.i18n import gettext
+from launcher.launcher_settings import LauncherSettings
 from launcher.netplay.lobby_browser import (
     CONNECTING,
     LOCAL,
@@ -44,10 +47,28 @@ from launcher.netplay.lobby_browser import (
     UNREACHABLE,
 )
 from launcher.netplay.lobby_servers import parse_lobby
+from launcher.netplay.netplay import HOSTING, LAST_HOST_SERVER
+from launcher.option import Option
 
 # Status dots: filled when the server answers.
 DOT_ONLINE = "●"
 DOT_OFFLINE = "○"
+
+
+# Players a game can have, as the lobby allows.
+MIN_PLAYERS = 2
+MAX_PLAYERS = 6
+
+# The settings that say whether a game is loaded, and what it's called.
+GAME_SETTINGS = (Option.CONFIG_NAME, "parent_uuid", "config_path")
+
+
+def has_game():
+    """Whether a game is loaded to host, rather than an empty config."""
+    return bool(
+        LauncherSettings.get("parent_uuid")
+        or LauncherSettings.get("config_path")
+    )
 
 
 def plain_label(text="", object_name=None):
@@ -178,6 +199,9 @@ class LobbyBrowserPanel(QFrame):
 
         buttons = QHBoxLayout()
         browse.addLayout(buttons)
+        self.host_button = QPushButton()
+        self.host_button.clicked.connect(self.on_host)
+        buttons.addWidget(self.host_button)
         self.join_by_id_button = QPushButton(gettext("Join by ID\u2026"))
         self.join_by_id_button.setToolTip(
             gettext("Join a game that isn't listed, with the ID its host gave")
@@ -185,6 +209,23 @@ class LobbyBrowserPanel(QFrame):
         self.join_by_id_button.clicked.connect(self.on_join_by_id)
         buttons.addWidget(self.join_by_id_button)
         buttons.addStretch(1)
+
+        # This computer's lobby, while it runs between games.
+        self.lobby_row = QFrame()
+        lobby_row = QHBoxLayout(self.lobby_row)
+        lobby_row.setContentsMargins(0, 0, 0, 0)
+        self.lobby_label = plain_label()
+        lobby_row.addWidget(self.lobby_label, 1)
+        self.copy_address_button = QPushButton(gettext("Copy address"))
+        self.copy_address_button.setToolTip(
+            gettext("Copy the address players add to their server list")
+        )
+        self.copy_address_button.clicked.connect(self.on_copy_address)
+        lobby_row.addWidget(self.copy_address_button)
+        self.stop_lobby_button = QPushButton(gettext("Stop lobby"))
+        self.stop_lobby_button.clicked.connect(self.on_stop_lobby)
+        lobby_row.addWidget(self.stop_lobby_button)
+        browse.addWidget(self.lobby_row)
 
         self.game_page = QWidget()
         game = QVBoxLayout(self.game_page)
@@ -198,6 +239,17 @@ class LobbyBrowserPanel(QFrame):
         self.slot_list.setSelectionMode(QAbstractItemView.NoSelection)
         self.slot_list.setFocusPolicy(Qt.NoFocus)
         game.addWidget(self.slot_list, 1)
+        self.game_online = plain_label()
+        self.game_online.setWordWrap(True)
+        game.addWidget(self.game_online)
+        address_row = QHBoxLayout()
+        game.addLayout(address_row)
+        self.game_address = plain_label()
+        address_row.addWidget(self.game_address)
+        self.game_copy_address_button = QPushButton(gettext("Copy address"))
+        self.game_copy_address_button.clicked.connect(self.on_copy_address)
+        address_row.addWidget(self.game_copy_address_button)
+        address_row.addStretch(1)
         game_buttons = QHBoxLayout()
         game.addLayout(game_buttons)
         self.recheck_button = QPushButton(gettext("Re-check"))
@@ -212,6 +264,15 @@ class LobbyBrowserPanel(QFrame):
         self.leave_button = QPushButton(gettext("Leave"))
         self.leave_button.clicked.connect(self.on_leave)
         game_buttons.addWidget(self.leave_button)
+        self.copy_game_id_button = QPushButton(gettext("Copy game ID"))
+        self.copy_game_id_button.setToolTip(
+            gettext("This game isn't listed: players join it by its ID")
+        )
+        self.copy_game_id_button.clicked.connect(self.on_copy_game_id)
+        game_buttons.addWidget(self.copy_game_id_button)
+        self.game_stop_lobby_button = QPushButton(gettext("Stop lobby"))
+        self.game_stop_lobby_button.clicked.connect(self.on_stop_lobby)
+        game_buttons.addWidget(self.game_stop_lobby_button)
         game_buttons.addStretch(1)
         self.game_status = plain_label()
         self.game_status.setWordWrap(True)
@@ -237,6 +298,8 @@ class LobbyBrowserPanel(QFrame):
         netplay.browser_listeners.append(self.refresh)
         netplay.activity_listeners.append(self.add_activity)
         netplay.session_listeners.append(self.on_session)
+        LauncherSettings.add_listener(self)
+        self.update_host_button()
         self.refresh()
         self.on_session(netplay.session)
 
@@ -260,6 +323,28 @@ class LobbyBrowserPanel(QFrame):
             self.netplay.activity_listeners.remove(self.add_activity)
         if self.on_session in self.netplay.session_listeners:
             self.netplay.session_listeners.remove(self.on_session)
+        LauncherSettings.remove_listener(self)
+
+    def on_setting(self, key, value):
+        if key in GAME_SETTINGS:
+            self.update_host_button()
+
+    def update_host_button(self):
+        if has_game():
+            title = LauncherSettings.get(Option.CONFIG_NAME).strip()
+            metrics = self.host_button.fontMetrics()
+            title = metrics.elidedText(title, Qt.ElideRight, 240)
+            self.host_button.setText(
+                gettext("Host game: {0}\u2026").format(title)
+            )
+            self.host_button.setEnabled(True)
+            self.host_button.setToolTip(
+                gettext("Host this game and wait for players to join")
+            )
+        else:
+            self.host_button.setText(gettext("Host game\u2026"))
+            self.host_button.setEnabled(False)
+            self.host_button.setToolTip(gettext("Choose a game first"))
 
     # --- Rendering ------------------------------------------------------------
 
@@ -269,6 +354,9 @@ class LobbyBrowserPanel(QFrame):
         now = browser.now()
         self._render_servers(servers, now)
         self._render_games(browser.games())
+        self._render_lobby_row()
+        if self.pages.currentWidget() is self.game_page:
+            self.on_session()
         waiting = any(s.state == UNREACHABLE for s in servers)
         if waiting and not self.countdown.isActive():
             self.countdown.start()
@@ -342,6 +430,34 @@ class LobbyBrowserPanel(QFrame):
                 tree.setCurrentItem(item)
         self.no_games.setVisible(not games)
 
+    def _render_lobby_row(self):
+        server = self.netplay.running_hosted_server()
+        self.lobby_row.setVisible(server is not None)
+        if server is None:
+            return
+        address = self.netplay.local_lobby_address()
+        if address:
+            text = gettext(
+                "Your lobby is running. Players reach you at {0}"
+            ).format(address)
+        else:
+            text = gettext("Your lobby is running on port {0}").format(
+                server.port
+            )
+        self.lobby_label.setText(text)
+        self.copy_address_button.setEnabled(bool(address))
+
+    def local_online(self):
+        """Who is in this computer's lobby, besides this launcher."""
+        local = self.netplay.browser.server(LOCAL)
+        if local is None:
+            return []
+        me = self.netplay.browser.my_name()
+        online = list(local.online)
+        if me in online:
+            online.remove(me)
+        return online
+
     def selected_game_id(self):
         item = self.games_tree.currentItem()
         if item is None:
@@ -356,8 +472,34 @@ class LobbyBrowserPanel(QFrame):
             self.pages.setCurrentWidget(self.browse_page)
             return
         self.pages.setCurrentWidget(self.game_page)
+        hosted_here = bool(
+            session is not None and session.is_host and netplay.session_hosted
+        )
+        address = netplay.local_lobby_address() if hosted_here else None
+        online = self.local_online() if hosted_here else []
+        self.game_online.setVisible(bool(online))
+        self.game_online.setText(
+            gettext("Online in your lobby: ") + ", ".join(online)
+        )
+        self.game_address.setVisible(bool(address))
+        self.game_copy_address_button.setVisible(bool(address))
+        if address:
+            self.game_address.setText(
+                gettext("Players reach you at {0}").format(address)
+            )
+        self.game_stop_lobby_button.setVisible(hosted_here)
+        self.copy_game_id_button.setVisible(
+            bool(
+                session is not None
+                and session.is_host
+                and not netplay.session_listed
+            )
+        )
         if session is None:
-            self.game_heading.setText(gettext("Joining\u2026"))
+            if netplay.joining == HOSTING:
+                self.game_heading.setText(gettext("Creating the game\u2026"))
+            else:
+                self.game_heading.setText(gettext("Joining\u2026"))
             self.slot_list.clear()
             self.game_status.setText("")
             self.recheck_button.setEnabled(False)
@@ -432,6 +574,49 @@ class LobbyBrowserPanel(QFrame):
             label = server
         self.netplay.join_game(host, port, game_id, server=label)
 
+    def on_host(self):
+        if not has_game():
+            return
+        browser = self.netplay.browser
+        address = LauncherSettings.get(Option.NETPLAY_PUBLIC_ADDRESS).strip()
+        local = gettext("This computer")
+        if address:
+            local += f" ({address})"
+        choices = [(LOCAL, local)] + [
+            (s.key, s.title)
+            for s in browser.servers()
+            if s.key != LOCAL and s.state == ONLINE
+        ]
+        last = LauncherSettings.get(LAST_HOST_SERVER)
+        title = LauncherSettings.get(Option.CONFIG_NAME).strip()
+        answer = HostGameDialog.get(self, title, choices, last)
+        if answer is None:
+            return
+        server, players, listed = answer
+        self.netplay.host_game(server, players, listed)
+
+    def on_copy_address(self):
+        address = self.netplay.local_lobby_address()
+        if address:
+            QApplication.clipboard().setText(address)
+            self.netplay.activity(
+                gettext(
+                    "Copied {0}: players add it to their server list"
+                ).format(address)
+            )
+
+    def on_copy_game_id(self):
+        session = self.netplay.session
+        if session is not None:
+            QApplication.clipboard().setText(session.game_id)
+            self.netplay.activity(
+                gettext("Copied the game ID: players use Join by ID\u2026")
+            )
+
+    def on_stop_lobby(self):
+        self.netplay.stop_lobby()
+        self.refresh()
+
     def on_recheck(self):
         self.netplay.command_recheck([])
 
@@ -480,6 +665,63 @@ class JoinByIdDialog(QDialog):
     def get(parent, servers):
         """(server, game id), or None if cancelled or left blank."""
         dialog = JoinByIdDialog(parent, servers)
+        try:
+            if dialog.exec():
+                return dialog.answer()
+            return None
+        finally:
+            dialog.deleteLater()
+
+
+class HostGameDialog(QDialog):
+    """Where to host the loaded game, for how many, and whether to list it."""
+
+    def __init__(self, parent, title, servers, last=None):
+        super().__init__(parent)
+        self.setWindowTitle(gettext("Host {0}").format(title))
+        layout = QFormLayout(self)
+        self.server = QComboBox()
+        for key, label in servers:
+            self.server.addItem(label, key)
+        index = self.server.findData(last)
+        self.server.setCurrentIndex(max(index, 0))
+        layout.addRow(gettext("Server:"), self.server)
+        self.players = QComboBox()
+        for n in range(MIN_PLAYERS, MAX_PLAYERS + 1):
+            self.players.addItem(str(n), n)
+        layout.addRow(gettext("Players:"), self.players)
+        self.listed = QCheckBox(gettext("List this game"))
+        self.listed.setChecked(True)
+        self.listed.setToolTip(
+            gettext(
+                "Anyone browsing the server sees it and can join. Untick to "
+                "share its ID with the players instead"
+            )
+        )
+        layout.addRow(self.listed)
+        note = plain_label(
+            gettext("Starts when every player has joined and is ready.")
+        )
+        layout.addRow(note)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        )
+        buttons.button(QDialogButtonBox.Ok).setText(gettext("Host"))
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addRow(buttons)
+
+    def answer(self):
+        return (
+            self.server.currentData(),
+            self.players.currentData(),
+            self.listed.isChecked(),
+        )
+
+    @staticmethod
+    def get(parent, title, servers, last=None):
+        """(server key, players, listed), or None if cancelled."""
+        dialog = HostGameDialog(parent, title, servers, last)
         try:
             if dialog.exec():
                 return dialog.answer()

@@ -34,15 +34,21 @@ class InfoDialog(fsui.Window):
 info_message = """\n
 How to Use Netplay:
 
-1. Join or create a game channel using the 'Join Game Channel' button.
-2. If you are hosting, enter the port and number of players, choose the
-   game and its settings, and use the 'Host Game' button.
-3. Everyone else's launcher joins the game and takes its config from the
-   netplay server automatically. The game list under the channel shows
-   each player as ready, missing files, or config differs.
-4. If you are missing a file, add it and press 'Re-check'.
-5. Once every player is ready, the host presses 'Start Game', and FS-UAE
-   starts for everyone.
+1. Add the lobby servers you play on in Settings > Net Play. The Net Play
+   tab lists every game waiting for players on them.
+2. To play a listed game, press its 'Join'. For a game that isn't listed,
+   use 'Join by ID...' with the ID its host gave you.
+3. To host, choose the game and its settings, then press 'Host game'.
+   Pick a server, or This computer (set the address players reach you at
+   in Settings > Net Play, and forward its port to this computer).
+4. Every player's launcher takes the game's config from the lobby. The
+   game view shows each player as ready, missing files, or config
+   differs. If you are missing a file, add it and press 'Re-check'.
+5. Once every player has joined and is ready, FS-UAE starts for everyone.
+   Nobody presses Start.
+
+Games hosted with IRC commands in a game channel still work as before:
+the host presses 'Start Game' once every player is ready.
 
 If required, you can use the netplay command box to enter manual IRC or netplay commands.
 

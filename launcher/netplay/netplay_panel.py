@@ -165,49 +165,9 @@ class NetplayPanel(fsui.Panel):
         parent = self.game_panel
         input_row = fsui.HorizontalLayout()
         parent.layout.add(input_row, fill=True, margin=10, margin_top=0)
-
-        self.port_label = fsui.Label(
-            parent, gettext("Port") + ":" if self.columns else gettext("Port (default: 25101)")
-        )
-        input_row.add(self.port_label, margin_right=20 if self.columns else 5)
-        self.port_field = fsui.TextField(parent)
-        self.port_field.set_text("25101")
-        self.netplay_port_validator = QtGui.QIntValidator(bottom=25100, top=25500)
-        self.port_field.setValidator(self.netplay_port_validator)  # Set validator.
-        self.port_field.set_min_width(75)
-        input_row.add(
-            self.port_field, expand=self.columns, fill=False,
-            margin_right=0 if self.columns else 15,
-        )
-
-        if self.columns:
-            input_row = fsui.HorizontalLayout()
-            parent.layout.add(input_row, fill=True, margin=10)
-            self.port_field.setToolTip(gettext("Default port: 25101"))
-        self.player_count_label = fsui.Label(
-            parent, gettext("Players") + ":" if self.columns else gettext("Number of Players")
-        )
-        input_row.add(self.player_count_label, margin_right=20 if self.columns else 5)
-        self.player_count_field = fsui.TextField(parent)
-        if self.columns:
-            label_width = max(
-                self.port_label.get_min_width(),
-                self.player_count_label.get_min_width(),
-            )
-            self.port_label.set_min_width(label_width)
-            self.player_count_label.set_min_width(label_width)
-        self.player_count_field.set_text("2")
-        self.player_count_validator = QtGui.QIntValidator(bottom=2, top=6)
-        self.player_count_field.setValidator(self.player_count_validator)  # Set validator.
-        input_row.add(self.player_count_field, expand=self.columns, fill=False)
-        # Add a spacer to push the info button to the far right
-        if not self.columns:
-            input_row.add_spacer(0, expand=True)
-
-        if self.columns:
-            input_row = fsui.HorizontalLayout()
-            parent.layout.add(input_row, fill=True, margin=10)
-            input_row.add_spacer(0, expand=True)
+        # Hosting moved to the lobby browser: its port is in Settings,
+        # and its players in the Host dialog.
+        input_row.add_spacer(0, expand=True)
         info_button = InfoButton(parent)
         input_row.add(info_button, margin_left=10)
 
@@ -236,9 +196,6 @@ class NetplayPanel(fsui.Panel):
          # Add a spacer before the Start Game button and store a reference
         self.action_spacer_pre = button_layout.add_spacer(0, expand=not self.columns)
 
-        # Host Game button to host a game on the IRC channel (only shown in game channels)
-        self.host_game_button = HostGameButton(parent, self.netplay, self, self.netplay.irc)
-        button_layout.add(self.host_game_button, fill=True, margin_left=0 if self.columns else 10)
         # Start Game button (only shown in game channels)
         self.start_button = StartGameButton(parent, self.netplay, self.netplay.irc)
         button_layout.add(self.start_button, fill=True, margin_left=0 if self.columns else 10, margin_top=10 if self.columns else 0)
@@ -316,12 +273,7 @@ class NetplayPanel(fsui.Panel):
 
         # Master list of all action buttons
         all_buttons = [
-            self.host_game_button,
             self.start_button,
-            self.player_count_field,
-            self.player_count_label,
-            self.port_field,
-            self.port_label,
             self.recheck_button,
         ]
 
@@ -419,39 +371,6 @@ class JoinChannelButton(fsui.Button):
                 and self.private_checkbox.is_checked()
             )
             self.irc.join(channel, private=private)
-
-class HostGameButton(fsui.Button):
-    def __init__(self, parent, netplay, panel, irc):
-        super().__init__(parent, gettext("Host Game"))
-        self.netplay = netplay
-        self.panel = panel
-        self.irc = irc
-        self.set_tooltip(gettext("Host a game on the IRC channel."))
-
-    def on_activated(self):
-        port = self.panel.port_field.get_text().strip()
-        p_result, *_ = self.panel.netplay_port_validator.validate(port, 0)
-        if p_result != QtGui.QValidator.State.Acceptable:
-            self.irc.warning(
-                f"netplay port must have a value between "
-                f"{self.panel.netplay_port_validator.bottom()}-"
-                f"{self.panel.netplay_port_validator.top()}, got {port}"
-            )
-            return
-        player_count = self.panel.player_count_field.get_text().strip()
-        pc_result, *_ = self.panel.player_count_validator.validate(player_count, 0)
-        if pc_result != QtGui.QValidator.State.Acceptable:
-            self.irc.warning(
-                f"player count must have a value between "
-                f"{self.panel.player_count_validator.bottom()}-"
-                f"{self.panel.player_count_validator.top()}, got {player_count}"
-            )
-            return
-        command = f"/hostgame {self.netplay.irc.client.host}:{port} {player_count}"
-        # Broadcast the command as a message in the IRC channel
-        self.irc.handle_command(f"/me ran the following command:")
-        self.irc.handle_command(f"/me {command}")
-        self.netplay.handle_command(command)
 
 class Recheck(fsui.Button):
     def __init__(self, parent, netplay, irc):

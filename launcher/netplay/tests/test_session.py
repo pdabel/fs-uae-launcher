@@ -692,3 +692,29 @@ def test_status_line(auto_start, slots, state, want):
 
 def test_status_line_before_the_lobby_answers():
     assert Harness().session.status_line() == "Waiting for the lobby…"
+
+
+def test_a_host_edit_the_lobby_missed_is_undone_before_launch():
+    # An auto-start game starts on the last ready report, which can come
+    # just before the host's latest edit reaches the lobby.
+    h = Harness(host=True)
+    h.session.start()
+    h.executor.run_all()
+    h.see("ready", version=1, config=dict(HOST_DOC))
+    h.edit("chip_memory", "1024")
+    h.see("running", version=1, config=dict(HOST_DOC))
+    assert h.launched and h.local["chip_memory"] == "512"
+    assert any("runs without it" in w for w in h.warnings())
+    h.later.pop()()  # the push that was waiting finds the game started
+    h.executor.run_all()
+    assert len(h.client.named("set_config")) == 1
+
+
+def test_a_host_in_step_launches_without_reapplying():
+    h = Harness(host=True)
+    h.session.start()
+    h.executor.run_all()
+    h.see("ready", version=1, config=dict(HOST_DOC))
+    applied = list(h.applied)
+    h.see("running", version=1, config=dict(HOST_DOC))
+    assert h.launched and h.applied == applied and h.warnings() == []

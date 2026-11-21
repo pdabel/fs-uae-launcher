@@ -80,6 +80,7 @@ class LauncherSettings(object):
         Option.NES_DATABASE: "",
         "netplay_feature": "1",
         Option.NETPLAY_HOST_PORT: "",
+        "netplay_last_host_server": "",
         Option.NETPLAY_NAME: "",
         Option.NETPLAY_PUBLIC_ADDRESS: "",
         Option.NETPLAY_SERVERS: "",

@@ -1,6 +1,6 @@
 import os
 import unittest
-from unittest.mock import Mock, call, patch
+from unittest.mock import ANY, Mock, call, patch
 
 import fsui
 from fsui.qt import QDialog, QEvent, QFont, QFontMetrics, QImage, QPainter, QTimer
@@ -1517,6 +1517,7 @@ class TestLaunchAndNetplay(WidgetTestCase):
                         server_class.assert_called_once_with(
                             HOST_PORT, 2, "secret", lobby=True,
                             public_addresses="host.example",
+                            presence=True, name=ANY,
                         )
                         server_class.return_value.start.assert_called_once_with()
                         # The launcher reaches its own lobby on loopback.
@@ -1756,19 +1757,19 @@ class TestLaunchAndNetplay(WidgetTestCase):
                                         self.application.processEvents()
                                         self.assertEqual(page.channel_area.horizontalScrollBar().maximum(), 0)
                                         self.assertTrue(page.channel_area.widget().isAncestorOf(page.panel.join_channel_button.widget()))
-                                        self.assertTrue(page.details_area.widget().isAncestorOf(page.panel.host_game_button.widget()))
+                                        self.assertTrue(page.details_area.widget().isAncestorOf(page.panel.start_button.widget()))
+                                        # Hosting moved to the lobby browser.
+                                        self.assertFalse(hasattr(page.panel, "host_game_button"))
+                                        self.assertFalse(hasattr(page.panel, "port_field"))
+                                        self.assertFalse(hasattr(page.panel, "player_count_field"))
                                         self.assertTrue(page.chat_area.widget().isAncestorOf(page.panel.input_field))
                                         self.assertFalse(hasattr(page.panel, "reset_button"))
                                         controls_geometry = page.panel.game_panel.widget().geometry()
                                         stop_geometry = page.server_details.stop_button.geometry()
                                         self.assertGreaterEqual(stop_geometry.top() - controls_geometry.bottom() - 1, 10)
                                         self.assertLessEqual(stop_geometry.top() - controls_geometry.bottom() - 1, 12)
-                                        if operator:
-                                            self.assertEqual(page.panel.port_field.x(), page.panel.player_count_field.x())
-                                            self.assertEqual(page.panel.port_field.width(), page.panel.player_count_field.width())
-                                            self.assertGreaterEqual(page.panel.port_field.x() - page.panel.port_label.geometry().right() - 1, 20)
                                         previous = None
-                                        for control in (page.panel.host_game_button, page.panel.start_button, page.panel.recheck_button):
+                                        for control in (page.panel.start_button, page.panel.recheck_button):
                                             if control.visible():
                                                 geometry = control.widget().geometry()
                                                 self.assertGreater(geometry.width(), 0)
@@ -1822,20 +1823,16 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     self.assertTrue(panel.netplay.is_op())
                     self.assertEqual(panel.nick_list.get_item(0), "@ReplayUser")
                     self.assertIn("You are the Operator", panel.text_area.get_text())
-                    for control in (
-                        panel.host_game_button,
-                        panel.start_button, panel.recheck_button,
-                    ):
+                    for control in (panel.start_button, panel.recheck_button):
                         self.assertTrue(control.visible())
                         self.assertGreater(control.widget().geometry().y(), 0)
                     irc.irc_mode("server", "#replay-hst", "-o", "ReplayUser")
                     self.assertFalse(panel.netplay.is_op())
-                    self.assertFalse(panel.host_game_button.visible())
                     self.assertFalse(panel.start_button.visible())
                     self.assertTrue(panel.recheck_button.visible())
                     irc.irc_mode("server", "#replay-hst", "+o", "ReplayUser")
                     self.assertTrue(panel.netplay.is_op())
-                    self.assertTrue(panel.host_game_button.visible())
+                    self.assertTrue(panel.start_button.visible())
                 finally:
                     window.close()
                     QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
@@ -2174,7 +2171,10 @@ class TestLaunchAndNetplay(WidgetTestCase):
         netplay = Mock(
             browser_listeners=[], activity_listeners=[], session_listeners=[],
             session=None, joining=None, session_title=None, session_server=None,
+            session_hosted=False, session_listed=True,
         )
+        netplay.running_hosted_server.return_value = None
+        netplay.local_lobby_address.return_value = None
         netplay.activity_log = [(0, "Earlier line", False)]
         netplay.browser = LobbyBrowser(
             name=lambda: "Paul", dispatch=lambda f, *a: f(*a),
@@ -2335,6 +2335,144 @@ class TestLaunchAndNetplay(WidgetTestCase):
             panel.deleteLater()
         self.run_dialog()
 
+    def test_lobby_browser_panel_hosting(self):
+        from fsbc.settings import Settings
+        from fsui.qt import QApplication
+        from launcher.netplay.lobby_browser import LOCAL, ONLINE, LobbyBrowser
+        from launcher.netplay.lobby_browser_panel import (
+            HostGameDialog, LobbyBrowserPanel,
+        )
+        from launcher.netplay.netplay import HOSTING
+
+        class Watcher:
+            def __init__(self, client, member, name, on_listing, on_state):
+                self.on_listing, self.on_state = on_listing, on_state
+
+            def start(self):
+                pass
+
+            def stop(self):
+                pass
+
+        settings = Settings()
+        settings._loaded = True
+        settings._atexit_registered = True
+        settings.verbose = False
+        settings.values.update({
+            "config_name": "Unnamed Configuration",
+            "netplay_public_address": "198.51.100.7",
+            "netplay_last_host_server": "club.example",
+        })
+        netplay = Mock(
+            browser_listeners=[], activity_listeners=[], session_listeners=[],
+            activity_log=[], session=None, joining=None, session_title=None,
+            session_server=None, session_hosted=False, session_listed=True,
+        )
+        netplay.running_hosted_server.return_value = None
+        netplay.local_lobby_address.return_value = None
+        netplay.browser = LobbyBrowser(
+            name=lambda: "Paul", dispatch=lambda f, *a: f(*a),
+            on_change=lambda: [f() for f in netplay.browser_listeners],
+            client_factory=lambda host, port: None, watcher_factory=Watcher,
+        )
+        self.setup_dialog()
+        with patch.object(Settings, "_instance", settings):
+            panel = LobbyBrowserPanel(netplay)
+            try:
+                # Nothing loaded: nothing to host.
+                self.assertFalse(panel.host_button.isEnabled())
+                self.assertEqual(panel.host_button.toolTip(), "Choose a game first")
+                settings.set("config_path", "/configs/Sensible Soccer.fs-uae")
+                settings.set("config_name", "Sensible Soccer")
+                self.assertTrue(panel.host_button.isEnabled())
+                self.assertEqual(panel.host_button.text(), "Host game: Sensible Soccer…")
+
+                browser = netplay.browser
+                browser.set_servers(["club.example", "down.example"])
+                club = browser.server("club.example").watcher
+                club.on_state(ONLINE, None, None)
+                club.on_listing({"id": "c", "name": "Club", "revision": 1, "games": []})
+                ask = "launcher.netplay.lobby_browser_panel.HostGameDialog.get"
+                with patch(ask, return_value=("club.example", 3, False)) as get:
+                    panel.host_button.click()
+                title, choices, last = get.call_args.args[1:]
+                self.assertEqual(title, "Sensible Soccer")
+                self.assertEqual(choices, [
+                    (LOCAL, "This computer (198.51.100.7)"),
+                    ("club.example", "Club (club.example)"),
+                ])
+                self.assertEqual(last, "club.example")
+                netplay.host_game.assert_called_once_with("club.example", 3, False)
+
+                # The dialog itself: the last server, 2 players, listed.
+                dialog = HostGameDialog(panel, "Sensible Soccer", choices, "club.example")
+                self.assertEqual(dialog.answer(), ("club.example", 2, True))
+                self.assertEqual(dialog.windowTitle(), "Host Sensible Soccer")
+                dialog.players.setCurrentIndex(2)
+                dialog.listed.setChecked(False)
+                self.assertEqual(dialog.answer(), ("club.example", 4, False))
+                dialog.deleteLater()
+                dialog = HostGameDialog(panel, "X", choices, "gone.example")
+                self.assertEqual(dialog.answer()[0], LOCAL)
+                dialog.deleteLater()
+
+                netplay.joining = HOSTING
+                panel.on_session()
+                self.assertEqual(panel.game_heading.text(), "Creating the game…")
+
+                # Hosting on this computer, unlisted.
+                netplay.joining = None
+                netplay.session_hosted, netplay.session_listed = True, False
+                netplay.session_title, netplay.session_server = "Sensible Soccer", "This computer"
+                netplay.running_hosted_server.return_value = Mock(port=25101)
+                netplay.local_lobby_address.return_value = "198.51.100.7:25101"
+                browser.set_local(25101)
+                local = browser.server(LOCAL).watcher
+                local.on_state(ONLINE, None, None)
+                local.on_listing({
+                    "id": "mine", "revision": 1, "presence": True,
+                    "online": ["Dave", "Paul", "Sam"], "games": [],
+                })
+                session = Mock(game_id="6f1c0000-aaaa", is_host=True, started=False, snapshot={})
+                session.slot_lines.return_value = ["1. Paul (you) — ready", "2. open"]
+                session.status_line.return_value = "Starts when 1 more player joins and is ready."
+                netplay.session = session
+                panel.on_session(session)
+                self.assertEqual(
+                    panel.game_heading.text(),
+                    "Sensible Soccer, hosted by you on This computer",
+                )
+                self.assertEqual(panel.game_online.text(), "Online in your lobby: Dave, Sam")
+                self.assertEqual(panel.game_address.text(), "Players reach you at 198.51.100.7:25101")
+                self.assertFalse(panel.copy_game_id_button.isHidden())
+                self.assertFalse(panel.game_stop_lobby_button.isHidden())
+                self.assertEqual(panel.leave_button.text(), "End game")
+                panel.game_copy_address_button.click()
+                self.assertEqual(QApplication.clipboard().text(), "198.51.100.7:25101")
+                panel.copy_game_id_button.click()
+                self.assertEqual(QApplication.clipboard().text(), "6f1c0000-aaaa")
+                panel.game_stop_lobby_button.click()
+                netplay.stop_lobby.assert_called_once_with()
+
+                # Back to browsing, the lobby still running between games.
+                netplay.session = None
+                panel.on_session(None)
+                panel.refresh()
+                self.assertFalse(panel.lobby_row.isHidden())
+                self.assertEqual(
+                    panel.lobby_label.text(),
+                    "Your lobby is running. Players reach you at 198.51.100.7:25101",
+                )
+                panel.stop_lobby_button.click()
+                self.assertEqual(netplay.stop_lobby.call_count, 2)
+                netplay.running_hosted_server.return_value = None
+                panel.refresh()
+                self.assertTrue(panel.lobby_row.isHidden())
+            finally:
+                panel.shutdown()
+                panel.deleteLater()
+        self.run_dialog()
+
     def test_netplay_settings_page(self):
         from fsbc.settings import Settings
         from launcher.settings.netplay_settings_page import NetplaySettingsPage
@@ -2374,7 +2512,7 @@ class TestLaunchAndNetplay(WidgetTestCase):
             panel = NetplayPanel(window, header=False)
             window.layout.add(panel, fill=True, expand=True)
             self.assertFalse(hasattr(panel, "reset_button"))
-            self.assertTrue(panel.host_game_button.explicitly_hidden())
+            self.assertFalse(hasattr(panel, "host_game_button"))
             self.assertTrue(panel.start_button.explicitly_hidden())
             window.set_size((800, 600))
             window.show()
@@ -2383,10 +2521,7 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 panel.set_active_channel("#test-game")
                 self.application.processEvents()
                 previous = None
-                for control in (
-                    panel.host_game_button,
-                    panel.start_button, panel.recheck_button,
-                ):
+                for control in (panel.start_button, panel.recheck_button):
                     self.assertTrue(control.visible())
                     geometry = control.widget().geometry()
                     self.assertGreater(geometry.y(), 0)
@@ -2394,10 +2529,6 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     if previous is not None:
                         self.assertFalse(previous.intersects(geometry))
                     previous = geometry
-                panel.host_game_button.widget().click()
-                netplay.handle_command.assert_called_with(
-                    "/hostgame 127.0.0.1:25101 2"
-                )
                 # With no game yet, Start and Re-check have nothing to do.
                 self.assertFalse(panel.start_button.widget().isEnabled())
                 self.assertFalse(panel.recheck_button.widget().isEnabled())
@@ -2433,12 +2564,12 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     start.assert_called_once_with()
                 netplay.is_op.return_value = False
                 panel.on_irc("nick_list", {"channel": "#test-game"})
-                self.assertFalse(panel.host_game_button.visible())
+                self.assertFalse(panel.start_button.visible())
                 self.assertTrue(panel.recheck_button.visible())
                 self.assertGreater(panel.recheck_button.widget().geometry().y(), 0)
                 panel.set_active_channel(LOBBY_CHANNEL)
                 self.assertFalse(panel.recheck_button.visible())
-                self.assertFalse(panel.host_game_button.visible())
+                self.assertFalse(panel.start_button.visible())
             finally:
                 panel.on_destroy()
                 window.close()

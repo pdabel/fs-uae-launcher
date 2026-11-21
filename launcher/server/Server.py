@@ -94,22 +94,33 @@ def find_server_executable():
 
 class Server:
     def __init__(
-        self, port, players, password, lobby=False, public_addresses=""
+        self,
+        port,
+        players,
+        password,
+        lobby=False,
+        public_addresses="",
+        presence=False,
+        name="",
     ):
         """A local fsnp-server.
 
         By default it runs one game for players with password. With lobby
-        it is a lobby instead, as /hostgame uses: games are created over
-        its HTTP API on the same port, and players and password only
-        describe the game the launcher is about to create. Players are
-        told public_addresses (comma-separated) rather than the name the
-        launcher reaches the lobby by, which is this machine's loopback.
+        it is a lobby instead, as /hostgame and the Net Play tab use:
+        games are created over its HTTP API on the same port, and players
+        and password only describe the game the launcher is about to
+        create. Players are told public_addresses (comma-separated) rather
+        than the name the launcher reaches the lobby by, which is this
+        machine's loopback. presence shows launchers browsing the lobby
+        who else is, and name is what they call it.
         """
         self.port = port
         self.players = players
         self.password = password
         self.lobby = lobby
         self.public_addresses = public_addresses
+        self.presence = presence
+        self.name = name
         self.process = None
 
     def start(self):
@@ -145,6 +156,10 @@ class Server:
                 args.append(
                     f"--public-addresses={self.public_addresses}"
                 )
+            if self.presence:
+                args.append("--presence")
+            if self.name:
+                args.append(f"--name={self.name}")
         else:
             args.append(f"--players={self.players}")
             if self.password:

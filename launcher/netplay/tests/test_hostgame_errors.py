@@ -47,6 +47,9 @@ def test_hostgame_keeps_detailed_startup_error_local(
     netplay.session_lobby = None
     netplay.session_generation = 0
     netplay.joining = None
+    netplay.local_lobby = None
+    netplay.lobby_kept = False
+    netplay.browsing = False
     monkeypatch.setattr(netplay, "require_game_channel", lambda channel: True)
     monkeypatch.setattr(
         netplay,

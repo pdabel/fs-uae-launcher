@@ -195,6 +195,20 @@ class NetplaySession:
                 # game's config, not the edit.
                 self._restore_scheduled = False
                 self._apply_quietly(snapshot)
+            elif (
+                self.is_host
+                and snapshot.get("config") is not None
+                and not self._is_local_document(snapshot)
+            ):
+                # The game started itself on the version before an edit
+                # the lobby hadn't got yet: everyone else runs that
+                # version, so the host must too.
+                self._message(
+                    "the game started before your last change reached the "
+                    "players; it runs without it",
+                    True,
+                )
+                self._apply_quietly(snapshot)
             self._launch(snapshot)
 
     def _apply_quietly(self, snapshot):

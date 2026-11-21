@@ -18,7 +18,9 @@ from launcher.netplay import netplay_panel
 from launcher.option import Option
 from launcher.server import Server as server_module
 from launcher.netplay.irc_color import IRCColor
-from launcher.netplay.lobby_client import LobbyClient
+from launcher.netplay.lobby_client import LobbyClient, LobbyError
+from launcher.launcher_settings import LauncherSettings
+from launcher.netplay.lobby_browser import LOCAL
 from launcher.netplay.netplay import Netplay, format_lobby, parse_lobby
 
 CHANNEL = "#test-game"
@@ -687,8 +689,6 @@ def test_a_private_channels_game_is_not_listed(launchers, netplay_settings):
 def test_this_computer_is_browsed_while_its_lobby_runs(
     fsnp_server_binary, monkeypatch, ui, launchers, netplay_settings
 ):
-    from launcher.netplay.lobby_browser import LOCAL
-
     monkeypatch.setattr(
         server_module, "find_server_executable", lambda: fsnp_server_binary
     )
@@ -777,3 +777,129 @@ def test_joining_another_game_leaves_the_first(lobby_port, ui, launchers):
     finally:
         client.end(first["id"], first["host_token"])
         client.end(second["id"], second["host_token"])
+
+
+def test_host_from_the_panel_and_start_by_itself(
+    lobby_port, ui, launchers, netplay_settings
+):
+    lobby = format_lobby("127.0.0.1", lobby_port)
+    netplay_settings[Option.NETPLAY_NAME] = "Kim"
+    netplay_settings[Option.CONFIG_NAME] = "Sensible Soccer"
+    host = launchers("HST", ops={"HST"})
+    player = launchers("PL2", ops={"HST"})
+    host.game_channel = player.game_channel = ""  # no IRC at all
+
+    assert host.host_game(lobby, 2, listed=True)
+    assert host.joining is not None
+    ui.pump_until(lambda: host.session is not None)
+    game_id = host.session.game_id
+    assert (host.session_title, host.session_server) == (
+        "Sensible Soccer",
+        lobby,
+    )
+    client = LobbyClient("127.0.0.1", lobby_port)
+    snapshot = client.game(game_id)
+    assert snapshot["auto_start"] and snapshot["listed"]
+    assert snapshot["title"] == "Sensible Soccer"
+    assert snapshot["slots"][0]["tag"] == "Kim"
+
+    player.join_game("127.0.0.1", lobby_port, game_id)
+    # Nobody presses Start.
+    ui.pump_until(lambda: host.launched and player.launched)
+    assert client.game(game_id)["state"] == "running"
+
+
+def test_host_on_this_computer_keeps_the_lobby_between_games(
+    fsnp_server_binary, monkeypatch, ui, launchers, netplay_settings
+):
+    monkeypatch.setattr(
+        server_module, "find_server_executable", lambda: fsnp_server_binary
+    )
+    monkeypatch.setattr(server_module, "log_file_path", lambda: None)
+    netplay_settings[Option.NETPLAY_NAME] = "Paul"
+    netplay_settings[Option.CONFIG_NAME] = "Speedball 2"
+    netplay_settings[Option.NETPLAY_SERVERS] = ""
+    host = launchers("HST", ops={"HST"})
+    host.game_channel = ""
+    host.start_browsing()
+
+    # Without the address players reach this computer at, it can't host.
+    netplay_settings[Option.NETPLAY_PUBLIC_ADDRESS] = ""
+    assert not host.host_game(LOCAL, 2)
+    assert host.running_hosted_server() is None
+    assert "Settings" in host.activity_log[-1][1]
+
+    netplay_settings[Option.NETPLAY_PUBLIC_ADDRESS] = "198.51.100.7"
+    # Any free port, rather than the real one.
+    monkeypatch.setattr(
+        LauncherSettings, "get_netplay_host_port", classmethod(lambda cls: 0)
+    )
+    assert host.host_game(LOCAL, 2, listed=False)
+    ui.pump_until(lambda: host.session is not None)
+    lobby = host.running_hosted_server()
+    assert lobby.presence and lobby.name == "Paul's lobby"
+    assert host.session_hosted and host.session_server == "This computer"
+    assert host.local_lobby_address() == f"198.51.100.7:{lobby.port}"
+    local = host.browser.server(LOCAL)
+    ui.pump_until(lambda: local.state == "online" and local.listing)
+    assert local.listing["name"] == "Paul's lobby"
+    assert local.online == ["Paul"]
+    assert host.browser.games() == []  # unlisted
+    first = host.session.game_id
+
+    # End the game: the lobby stays for the next one.
+    host.leave_game()
+    assert host.session is None
+    assert host.running_hosted_server() is lobby
+    assert host.host_game(LOCAL, 2)
+    ui.pump_until(lambda: host.session is not None)
+    assert host.running_hosted_server() is lobby
+    assert host.session.game_id != first
+    ui.pump_until(lambda: [g.title for g in host.browser.games()] == ["Speedball 2"])
+
+    host.stop_lobby()
+    assert host.session is None and host.running_hosted_server() is None
+    assert lobby.process is None
+    assert host.browser.server(LOCAL) is None
+
+
+def test_stop_lobby_waits_for_a_game_left_running(
+    fsnp_server_binary, monkeypatch, ui, launchers, netplay_settings
+):
+    monkeypatch.setattr(
+        server_module, "find_server_executable", lambda: fsnp_server_binary
+    )
+    monkeypatch.setattr(server_module, "log_file_path", lambda: None)
+    monkeypatch.setattr(
+        LauncherSettings, "get_netplay_host_port", classmethod(lambda cls: 0)
+    )
+    netplay_settings[Option.NETPLAY_PUBLIC_ADDRESS] = "198.51.100.7"
+    netplay_settings[Option.CONFIG_NAME] = "Solo"
+    host = launchers("HST", ops={"HST"})
+    host.game_channel = ""
+
+    assert host.host_game(LOCAL, 1)
+    ui.pump_until(lambda: host.launched)  # one player: starts at once
+    lobby = host.running_hosted_server()
+    game_id, host_token = host.session.game_id, host.session.host_token
+    host.leave_game()  # moving on; the game belongs to FS-UAE now
+    assert host.hosted_game_left_running == game_id
+
+    host.stop_lobby()
+    assert host.running_hosted_server() is lobby
+    assert "still running" in host.activity_log[-1][1]
+
+    client = LobbyClient("127.0.0.1", lobby.port)
+    client.end(game_id, host_token)
+
+    def gone():
+        try:
+            client.game(game_id)
+        except LobbyError as e:
+            return e.status == 404
+        return False
+
+    ui.pump_until(gone)
+    host.stop_lobby()
+    assert host.running_hosted_server() is None
+    assert host.hosted_game_left_running is None
