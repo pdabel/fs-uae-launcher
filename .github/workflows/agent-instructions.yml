@@ -1,0 +1,33 @@
+name: Agent Instructions
+
+# .github/copilot-instructions.md is a copy of AGENTS.md: Copilot code review
+# in VS Code and Copilot Chat on github.com read only that file, and a
+# symlink is not followed there. This fails when the copy drifts.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  Agent-Instructions:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check copilot-instructions.md matches AGENTS.md
+        run: |
+          if ! cmp -s AGENTS.md .github/copilot-instructions.md; then
+            echo "::error file=.github/copilot-instructions.md::Out of date. Run: cp AGENTS.md .github/copilot-instructions.md"
+            diff -u AGENTS.md .github/copilot-instructions.md || true
+            exit 1
+          fi
+          echo "copilot-instructions.md matches AGENTS.md"
