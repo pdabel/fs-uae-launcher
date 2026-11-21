@@ -32,9 +32,7 @@ class LaunchGroup(fsui.Group):
         self.hori_layout.add(self.fullscreen_button, fill=True)
         start_button = StartButton(self, gsc)
         self.hori_layout.add(start_button, fill=True, margin_left=10)
-        gsc.config.add_behavior(
-            self, [Option.FULLSCREEN, "__running", "__progress"]
-        )
+        ConfigBehavior(self, [Option.FULLSCREEN, "__running", "__progress"])
 
     def on___running_config(self, value):
         widgets = [
@@ -57,7 +55,7 @@ class StartButton(fsui.Button):
     def __init__(self, parent, gsc):
         super().__init__(parent, gettext("Start"))
         self.gsc = gsc
-        gsc.config.add_behavior(self, ["__running"])
+        ConfigBehavior(self, ["__running"])
 
     def on_activated(self):
         from launcher.launcherapp import LauncherApp

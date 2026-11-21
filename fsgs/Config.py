@@ -13,12 +13,6 @@ class Config(ContextAware):
         self.values = {}
         self.log_config = settings.get(Option.LAUNCHER_LOG_CONFIG) == "1"
 
-    def add_behavior(self, instance, options):
-        # FIXME: Move to fsgs
-        from launcher.ui.behaviors.configbehavior import ConfigBehavior
-
-        ConfigBehavior(instance, options)
-
     def copy(self):
         # Return a defaultdict so lookups for unset keys returns empty strings.
         return defaultdict(str, self.values)
