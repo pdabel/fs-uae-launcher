@@ -6,7 +6,7 @@ render on GitHub and in VS Code's Markdown preview.
 
 | | |
 |---|---|
-| **Date** | 2026-10-31 |
+| **Date** | 2026-11-21 |
 | **Scope** | The Python launcher (`fs-uae-launcher`). The Go netplay server has its own notes in [fsnp-server/README.md](../fsnp-server/README.md) and [netplay-go-server-design.md](netplay-go-server-design.md). |
 | **Out of scope** | `venv-*/` |
 
@@ -23,12 +23,10 @@ flowchart TB
     subgraph app["Applications"]
         launcher["launcher/<br/>Main window, dashboard, settings,<br/>config panels, scanning, netplay client"]
         workspace["workspace/<br/>Tool windows: ADF/HDF creator,<br/>joystick config, login, locker upload"]
-        arcade["arcade/<br/>Arcade front-end (minimal)"]
     end
 
     subgraph domain["Game-system services"]
         fsgs["fsgs/<br/>Platforms, drivers, databases,<br/>archives, downloads, OpenRetro client"]
-        amitools["amitools/<br/>Amiga filesystem and ROM tools"]
     end
 
     subgraph ui["UI toolkit"]
@@ -59,12 +57,9 @@ flowchart TB
     launcher --> workspace
     workspace --> fsui
     workspace --> fsgs
-    arcade --> fsgs
-    arcade --> fsui
     fsgs --> fsbc
     fsgs -. "launcher option metadata" .-> launcher
     fsgs --> fspy
-    fsgs --> amitools
     fsgs --> fsuae
     fsgs --> openretro
     fsui --> fsbc
@@ -83,7 +78,6 @@ flowchart TB
 | `fspy/`, `fstd/` | Small stdlib patches and desktop-environment helpers. | [fspy/zipfile.py](../fspy/zipfile.py) |
 | `fsui/` | Toolkit-neutral widget API (`Panel`, `Button`, `Choice`, layouts, dialogs) implemented on Qt in `fsui/qt/`. Owns the theme engine. | [fsui/qt/qt.py](../fsui/qt/qt.py), [modern_theme.py](../fsui/qt/modern_theme.py), [retro_theme.py](../fsui/qt/retro_theme.py) |
 | `fsgs/` | Game and emulator services: the `fsgs` context singleton, platforms and drivers, SQLite databases, archive reading, file scanning, OpenRetro sync, plugin discovery. Some driver code also depends on launcher options and Qt display information. | [context.py](../fsgs/context.py), [Database.py](../fsgs/Database.py), [amiga/launchhandler.py](../fsgs/amiga/launchhandler.py), [drivers/gamedriver.py](../fsgs/drivers/gamedriver.py) |
-| `amitools/` | Vendored Amiga tooling used for ADF/HDF and ROM inspection. | `amitools/fs`, `amitools/rom` |
 | `launcher/` | The application: `LauncherApp`, `LauncherWindow`, the dashboard shell, configuration panels, the Settings dialog, startup scans, netplay client, option metadata. | [launcherapp.py](../launcher/launcherapp.py), [ui/launcherwindow.py](../launcher/ui/launcherwindow.py), [ui/dashboard.py](../launcher/ui/dashboard.py), [option.py](../launcher/option.py) |
 | `workspace/` | Secondary tool windows opened from the launcher (ADF and HDF creators, joystick configuration, OpenRetro login/logout, locker upload, refresh), with their own small widget set in `workspace/ui`. | [workspace/apps](../workspace/apps) |
 | `fsnp-server/` | Go netplay server, run as a child process when hosting a game. | [fsnp-server/README.md](../fsnp-server/README.md) |
