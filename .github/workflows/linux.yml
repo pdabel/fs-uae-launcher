@@ -40,6 +40,12 @@ jobs:
         run: |
           env
 
+      # The runner image's package index goes stale as Ubuntu supersedes
+      # packages (e.g. mesa security updates), and installing then fails with
+      # a 404 for a .deb that is no longer in the archive.
+      - name: Update package index
+        run: sudo apt-get update
+
       - name: Install additional tools
         run: >-
           sudo apt install
