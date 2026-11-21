@@ -2,7 +2,7 @@ import time
 from urllib.parse import quote_plus
 
 from fsgs.ogd.GameDatabaseSynchronizer import GameDatabaseSynchronizer
-from launcher.i18n import gettext
+from fsgs.res import gettext
 
 
 class GameRatingSynchronizer(GameDatabaseSynchronizer):
