@@ -124,30 +124,6 @@ def test_translation_precedes_template_substitution():
         assert actual == expected, filename
 
 
-def test_irc_f_string_command_output():
-    root = Path(__file__).resolve().parents[2]
-    filename = "launcher/netplay/irc.py"
-    tree = ast.parse((root / filename).read_bytes())
-    methods = {
-        node.name: node for node in ast.walk(tree)
-        if isinstance(node, ast.FunctionDef)
-    }
-    cases = [
-        ("command_whois", ["Alice", "Bob"], "whois Alice Bob"),
-        ("command_away", ["out", "today"], "away out today"),
-        ("command_away", [], "away"),
-        ("command_mode", ["#test", "+o", "Alice"], "mode #test +o Alice"),
-    ]
-    for name, arguments, expected in cases:
-        namespace = {}
-        module = ast.Module(body=[methods[name]], type_ignores=[])
-        exec(compile(module, filename, "exec"), namespace)
-        sent = []
-        instance = SimpleNamespace(client=SimpleNamespace(send=sent.append))
-        namespace[name](instance, arguments)
-        assert sent == [expected], name
-
-
 def test_whdload_logging_uses_lazy_arguments():
     import logging
 

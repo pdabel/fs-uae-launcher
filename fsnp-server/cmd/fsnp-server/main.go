@@ -6,7 +6,7 @@
 // exits on its own when the game ends or on SIGTERM.
 //
 // With --lobby it instead hosts many games on the one port: an HTTP API
-// (GET /game/create, what /startgame calls) and every game it creates share
+// (POST /game, and GET /game/create for older launchers) and every game it creates share
 // the listener, and connections find their game by password hash. It runs
 // until SIGTERM. See internal/lobby.
 //
@@ -59,6 +59,8 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) 
 		gameTimeout     = fs.Int("game-launch-timeout", envInt("GAME_LAUNCH_TIMEOUT", int(lobby.DefaultLaunchTimeout/time.Second)), "lobby: seconds a game may wait for its players before it is reaped")
 		idleTimeout     = fs.Int("idle-timeout", envInt("IDLE_TIMEOUT", int(lobby.DefaultIdleTimeout/time.Second)), "lobby: seconds a session game may sit untouched before it starts")
 		publicAddresses = fs.String("public-addresses", envOr("PUBLIC_ADDRESSES", ""), "lobby: comma-separated addresses to tell players; empty = the host name the creator used")
+		lobbyName       = fs.String("name", envOr("LOBBY_NAME", ""), "lobby: a name to show launchers browsing its games")
+		presence        = fs.Bool("presence", envBool("PRESENCE", false), "lobby: show launchers browsing the lobby who else is")
 	)
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -94,6 +96,8 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) 
 			}
 		})
 		l = lobby.New(lobby.Config{
+			Name:            *lobbyName,
+			Presence:        *presence,
 			MaxGames:        *maxGames,
 			LaunchTimeout:   time.Duration(*gameTimeout) * time.Second,
 			IdleTimeout:     time.Duration(*idleTimeout) * time.Second,
@@ -120,7 +124,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) 
 	if err != nil {
 		log.Error("listen failed", "err", err)
 		// Reported on stdout too, where the launcher reads the readiness
-		// line, so it can tell a port in use (which the op can do something
+		// line, so it can tell a port in use (which the host can do something
 		// about) from any other failure. The bind is the authoritative test:
 		// a pre-check from the launcher can't match this listener's
 		// SO_REUSEADDR, and refused ports still in TIME_WAIT after a game.
@@ -139,7 +143,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) 
 		log.Info("listening", "mode", mode, "host", *host, "port", actualPort,
 			"network", listenNetwork(*host), "max_games", *maxGames,
 			"game_launch_timeout", time.Duration(*gameTimeout)*time.Second, "idle_timeout", time.Duration(*idleTimeout)*time.Second,
-			"public_addresses", *publicAddresses, "log_input", *logInput)
+			"public_addresses", *publicAddresses, "name", *lobbyName, "presence", *presence, "log_input", *logInput)
 	} else {
 		log.Info("listening", "mode", mode, "host", *host, "port", actualPort, "players", *players,
 			"network", listenNetwork(*host), "log_input", *logInput,

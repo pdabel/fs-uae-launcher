@@ -625,3 +625,116 @@ def test_a_players_unrestored_edit_is_undone_before_launch():
     h.later.pop()()
     h.executor.run_all()
     assert not any("set by the host" in w for w in h.warnings())
+
+
+@pytest.mark.parametrize(
+    "auto_start, slots, state, want",
+    [
+        (
+            True,
+            [("HST", "ready"), (None, "empty")],
+            "configuring",
+            "Starts when 1 more player joins and is ready.",
+        ),
+        (
+            False,
+            [("HST", "ready"), (None, "empty"), (None, "empty")],
+            "configuring",
+            "Can start when 2 more players join and are ready.",
+        ),
+        (
+            True,
+            [("HST", "ready"), ("PL2", "missing"), ("PL3", "waiting")],
+            "configuring",
+            "Starts when you're ready: add the missing file, then Re-check.",
+        ),
+        (
+            False,
+            [("HST", "ready"), ("PL2", "missing")],
+            "configuring",
+            "Add the missing file, then Re-check.",
+        ),
+        (
+            True,
+            [("HST", "mismatch"), ("PL2", "ready"), (None, "empty")],
+            "configuring",
+            "Waiting: HST's config differs; 1 more player to join.",
+        ),
+        (
+            True,
+            [("HST", "waiting"), ("PL2", "ready")],
+            "configuring",
+            "Waiting: HST is checking the config.",
+        ),
+        (True, [("HST", "ready"), ("PL2", "ready")], "ready", "Starting…"),
+        (
+            False,
+            [("HST", "ready"), ("PL2", "ready")],
+            "ready",
+            "Everyone is ready: waiting for the host to start.",
+        ),
+        (False, [("HST", "ready"), ("PL2", "ready")], "running", "Starting…"),
+    ],
+)
+def test_status_line(auto_start, slots, state, want):
+    h = Harness()
+    h.session.snapshot = {
+        "state": state,
+        "auto_start": auto_start,
+        "config_version": 1,
+        "slots": [
+            {"slot": i, "status": status, "tag": tag}
+            for i, (tag, status) in enumerate(slots)
+        ],
+    }
+    assert h.session.status_line() == want
+
+
+def test_status_line_before_the_lobby_answers():
+    assert Harness().session.status_line() == "Waiting for the lobby…"
+
+
+def test_a_host_edit_the_lobby_missed_is_undone_before_launch():
+    # An auto-start game starts on the last ready report, which can come
+    # just before the host's latest edit reaches the lobby.
+    h = Harness(host=True)
+    h.session.start()
+    h.executor.run_all()
+    h.see("ready", version=1, config=dict(HOST_DOC))
+    h.edit("chip_memory", "1024")
+    h.see("running", version=1, config=dict(HOST_DOC))
+    assert h.launched and h.local["chip_memory"] == "512"
+    assert any("runs without it" in w for w in h.warnings())
+    h.later.pop()()  # the push that was waiting finds the game started
+    h.executor.run_all()
+    assert len(h.client.named("set_config")) == 1
+
+
+def test_a_host_in_step_launches_without_reapplying():
+    h = Harness(host=True)
+    h.session.start()
+    h.executor.run_all()
+    h.see("ready", version=1, config=dict(HOST_DOC))
+    applied = list(h.applied)
+    h.see("running", version=1, config=dict(HOST_DOC))
+    assert h.launched and h.applied == applied and h.warnings() == []
+
+
+def test_a_players_mismatch_names_the_keys_without_values():
+    h = Harness()
+    h.local.update(joystick_port_1_mode="", __netplay_password="secret")
+    h.session._apply = lambda snapshot: ("local-hash", {})
+    h.session._apply_and_report(
+        {
+            "config_version": 1,
+            "config": {
+                "joystick_port_1_mode": "joystick",
+                "__netplay_password": "secret",
+            },
+            "hash": "lobby-hash",
+            "keys": {"checksum": ["joystick_port_1_mode", "__netplay_password"]},
+        }
+    )
+    assert h.warnings() == [
+        "your config differs from the host's for: joystick_port_1_mode"
+    ]

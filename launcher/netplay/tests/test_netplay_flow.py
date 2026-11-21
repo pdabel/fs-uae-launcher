@@ -1,90 +1,24 @@
-"""Netplay end to end: a host and a player, fake IRC, a real lobby.
+"""Netplay end to end: hosts and players against a real lobby.
 
-Both launchers run in this process and share one launcher config, which
-is fine for this: the player applies what the host sent. Lobby calls run
+The launchers run in this process and share one launcher config, which
+is fine for this: a player applies what the host sent. Lobby calls run
 on their real threads; what they hand to the UI thread is queued and
 run by the test, as Qt's event loop would.
 """
 
 import queue
 import time
-from types import SimpleNamespace
 
 import pytest
 
 from fsgs.context import fsgs
+from launcher.launcher_settings import LauncherSettings
 from launcher.netplay import netplay as netplay_module
-from launcher.netplay import netplay_panel
+from launcher.netplay.lobby_browser import LOCAL
+from launcher.netplay.lobby_client import LobbyClient, LobbyError
+from launcher.netplay.netplay import Netplay, format_lobby, parse_lobby
 from launcher.option import Option
 from launcher.server import Server as server_module
-from launcher.netplay.irc_color import IRCColor
-from launcher.netplay.lobby_client import LobbyClient
-from launcher.netplay.netplay import Netplay, format_lobby, parse_lobby
-
-CHANNEL = "#test-game"
-
-
-class FakeChannel:
-    def __init__(self, irc, name):
-        self.irc = irc
-        self.name = name
-        self.lines = []
-
-    def is_op(self, nick=None):
-        return (nick or self.irc.my_nick) in self.irc.ops
-
-    def privmsg(self, message, notice=False, echo=True):
-        self.irc.sent.append(message)
-
-    def info(self, message):
-        self.lines.append(("info", message))
-
-    def warning(self, message):
-        self.lines.append(("warning", message))
-
-    def action(self, message):
-        self.lines.append(("action", message))
-
-    def message(self, message, color=None):
-        kind = "warning" if color == IRCColor.WARNING else "message"
-        self.lines.append((kind, message))
-
-
-class FakeIRC:
-    def __init__(self, nick, ops):
-        self.my_nick = nick
-        self.ops = set(ops)
-        self.running = True
-        self.sent = []
-        self.channels = {}
-        self.active_channel_name = CHANNEL
-
-    def channel(self, name):
-        return self.channels.setdefault(name, FakeChannel(self, name))
-
-    def active_channel(self):
-        return self.channel(self.active_channel_name)
-
-    def get_active_channel(self):
-        return self.active_channel_name
-
-    def is_channel(self, name):
-        return name.startswith(("#", "&"))
-
-    def warning(self, message):
-        self.active_channel().warning(message)
-
-    def message(self, message, color=None):
-        self.active_channel().message(message)
-
-    def handle_command(self, command):
-        pass
-
-    def part(self, name):
-        pass
-
-    def stop(self):
-        self.running = False
 
 
 class UIThread:
@@ -123,13 +57,35 @@ def ui(monkeypatch):
 
 
 @pytest.fixture
-def launchers(monkeypatch):
+def settings(monkeypatch):
+    """Answers the settings these tests set, and the rest as before."""
+    values = {
+        Option.NETPLAY_NAME: "HST",
+        Option.NETPLAY_SERVERS: "",
+        Option.CONFIG_NAME: "Sensible Soccer",
+    }
+    get = LauncherSettings.get
+    monkeypatch.setattr(
+        LauncherSettings,
+        "get",
+        classmethod(
+            lambda cls, key: values[key] if key in values else get(key)
+        ),
+    )
+    monkeypatch.setattr(
+        LauncherSettings,
+        "set",
+        classmethod(lambda cls, key, value: values.__setitem__(key, value)),
+    )
+    return values
+
+
+@pytest.fixture
+def launchers(monkeypatch, settings):
     made = []
 
-    def make(nick, ops):
+    def make():
         n = Netplay()
-        n.irc = FakeIRC(nick, ops)
-        n.game_channel = CHANNEL
         n.launched = []
         monkeypatch.setattr(n, "do_start_game", lambda: n.launched.append(1))
         made.append(n)
@@ -140,395 +96,25 @@ def launchers(monkeypatch):
         n.disconnect()
 
 
-def warnings(netplay):
-    return [
-        m
-        for kind, m in netplay.irc.channel(CHANNEL).lines
-        if kind == "warning"
-    ]
-
-
-@pytest.mark.parametrize(
-    "name,expected",
-    [("#barbarian-daf", True), ("#barbarian-HST", True),
-     ("#barbarian-p2", True), ("#barbarian-1", True),
-     ("#test-game", True), ("&development", True),
-     ("#FS-UAE-Lobby", False), ("#fs-uae-lobby", False),
-     ("#general", False), ("#game-longtag", False),
-     ("#game-", False), ("#-daf", False), (None, False)],
-)
-def test_game_channel_recognition(launchers, name, expected):
-    netplay = launchers("PL2", ops={"HST"})
-    assert netplay.is_game_channel(name) is expected
-
-
-def test_player_joins_another_operators_tagged_channel(ui, launchers):
-    netplay = launchers("PL2", ops={"HST"})
-    netplay.on_irc("joined", {"channel": "#barbarian-hst"})
-    assert netplay.game_channel == "#barbarian-hst"
-
-
-@pytest.mark.parametrize(
-    "entered,expected",
-    [
-        ("#barbarian-hst", "#barbarian-hst"),
-        ("barbarian-hst", "#barbarian-hst"),
-        ("barbarian-game", "#barbarian-game"),
-        ("barbarian-anyoldshite", "#barbarian-anyoldshite"),
-        ("#barbarian", "#barbarian-hst"),
-        ("barbarian", "#barbarian-hst"),
-        ("  barbarian  ", "#barbarian-hst"),
-        ("&barbarian", "&barbarian-hst"),
-        (None, None),
-        ("", None),
-        ("   ", None),
-    ],
-)
-@pytest.mark.parametrize("private", [False, True])
-def test_join_game_channel_tags_plain_names(
-    monkeypatch, entered, expected, private
-):
-    settings = {Option.CONFIG_NAME: "Barbarian", Option.NETPLAY_TAG: "HST"}
-    monkeypatch.setattr(
-        netplay_panel.LauncherSettings, "get", lambda key: settings[key]
-    )
-    dialog = {}
-
-    def get_text(parent, title, label_text, default_text="new"):
-        dialog["default"] = default_text
-        return entered
-
-    monkeypatch.setattr(netplay_panel.SimpleTextInputDialog, "get_text", get_text)
-    joined = []
-    button = SimpleNamespace(
-        irc=SimpleNamespace(
-            join=lambda channel, private=False: joined.append((channel, private))
-        ),
-        private_checkbox=SimpleNamespace(is_checked=lambda: private),
-    )
-
-    netplay_panel.JoinChannelButton.on_activated(button)
-
-    assert dialog["default"] == "#barbarian-hst"
-    assert joined == ([(expected, private)] if expected else [])
-
-
-@pytest.mark.parametrize("private", [False, True])
-@pytest.mark.parametrize("created", [False, True])
-def test_confirmed_channel_announcements(monkeypatch, private, created):
-    from unittest.mock import Mock
-    from launcher.netplay.irc import IRC, LOBBY_CHANNEL
-
-    irc = IRC()
-    irc.client = Mock()
-    irc.my_nick = "Player"
-    monkeypatch.setattr(irc, "privmsg", Mock())
-    irc.active_channel_name = "#another-game"
-    irc.join("#barbarian-daf", private=private)
-    irc.privmsg.assert_not_called()
-    irc.irc_join("Player!user@localhost", "#barbarian-daf")
-    irc.privmsg.assert_not_called()
-    nicks = "@Player" if created else "@Host Player"
-    irc.irc_namreply("server", "Player", "=", "#barbarian-daf", nicks)
-    irc.privmsg.assert_not_called()
-    irc.irc_endofnames("server", "Player", "#barbarian-daf", "End of NAMES")
-    if private:
-        irc.privmsg.assert_not_called()
-    else:
-        action = "created" if created else "joined"
-        irc.privmsg.assert_called_once_with(
-            LOBBY_CHANNEL, f"Player {action} game channel #barbarian-daf."
-        )
-    calls = irc.privmsg.call_count
-    irc.irc_endofnames("server", "Player", "#barbarian-daf", "End of NAMES")
-    assert irc.privmsg.call_count == calls
-
-
-def test_private_multi_channel_join_does_not_announce(monkeypatch):
-    from unittest.mock import Mock
-    from launcher.netplay.irc import IRC
-
-    irc = IRC()
-    irc.client = Mock()
-    irc.my_nick = "Player"
-    monkeypatch.setattr(irc, "privmsg", Mock())
-    irc.join("#alpha-daf,#beta-hst", private=True)
-
-    for channel in ("#alpha-daf", "#beta-hst"):
-        irc.irc_join("Player!user@localhost", channel)
-        irc.irc_endofnames("server", "Player", channel, "End of NAMES")
-
-    irc.privmsg.assert_not_called()
-
-
-def test_manual_game_channel_creation_announces_in_lobby(monkeypatch):
-    from unittest.mock import Mock
-    from launcher.netplay.irc import IRC, LOBBY_CHANNEL
-
-    irc = IRC()
-    irc.client = Mock()
-    irc.my_nick = "Host"
-    monkeypatch.setattr(irc, "privmsg", Mock())
-    irc.command_join(["#manual-hst"])
-    irc.privmsg.assert_not_called()
-    irc.irc_join("Host!user@localhost", "#manual-hst")
-    irc.irc_namreply("server", "Host", "=", "#manual-hst", "@Host")
-    irc.irc_endofnames("server", "Host", "#manual-hst", "End of NAMES")
-    irc.privmsg.assert_called_once_with(
-        LOBBY_CHANNEL, "Host created game channel #manual-hst."
-    )
-
-
-def test_other_users_join_does_not_announce(monkeypatch):
-    from unittest.mock import Mock
-    from launcher.netplay.irc import IRC
-
-    irc = IRC()
-    irc.client = Mock()
-    irc.my_nick = "Player"
-    monkeypatch.setattr(irc, "privmsg", Mock())
-    irc.irc_join("Other!user@localhost", "#barbarian-daf")
-    irc.irc_endofnames("server", "Player", "#barbarian-daf", "End of NAMES")
-    irc.privmsg.assert_not_called()
-
-
-def test_private_channel_can_later_be_joined_publicly(monkeypatch):
-    from unittest.mock import Mock
-    from launcher.netplay.irc import IRC, LOBBY_CHANNEL
-
-    irc = IRC()
-    irc.client = Mock()
-    irc.my_nick = "Host"
-    monkeypatch.setattr(irc, "privmsg", Mock())
-    for private in (True, False):
-        irc.join("#barbarian-daf", private=private)
-        irc.irc_join("Host!user@localhost", "#barbarian-daf")
-        irc.irc_namreply("server", "Host", "=", "#barbarian-daf", "@Host")
-        irc.irc_endofnames("server", "Host", "#barbarian-daf", "End of NAMES")
-        if private:
-            irc.privmsg.assert_not_called()
-    irc.privmsg.assert_called_once_with(
-        LOBBY_CHANNEL, "Host created game channel #barbarian-daf."
-    )
-
-
-@pytest.mark.parametrize("channel_name", ["#test-game", "#test-hst"])
-def test_host_and_player_start_together(lobby_port, ui, launchers, monkeypatch, channel_name):
-    monkeypatch.setitem(globals(), "CHANNEL", channel_name)
-    host = launchers("HST", ops={"HST"})
-    player = launchers("PL2", ops={"HST"})
-    lobby = format_lobby("127.0.0.1", lobby_port)
-
-    assert host.create_session(
-        host.irc.active_channel(),
-        LobbyClient("127.0.0.1", lobby_port),
-        2,
-        "",
-        lobby,
-    )
-    assert host.irc.sent == []
-    ui.pump_until(lambda: bool(host.irc.sent))
-    game_id = host.session.game_id
-    announce = host.irc.sent[-1]
-    assert announce == f"__session {lobby} {game_id}"
-    assert LobbyClient("127.0.0.1", lobby_port).game(game_id)["config"]
-
-    # A non-op's announcement is ignored; the op's is joined.
-    player.on_irc(
-        "privmsg",
-        {"channel": CHANNEL, "nick": "RANDOM", "message": announce},
-    )
-    assert player.session is None
-    player.on_irc(
-        "privmsg", {"channel": CHANNEL, "nick": "HST", "message": announce}
-    )
-    ui.pump_until(
-        lambda: player.session is not None
-        and host.session.state == "ready"
-        and player.session.state == "ready"
-    )
-    assert player.session.game_id == game_id
-    assert not player.session.is_host
-    assert fsgs.config.get("__netplay_game") == game_id
-
-    seen = []
-    host.session_listeners.append(seen.append)
-    host.start_netplay_game()
-    ui.pump_until(lambda: host.launched and player.launched)
-    assert seen and seen[-1].state == "running"
-    # No connection tester runs here, so the launch says it is using the
-    # lobby's address unverified; the launchers share a config, so only
-    # the first to launch needs to.
-    assert warnings(host) + warnings(player) == [
-        "the game server's address is not verified yet; trying 127.0.0.1"
-    ]
-
-
-def test_join_does_not_announce_before_initial_config(lobby_port, ui, launchers):
-    host = launchers("HST", ops={"HST"})
-    lobby = format_lobby("127.0.0.1", lobby_port)
-    assert host.create_session(
-        host.irc.active_channel(), LobbyClient("127.0.0.1", lobby_port),
-        2, "", lobby,
-    )
-    join = {"channel": CHANNEL, "nick": "PL2"}
-    host.on_irc("join", join)
-    assert host.irc.sent == []
-
-    ui.pump_until(lambda: bool(host.irc.sent))
-    announcement = f"__session {lobby} {host.session.game_id}"
-    assert host.irc.sent == [announcement]
-    host.on_irc("join", join)
-    assert host.irc.sent == [announcement, announcement]
-
-
-def test_host_moving_on_keeps_a_running_game(lobby_port, ui, launchers):
-    host = launchers("HST", ops={"HST"})
-    player = launchers("PL2", ops={"HST"})
-    announce = hosted_game(host, lobby_port, ui)
-    first = host.session.game_id
-    player.on_irc(
-        "privmsg", {"channel": CHANNEL, "nick": "HST", "message": announce}
-    )
-    ui.pump_until(
-        lambda: player.session is not None
-        and host.session.state == "ready"
-        and player.session.state == "ready"
-    )
-    host.start_netplay_game()
-    ui.pump_until(lambda: host.launched and player.launched)
-
-    # The op opens a new game channel and starts a second game there.
-    host.on_irc("joined", {"channel": "#second-game"})
-    assert host.session is None
-    host.irc.active_channel_name = "#second-game"
-    host.handle_command(f"/startgame 127.0.0.1:{lobby_port} 2")
-    assert host.session.game_id != first
-
-    lobby = LobbyClient("127.0.0.1", lobby_port)
-    time.sleep(0.2)  # let a stray end request reach the lobby
-    assert lobby.game(first)["state"] == "running"
-
-
-class FakeServerView:
-    """ServerDetails without Qt: holds the /hostgame lobby until stopped."""
-
-    def __init__(self):
-        self.server = None
-
-    def present(self, parent, server, game_id, port, channel):
-        if server is not self.server:
-            self.stop_server()
-        self.server = server
-        return self
-
-    def show(self):
-        pass
-
-    def stop_server(self):
-        if self.server is not None:
-            self.server.stop()
-            self.server = None
-
-    def close(self):
-        self.stop_server()
-
-
-def test_host_moving_on_keeps_a_running_hosted_game(
-    fsnp_server_binary, monkeypatch, ui, launchers
-):
+@pytest.fixture
+def local_server(fsnp_server_binary, monkeypatch, settings):
+    """Host game on This computer runs the real binary, on a free port."""
     monkeypatch.setattr(
         server_module, "find_server_executable", lambda: fsnp_server_binary
     )
     monkeypatch.setattr(server_module, "log_file_path", lambda: None)
-    host = launchers("HST", ops={"HST"})
-    player = launchers("PL2", ops={"HST"})
-    view = FakeServerView()
-    host.parent = SimpleNamespace(create_server_view=view.present)
-
-    host.handle_command("/hostgame 127.0.0.1:0 2")
-    ui.pump_until(lambda: bool(host.irc.sent))
-    lobby = view.server
-    first = host.session.game_id
-    player.on_irc(
-        "privmsg",
-        {"channel": CHANNEL, "nick": "HST", "message": host.irc.sent[-1]},
+    monkeypatch.setattr(
+        LauncherSettings, "get_netplay_host_port", classmethod(lambda cls: 0)
     )
-    ui.pump_until(
-        lambda: player.session is not None
-        and host.session.state == "ready"
-        and player.session.state == "ready"
-    )
-    host.start_netplay_game()
-    ui.pump_until(lambda: host.launched and player.launched)
-
-    host.on_irc("joined", {"channel": "#second-game"})
-    host.irc.active_channel_name = "#second-game"
-    host.handle_command(f"/hostgame 127.0.0.1:{lobby.port} 2")
-    # The second game is in the same lobby, beside the first.
-    assert view.server is lobby and lobby.process.poll() is None
-    assert host.session.game_id != first
-    time.sleep(0.2)  # let a stray end request reach the lobby
-    client = LobbyClient("127.0.0.1", lobby.port)
-    assert client.game(first)["state"] == "running"
-    assert client.game(host.session.game_id)["state"] != "ended"
+    settings[Option.NETPLAY_PUBLIC_ADDRESS] = "198.51.100.7"
 
 
-def test_host_change_clears_ready_until_reapplied(lobby_port, ui, launchers):
-    host = launchers("HST", ops={"HST"})
-    host.create_session(
-        host.irc.active_channel(),
-        LobbyClient("127.0.0.1", lobby_port),
-        1,
-        "",
-        format_lobby("127.0.0.1", lobby_port),
-    )
-    ui.pump_until(lambda: host.session.state == "ready")
-    version = host.session.snapshot["config_version"]
-
-    fsgs.config.set("chip_memory", "2048")
-    ui.pump_until(
-        lambda: host.session.snapshot["config_version"] > version
-        and host.session.state == "ready"
-    )
-    assert host.session.snapshot["config"]["chip_memory"] == "2048"
+def warnings(netplay):
+    return [text for _, text, warning in netplay.activity_log if warning]
 
 
-def test_reset_ends_the_hosted_game(lobby_port, ui, launchers):
-    host = launchers("HST", ops={"HST"})
-    host.create_session(
-        host.irc.active_channel(),
-        LobbyClient("127.0.0.1", lobby_port),
-        2,
-        "",
-        format_lobby("127.0.0.1", lobby_port),
-    )
-    game_id = host.session.game_id
-    host.handle_command("/reset")
-    assert host.session is None
-    client = LobbyClient("127.0.0.1", lobby_port)
-    deadline = time.monotonic() + 5
-    while time.monotonic() < deadline:
-        try:
-            client.game(game_id)
-        except Exception as e:
-            assert getattr(e, "status", None) == 404
-            break
-        time.sleep(0.05)
-    else:
-        raise AssertionError("game still in the lobby after /reset")
-
-
-def hosted_game(host, lobby_port, ui, players=2):
-    host.create_session(
-        host.irc.active_channel(),
-        LobbyClient("127.0.0.1", lobby_port),
-        players,
-        "",
-        format_lobby("127.0.0.1", lobby_port),
-    )
-    ui.pump_until(lambda: bool(host.irc.sent))
-    return host.irc.sent[-1]
+def said(netplay, text):
+    return any(line == text for _, line, _ in netplay.activity_log)
 
 
 def claimed_slots(lobby_port, game_id):
@@ -544,38 +130,339 @@ def wait_for(condition, timeout=5):
         time.sleep(0.05)
 
 
-def test_a_join_overtaken_by_reset_gives_its_slot_back(
+def gone(client, game_id):
+    try:
+        client.game(game_id)
+    except LobbyError as e:
+        return e.status == 404
+    return False
+
+
+def host_ready(host):
+    """The host's own slot is ready for the current config."""
+    snapshot = host.session.snapshot
+    return snapshot is not None and snapshot["slots"][0]["status"] == "ready"
+
+
+def host_on(host, ui, lobby_port, players=2, listed=True):
+    """Host game on the shared lobby; returns the game id."""
+    assert host.host_game(
+        format_lobby("127.0.0.1", lobby_port), players, listed=listed
+    )
+    ui.pump_until(lambda: host.session is not None)
+    return host.session.game_id
+
+
+def test_host_and_player_start_together(lobby_port, ui, launchers, settings):
+    host = launchers()
+    player = launchers()
+    lobby = format_lobby("127.0.0.1", lobby_port)
+
+    assert host.host_game(lobby, 2)
+    assert host.joining is not None
+    ui.pump_until(lambda: host.session is not None)
+    game_id = host.session.game_id
+    assert (host.session_title, host.session_server) == (
+        "Sensible Soccer",
+        lobby,
+    )
+    client = LobbyClient("127.0.0.1", lobby_port)
+    snapshot = client.game(game_id)
+    assert snapshot["auto_start"] and snapshot["listed"]
+    assert snapshot["title"] == "Sensible Soccer"
+    assert snapshot["slots"][0]["tag"] == "HST"
+
+    settings[Option.NETPLAY_NAME] = "PL2"
+    player.join_game("127.0.0.1", lobby_port, game_id)
+    ui.pump_until(
+        lambda: player.session is not None and player.session.snapshot
+    )
+    assert not player.session.is_host
+    assert fsgs.config.get("__netplay_game") == game_id
+
+    # Nobody presses Start.
+    seen = []
+    host.session_listeners.append(seen.append)
+    ui.pump_until(lambda: host.launched and player.launched)
+    assert client.game(game_id)["state"] == "running"
+    assert [s.state for s in seen if s is not None][-1] == "running"
+    assert [s["tag"] for s in client.game(game_id)["slots"]] == ["HST", "PL2"]
+    # No connection tester runs here, so the launch says it is using the
+    # lobby's address unverified; the launchers share a config, so only
+    # the first to launch needs to.
+    assert warnings(host) + warnings(player) == [
+        "the game server's address is not verified yet; trying 127.0.0.1"
+    ]
+
+
+def test_start_while_in_a_game_says_what_it_waits_for(
     lobby_port, ui, launchers
 ):
-    host = launchers("HST", ops={"HST"})
-    player = launchers("PL2", ops={"HST"})
-    announce = hosted_game(host, lobby_port, ui)
-    game_id = host.session.game_id
+    host = launchers()
+    host_on(host, ui, lobby_port)
+    ui.pump_until(lambda: host_ready(host) and not host.session.sending_config)
+    want = "Starts when 1 more player joins and is ready."
+    assert host.start_requested() == want
+    assert said(host, want)
 
-    player.on_irc(
-        "privmsg", {"channel": CHANNEL, "nick": "HST", "message": announce}
+
+def test_host_moving_on_keeps_a_running_game(lobby_port, ui, launchers):
+    host = launchers()
+    player = launchers()
+    first = host_on(host, ui, lobby_port)
+    player.join_game("127.0.0.1", lobby_port, first)
+    ui.pump_until(lambda: host.launched and player.launched)
+
+    # The host hosts another game while the first is played.
+    second = host_on(host, ui, lobby_port)
+    assert second != first
+    client = LobbyClient("127.0.0.1", lobby_port)
+    time.sleep(0.2)  # let a stray end request reach the lobby
+    assert client.game(first)["state"] == "running"
+
+
+def test_host_change_clears_ready_until_reapplied(lobby_port, ui, launchers):
+    host = launchers()
+    host_on(host, ui, lobby_port)
+    ui.pump_until(lambda: host_ready(host))
+    version = host.session.snapshot["config_version"]
+
+    fsgs.config.set("chip_memory", "2048")
+    ui.pump_until(
+        lambda: host.session.snapshot["config_version"] > version
+        and host_ready(host)
     )
-    # The join is on its way when the player resets.
-    player.handle_command("/reset")
+    assert host.session.snapshot["config"]["chip_memory"] == "2048"
+
+
+def test_end_game_ends_it_for_everyone(lobby_port, ui, launchers):
+    host = launchers()
+    game_id = host_on(host, ui, lobby_port)
+    host.leave_game()
+    assert host.session is None
+    assert said(host, "ended Sensible Soccer")
+    wait_for(lambda: gone(LobbyClient("127.0.0.1", lobby_port), game_id))
+
+
+def test_join_and_leave(lobby_port, ui, launchers, settings):
+    host = launchers()
+    player = launchers()
+    game_id = host_on(host, ui, lobby_port)
+
+    sessions = []
+    player.session_listeners.append(sessions.append)
+    settings[Option.NETPLAY_NAME] = "Dave"
+    player.join_game(
+        "127.0.0.1",
+        lobby_port,
+        game_id,
+        title="Sensible Soccer",
+        server="Club",
+    )
+    assert player.joining == game_id
+    player.join_game("127.0.0.1", lobby_port, game_id)  # a second click
+    ui.pump_until(lambda: player.session is not None)
+    assert (player.session_title, player.session_server) == (
+        "Sensible Soccer",
+        "Club",
+    )
+    assert claimed_slots(lobby_port, game_id) == [0, 1]
+    tags = [
+        s["tag"]
+        for s in LobbyClient("127.0.0.1", lobby_port).game(game_id)["slots"]
+    ]
+    assert tags == ["HST", "Dave"]
+    assert said(player, "joined Sensible Soccer as player 2")
+    assert sessions and sessions[0] is None  # told it's joining
+
+    player.leave_game()
+    assert player.session is None and player.session_title is None
+    wait_for(lambda: claimed_slots(lobby_port, game_id) == [0])
+    assert said(player, "left Sensible Soccer")
+
+
+def test_a_join_overtaken_by_leave_gives_its_slot_back(
+    lobby_port, ui, launchers
+):
+    host = launchers()
+    player = launchers()
+    game_id = host_on(host, ui, lobby_port)
+
+    player.join_game("127.0.0.1", lobby_port, game_id)
+    # The join is on its way when the player leaves.
+    player.leave_game()
     ui.pump_until(lambda: "joined_game" in ui.ran)
     assert player.session is None
     wait_for(lambda: claimed_slots(lobby_port, game_id) == [0])
 
 
-def test_an_announcement_repeated_during_a_join_joins_once(
-    lobby_port, ui, launchers
-):
-    host = launchers("HST", ops={"HST"})
-    player = launchers("PL2", ops={"HST"})
-    announce = hosted_game(host, lobby_port, ui, players=3)
-    game_id = host.session.game_id
-
-    for _ in range(2):
-        player.on_irc(
-            "privmsg", {"channel": CHANNEL, "nick": "HST", "message": announce}
+def test_joining_another_game_leaves_the_first(lobby_port, ui, launchers):
+    player = launchers()
+    client = LobbyClient("127.0.0.1", lobby_port)
+    first = client.create_game(2, "", "A", ["amiga_model"], ["amiga_model"])
+    second = client.create_game(2, "", "B", ["amiga_model"], ["amiga_model"])
+    try:
+        player.join_game("127.0.0.1", lobby_port, first["id"])
+        ui.pump_until(lambda: player.session is not None)
+        player.join_game("127.0.0.1", lobby_port, second["id"])
+        ui.pump_until(
+            lambda: player.session is not None
+            and player.session.game_id == second["id"]
         )
-    ui.pump_until(lambda: player.session is not None)
-    assert claimed_slots(lobby_port, game_id) == [0, 1]
+        wait_for(lambda: claimed_slots(lobby_port, first["id"]) == [0])
+    finally:
+        client.end(first["id"], first["host_token"])
+        client.end(second["id"], second["host_token"])
+
+
+def test_hosting_overtaken_by_leave_ends_the_game(
+    lobby_port, ui, launchers, settings
+):
+    settings[Option.CONFIG_NAME] = "Overtaken"
+    host = launchers()
+    client = LobbyClient("127.0.0.1", lobby_port)
+
+    def overtaken():
+        games = client.lobby("m", "x")["games"]
+        return [g for g in games if g["title"] == "Overtaken"]
+
+    assert host.host_game(format_lobby("127.0.0.1", lobby_port), 2)
+    host.leave_game()  # before the lobby has answered
+    ui.pump_until(lambda: "created_game" in ui.ran)
+    assert host.session is None
+    wait_for(lambda: overtaken() == [])
+
+
+def test_a_player_browsing_sees_the_hosts_game(
+    lobby_port, ui, launchers, settings
+):
+    lobby = format_lobby("127.0.0.1", lobby_port)
+    settings[Option.NETPLAY_SERVERS] = lobby
+    settings[Option.CONFIG_NAME] = "Speedball 2"
+    host = launchers()
+    player = launchers()
+    player.start_browsing()
+    game_id = host_on(host, ui, lobby_port)
+
+    def listed():
+        return [g for g in player.browser.games() if g.id == game_id]
+
+    ui.pump_until(lambda: bool(listed()))
+    game = listed()[0]
+    assert (game.title, game.host, game.joined, game.players) == (
+        "Speedball 2",
+        "HST",
+        1,
+        2,
+    )
+    assert game.joinable and game.server.key == lobby
+    assert any(
+        text.startswith("Connected to") for _, text, _ in player.activity_log
+    )
+
+    # Removing the server from the list stops watching it.
+    player.on_setting(Option.NETPLAY_SERVERS, "")
+    assert player.browser.servers() == [] and player.browser.games() == []
+
+
+def test_an_unlisted_game_is_joined_by_id(lobby_port, ui, launchers, settings):
+    settings[Option.NETPLAY_SERVERS] = format_lobby("127.0.0.1", lobby_port)
+    host = launchers()
+    player = launchers()
+    player.start_browsing()
+    game_id = host_on(host, ui, lobby_port, listed=False)
+    assert not host.session_listed
+    ui.pump_until(lambda: bool(player.browser.servers()[0].listing))
+    assert game_id not in [g.id for g in player.browser.games()]
+    player.join_game("127.0.0.1", lobby_port, game_id)
+    ui.pump_until(
+        lambda: player.session is not None
+        and player.session.snapshot is not None
+    )
+    assert player.session.snapshot["title"] == "Sensible Soccer"
+
+
+def test_host_on_this_computer_keeps_the_lobby_between_games(
+    local_server, ui, launchers, settings
+):
+    settings[Option.NETPLAY_NAME] = "Paul"
+    settings[Option.CONFIG_NAME] = "Speedball 2"
+    host = launchers()
+    host.connect()
+    assert host.browser.server(LOCAL) is None
+
+    # Without the address players reach this computer at, it can't host.
+    settings[Option.NETPLAY_PUBLIC_ADDRESS] = ""
+    assert not host.host_game(LOCAL, 2)
+    assert host.running_local_lobby() is None
+    assert "Settings" in warnings(host)[-1]
+    settings[Option.NETPLAY_PUBLIC_ADDRESS] = "198.51.100.7"
+
+    assert host.host_game(LOCAL, 2, listed=False)
+    ui.pump_until(lambda: host.session is not None)
+    lobby = host.running_local_lobby()
+    assert lobby.presence and lobby.name == "Paul's lobby"
+    assert host.session_hosted and host.session_server == "This computer"
+    assert host.local_lobby_address() == f"198.51.100.7:{lobby.port}"
+    assert settings["netplay_last_host_server"] == LOCAL
+    local = host.browser.server(LOCAL)
+    ui.pump_until(lambda: local.state == "online" and local.listing)
+    assert local.listing["name"] == "Paul's lobby"
+    assert local.online == ["Paul"]
+    assert host.browser.games() == []  # unlisted
+    first = host.session.game_id
+
+    # End the game: the lobby stays for the next one.
+    host.leave_game()
+    assert host.session is None
+    assert host.running_local_lobby() is lobby
+    assert host.host_game(LOCAL, 2)
+    ui.pump_until(lambda: host.session is not None)
+    assert host.running_local_lobby() is lobby
+    assert host.session.game_id != first
+    ui.pump_until(
+        lambda: [g.title for g in host.browser.games()] == ["Speedball 2"]
+    )
+
+    host.stop_lobby()
+    assert host.session is None and host.running_local_lobby() is None
+    assert lobby.process is None
+    assert host.browser.server(LOCAL) is None
+
+
+def test_stop_lobby_waits_for_a_game_left_running(
+    local_server, ui, launchers, settings
+):
+    settings[Option.CONFIG_NAME] = "Solo"
+    host = launchers()
+
+    assert host.host_game(LOCAL, 1)
+    ui.pump_until(lambda: host.launched)  # one player: starts at once
+    lobby = host.running_local_lobby()
+    game_id, host_token = host.session.game_id, host.session.host_token
+    host.leave_game()  # moving on; the game belongs to FS-UAE now
+    assert host.hosted_game_left_running == game_id
+
+    host.stop_lobby()
+    assert host.running_local_lobby() is lobby
+    assert "still running" in warnings(host)[-1]
+
+    client = LobbyClient("127.0.0.1", lobby.port)
+    client.end(game_id, host_token)
+    ui.pump_until(lambda: gone(client, game_id))
+    host.stop_lobby()
+    assert host.running_local_lobby() is None
+    assert host.hosted_game_left_running is None
+
+
+def test_disconnect_stops_the_lobby(local_server, ui, launchers):
+    host = launchers()
+    assert host.host_game(LOCAL, 2)
+    ui.pump_until(lambda: host.session is not None)
+    process = host.running_local_lobby().process
+    host.disconnect()
+    assert process.poll() is not None
+    assert Netplay.current() is None
 
 
 @pytest.mark.parametrize(
@@ -590,7 +477,7 @@ def test_an_announcement_repeated_during_a_join_joins_once(
 def test_launch_uses_a_verified_address_of_this_game(
     ui, launchers, known, want, warned
 ):
-    player = launchers("PL2", ops={"HST"})
+    player = launchers()
     fsgs.config.set("__netplay_host", known)
     player.launch_session_game(
         {"config": {"__netplay_addresses": "127.0.0.1,::1"}}
@@ -617,3 +504,31 @@ def test_parse_lobby(text, want):
 def test_format_lobby_round_trips():
     for host in ["lobby.example", "2001:db8::1"]:
         assert parse_lobby(format_lobby(host, 25200)) == (host, 25200)
+
+
+def test_a_joined_config_takes_the_games_title_and_drops_its_source(
+    lobby_port, ui, launchers, settings
+):
+    # The player had their own saved game loaded before joining. Left
+    # naming it, Host game would offer it while sending the host's config.
+    host = launchers()
+    player = launchers()
+    game_id = host_on(host, ui, lobby_port)
+    settings.update(
+        {
+            Option.CONFIG_NAME: "Mine",
+            "config_path": "/configs/Mine.fs-uae",
+            "parent_uuid": "mine-uuid",
+        }
+    )
+    player.join_game("127.0.0.1", lobby_port, game_id)
+    ui.pump_until(
+        lambda: player.session is not None and player.session.applied_version
+    )
+    assert settings[Option.CONFIG_NAME] == "Sensible Soccer"
+    assert settings["config_path"] == settings["parent_uuid"] == ""
+    # The host's own config is its loaded game: it keeps its source.
+    settings["config_path"] = "/configs/Hosted.fs-uae"
+    host.session.recheck()
+    ui.pump_until(lambda: host_ready(host))
+    assert settings["config_path"] == "/configs/Hosted.fs-uae"

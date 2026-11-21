@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pdabel/fs-uae-launcher/fsnp-server/internal/game"
 )
@@ -89,10 +90,12 @@ type KeyLists struct {
 // created with POST /game, its session. Everything mutable is guarded by
 // Lobby.mu.
 type entry struct {
+	lobby    *Lobby
 	id       string
 	hash     uint32
 	password string
 	players  int
+	created  time.Time
 
 	// Set by startLocked; nil until the game runs.
 	g        *game.Game
@@ -110,6 +113,9 @@ type entry struct {
 	configVersion uint64
 	configHash    string
 	slots         []slot
+	listed        bool   // in POST /lobby's listing
+	title         string // display only, for the listing
+	autoStart     bool   // start on reaching StateReady, without the host's call
 
 	// revision counts every change a poller could see; changed is closed
 	// and replaced on each one, to wake long-polls.
@@ -149,11 +155,15 @@ func newEntry(id string, hash uint32, password string, players int) *entry {
 	}
 }
 
-// changedLocked records a change and wakes every long-poll.
+// changedLocked records a change and wakes every long-poll, on the game
+// and, for a listed game, on the lobby's listing.
 func (e *entry) changedLocked() {
 	e.revision++
 	close(e.changed)
 	e.changed = make(chan struct{})
+	if e.listed {
+		e.lobby.listingChangedLocked()
+	}
 }
 
 // touch restarts the idle wait. l.mu must be held.
@@ -238,6 +248,9 @@ type Snapshot struct {
 	Config        map[string]string `json:"config"`
 	Hash          string            `json:"hash"`
 	Slots         []SlotSnapshot    `json:"slots"`
+	Title         string            `json:"title,omitempty"`
+	Listed        bool              `json:"listed"`
+	AutoStart     bool              `json:"auto_start"`
 }
 
 // SlotSnapshot is one slot in a Snapshot.
@@ -264,6 +277,9 @@ func (e *entry) snapshotLocked() Snapshot {
 		Config:        e.config,
 		Hash:          e.configHash,
 		Slots:         make([]SlotSnapshot, len(e.slots)),
+		Title:         e.title,
+		Listed:        e.listed,
+		AutoStart:     e.autoStart,
 	}
 	for i, sl := range e.slots {
 		ss := SlotSnapshot{Slot: i, Status: e.slotStatusLocked(sl), Tag: sl.tag}
@@ -282,6 +298,11 @@ type CreateRequest struct {
 	Password string   `json:"password"`
 	Tag      string   `json:"tag"`
 	Keys     KeyLists `json:"keys"`
+	Listed   bool     `json:"listed"` // in POST /lobby; absent means unlisted, as before
+	Title    string   `json:"title"`  // shown in the listing
+	// AutoStart starts the game when every slot is claimed and ready;
+	// absent, the host calls start, as before.
+	AutoStart bool `json:"auto_start"`
 }
 
 // Created is POST /game's response. The host holds slot 0.
@@ -324,6 +345,9 @@ func (l *Lobby) createSession(req CreateRequest, port string, addresses []string
 	if len(req.Tag) > maxTagLength {
 		return Created{}, invalid("tag longer than %d bytes", maxTagLength)
 	}
+	if len(req.Title) > maxTitleLength {
+		return Created{}, invalid("title longer than %d bytes", maxTitleLength)
+	}
 	syncSet, err := validateKeys(req.Keys)
 	if err != nil {
 		return Created{}, err
@@ -341,10 +365,17 @@ func (l *Lobby) createSession(req CreateRequest, port string, addresses []string
 	e.keys = req.Keys
 	e.syncSet = syncSet
 	e.slots[0] = slot{claimed: true, tag: req.Tag, token: newToken()}
+	e.title = req.Title
+	e.listed = req.Listed
+	e.autoStart = req.AutoStart
+	if e.listed {
+		l.listingChangedLocked()
+	}
 	l.wg.Add(1)
 	go l.reap(e)
 
 	l.log.Info("session game created", "game", e.id, "players", e.players,
+		"listed", e.listed, "title", e.title, "auto_start", e.autoStart,
 		"password_generated", req.Password == "", "sync_keys", len(req.Keys.Sync),
 		"checksum_keys", len(req.Keys.Checksum), "games", len(l.byID))
 	return Created{
@@ -524,11 +555,20 @@ func (l *Lobby) reportReady(id string, n int, token string, req ReadyRequest) er
 	e.changedLocked()
 	l.log.Info("session ready reported", "game", e.id, "slot", n,
 		"status", e.slotStatusLocked(e.slots[n]), "missing", len(missing))
+	// The only call that can complete readiness: a join adds a slot that
+	// isn't ready, and a config resets every slot. Ready includes the
+	// host's own slot, for the host's current version, so no joiner can
+	// start a game the host hasn't set.
+	if e.autoStart && e.stateLocked() == StateReady {
+		l.startLocked(e)
+		l.log.Info("session game started automatically", "game", e.id, "config_version", e.configVersion)
+	}
 	return nil
 }
 
 // startSession routes the game and runs it, host only, once every slot is
-// claimed and ready.
+// claimed and ready. A game created with auto_start has already started by
+// then, so this is for the rest.
 func (l *Lobby) startSession(id, token string) (Snapshot, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()

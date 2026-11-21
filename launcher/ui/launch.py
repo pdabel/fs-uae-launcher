@@ -7,7 +7,6 @@ from launcher.i18n import gettext
 from launcher.launcher_config import LauncherConfig
 from launcher.launcher_settings import LauncherSettings
 from launcher.option import Option
-from launcher.netplay.netplay import Netplay
 from launcher.settings.override_warning import OverrideWarning
 from launcher.ui.behaviors.configbehavior import ConfigBehavior
 from launcher.ui.behaviors.settingsbehavior import SettingsBehavior
@@ -225,8 +224,6 @@ class LaunchDialog(fsui.Window):
 
         self.netplay_game_id = LauncherConfig.get("__netplay_game")
         self.netplay_port = LauncherConfig.get("__netplay_port")
-        netplay = Netplay.current()
-        self.netplay_channel = netplay.game_channel if netplay else None
 
     def complete(self):
         print("TaskRunner.complete")

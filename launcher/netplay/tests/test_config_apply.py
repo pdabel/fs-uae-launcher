@@ -160,3 +160,34 @@ def test_whole_document_reports_every_missing_file():
         "x_kickstart_file_sha1": "e" * 40,
         "x_floppy_drive_1_sha1": "f" * 40,
     }
+
+
+def test_put_back_echoes():
+    from launcher.netplay.config_apply import put_back_echoes
+
+    # An editor showing the joystick mode writes "" back for the default
+    # when what it shows moves, as InputSelector does.
+    config = {}
+    shown = {"mode": "nothing"}
+
+    def set_multiple(items):
+        for key, value in items:
+            config[key] = value
+            if key == "joystick_port_1_mode" and shown["mode"] != value:
+                shown["mode"] = value
+                if value == "joystick":
+                    config[key] = ""
+
+    updates = [("joystick_port_1_mode", "joystick"), ("amiga_model", "A500")]
+    set_multiple(updates)
+    assert config["joystick_port_1_mode"] == ""
+    put_back_echoes(updates, config.get, set_multiple)
+    assert dict(updates) == config
+
+
+def test_put_back_echoes_gives_up():
+    from launcher.netplay.config_apply import ECHO_ROUNDS, put_back_echoes
+
+    calls = []
+    put_back_echoes([("k", "1")], lambda key: "", calls.append)
+    assert len(calls) == ECHO_ROUNDS

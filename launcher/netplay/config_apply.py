@@ -113,23 +113,40 @@ def resolve_config(document, sync_keys, find_by_sha1):
     return updates, missing
 
 
-def apply_config(document, sync_keys=None):
-    """Apply a document to LauncherConfig and return what's missing.
-
-    sync_keys defaults to this launcher's own, which is right only for
-    config that didn't come with a key list (the IRC path).
-    """
+def apply_config(document, sync_keys):
+    """Apply a document's sync_keys to LauncherConfig and return what's
+    missing."""
     from fsgs.context import fsgs
     from launcher.launcher_config import LauncherConfig
 
     updates, missing = resolve_config(
         document,
-        LauncherConfig.sync_keys_set if sync_keys is None else sync_keys,
+        sync_keys,
         lambda sha1: fsgs.file.find_by_sha1(sha1=sha1),
     )
     if updates:
-        LauncherConfig.set_multiple(updates)
+        LauncherConfig.set_from_netplay(updates)
+        put_back_echoes(updates, fsgs.config.get, LauncherConfig.set_from_netplay)
     return missing
+
+
+# Rounds of put_back_echoes before giving up on a key.
+ECHO_ROUNDS = 3
+
+
+def put_back_echoes(updates, get, set_multiple):
+    """Set again any key a config editor changed as it was applied.
+
+    An editor showing a key writes back what it shows when the key moves
+    under it, normalised: a joystick mode set to its default comes back
+    as "". The host sent the value, so this launcher's would hash
+    differently. Set again, the editor already shows it and leaves it.
+    """
+    for _ in range(ECHO_ROUNDS):
+        changed = [(key, value) for key, value in updates if get(key) != value]
+        if not changed:
+            return
+        set_multiple(changed)
 
 
 def apply_document(snapshot):

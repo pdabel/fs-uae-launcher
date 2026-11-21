@@ -190,89 +190,11 @@ performance with modern Intel/AMD frequency drivers: the system performance
 power profile can legitimately coexist with that governor. The explicit
 governor control is separate from system power profiles and GameMode.
 
-## Netplay Command History
-
-In Net Play's command field, Up recalls the previous command and Down recalls
-the next. Returning past the newest entry restores your unfinished draft.
-Recall does not send anything: edit the command as needed, then press Enter.
-The centred trash icon on the same row, to the right of the command field,
-clears saved history after confirmation.
-
-The latest 100 distinct supported slash commands are saved locally in
-Data/Databases/NetplayHistory.sqlite (under your configured data folder).
-Reusing a command puts it at the end of the history. History persists between
-launcher sessions and travels with portable data. Chat messages, private
-messages, raw IRC commands, operator/authentication commands, passworded
-host/join commands, and sensitive /set options are not saved. Unknown commands
-are excluded by default. History records submitted commands, not a guarantee
-that the server accepted them. A history database error does not prevent
-commands from being sent.
-
-## Portable Mode
-
-Open Settings -> FS-UAE Launcher -> Data Location and select Portable mode.
-Choose a new empty data folder to copy the current data, or select a folder
-that already contains FS-UAE data and choose Use Existing Data. Existing folder
-contents are never overwritten when adopted. Confirm the change and restart.
-No manual configuration file is required.
-Choose Data Folder changes an existing portable setup's data location.
-Clear Portable mode to select a normal data folder and restart again.
-
-The launcher copies existing data rather than moving or deleting originals.
-Copying happens after settings are saved and the launcher shuts down, with a
-progress window. Existing destination files are never overwritten. Database
-backups include committed SQLite WAL data. A failed copy leaves the original
-startup location unchanged. Stop any running database scan before switching.
-Copies are prepared in a private staging folder and published only if the
-destination is still empty. If writing the startup preference fails after
-publication, the completed copy is kept for recovery; the original remains intact.
-Close other launcher instances and emulators before copying data they may use.
-
-Portable mode writes Portable.ini next to the launcher (or updates the existing
-portable marker), with a relative reference to the selected data folder. That
-location must be writable. Move the launcher and data together, retaining their
-relative layout. This setting does not copy/install the launcher program, its
-Python environment, or the emulator. External media folders and symbolic links
-remain external; internal scan paths and saved configuration paths are converted
-to data-root-relative references. Custom portable folder mappings are preserved.
-Keep external files available at their paths.
-Disabling portable mode keeps a backup of the marker and remembers the chosen
-normal data folder in the user preferences. Explicit --base-dir launch options
-still override automatic folder selection; FS_UAE_BASE_DIR overrides normal-mode
-folder preferences. Legacy empty Portable.ini files remain supported.
-The source tree does not include an active portable marker. Disabling in place
-is rejected when the startup marker also contains custom directory mappings;
-choose a new folder so those mappings can be preserved.
-When using existing data without copying, select a folder that does not contain
-the portable startup marker or, when disabling, the data-folder preference.
-
-When applying the lobby config updates a host sync value, such as a kickstart
-hash, the host publishes the updated config as a new version for all players
-to apply before starting.
-
-## Python Consistency Checks
-
-Literal percent interpolation is modernized only where output equivalence is
-clear. Numeric widths, precision, and hexadecimal case are retained; ambiguous
-integer coercions and legacy fixed-width diagnostics remain unchanged. Explicit
-string conversions preserve `%s` behavior for objects with custom formatting.
-Lazy logging arguments and formatting after gettext remain intact.
-
-Ordinary literal `.format()` calls use f-strings. Translated templates keep
-their placeholders and are formatted after gettext. Dynamic templates (such
-as media keys, WHDLoad scripts, and SQL debug output) retain `.format()`;
-they cannot be replaced by literal f-strings. Logging uses lazy arguments.
-Ruff's UP032 rule checks eligible conversions locally and in CI, without
-enabling unrelated legacy rules:
-
-  venv/bin/python -m pip install ruff==0.17.2
-  venv/bin/pipenv run ruff check
-
 The tracked-source regression check includes extensionless Python scripts and
 rejects literal `.format()` calls that Ruff leaves unchanged, including calls
 with joins or dictionary lookups. The bootstrap uses f-strings while retaining
 its generated setup and Makefile contents.
-Output tests cover IRC commands, lazy WHDLoad logging, packaging templates,
+Output tests cover lazy WHDLoad logging, packaging templates,
 and formatting after translation. Run these
 checks and strict source compilation with:
 
@@ -373,7 +295,7 @@ previously saved theme. It can also be requested explicitly at startup:
 The available themes are Modern Dark, four futuristic skins of it (Neon City,
 Synthwave Sunset, Holo Grid, Phosphor Terminal), Fusion, Windows 3.11, and
 Amiga Workbench 1.3. All share this single-window workspace and embedded
-netplay server controls. Fusion retains Qt's original light palette and
+Net Play page. Fusion retains Qt's original light palette and
 native-style controls. Removed or unknown saved themes fall back to Fusion; an
 empty theme setting still defaults to Modern Dark. Retired saved theme names
 are normalized to Fusion so the Settings picker agrees with the running theme.
@@ -385,7 +307,7 @@ install it as above.
 The skins reuse Modern Dark's layout, controls and tests; only the colour
 palette, corner radius and (for Phosphor Terminal) the font differ. They are
 defined as `ModernPalette` records in `fsui/qt/modern_theme.py`, and the
-dashboard, Settings navigation, netplay server panel, monitor diagram and
+dashboard, Settings navigation, Net Play panel, monitor diagram and
 QtAwesome icons read their colours from the active palette instead of
 hard-coded values, so a new skin only needs a palette entry and an option
 label.
@@ -419,7 +341,7 @@ icon family as the navigation rail in Modern Dark.
 ### Quick Theme Switching
 Choosing a theme or interface size in Settings > FS-UAE Launcher applies it to
 the running launcher immediately: the application palette and stylesheet,
-the dashboard, Settings navigation and netplay server panel all re-render
+the dashboard, Settings navigation and Net Play panel all re-render
 (`fsui.qt.qt.apply_launcher_theme` notifies `theme_applied` listeners).
 The interface size is a Smaller / Default / Larger slider
 (`launcher/settings/ui_scale.py`) with a "Use Default Size" button; it still
@@ -434,7 +356,7 @@ Restart Launcher remains available for a full restart. After confirmation,
 preferences are saved and the launcher
 reopens with the selected theme and font. The current base directory is
 preserved; old theme overrides and game/disk command-line arguments are not
-repeated. Active netplay sessions and hosted servers are stopped. Save
+repeated. Active netplay games and the lobby on this computer are stopped. Save
 configuration edits before restarting. Cancelling leaves the launcher open.
 
 ### GUI Cleanup
@@ -471,47 +393,25 @@ They can also be selected for a single launch:
 
 ### Integrated Netplay
 
-Netplay uses three resizable columns: channels and players on the left,
-chat/logs and command input in the centre, and server/game controls on the
-right. Columns initially use 25/40/35 percent of the available width. Divider
-adjustments are saved in launcher preferences and restored on the next launch.
-Port and player-count inputs use aligned labels and matching expanding fields.
-The fields and spaced game-action buttons sit at the bottom of the server
-column, directly above Stop server; server and game details remain at the top.
+In all four themes, Net Play is a page inside the main window rather than a
+separate window. The navigation button and Tools menu open the same page.
+Library and quick-settings tools are disabled on it.
 
-In all four themes, Net play is a page inside the main window rather than a
-separate window. The navigation button and Tools
-menu open the same page. The retro themes retain their own colours and controls.
-Chat, channel selection, and the connection persist when switching back to
-configuration pages. Library and quick-settings tools are disabled on the
-netplay page, which uses its own host/start controls.
+The page is a lobby browser: it watches every lobby server in Settings > Net
+Play, each on its own so a slow or unreachable server doesn't hold up the
+rest, and lists every game waiting for players on them. Join takes a slot,
+Join by ID... joins an unlisted game, and Host game hosts the loaded config
+on a listed server or on This computer. A game starts by itself once every
+player has joined and is ready. While in a game the page shows its players,
+Re-check, Leave (End game for a host) and what the game is waiting for. An
+activity log keeps the last 200 lines. Watching carries on while other pages
+show. See docs/netplay-rooms-design.md.
 
-Hosting displays the game ID, channel, port, player count, and server status
-alongside the chat. The Stop server button stops hosting without closing
-the page. Closing the main window also stops the owned server. There is no
-Reset button in the netplay interface; the manual `/reset` command remains
-available.
-Join Game Channel prefills a complete, editable channel using the current
-game/configuration title and the local Net play tag, for example
-`#barbarian-daf`. Entering a plain name such as `barbarian` appends the local
-Net play tag automatically. Players can replace it with the host's specific
-channel; an existing hyphen suffix is left unchanged, including `-game` or
-custom suffixes. A missing `#` prefix is added automatically. A blank title
-falls back to `new`, and a blank or unusable tag falls back to `unk`.
-Private beside Join Game Channel suppresses lobby announcements for that join.
-It is unchecked by default. Public joins and newly created game channels are
-announced in the lobby only after the IRC server confirms the join and member
-list, including channels joined with a manual `/join` command. Private channels
-are not advertised, but are not password-protected or hidden from IRC discovery.
-The details update if the server process exits. The panes are resizable;
-the chat controls scroll when the window is too narrow to fit them.
-
-Hosting uses the shared netplay port 25101 by default. The server's bind result
-determines whether the port is available; the launcher does not test-bind or
-retry a busy port. A running lobby or another hosted game produces an explicit
-port-in-use message rather than opening a server view. Successful hosting still
-uses the inline details pane in every theme. Remote startgame responses support
-an empty password.
+Hosting on This computer runs fsnp-server as a lobby on the port in Settings >
+Net Play (25101 by default), telling players the address set there. The
+lobby is kept between games until Stop lobby, which won't stop a game being
+played, or until the launcher closes. The server's bind result determines
+whether the port is available; a busy port produces an explicit message.
 
 ## UI Regression Tests
 
@@ -526,7 +426,7 @@ the launcher's New button, under PySide6.
 Dashboard tests cover page routing, library/quick-settings toggles, the dark
 palette, the theme picker, and 1920x1080, 1280x800, and 1000x720 layouts.
 The navigation and embedded-netplay checks run in all four workspace themes,
-including chat persistence, inline server ownership, and shutdown on main close.
+including the page persisting between visits and shutdown on main close.
 Settings tests cover navigation icons, page switching, and headings in all
 four workspace themes, including the retro themes' larger icons,
 palette-based sidebar styling, and matching workspace typography.
@@ -541,20 +441,13 @@ migration, and shared Settings/workspace/server routing.
 Restart checks cover confirmation/cancellation, save-before-close ordering,
 source/frozen commands, clean launch arguments, shutdown notifications,
 and save/relaunch failure handling.
-Merged hosting checks cover the shared default port, inline lifecycle,
-port-in-use/startup failures without publishing a game, and empty passwords.
 List-selection tests also verify that clearing a search selection emits None
 rather than converting it to an incorrect row index under PySide6.
 Launch regression tests exercise Start-button dispatch and construction of
 the launch task dialog with and without a netplay session. Netplay tests
-cover lobby/game-channel and operator/player transitions, button geometry,
-and host/re-check/start dispatch without opening a network
-connection or launching an emulator. Visibility changes immediately relayout
-the netplay controls; no manual resize is required to reveal host buttons.
-Real IRC JOIN/NAMES/MODE replay tests cover operator recognition, nick-list
-updates, and host controls without mocking operator status. Ordinary IRC
-messages use the text widget's current palette color so rendering errors or
-an import-time color cannot interrupt IRC events or hide text in dark mode.
+cover the lobby browser's servers, games, joining, hosting and game views
+without opening a network connection or launching an emulator; the
+launcher/netplay tests run the same flows against a real fsnp-server.
 Status-bar text and warnings use the widget's live WindowText palette colour;
 inactive text keeps its existing grey override. All four themes inherit their
 palette backgrounds on every OS unless an explicit background override is set.
@@ -629,23 +522,6 @@ Foundation; either version 3 of the License, or (at your option) any later
 version.
 
 The Amiga Forever icon is (probably) copyright Cloanto Italia srl.
-
-FS-UAE Launcher includes the oyoyo library, Copyright (c) 2008 Duncan Fordyce,
-The license for this library is contained in the following paragraph:
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED
-"AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
-LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
-AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
-CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 FS-UAE Launcher may include lhafile, Copyright (c) 2010 Hidekazu Ohnishi.
 All rights reserved. Redistribution and use in source and binary forms,
