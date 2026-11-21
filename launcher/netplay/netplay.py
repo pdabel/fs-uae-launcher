@@ -212,7 +212,11 @@ class Netplay:
             game_id,
             slot,
             player_token,
-            apply=apply_document,
+            apply=(
+                apply_document
+                if "host_token" in host
+                else self.apply_as_player
+            ),
             local_value=LauncherConfig.get,
             launch=self.launch_session_game,
             dispatch=call_after,
@@ -223,6 +227,23 @@ class Netplay:
         )
         self.session.start()
         self.notify_session()
+
+    def apply_as_player(self, snapshot):
+        """Apply the host's config, and make it this launcher's config.
+
+        The host's config replaces the values, but the settings still
+        named the game this launcher had loaded: its title, and the saved
+        config or database game it came from. Host game would then offer
+        that game while sending the host's, and saving would overwrite
+        the saved config. So the config takes the game's title and leaves
+        its source behind, as an unsaved config does.
+        """
+        result = apply_document(snapshot)
+        title = snapshot.get("title") or self.session_title
+        LauncherSettings.set(Option.CONFIG_NAME, title or "Net Play game")
+        for key in ("config_path", "config_xml_path", "parent_uuid"):
+            LauncherSettings.set(key, "")
+        return result
 
     def end_session(self):
         """Leave the current game. One that hasn't started is ended — by a

@@ -504,3 +504,31 @@ def test_parse_lobby(text, want):
 def test_format_lobby_round_trips():
     for host in ["lobby.example", "2001:db8::1"]:
         assert parse_lobby(format_lobby(host, 25200)) == (host, 25200)
+
+
+def test_a_joined_config_takes_the_games_title_and_drops_its_source(
+    lobby_port, ui, launchers, settings
+):
+    # The player had their own saved game loaded before joining. Left
+    # naming it, Host game would offer it while sending the host's config.
+    host = launchers()
+    player = launchers()
+    game_id = host_on(host, ui, lobby_port)
+    settings.update(
+        {
+            Option.CONFIG_NAME: "Mine",
+            "config_path": "/configs/Mine.fs-uae",
+            "parent_uuid": "mine-uuid",
+        }
+    )
+    player.join_game("127.0.0.1", lobby_port, game_id)
+    ui.pump_until(
+        lambda: player.session is not None and player.session.applied_version
+    )
+    assert settings[Option.CONFIG_NAME] == "Sensible Soccer"
+    assert settings["config_path"] == settings["parent_uuid"] == ""
+    # The host's own config is its loaded game: it keeps its source.
+    settings["config_path"] = "/configs/Hosted.fs-uae"
+    host.session.recheck()
+    ui.pump_until(lambda: host_ready(host))
+    assert settings["config_path"] == "/configs/Hosted.fs-uae"
