@@ -541,6 +541,9 @@ func TestAutoStart(t *testing.T) {
 	}
 	s := h.snapshot(c.ID)
 	wantState(t, s, StateRunning)
+	if !s.AutoStart || s.Listed {
+		t.Fatalf("snapshot auto_start %v, listed %v", s.AutoStart, s.Listed)
+	}
 	if s.ConfigVersion != set.ConfigVersion {
 		t.Fatalf("started version %d, want %d", s.ConfigVersion, set.ConfigVersion)
 	}

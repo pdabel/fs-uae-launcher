@@ -79,7 +79,7 @@ When applying the host's config changes a sync value, the updated config is publ
 ```
 POST   /game                          {players, password, tag, keys:{sync, checksum}, listed, title, auto_start}
   201  {id, password, players, port, addresses, host_token, slot: 0, player_token}
-GET    /game/{id}[?since=revision]    snapshot; with since, waits up to 25 s for a change
+GET    /game/{id}[?since=revision]    snapshot (with title, listed, auto_start); with since, waits up to 25 s for a change
 POST   /game/{id}/players             {tag} → 201 {slot, player_token}; 409 when full
 DELETE /game/{id}/players/{n}         slot or host: free a slot
 PUT    /game/{id}/config              host: {config:{key: value}} → {config_version, hash}

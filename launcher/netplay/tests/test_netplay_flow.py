@@ -709,3 +709,71 @@ def test_this_computer_is_browsed_while_its_lobby_runs(
 
     host.command_reset([])
     assert host.browser.server(LOCAL) is None
+
+
+def test_join_from_the_list_and_leave(lobby_port, ui, launchers, netplay_settings):
+    netplay_settings[Option.NETPLAY_NAME] = "Dave"
+    netplay_settings[Option.CONFIG_NAME] = "Sensible Soccer"
+    host = launchers("HST", ops={"HST"})
+    player = launchers("PL2", ops={"HST"})
+    player.game_channel = ""  # browsing, not in an IRC channel
+    client = LobbyClient("127.0.0.1", lobby_port)
+    assert host.create_session(
+        host.irc.active_channel(), client, 2, "",
+        format_lobby("127.0.0.1", lobby_port),
+    )
+    ui.pump_until(lambda: bool(host.irc.sent))
+    game_id = host.session.game_id
+
+    sessions = []
+    player.session_listeners.append(sessions.append)
+    player.join_game(
+        "127.0.0.1", lobby_port, game_id,
+        title="Sensible Soccer", server="Club",
+    )
+    assert player.joining == game_id
+    player.join_game("127.0.0.1", lobby_port, game_id)  # a second click
+    ui.pump_until(
+        lambda: player.session is not None
+        and host.session.state == "ready"
+        and player.session.state == "ready"
+    )
+    assert (player.session_title, player.session_server) == (
+        "Sensible Soccer",
+        "Club",
+    )
+    slots = client.game(game_id)["slots"]
+    assert [s["tag"] for s in slots] == ["HST", "Dave"]
+    assert any(
+        text == "joined Sensible Soccer as player 2"
+        for _, text, _ in player.activity_log
+    )
+    assert sessions and sessions[0] is None  # told it's joining
+
+    player.leave_game()
+    assert player.session is None and player.session_title is None
+    ui.pump_until(lambda: host.session.snapshot["slots"][1]["status"] == "empty")
+    assert any(
+        text == "left Sensible Soccer" for _, text, _ in player.activity_log
+    )
+
+
+def test_joining_another_game_leaves_the_first(lobby_port, ui, launchers):
+    player = launchers("PL2", ops={"HST"})
+    client = LobbyClient("127.0.0.1", lobby_port)
+    first = client.create_game(2, "", "A", ["amiga_model"], ["amiga_model"])
+    second = client.create_game(2, "", "B", ["amiga_model"], ["amiga_model"])
+    try:
+        player.join_game("127.0.0.1", lobby_port, first["id"])
+        ui.pump_until(lambda: player.session is not None)
+        player.join_game("127.0.0.1", lobby_port, second["id"])
+        ui.pump_until(
+            lambda: player.session is not None
+            and player.session.game_id == second["id"]
+        )
+        ui.pump_until(
+            lambda: client.game(first["id"])["slots"][1]["status"] == "empty"
+        )
+    finally:
+        client.end(first["id"], first["host_token"])
+        client.end(second["id"], second["host_token"])

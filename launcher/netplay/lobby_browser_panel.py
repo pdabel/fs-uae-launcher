@@ -21,18 +21,29 @@ from fsui.qt import (
 )
 from qtpy.QtWidgets import (
     QAbstractItemView,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
     QHeaderView,
+    QLineEdit,
+    QListWidget,
     QPlainTextEdit,
+    QStackedWidget,
     QTreeWidget,
     QTreeWidgetItem,
+    QWidget,
 )
 from launcher.i18n import gettext
 from launcher.netplay.lobby_browser import (
     CONNECTING,
+    LOCAL,
+    LOCAL_HOST,
     NO_LISTING,
     ONLINE,
     UNREACHABLE,
 )
+from launcher.netplay.lobby_servers import parse_lobby
 
 # Status dots: filled when the server answers.
 DOT_ONLINE = "●"
@@ -96,9 +107,17 @@ class LobbyBrowserPanel(QFrame):
         layout.setContentsMargins(20, 16, 20, 16)
         layout.setSpacing(8)
 
+        # Browsing, or the game this launcher is in.
+        self.pages = QStackedWidget()
+        layout.addWidget(self.pages, 1)
+        self.browse_page = QWidget()
+        browse = QVBoxLayout(self.browse_page)
+        browse.setContentsMargins(0, 0, 0, 0)
+        self.pages.addWidget(self.browse_page)
+
         columns = QHBoxLayout()
         columns.setSpacing(20)
-        layout.addLayout(columns, 1)
+        browse.addLayout(columns, 1)
 
         servers_column = QVBoxLayout()
         columns.addLayout(servers_column, 2)
@@ -157,6 +176,47 @@ class LobbyBrowserPanel(QFrame):
         self.no_games.setObjectName("lobbyEmpty")
         games_column.addWidget(self.no_games)
 
+        buttons = QHBoxLayout()
+        browse.addLayout(buttons)
+        self.join_by_id_button = QPushButton(gettext("Join by ID\u2026"))
+        self.join_by_id_button.setToolTip(
+            gettext("Join a game that isn't listed, with the ID its host gave")
+        )
+        self.join_by_id_button.clicked.connect(self.on_join_by_id)
+        buttons.addWidget(self.join_by_id_button)
+        buttons.addStretch(1)
+
+        self.game_page = QWidget()
+        game = QVBoxLayout(self.game_page)
+        game.setContentsMargins(0, 0, 0, 0)
+        self.pages.addWidget(self.game_page)
+        self.game_heading = plain_label("", "sectionTitle")
+        self.game_heading.setWordWrap(True)
+        game.addWidget(self.game_heading)
+        self.slot_list = QListWidget()
+        self.slot_list.setObjectName("lobbySlots")
+        self.slot_list.setSelectionMode(QAbstractItemView.NoSelection)
+        self.slot_list.setFocusPolicy(Qt.NoFocus)
+        game.addWidget(self.slot_list, 1)
+        game_buttons = QHBoxLayout()
+        game.addLayout(game_buttons)
+        self.recheck_button = QPushButton(gettext("Re-check"))
+        self.recheck_button.setToolTip(
+            gettext(
+                "Apply the game's config again, for example after adding "
+                "missing files"
+            )
+        )
+        self.recheck_button.clicked.connect(self.on_recheck)
+        game_buttons.addWidget(self.recheck_button)
+        self.leave_button = QPushButton(gettext("Leave"))
+        self.leave_button.clicked.connect(self.on_leave)
+        game_buttons.addWidget(self.leave_button)
+        game_buttons.addStretch(1)
+        self.game_status = plain_label()
+        self.game_status.setWordWrap(True)
+        game.addWidget(self.game_status)
+
         layout.addWidget(plain_label(gettext("Activity"), "sectionTitle"))
         self.activity = QPlainTextEdit()
         self.activity.setObjectName("lobbyActivity")
@@ -176,7 +236,9 @@ class LobbyBrowserPanel(QFrame):
             self.add_activity(line)
         netplay.browser_listeners.append(self.refresh)
         netplay.activity_listeners.append(self.add_activity)
+        netplay.session_listeners.append(self.on_session)
         self.refresh()
+        self.on_session(netplay.session)
 
     def restyle(self):
         if fsui.theme_variant == "modern":
@@ -196,6 +258,8 @@ class LobbyBrowserPanel(QFrame):
             self.netplay.browser_listeners.remove(self.refresh)
         if self.add_activity in self.netplay.activity_listeners:
             self.netplay.activity_listeners.remove(self.add_activity)
+        if self.on_session in self.netplay.session_listeners:
+            self.netplay.session_listeners.remove(self.on_session)
 
     # --- Rendering ------------------------------------------------------------
 
@@ -263,6 +327,17 @@ class LobbyBrowserPanel(QFrame):
             if not game.joinable:
                 item.setDisabled(True)
             tree.addTopLevelItem(item)
+            if game.joinable:
+                button = QPushButton(gettext("Join"))
+                button.setToolTip(
+                    gettext("Join {0}, hosted by {1}").format(
+                        game.title, game.host
+                    )
+                )
+                button.clicked.connect(
+                    lambda checked=False, game=game: self.on_join(game)
+                )
+                tree.setItemWidget(item, 4, button)
             if game.id == selected:
                 tree.setCurrentItem(item)
         self.no_games.setVisible(not games)
@@ -273,6 +348,49 @@ class LobbyBrowserPanel(QFrame):
             return None
         return item.data(0, Qt.UserRole)[1]
 
+    def on_session(self, session=None):
+        """Show the game this launcher is in, or go back to browsing."""
+        netplay = self.netplay
+        session = netplay.session
+        if session is None and netplay.joining is None:
+            self.pages.setCurrentWidget(self.browse_page)
+            return
+        self.pages.setCurrentWidget(self.game_page)
+        if session is None:
+            self.game_heading.setText(gettext("Joining\u2026"))
+            self.slot_list.clear()
+            self.game_status.setText("")
+            self.recheck_button.setEnabled(False)
+            self.leave_button.setText(gettext("Leave"))
+            return
+        self.game_heading.setText(self.game_heading_text(session))
+        self.slot_list.clear()
+        self.slot_list.addItems(session.slot_lines())
+        self.game_status.setText(session.status_line())
+        self.recheck_button.setEnabled(not session.started)
+        self.leave_button.setText(
+            gettext("End game") if session.is_host else gettext("Leave")
+        )
+
+    def game_heading_text(self, session):
+        snapshot = session.snapshot or {}
+        title = (
+            self.netplay.session_title
+            or snapshot.get("title")
+            or gettext("Game {0}").format(session.game_id[:8])
+        )
+        if session.is_host:
+            host = gettext("you")
+        else:
+            slots = snapshot.get("slots") or []
+            host = (slots[0].get("tag") if slots else None) or "?"
+        server = self.netplay.session_server
+        if server:
+            return gettext("{0}, hosted by {1} on {2}").format(
+                title, host, server
+            )
+        return gettext("{0}, hosted by {1}").format(title, host)
+
     def add_activity(self, line):
         when, text, warning = line
         stamp = time.strftime("%H:%M", time.localtime(when))
@@ -280,9 +398,91 @@ class LobbyBrowserPanel(QFrame):
 
     # --- Actions ----------------------------------------------------------------
 
+    def on_join(self, game):
+        self.netplay.join_game(
+            game.server.host,
+            game.server.port,
+            game.id,
+            title=game.title,
+            server=game.server.short_title,
+        )
+
+    def on_join_by_id(self):
+        choices = [
+            s.key for s in self.netplay.browser.servers() if s.key != LOCAL
+        ]
+        local = self.netplay.browser.server(LOCAL)
+        if local is not None:
+            choices.insert(0, gettext("This computer"))
+        answer = JoinByIdDialog.get(self, choices)
+        if answer is None:
+            return
+        server, game_id = answer
+        if local is not None and server == gettext("This computer"):
+            host, port, label = LOCAL_HOST, local.port, server
+        else:
+            try:
+                host, port = parse_lobby(server)
+            except ValueError:
+                self.netplay.activity(
+                    gettext("{0} is not host or host:port").format(server),
+                    True,
+                )
+                return
+            label = server
+        self.netplay.join_game(host, port, game_id, server=label)
+
+    def on_recheck(self):
+        self.netplay.command_recheck([])
+
+    def on_leave(self):
+        self.netplay.leave_game()
+
     def on_retry(self, key):
         self.netplay.browser.retry(key)
 
     def on_add_server(self):
         if self.open_settings is not None:
             self.open_settings()
+
+
+class JoinByIdDialog(QDialog):
+    """Asks for the lobby and the ID of a game that isn't listed."""
+
+    def __init__(self, parent, servers):
+        super().__init__(parent)
+        self.setWindowTitle(gettext("Join by ID"))
+        layout = QFormLayout(self)
+        self.server = QComboBox()
+        self.server.setEditable(True)
+        self.server.addItems(servers)
+        self.server.setToolTip(gettext("host or host:port"))
+        layout.addRow(gettext("Server:"), self.server)
+        self.game_id = QLineEdit()
+        self.game_id.setPlaceholderText(gettext("The ID the host copied"))
+        layout.addRow(gettext("Game ID:"), self.game_id)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        )
+        buttons.button(QDialogButtonBox.Ok).setText(gettext("Join"))
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addRow(buttons)
+
+    def answer(self):
+        server = self.server.currentText().strip()
+        game_id = self.game_id.text().strip()
+        if not server or not game_id:
+            return None
+        return server, game_id
+
+    @staticmethod
+    def get(parent, servers):
+        """(server, game id), or None if cancelled or left blank."""
+        dialog = JoinByIdDialog(parent, servers)
+        try:
+            if dialog.exec():
+                return dialog.answer()
+            return None
+        finally:
+            dialog.deleteLater()

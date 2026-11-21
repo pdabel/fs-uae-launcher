@@ -70,6 +70,9 @@ func TestListing(t *testing.T) {
 		t.Fatalf("listed game %+v", g)
 	}
 
+	if s := h.snapshot(c.ID); s.Title != "Sensible Soccer" || !s.Listed || s.AutoStart {
+		t.Fatalf("snapshot title %q, listed %v, auto_start %v", s.Title, s.Listed, s.AutoStart)
+	}
 	h.joinSession(c.ID, "PL2")
 	if g := h.listing(ListingRequest{}).Games[0]; g.Joined != 2 {
 		t.Fatalf("joined %d after a join, want 2", g.Joined)

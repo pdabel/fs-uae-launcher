@@ -248,6 +248,9 @@ type Snapshot struct {
 	Config        map[string]string `json:"config"`
 	Hash          string            `json:"hash"`
 	Slots         []SlotSnapshot    `json:"slots"`
+	Title         string            `json:"title,omitempty"`
+	Listed        bool              `json:"listed"`
+	AutoStart     bool              `json:"auto_start"`
 }
 
 // SlotSnapshot is one slot in a Snapshot.
@@ -274,6 +277,9 @@ func (e *entry) snapshotLocked() Snapshot {
 		Config:        e.config,
 		Hash:          e.configHash,
 		Slots:         make([]SlotSnapshot, len(e.slots)),
+		Title:         e.title,
+		Listed:        e.listed,
+		AutoStart:     e.autoStart,
 	}
 	for i, sl := range e.slots {
 		ss := SlotSnapshot{Slot: i, Status: e.slotStatusLocked(sl), Tag: sl.tag}

@@ -2171,7 +2171,10 @@ class TestLaunchAndNetplay(WidgetTestCase):
             def retry(self):
                 self.retried += 1
 
-        netplay = Mock(browser_listeners=[], activity_listeners=[])
+        netplay = Mock(
+            browser_listeners=[], activity_listeners=[], session_listeners=[],
+            session=None, joining=None, session_title=None, session_server=None,
+        )
         netplay.activity_log = [(0, "Earlier line", False)]
         netplay.browser = LobbyBrowser(
             name=lambda: "Paul", dispatch=lambda f, *a: f(*a),
@@ -2250,6 +2253,34 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 ],
             )
             self.assertEqual([row.isDisabled() for row in rows], [False, False, True, True])
+            self.assertEqual(
+                [games.itemWidget(row, 4) is not None for row in rows],
+                [True, True, False, False],
+            )
+            games.itemWidget(rows[1], 4).click()
+            netplay.join_game.assert_called_once_with(
+                "netplay.example.net", 25101, "g1",
+                title="Sensible Soccer", server="Amiga Friday",
+            )
+            netplay.join_game.reset_mock()
+            dialog = "launcher.netplay.lobby_browser_panel.JoinByIdDialog.get"
+            with patch(dialog, return_value=("This computer", "g9")) as ask:
+                panel.join_by_id_button.click()
+            self.assertEqual(ask.call_args.args[1][0], "This computer")
+            self.assertIn("netplay.example.net", ask.call_args.args[1])
+            netplay.join_game.assert_called_once_with(
+                "127.0.0.1", 25101, "g9", server="This computer"
+            )
+            netplay.join_game.reset_mock()
+            with patch(dialog, return_value=("[2001:db8::1]:25200", "g8")):
+                panel.join_by_id_button.click()
+            netplay.join_game.assert_called_once_with(
+                "2001:db8::1", 25200, "g8", server="[2001:db8::1]:25200"
+            )
+            netplay.join_game.reset_mock()
+            with patch(dialog, return_value=None):
+                panel.join_by_id_button.click()
+            netplay.join_game.assert_not_called()
             self.assertTrue(panel.no_games.isHidden())
             self.assertIn("Connected to Amiga Friday", panel.activity.toPlainText())
 
@@ -2257,10 +2288,50 @@ class TestLaunchAndNetplay(WidgetTestCase):
             old.on_listing({"id": "old", "revision": 1, "games": []})
             browser.server("gone.example").watcher.on_state(ONLINE, None, None)
             self.assertFalse(panel.countdown.isActive())
+
+            # In a game: the game replaces browsing until it ends.
+            self.assertIs(panel.pages.currentWidget(), panel.browse_page)
+            netplay.joining = "g1"
+            panel.on_session(None)
+            self.assertIs(panel.pages.currentWidget(), panel.game_page)
+            self.assertEqual(panel.game_heading.text(), "Joining\u2026")
+            session = Mock(
+                game_id="g1", is_host=False, started=False,
+                snapshot={"slots": [{"slot": 0, "tag": "Paul"}]},
+            )
+            session.slot_lines.return_value = [
+                "1. Paul \u2014 ready",
+                "2. Dave (you) \u2014 missing: floppy_drive_0",
+            ]
+            session.status_line.return_value = (
+                "Starts when you're ready: add the missing file, then Re-check."
+            )
+            netplay.joining, netplay.session = None, session
+            netplay.session_title, netplay.session_server = "Sensible Soccer", "Dave's lobby"
+            panel.on_session(session)
+            self.assertEqual(
+                panel.game_heading.text(),
+                "Sensible Soccer, hosted by Paul on Dave's lobby",
+            )
+            self.assertEqual(panel.slot_list.count(), 2)
+            self.assertIn("Re-check", panel.game_status.text())
+            self.assertEqual(panel.leave_button.text(), "Leave")
+            panel.recheck_button.click()
+            netplay.command_recheck.assert_called_once_with([])
+            panel.leave_button.click()
+            netplay.leave_game.assert_called_once_with()
+            session.is_host = True
+            panel.on_session(session)
+            self.assertEqual(panel.leave_button.text(), "End game")
+            self.assertIn("hosted by you", panel.game_heading.text())
+            netplay.session = None
+            panel.on_session(None)
+            self.assertIs(panel.pages.currentWidget(), panel.browse_page)
         finally:
             panel.shutdown()
             self.assertEqual(netplay.browser_listeners, [])
             self.assertEqual(netplay.activity_listeners, [])
+            self.assertEqual(netplay.session_listeners, [])
             panel.deleteLater()
         self.run_dialog()
 

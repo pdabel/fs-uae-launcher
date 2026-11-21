@@ -84,6 +84,10 @@ class Netplay:
         # in flight can tell it was overtaken; and that join's game id.
         self.session_generation = 0
         self.joining = None
+        # What the panel calls the session's game and where it is, when
+        # known: set on joining from the browser or hosting.
+        self.session_title = None
+        self.session_server = None
         # Whether the session's game is in this launcher's /hostgame
         # lobby, and whether a game was left running there: then the
         # lobby stays up for it, as nothing follows it to say when it ends.
@@ -235,6 +239,8 @@ class Netplay:
         to the players' FS-UAE now (see NetplaySession.leave)."""
         session, self.session = self.session, None
         self.session_lobby = None
+        self.session_title = None
+        self.session_server = None
         self.session_generation += 1
         self.joining = None
         if session is not None:
@@ -245,12 +251,26 @@ class Netplay:
             self.release_hosted_server()
             self.notify_session()
 
+    def leave_game(self):
+        """The panel's Leave (or End game, for a host)."""
+        session = self.session
+        if session is None and self.joining is None:
+            return
+        if session is not None:
+            what = self.session_title or f"game {session.game_id[:8]}"
+            verb = "ended" if session.is_host else "left"
+            self.game_info(f"{verb} {what}")
+        self.end_session()
+        self.notify_session()
+
     def on_session_change(self, session):
         if session is not self.session:
             return
         if session.ended:
             self.session = None
             self.session_lobby = None
+            self.session_title = None
+            self.session_server = None
             self.session_hosted = False
             self.release_hosted_server()
             if not session.launched:
@@ -331,16 +351,34 @@ class Netplay:
         except ValueError:
             self.game_warning(f"ignored a malformed game announcement: {arg}")
             return
-        if self.session is not None and self.session.game_id == game_id:
+        if self.is_in_game(game_id):
             return
-        if self.joining == game_id:
-            return  # announced again while the join is on its way
+        self.game_info(f"{nick} is hosting game {game_id[:8]}; joining")
+        self.join_game(host, port, game_id, tag=self.irc.my_nick)
+
+    def is_in_game(self, game_id):
+        """In it, or on the way: a repeated announcement or a second click
+        joins once."""
+        if self.session is not None and self.session.game_id == game_id:
+            return True
+        return self.joining == game_id
+
+    def join_game(self, host, port, game_id, tag=None, title=None, server=None):
+        """Claim a slot in a lobby game, off the UI thread, and follow it.
+
+        This leaves any game this launcher is in first: one game at a
+        time. tag defaults to the netplay name; title and server are what
+        the panel calls the game and its lobby.
+        """
+        if self.is_in_game(game_id):
+            return
         self.end_session()
         self.joining = game_id
         generation = self.session_generation
-        self.game_info(f"{nick} is hosting game {game_id[:8]}; joining")
         client = LobbyClient(host, port)
-        tag = self.irc.my_nick[:MAX_TAG_LENGTH]
+        if tag is None:
+            tag = LauncherSettings.get_netplay_name()
+        tag = truncate_utf8(tag, MAX_TAG_LENGTH)
 
         def join():
             try:
@@ -359,10 +397,18 @@ class Netplay:
             self.joining = None
             if error is not None:
                 self.game_warning(f"could not join game {game_id}: {error}")
+                self.notify_session()
                 return
             self.begin_session(
                 client, game_id, joined["slot"], joined["player_token"]
             )
+            self.session_title = title
+            self.session_server = server
+            self.game_info(
+                f"joined {title or 'game ' + game_id[:8]} as player "
+                f"{joined['slot'] + 1}"
+            )
+            self.notify_session()
 
         def leave_quietly(joined):
             def leave():
@@ -378,6 +424,7 @@ class Netplay:
             ).start()
 
         threading.Thread(target=join, name="lobby-join", daemon=True).start()
+        self.notify_session()
 
     def create_session(self, channel, client, players, password, announce):
         """Create a lobby game as its host; returns False on failure.
@@ -448,11 +495,10 @@ class Netplay:
             self.session.config_changed(key)
 
     def game_message(self, message, color=None):
+        """A line about the game, for the activity log and, while IRC
+        lasts, the game channel."""
+        self.activity(message, color == IRCColor.WARNING)
         if not self.game_channel:
-            self.irc.warning(
-                "game message received (but not "
-                "currently in a game channel): " + message
-            )
             return
         self.irc.channel(self.game_channel).message(message, color)
         if self.game_channel != self.irc.active_channel_name:
