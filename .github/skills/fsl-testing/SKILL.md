@@ -9,13 +9,14 @@ description: 'Testing patterns for FS-UAE Launcher: pytest suites, Qt widget tes
 
 | Command | Covers | In CI? |
 | --- | --- | --- |
-| `venv/bin/python -m pytest fsbc fstd fspy launcher/netplay` | Base utilities, netplay client, golden hash, contract tests | Yes (`linux.yml`, `macos.yml`, via `pipenv run`) |
-| `venv/bin/python -m pytest fsui/test/test_qt6.py` | Qt 6 environment, widgets, panels, themes | **No** |
+| `venv/bin/python -m pytest fsbc fstd fspy fsgs/tests fsbuild/tests launcher/netplay launcher/server/tests launcher/tests` | Base utilities, game system, packaging helpers, netplay client, golden hash, contract tests, server spawning, launcher behaviour | Yes (`linux-test.yml`, `macos-test.yml`) |
+| `QT_QPA_PLATFORM=offscreen venv/bin/python -m pytest fsui/test` | Qt 6 environment, widgets, panels, themes, the Net Play tab | Yes (same workflows) |
+| `ruff check` | Unused imports/variables, string formatting (rules in `pyproject.toml`) | Yes (`ci.yml`) |
 | `make -C fsnp-server check` | `gofmt -l`, `go vet`, `go test ./... -race -count=1` | Yes (`netplay-server.yml`) |
 | `make -C fsnp-server build` | The binary builds | Yes |
-| `venv/bin/python -m pytest -rs launcher/netplay` | Same as above, listing skip reasons | -- |
+| `venv/bin/python -m pytest -rs launcher/netplay` | The netplay tests, listing skip reasons | -- |
 
-Locally use `venv/bin/python -m pytest`, not `pipenv run pytest` (it can re-lock `Pipfile.lock`). Go is optional: the Makefile runs in a `golang` container without it; `GO_DOCKER=1` forces that.
+CI runs both Python commands through `pipenv run`, on Linux and macOS, with Python 3.12 and 3.15, and `QT_QPA_PLATFORM=offscreen`. Both runners have Go, so the contract tests build `fsnp-server` and run there. Locally use `venv/bin/python -m pytest`, not `pipenv run pytest` (it can re-lock `Pipfile.lock`). Go is optional: the Makefile runs in a `golang` container without it; `GO_DOCKER=1` forces that.
 
 ---
 
@@ -24,8 +25,12 @@ Locally use `venv/bin/python -m pytest`, not `pipenv run pytest` (it can re-lock
 | Area | Location | Style |
 | --- | --- | --- |
 | Base utilities | `fsbc/tests/`, `fspy/tests/` | pytest / unittest |
-| Netplay client | `launcher/netplay/tests/` | pytest, `monkeypatch`, fakes over real sockets |
-| Qt widgets, themes, launch/netplay UI | `fsui/test/` (`WidgetTestCase`, `test_qt6.py`) | unittest under pytest; needs a display, or `QT_QPA_PLATFORM=offscreen` on a headless machine |
+| Game system, packaging helpers | `fsgs/tests/`, `fsbuild/tests/` | pytest |
+| Launcher behaviour | `launcher/tests/` (configs, displays, portable mode, CPU performance) | pytest |
+| Server spawning, executable lookup | `launcher/server/tests/test_server_start.py` | pytest, `tmp_path` stand-ins, `Mock` processes |
+| Netplay client | `launcher/netplay/tests/`: `test_config_apply.py`, `test_apply_document.py`, `test_checksum_golden.py`, `test_lobby_client.py`, `test_session.py`, `test_lobby_browser.py`, `test_lobby_servers.py`, `test_netplay_flow.py` | pytest, `monkeypatch`, fake HTTP sessions, synchronous `dispatch` |
+| Contract tests | `launcher/netplay/tests/test_lobby_contract.py`, `test_server_lobby.py` | pytest against a real `fsnp-server --lobby` |
+| Qt widgets, themes, launch UI, Net Play tab | `fsui/test/` (`WidgetTestCase`, `test_qt6.py`, `test_button.py`, `test_text_field.py`) | unittest under pytest; needs a display, or `QT_QPA_PLATFORM=offscreen` on a headless machine |
 | FSNP codec | `fsnp-server/internal/fsnp/*_test.go` | Golden tests against `testdata/` |
 | Game | `fsnp-server/internal/game/*_test.go` | `net.Pipe()` clients, fake `Clock`, replays the captured session |
 | Lobby | `fsnp-server/internal/lobby/*_test.go` | Loopback TCP |
@@ -58,24 +63,27 @@ Tests that run `LobbyClient` against a real `fsnp-server --lobby` use the `fsnp_
 3. else `fsnp-server/fsnp-server` if present;
 4. else skip.
 
+On top of it, `lobby_port` is one session-wide lobby on `127.0.0.1` (port 0, read from the readiness line), and `presence_lobby_port` is a fresh named `--presence` lobby per test. Use `run_lobby(binary, *flags)` for another flag combination rather than spawning the server by hand.
+
 A skip is not a pass. After an API change, run with `-rs` and confirm the contract tests ran. Unit tests pin what the client sends; the contract test pins that the server agrees.
 
 ---
 
 ## Patterns
 
-- **Netplay client:** inject dependencies (`find_by_sha1`, setters, HTTP session) rather than patching module globals; `config_apply.resolve_config` is the model.
-- **Threads:** code that posts back with `call_after` -- patch `call_after` to call synchronously, or drive the fake's event loop; don't sleep.
+- **Netplay client:** inject dependencies (`find_by_sha1`, setters, HTTP session) rather than patching module globals; `config_apply.resolve_config` is the model. `NetplaySession` and `LobbyBrowser` take `dispatch`, `later` and `on_change` for the same reason.
+- **Threads:** code that posts back with `call_after` -- pass a synchronous `dispatch`, patch `call_after` to call synchronously, or drive the fake's event loop; don't sleep.
+- **Host and player configs differ:** a flow test where host and players share one `LauncherConfig` can't catch a player applying the wrong thing. Test apply against a config that differs from the host's.
 - **Go:** table-driven tests; a fake clock instead of `time.Sleep`; `-race` is always on, so shared state needs a mutex or a single owning goroutine.
 - **Negative tests:** every allowlist, password, token, or status-code path gets a rejection test (unknown key, wrong token, full game, duplicate password -> 409).
-- **Qt:** cover every theme a change affects. `test_qt6.py` loops variants with `subTest` and `patch.object(fsui, "theme_variant", variant)` -- extend that rather than adding a new harness, and restore `fsui.theme`/`fsui.theme_variant` afterwards as the existing tests do.
+- **Qt:** cover every theme a change affects (the `LAUNCHER_THEME` values in `launcher/option.py`). `test_qt6.py` loops variants with `subTest` and `patch.object(fsui, "theme_variant", variant)` -- extend that rather than adding a new harness, and restore `fsui.theme`/`fsui.theme_variant` afterwards as the existing tests do.
 
 ---
 
 ## Self-check before declaring done
 
-- [ ] Python suite passes.
-- [ ] `fsui/test/test_qt6.py` passes if any UI, theme, panel, or `fsui` code changed.
+- [ ] Python suite and `ruff check` pass.
+- [ ] `fsui/test` passes if any UI, theme, panel, or `fsui` code changed. CI runs it, but run it locally before pushing.
 - [ ] `make -C fsnp-server check` passes if anything under `fsnp-server/` changed.
 - [ ] Contract tests ran (not skipped) if the lobby API changed.
 - [ ] A changed hash or key list is reflected in `config-hash.json` and both suites pass.

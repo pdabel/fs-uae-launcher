@@ -1,16 +1,20 @@
 # Agent Instructions
 
-FS-UAE Launcher -- a PySide6 (Qt 6) desktop launcher for the FS-UAE Amiga emulator, plus `fsnp-server`, a standard-library-only Go netplay server that speaks FSNP v1 byte for byte with `fs-uae v3.1.66`. The launcher finds games, writes FS-UAE configs, runs the emulator, and coordinates netplay over IRC (chat) and the lobby HTTP API (game config).
+FS-UAE Launcher -- a PySide6 (Qt 6) desktop launcher for the FS-UAE Amiga emulator, plus `fsnp-server`, a standard-library-only Go netplay server that speaks FSNP v1 byte for byte with `fs-uae v3.1.66`. The launcher finds games, writes FS-UAE configs, runs the emulator, and handles netplay through lobby servers (`fsnp-server --lobby`): its Net Play tab browses the games on every lobby in the player's list, hosts and joins them, and the lobby holds each game's config until every player has applied it.
 
 ## References
 
+Links are repository-root-relative so they resolve from this file and from its copy in `.github/`.
+
 | Topic | Link |
 | --- | --- |
-| Netplay design, wire protocol, rollout status | [docs/netplay-go-server-design.md](docs/netplay-go-server-design.md) |
-| fsnp-server usage, flags, lobby API | [fsnp-server/README.md](fsnp-server/README.md) |
-| Captured-session fixtures | [docs/netplay-fixtures/README.md](docs/netplay-fixtures/README.md) |
-| Python/dependency TODO | [docs/python-dependency-modernization.md](docs/python-dependency-modernization.md) |
-| Building and packaging | [docs/compiling.md](docs/compiling.md) |
+| Launcher packages, startup, data locations | [docs/architecture.md](/docs/architecture.md) |
+| Netplay server design, wire protocol, rollout status | [docs/netplay-go-server-design.md](/docs/netplay-go-server-design.md) |
+| Netplay lobby browser: servers, hosting, joining, auto-start | [docs/netplay-rooms-design.md](/docs/netplay-rooms-design.md) |
+| fsnp-server usage, flags, lobby API | [fsnp-server/README.md](/fsnp-server/README.md) |
+| Captured-session fixtures | [docs/netplay-fixtures/README.md](/docs/netplay-fixtures/README.md) |
+| Python/dependency TODO | [docs/python-dependency-modernization.md](/docs/python-dependency-modernization.md) |
+| Building and packaging | [docs/compiling.md](/docs/compiling.md) |
 | FS-UAE options | <https://fs-uae.net/docs/options/> |
 | FSNP client (source of truth) | `fs-uae/libfsemu/src/emu/netplay.c` at tag `v3.1.66` (branch `fs-uae-3.1`) |
 | Qt for Python | <https://doc.qt.io/qtforpython-6/> |
@@ -25,8 +29,8 @@ Use the codebase as the authoritative reference for patterns and style. Plan bef
 
 | Command | Purpose |
 | --- | --- |
-| `venv/bin/python -m pytest fsbc fstd fspy launcher/netplay` | The Python suite CI runs |
-| `venv/bin/python -m pytest fsui/test/test_qt6.py` | Qt widget tests -- **not run by CI**; run them when UI or panel code changes |
+| `venv/bin/python -m pytest fsbc fstd fspy fsgs/tests fsbuild/tests launcher/netplay launcher/server/tests launcher/tests` | The Python suite, as CI runs it |
+| `QT_QPA_PLATFORM=offscreen venv/bin/python -m pytest fsui/test` | Qt widget, panel and theme tests; CI runs them too |
 | `make -C fsnp-server check` | gofmt check, `go vet`, `go test ./... -race` -- what CI runs |
 | `make -C fsnp-server` | Build `fsnp-server/fsnp-server` where the launcher looks for it in dev mode |
 | `venv/bin/python fs-uae-launcher` | Run the launcher from source |
@@ -40,16 +44,16 @@ Use `venv/bin/python -m pytest`, not `pipenv run pytest`: `pipenv run` can re-lo
 | Path | Purpose |
 | --- | --- |
 | `launcher/` | The launcher application: UI, panels, settings, config model, netplay client |
-| `launcher/netplay/` | Netplay: IRC chat, lobby client, config apply/hash, the panel |
-| `launcher/server/Server.py` | Spawns the bundled `fsnp-server` for `/hostgame` |
+| `launcher/netplay/` | Netplay: lobby browser, lobby client, game session, config apply, the Net Play tab |
+| `launcher/server/Server.py` | Spawns the bundled `fsnp-server --lobby` when hosting on *This computer* |
 | `launcher/launcher_config.py` | Config model; `build_cfg()` tags keys `sync`/`checksum`; `checksum_config()` |
 | `fsgs/` | Game-system layer: databases, file scanning, Amiga config writer, plugin/executable finder |
 | `fsui/` | Widget toolkit over Qt (`fsui.qt` is the Qt import surface) |
 | `fsbc/`, `fstd/`, `fspy/`, `fsboot/` | Base utilities: app/threading, logging, paths, signals, zip |
-| `workspace/`, `amitools/`, `oyoyo/` | Workspace UI support, Amiga file tools, vendored IRC client |
+| `workspace/` | Workspace tool windows: ADF/HDF creators, joystick config, OpenRetro login |
 | `fsnp-server/` | Go module: `cmd/fsnp-server`, `internal/fsnp` (codec), `internal/game`, `internal/lobby` |
 | `fsbuild/` | Packaging scripts (PyInstaller, bundling, signing) used by CI |
-| `.github/workflows/` | CI: `ci.yml` calls reusable `linux`, `macos`, `container`, `source`, `netplay-server` workflows |
+| `.github/workflows/` | CI: `ci.yml` runs `ruff check`, then calls reusable `linux-test`/`macos-test`, `linux`/`macos` builds, `container`, `source`, `netplay-server` and `agent-instructions` workflows |
 
 ---
 
@@ -77,16 +81,16 @@ Use `venv/bin/python -m pytest`, not `pipenv run pytest`: `pipenv run` can re-lo
 - **`fsnp-server` uses the Go standard library only.** No `require` lines in `go.mod`, no `go.sum`. Build flags (`CGO_ENABLED=0 -trimpath -ldflags="-s -w"`) are duplicated in `fsnp-server/Makefile`, `fsbuild/build.sh` and `fsnp-server/Dockerfile`; change all three together.
 - **UI thread.** No blocking network or disk I/O on the Qt thread; do it on a worker thread and return results with `fsbc.application.call_after`. Every HTTP call has a timeout.
 - **Qt binding.** PySide6 through `fsui.qt`/QtPy. Never import PyQt5 or mix bindings in one process.
-- **Untrusted input.** IRC messages, lobby responses, and peers' config documents are untrusted. Netplay config is applied only through the sync-key allowlist; files arrive by SHA-1 and resolve through the local file database, never as paths.
-- **Formatting.** `black` with line length 79 (`pyproject.toml`), `gofmt` for Go. Many legacy Python files are not black-clean: format the code you change, not whole files.
+- **Untrusted input.** Lobby responses (game listings, titles, player and lobby names) and peers' config documents are untrusted; names and titles are shown as plain text, never markup. Netplay config is applied only through the sync-key allowlist; files arrive by SHA-1 and resolve through the local file database, never as paths.
+- **Formatting.** `black` with line length 79 (`pyproject.toml`), `gofmt` for Go. CI runs `ruff check` with the rules in `pyproject.toml` (unused imports and variables, string formatting). Many legacy Python files are not black-clean: format the code you change, not whole files.
 - **Commits.** Each commit is one reviewable step that passes both suites on its own; branches may be published as a stack of PRs. Branch from a remote ref with `--no-track`.
-- **Design doc status.** `docs/netplay-go-server-design.md` keeps rollout status current. A change that completes or alters a rollout step updates it in the same commit.
+- **Design doc status.** `docs/netplay-go-server-design.md` (server, protocol, session API) and `docs/netplay-rooms-design.md` (lobby browser) keep rollout status current. A change that completes or alters a rollout step updates the doc in the same commit.
 
 ---
 
 ## Code Review
 
-For any review of a PR, branch, or diff, load and follow [`fsl-code-review`](.github/skills/fsl-code-review/SKILL.md). It owns the workflow, severities, completeness gate, and the "do not comment" list, and delegates codebase rules to the domain skills.
+For any review of a PR, branch, or diff, load and follow [`fsl-code-review`](/.github/skills/fsl-code-review/SKILL.md). It owns the workflow, severities, completeness gate, and the "do not comment" list, and delegates codebase rules to the domain skills.
 
 Minimum reviewer discipline:
 

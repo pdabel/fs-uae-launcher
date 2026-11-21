@@ -7,12 +7,13 @@ description: 'Task planning and approach strategy for FS-UAE Launcher. Use when 
 
 ## Before Writing Code
 
-1. **Read the requirement.** Check the linked issue or PR. For netplay work, read the relevant section of `docs/netplay-go-server-design.md` first -- it records decisions and measured behaviour that are not visible in the code.
+1. **Read the requirement.** Check the linked issue or PR. For netplay work, read the relevant section of `docs/netplay-go-server-design.md` (server, protocol, session API) or `docs/netplay-rooms-design.md` (lobby browser, hosting, joining) first -- they record decisions and measured behaviour that are not visible in the code. For moving code between packages, read `docs/architecture.md`.
 2. **Write acceptance criteria.** State what "done" looks like in testable terms: what should work, what should be rejected, and what must not break (existing `v3.1.66` clients, saved configs, other themes).
 3. **Identify trust boundaries.** Does this change:
-   - Accept data from IRC, the lobby API, or another player's launcher? -> validate at the boundary, allowlist keys, never treat values as paths or commands.
+   - Accept data from the lobby API (listings, names, titles) or another player's launcher? -> validate at the boundary, allowlist keys, never treat values as paths, commands or markup.
    - Change what goes on the FSNP wire? -> it is a protocol change; see `fsl-netplay`.
-   - Touch the host token, game password, or anything else a peer must not learn? -> keep it out of logs, chat, and UI.
+   - Touch the host token, game password, or anything else a peer must not learn? -> keep it out of logs, the activity log, and UI.
+   - Change what a lobby lists or what browsing sends? -> check the privacy model in the rooms design's "Security".
 4. **Identify affected layers** (see `fsl-structure`):
    - UI (`launcher/ui/`, `launcher/panels/`, `launcher/settings/`, `fsui/`)
    - Config model (`launcher/launcher_config.py`, `fsgs/amiga/`)
@@ -27,10 +28,10 @@ description: 'Task planning and approach strategy for FS-UAE Launcher. Use when 
 
 - [ ] Changes a `sync` or `checksum` key in `build_cfg()`? -> regenerate or extend `fsnp-server/internal/game/testdata/config-hash.json`; both suites must pass.
 - [ ] Changes the hash algorithm or key order? -> change `checksum_config()` and `game.ConfigHash` together, plus the fixture.
-- [ ] Changes a lobby endpoint or JSON field? -> Go handler, `launcher/netplay/lobby_client.py`, the contract test, `fsnp-server/README.md` API section.
+- [ ] Changes a lobby endpoint or JSON field? -> Go handler, `launcher/netplay/lobby_client.py` (or `lobby_browser.py` for the listing), the contract test, `fsnp-server/README.md` API section. New fields default to the old behaviour, since lobbies and launchers update separately.
 - [ ] Changes FSNP bytes on the wire? -> stop and confirm against `netplay.c` at `v3.1.66`; add a golden test.
 - [ ] Adds a `fsnp-server` flag? -> flag, env var, README table, and `Server.py` if the launcher passes it.
-- [ ] Touches a panel or settings page? -> works in all four themes; run `fsui/test/test_qt6.py`.
+- [ ] Touches a panel or settings page? -> works in every launcher theme (`LAUNCHER_THEME` in `launcher/option.py`); run `fsui/test`.
 - [ ] Adds user-visible text? -> through `gettext` from `launcher.i18n`.
 - [ ] Adds network or disk I/O reachable from the UI? -> worker thread + `call_after`, with a timeout.
 - [ ] Adds a Python dependency? -> `Pipfile` and `Pipfile.lock`, and check PyInstaller still bundles it.
@@ -41,8 +42,8 @@ description: 'Task planning and approach strategy for FS-UAE Launcher. Use when 
 
 | Condition | Required action | Verification |
 | --- | --- | --- |
-| Any Python change | Python suite passes | `venv/bin/python -m pytest fsbc fstd fspy launcher/netplay` |
-| UI, panel, theme, or `fsui` change | Qt tests pass | `venv/bin/python -m pytest fsui/test/test_qt6.py` (CI does not run it) |
+| Any Python change | Python suite and lint pass | `venv/bin/python -m pytest fsbc fstd fspy fsgs/tests fsbuild/tests launcher/netplay launcher/server/tests launcher/tests`; `ruff check` |
+| UI, panel, theme, or `fsui` change | Qt tests pass | `QT_QPA_PLATFORM=offscreen venv/bin/python -m pytest fsui/test` |
 | Any `fsnp-server` change | Go checks pass | `make -C fsnp-server check` |
 | Config-hash change | Both suites read the regenerated fixture | Python `test_checksum_golden.py` and Go `confighash_test.go` pass |
 | Lobby API change | Contract test runs, not skips | `pytest -rs launcher/netplay` shows no skip for missing `fsnp-server` |
@@ -72,10 +73,10 @@ Branches here are often published as a stack of PRs, one per commit.
 1. Design doc -- if the change alters the contract or a rollout step.
 2. Go server -- codec, game, or lobby code with tests and fixtures.
 3. Shared fixtures -- `config-hash.json` or FSNP `testdata/`.
-4. Python client -- `lobby_client.py`, `session.py`, `config_apply.py`, `Server.py`.
+4. Python client -- `lobby_client.py`, `lobby_browser.py`, `session.py`, `config_apply.py`, `netplay.py`, `Server.py`.
 5. Contract test -- Python client against a real `fsnp-server`.
-6. UI -- `netplay_panel.py` and friends; Qt tests.
-7. Docs -- `fsnp-server/README.md` and the design doc status line.
+6. UI -- `lobby_browser_panel.py`, the Net Play settings page; Qt tests.
+7. Docs -- `fsnp-server/README.md` and the matching design doc's status line.
 
 ## Common Planning Mistakes
 
@@ -85,6 +86,6 @@ Branches here are often published as a stack of PRs, one per commit.
 - Teaching the Go server about Amiga config keys instead of taking the key list from the launcher.
 - Blocking the Qt thread on an HTTP call, or making one with no timeout.
 - Testing only the default Modern Dark theme.
-- Relying on CI for Qt widget coverage -- it does not run `test_qt6.py`.
+- Adding a lobby request field whose absence doesn't mean the old behaviour, so an older lobby or launcher misreads it.
 - Running `pipenv run` and committing an accidental `Pipfile.lock` re-lock.
 - Reformatting a whole legacy file with black inside a behaviour change.

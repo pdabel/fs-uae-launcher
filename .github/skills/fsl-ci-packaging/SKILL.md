@@ -9,9 +9,13 @@ description: 'CI workflows, Dependabot, release flow, and packaging for FS-UAE L
 
 ```text
 ci.yml  (push to main/release-*, PRs to main/release-*, dispatch)
-  -> linux.yml           apt deps, Python 3.12, pipenv sync --dev, pytest fsbc fstd fspy launcher/netplay,
-                         fsbuild/version -> bootstrap -> configure -> build -> bundle -> archive, upload (not on PRs)
-  -> macos.yml           same shape on macOS; installs Go with setup-go from fsnp-server/go.mod
+  check-python-format    ruff check (pinned ruff, rules in pyproject.toml)
+  -> linux-test.yml      Python 3.12 + 3.15 matrix: apt deps, pipenv sync --dev, test_python_support.py,
+                         the Python suite, then fsui/test, both with QT_QPA_PLATFORM=offscreen
+  -> macos-test.yml      same on macOS; installs Go with setup-go from fsnp-server/go.mod
+  -> linux.yml           needs test-linux; called with run-tests: false. fsbuild/version -> bootstrap ->
+                         configure -> build -> bundle -> archive, upload (not on PRs)
+  -> macos.yml           needs test-macos; same shape on macOS
   -> container.yml       buildx fsnp-server/Dockerfile (target base) -> ghcr.io/<owner>/fs-uae-netplay; push not on PRs
   -> source.yml          source bundle
   -> netplay-server.yml  make -C fsnp-server check, then make -C fsnp-server build
@@ -19,9 +23,10 @@ ci.yml  (push to main/release-*, PRs to main/release-*, dispatch)
 
 release.yml  (dispatch: type=branch creates a release branch; type=release tags and builds)
   -> linux.yml, macos.yml, container.yml, source.yml with a version input
+     (run-tests defaults to true, so release builds run the tests inside the build job)
 ```
 
-Every platform workflow is `workflow_call` + `workflow_dispatch`, called from `ci.yml` and `release.yml`. Add a new check as its own reusable workflow called from `ci.yml`, as `netplay-server.yml` is.
+The test workflows are `workflow_call` only. The build workflows are `workflow_call` + `workflow_dispatch` with a `run-tests` input (default `true`) that runs the same test steps before building; `ci.yml` turns it off because the test jobs already ran. A change to the test command goes in all four (`linux-test.yml`, `macos-test.yml`, `linux.yml`, `macos.yml`). Add a new check as its own reusable workflow called from `ci.yml`, as `netplay-server.yml` is.
 
 `.github/release.yml` maps PR labels to release-note sections (`change`, `enhancement`, `bug`, `chore`, `documentation`, `dependencies`; `skip changelog` excludes).
 
@@ -58,11 +63,11 @@ Every platform workflow is `workflow_call` + `workflow_dispatch`, called from `c
 
 | Where | Pins | Updated by |
 | --- | --- | --- |
-| `fsnp-server/go.mod` | Minimum Go language version; also the Go that `macos.yml` installs (`setup-go` with `go-version-file`) | Hand; keep low unless a feature needs it |
+| `fsnp-server/go.mod` | Minimum Go language version; also the Go that `macos-test.yml` and `macos.yml` install (`setup-go` with `go-version-file`) | Hand; keep low unless a feature needs it |
 | `fsnp-server/Dockerfile` | Build image tag | Dependabot (`docker`, daily) |
 | `fsnp-server/Makefile` `GO_VERSION` | Container fallback for local builds | Hand |
 | Ubuntu CI runners | Preinstalled Go with `GOTOOLCHAIN=auto` | Runner image |
-| Workflows | Python 3.12 | Hand |
+| Test and build workflows | Python 3.12 and 3.15 (matrix); `ruff` job 3.12 | Hand |
 | Local `venv/` | Whatever created it (currently 3.13) | Hand |
 
 The module has no third-party Go dependencies, so the `gomod` Dependabot entry should stay quiet; a PR adding a `require` is a design change, not a bump.
@@ -75,9 +80,11 @@ The module has no third-party Go dependencies, so the `gomod` Dependabot entry s
 
 | Failure | First check |
 | --- | --- |
-| Python tests fail in CI only | CI uses Python 3.12 and `pipenv sync --dev`; locally you may be on 3.13 with a different venv |
+| Python tests fail in CI only | CI uses Python 3.12 and 3.15 with `pipenv sync --dev`; locally you may be on 3.13 with a different venv. Check which matrix leg failed |
+| Qt tests fail in CI only | CI runs them headless with `QT_QPA_PLATFORM=offscreen`; run locally the same way |
+| `ruff check` fails | An unused import or variable, or `%`/`.format()` formatting where an f-string is expected; run `ruff check` locally |
 | `gofmt clean` fails | Run `make -C fsnp-server fmt` |
 | `go test -race` fails | A data race; see `fsl-debugging` |
 | PyInstaller bundle missing a module | Hidden import; add it to the spec or the entry script's dummy imports |
-| macOS/Linux build says Go is missing | `fsbuild/build.sh` requires Go; on macOS check the `setup-go` step, on Linux the runner image |
+| macOS/Linux build says Go is missing | `fsbuild/build.sh` requires Go; on macOS check the `setup-go` step, on Linux the runner image. Without Go the contract tests skip rather than fail, so check the test jobs too |
 | Container build fails on PRs only | PRs `load` instead of `push` and skip SBOM/provenance; check conditionals |

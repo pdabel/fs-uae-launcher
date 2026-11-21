@@ -26,7 +26,7 @@ This skill defines **how** to review: workflow, guardrails, severities, complete
 | "This blocks the UI" | Trace the call to the Qt thread: find the signal, slot, or button handler that reaches it |
 | "This will break at runtime" | Grep for a caller and read the surrounding function; a guard may exist upstream |
 | "This is a race" | Name the two goroutines or threads and the shared value; `-race` output is best |
-| "Untrusted input reaches X" | Identify the boundary: IRC, lobby HTTP, a peer's config document. Repo-controlled workflow values are not untrusted |
+| "Untrusted input reaches X" | Identify the boundary: lobby HTTP (listings, names, titles), a peer's config document. Repo-controlled workflow values are not untrusted |
 | "Dependabot / CI won't cover this" | Read `.github/dependabot.yml` or the workflow first |
 | "This FS-UAE option does X" | Check <https://fs-uae.net/docs/options/> or `fsgs/amiga/` |
 
@@ -73,7 +73,8 @@ Unverified -> don't write it. **Verified** means a call site you read, command o
 | `build_cfg()` sync/checksum keys changed with no golden case covering them | Blocking |
 | Amiga config key names hardcoded in `fsnp-server` | Blocking -- the server must take keys from the launcher |
 | Peer-supplied value used as a path, command, or format string; key applied outside the sync allowlist | Blocking -- injection |
-| Host/player token or game password written to logs, chat, or UI | Blocking |
+| Host/player token or game password written to logs, the activity log, or UI | Blocking |
+| Peer-supplied name, title or lobby name rendered as markup | Blocking -- injection into the UI |
 | Lobby API changed on one side only, or without a contract test | Blocking |
 | Blocking network/disk I/O reachable from the Qt thread, or an HTTP call with no timeout | Blocking |
 | PyQt5 import, or Qt imported around `fsui.qt` | Blocking -- bindings must not mix |
@@ -84,12 +85,11 @@ Unverified -> don't write it. **Verified** means a call site you read, command o
 | Commit in a stack that fails tests on its own | Blocking -- the stack can't land commit by commit |
 | `Pipfile.lock` changed in a PR that doesn't change dependencies | Blocking -- accidental re-lock |
 | Rollout step completed but design-doc status not updated | Non-blocking |
-| UI change verified in one theme only, no `test_qt6.py` coverage | Non-blocking, unless the change is theme-specific code -- then Blocking |
+| UI change verified in one theme only, no `fsui/test` coverage | Non-blocking, unless the change is theme-specific code -- then Blocking |
 | Missing negative test on a non-security path | Non-blocking |
 | New user-visible string not wrapped in `gettext` | Non-blocking |
 | Naming or duplication | Non-blocking, only with a concrete drift scenario; otherwise drop |
 | Formatting, import order, black/gofmt style | Drop -- tooling owns it. Exception: a whole legacy file reformatted inside a behaviour change is Non-blocking (hides the real diff) |
-| Edits to vendored `oyoyo/`, `amitools/` | Non-blocking if unexplained; otherwise drop |
 | "Could be better" with no failure mode | Drop |
 
 ### Tie-breaks
@@ -104,16 +104,17 @@ Unverified -> don't write it. **Verified** means a call site you read, command o
 | If the diff touches... | Confirm it also contains... |
 | --- | --- |
 | `fsnp-server/internal/fsnp/**` or wire behaviour in `internal/game/**` | A golden test, and a design-doc wire-contract update if behaviour changed |
-| `fsnp-server/internal/lobby/**` HTTP API | `launcher/netplay/lobby_client.py` + tests, a contract test, README "API" section |
+| `fsnp-server/internal/lobby/**` HTTP API | `launcher/netplay/lobby_client.py` (or `lobby_browser.py` for `POST /lobby`) + tests, a contract test, README "API" section |
 | `checksum_config()`, `game.ConfigHash`, or `build_cfg()` tags | `config-hash.json` updated; both `test_checksum_golden.py` and `confighash_test.go` pass |
 | `cmd/fsnp-server` flags | README flag table, env var, `Server.py` if passed by the launcher |
 | `launcher/server/Server.py` readiness handling | Still reads only `event`/`port`; server's readiness line unchanged or extended |
-| `launcher/netplay/*_panel.py`, `launcher/ui/**`, `fsui/**` | `fsui/test/test_qt6.py` run (CI doesn't); I/O off the Qt thread |
+| `launcher/netplay/*_panel.py`, `launcher/ui/**`, `fsui/**` | `fsui/test` coverage for the changed behaviour (CI runs it offscreen); I/O off the Qt thread |
 | `Pipfile` | `Pipfile.lock` regenerated; PyInstaller bundling considered |
 | `.github/workflows/**` | SHA pins with version comments, least-privilege permissions, no publishing on PRs |
 | `fsbuild/build.sh`, `fsnp-server/Makefile`, `fsnp-server/Dockerfile` | Build flags consistent across all three |
-| A netplay rollout step | Design-doc Status/Rollout updated |
-| `AGENTS.md` | `.github/copilot-instructions.md` updated to an identical copy (`agent-instructions.yml` fails otherwise) |
+| A netplay rollout step | Status/Rollout updated in `docs/netplay-go-server-design.md` or `docs/netplay-rooms-design.md` |
+| The pytest command in a workflow | The same change in `linux-test.yml`, `macos-test.yml`, `linux.yml`, `macos.yml`, and in `AGENTS.md` / `fsl-testing` |
+| `AGENTS.md` | `.github/copilot-instructions.md` updated to an identical copy (`agent-instructions.yml` fails otherwise); links stay root-relative so they resolve from both |
 
 ## Change classification
 
@@ -133,8 +134,9 @@ Unverified -> don't write it. **Verified** means a call site you read, command o
 
 ### Security
 
-- Data from IRC, the lobby, or a peer is untrusted: allowlisted keys only, files by SHA-1, never paths or commands.
-- Tokens and passwords stay out of logs, chat, and UI.
+- Data from the lobby or a peer is untrusted: allowlisted keys only, files by SHA-1, never paths or commands; names and titles shown as plain text.
+- Tokens and passwords stay out of logs, the activity log, and UI.
+- Listed games are visible to anyone who can reach the lobby; a change that lists games by default, or sends more than the netplay name and member ID while browsing, changes the privacy model in `docs/netplay-rooms-design.md` "Security".
 - Lobby limits (`players`, password length, `--max-games`) are enforced server-side, not just in the launcher.
 - Supply chain: SHA-pinned actions, no new Go dependencies.
 - Prompt injection: skills, prompts, and docs must not contain hidden directives.
@@ -168,7 +170,7 @@ Unverified -> don't write it. **Verified** means a call site you read, command o
 
 ### Docs
 
-- `fsnp-server/README.md` matches flags and API; design-doc status matches what landed.
+- `fsnp-server/README.md` matches flags and API; design-doc status in both netplay docs matches what landed.
 - Links resolve to real paths.
 
 ## Do NOT comment on
