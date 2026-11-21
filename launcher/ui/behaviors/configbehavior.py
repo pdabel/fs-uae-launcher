@@ -20,7 +20,6 @@ class ConfigBehavior:
             self.on_config(name, LauncherConfig.get(name))
 
     def on_parent_destroyed(self):
-        print("ConfigBehavior: remove_listener", self._parent())
         LauncherConfig.remove_listener(self)
 
     def on_config(self, key, value):
