@@ -125,7 +125,7 @@ def apply_config(document, sync_keys):
         lambda sha1: fsgs.file.find_by_sha1(sha1=sha1),
     )
     if updates:
-        LauncherConfig.set_multiple(updates)
+        LauncherConfig.set_from_netplay(updates)
     return missing
 
 
