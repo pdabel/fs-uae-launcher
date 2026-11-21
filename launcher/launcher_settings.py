@@ -79,6 +79,10 @@ class LauncherSettings(object):
         Option.NEOGEO_DATABASE: "",
         Option.NES_DATABASE: "",
         "netplay_feature": "1",
+        Option.NETPLAY_HOST_PORT: "",
+        Option.NETPLAY_NAME: "",
+        Option.NETPLAY_PUBLIC_ADDRESS: "",
+        Option.NETPLAY_SERVERS: "",
         "netplay_tag": "",
         "netplay_column_sizes": "",
         "parent_uuid": "",
@@ -140,8 +144,41 @@ class LauncherSettings(object):
         LauncherSignal.remove_listener("setting", listener)
 
     @classmethod
+    def copy_irc_nick_to_netplay_name(cls):
+        """The netplay name replaces the IRC nick in settings: start it
+        from the nick a user already chose."""
+        if not cls.get(Option.NETPLAY_NAME).strip():
+            nick = cls.get("irc_nick").strip()
+            if nick:
+                cls.set(Option.NETPLAY_NAME, nick)
+
+    @classmethod
+    def get_netplay_name(cls):
+        """The name other players see, at most 32 bytes as the lobby
+        allows."""
+        value = (
+            cls.get(Option.NETPLAY_NAME).strip()
+            or cls.get("irc_nick").strip()
+            or get_user_name()
+            or "User"
+        )
+        return value.encode("utf-8")[:32].decode("utf-8", "ignore")
+
+    @classmethod
+    def get_netplay_host_port(cls):
+        try:
+            port = int(cls.get(Option.NETPLAY_HOST_PORT))
+        except ValueError:
+            port = int(Option.get(Option.NETPLAY_HOST_PORT)["default"])
+        return min(max(port, 1024), 65535)
+
+    @classmethod
     def get_irc_nick(cls):
-        value = cls.get("irc_nick").strip()
+        # One name for both, while IRC lasts.
+        value = (
+            cls.get(Option.NETPLAY_NAME).strip()
+            or cls.get("irc_nick").strip()
+        )
         if not value:
             value = get_user_name()
         # these are probably valid too: \`

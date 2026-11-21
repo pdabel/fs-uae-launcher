@@ -2103,6 +2103,75 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 self.application.sendPostedEvents(None, QEvent.DeferredDelete)
         self.run_dialog()
 
+    def test_lobby_servers_group(self):
+        from fsbc.settings import Settings
+        from launcher.settings.lobby_servers_group import LobbyServersGroup
+
+        settings = Settings()
+        settings._loaded = True
+        settings._atexit_registered = True
+        settings.verbose = False
+        settings.values["netplay_servers"] = "b.example;a.example:25200"
+        self.setup_dialog()
+        with patch.object(Settings, "_instance", settings):
+            group = LobbyServersGroup(self.dialog)
+            try:
+                self.assertEqual(
+                    group.list_view.get_item_count(), 2
+                )
+                self.assertFalse(group.remove_button.is_enabled())
+                prompt = "launcher.settings.lobby_servers_group.SimpleTextInputDialog.get_text"
+                with patch(prompt, return_value=" C.Example:25101 "):
+                    group.on_add_button()
+                self.assertEqual(
+                    settings.values["netplay_servers"],
+                    "b.example;a.example:25200;c.example",
+                )
+                self.assertEqual(group.list_view.get_item_count(), 3)
+                with patch(prompt, return_value="c.example"), \
+                        patch("launcher.settings.lobby_servers_group.fsui.show_error") as error:
+                    group.on_add_button()
+                    self.assertIn("already", error.call_args.args[0])
+                with patch(prompt, return_value=None):
+                    group.on_add_button()
+                self.assertEqual(group.list_view.get_item_count(), 3)
+                group.list_view.set_index(0)
+                group.on_select_item(0)
+                self.assertTrue(group.remove_button.is_enabled())
+                group.on_remove_button()
+                self.assertEqual(
+                    settings.values["netplay_servers"],
+                    "a.example:25200;c.example",
+                )
+                self.assertFalse(group.remove_button.is_enabled())
+            finally:
+                group.on_destroy()
+        self.run_dialog()
+
+    def test_netplay_settings_page(self):
+        from fsbc.settings import Settings
+        from launcher.settings.netplay_settings_page import NetplaySettingsPage
+
+        settings = Settings()
+        settings._loaded = True
+        settings._atexit_registered = True
+        settings.verbose = False
+        self.setup_dialog()
+        with patch.object(Settings, "_instance", settings):
+            page = NetplaySettingsPage(self.dialog)
+            try:
+                self.assertEqual(
+                    page.options_on_page,
+                    {
+                        "netplay_name", "netplay_public_address",
+                        "netplay_host_port", "netplay_tag", "irc_server",
+                    },
+                )
+                self.assertNotIn("irc_nick", page.options_on_page)
+            finally:
+                page.lobby_servers_group.on_destroy()
+        self.run_dialog()
+
     def test_netplay_action_transitions(self):
         from fsui.qt import QEvent
         from launcher.netplay.irc import LOBBY_CHANNEL

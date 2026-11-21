@@ -8,14 +8,11 @@ from .irc import IRC, is_game_channel
 from .irc_broadcaster import IRCBroadcaster
 from .irc_color import IRCColor
 from .lobby_client import LobbyClient
+from .lobby_servers import HOST_PORT, format_lobby, parse_lobby
 from .session import NetplaySession
 from ..launcher_config import LauncherConfig
 from ..server.Server import PortInUseError, Server, ServerError
 
-
-# The lobby's port, for /startgame and /hostgame alike, so a host forwards
-# the same single port however they host.
-HOST_PORT = 25101
 
 # The one protocol line left on IRC: an op's launcher announces the lobby
 # game it created, and players' launchers join it. Everything else — the
@@ -39,24 +36,6 @@ def call_later(duration_ms, function):
     import fsui
 
     fsui.call_later(duration_ms, function)
-
-
-def format_lobby(host, port):
-    if ":" in host and not host.startswith("["):
-        host = f"[{host}]"
-    return f"{host}:{port}"
-
-
-def parse_lobby(text, default_port=HOST_PORT):
-    """host[:port] or [v6]:port -> (host, port)."""
-    if text.startswith("["):
-        host, _, rest = text[1:].partition("]")
-        port = rest[1:] if rest.startswith(":") else ""
-    elif text.count(":") == 1:
-        host, port = text.split(":")
-    else:
-        host, port = text, ""
-    return host, int(port) if port else default_port
 
 
 class Netplay:

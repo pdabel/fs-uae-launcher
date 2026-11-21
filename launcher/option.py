@@ -1052,6 +1052,28 @@ options = {
         "description": ("Enable experimental net play GUI (requires restart)"),
         "type": "boolean",
     },
+    Option.NETPLAY_HOST_PORT: {
+        "default": "25101",
+        "description": N_("Port"),
+        "type": "integer",
+        "min": 1024,
+        "max": 65535,
+    },
+    Option.NETPLAY_NAME: {
+        "default": "",
+        "description": N_("Netplay name"),
+        "type": "string",
+    },
+    Option.NETPLAY_PUBLIC_ADDRESS: {
+        "default": "",
+        "description": N_("Players reach this computer at"),
+        "type": "string",
+    },
+    Option.NETPLAY_SERVERS: {
+        "default": "",
+        "description": N_("Lobby servers"),
+        "type": "string",
+    },
     Option.NETPLAY_TAG: {
         "default": "UNK",
         "description": N_("Net play tag (max 3 characters)"),

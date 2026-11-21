@@ -367,6 +367,7 @@ class LauncherApp(ApplicationMixin, fsui.Application):
             if app.settings.get(key):
                 print("[SETTINGS] Removing old key", key)
                 app.settings.set(key, "")
+        LauncherSettings.copy_irc_nick_to_netplay_name()
 
         if fsgs.config.add_from_argv():
             print("[CONFIG] Configuration specified via command line")
