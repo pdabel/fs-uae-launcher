@@ -195,17 +195,15 @@ class SaveHandler(object):
             config_name = "Default"
 
         # Use a temporary state dir, for now, to avoid problems with
-        # floppy overlays etc interfering with net play.
-        from launcher.netplay.netplay import Netplay
-
-        if Netplay.current():
-            # It is possible to manually specify the state dir.
-            config_name = self._netplay_state_dir_name
-            if not config_name:
-                # This is the default behavior, create a clean state
-                # dir for the net play session.
-                if self._netplay_game:
-                    config_name = f"Net Play ({self._netplay_game})"
+        # floppy overlays etc interfering with net play. A game outside
+        # net play keeps its own, even while the Net Play tab is open.
+        if self._netplay_game:
+            # It is possible to manually specify the state dir. If not,
+            # create a clean state dir for the net play session.
+            config_name = (
+                self._netplay_state_dir_name
+                or f"Net Play ({self._netplay_game})"
+            )
 
         # Convert the config name to a name which can be represented on
         # the file system (really all/most filesystems).
