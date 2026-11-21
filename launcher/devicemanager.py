@@ -81,9 +81,6 @@ class DeviceManager:
     def refresh(cls):
         cls.initialized = False
         cls.init()
-
-        # FIXME: REPLACE WITH EnumerateHelper!!!
-
         LauncherSignal.broadcast("device_list_updated")
 
     @classmethod

@@ -18,13 +18,18 @@ def imported_packages(path):
             yield node.lineno, node.module.split(".")[0]
 
 
-def test_fsbc_does_not_import_higher_packages():
+def upward_imports(package_dir, higher_packages):
+    """Imports of higher_packages anywhere in package_dir, tests aside."""
     found = []
-    for path in sorted(FSBC_DIR.rglob("*.py")):
-        if "tests" in path.relative_to(FSBC_DIR).parts:
+    for path in sorted(package_dir.rglob("*.py")):
+        if "tests" in path.relative_to(package_dir).parts:
             continue
         for lineno, package in imported_packages(path):
-            if package in HIGHER_PACKAGES:
-                name = path.relative_to(FSBC_DIR.parent)
+            if package in higher_packages:
+                name = path.relative_to(package_dir.parent)
                 found.append(f"{name}:{lineno} imports {package}")
-    assert found == []
+    return found
+
+
+def test_fsbc_does_not_import_higher_packages():
+    assert upward_imports(FSBC_DIR, HIGHER_PACKAGES) == []

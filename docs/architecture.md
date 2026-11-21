@@ -17,9 +17,12 @@ shows selected dependencies rather than an exhaustive import graph. `fsbc`
 imports nothing above it, which `fsbc/tests/test_layering.py` enforces: the
 launcher passes in its version, logs directory and translation function
 through `initialize_application()`. `fsui` and `fsgs` translate through that
-hook (`fsui.res.gettext`, `fsgs.res.gettext`), not `launcher.i18n`. Other
-cross-group imports still go both ways: for example,
-`fsgs.input.enumeratehelper` imports `launcher.devicemanager`.
+hook (`fsui.res.gettext`, `fsgs.res.gettext`), not `launcher.i18n`. `fsgs`
+imports neither `launcher` nor `workspace`, which `fsgs/tests/test_layering.py`
+enforces. The dotted arrows are the imports still to untangle: `fsgs` and
+`fsui` import each other (`fsui.qt.qt` imports `fsgs.option`, and
+`fsgs.drivers.gamedriver` asks `fsui.qt` for screen geometry), and
+`fsui.qt.window` imports `workspace` for its window header.
 
 ```mermaid
 flowchart TB
@@ -61,11 +64,13 @@ flowchart TB
     workspace --> fsui
     workspace --> fsgs
     fsgs --> fsbc
-    fsgs -. "device manager, game scanner" .-> launcher
     fsgs --> fspy
     fsgs --> fsuae
     fsgs --> openretro
     fsui --> fsbc
+    fsui -. "option names" .-> fsgs
+    fsgs -. "screen geometry" .-> fsui
+    fsui -. "window header" .-> workspace
     fsui --> qt
     fsbc --> fsboot
 ```
