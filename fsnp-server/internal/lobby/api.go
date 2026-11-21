@@ -29,6 +29,7 @@ var longPollWait = 25 * time.Second
 //	PUT    /game/{id}/config             host: replace the config document
 //	POST   /game/{id}/players/{n}/ready  slot n: what applying it produced
 //	POST   /game/{id}/start              host: route and run the FSNP game
+//	                                     (an auto_start game does this itself)
 //	DELETE /game/{id}                    host: end it
 //	POST   /lobby                        listed games; long-polls past revision
 //
