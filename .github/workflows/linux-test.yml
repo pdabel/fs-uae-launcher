@@ -23,6 +23,12 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # The runner image's package index goes stale as Ubuntu supersedes
+      # packages (e.g. mesa security updates), and installing then fails with
+      # a 404 for a .deb that is no longer in the archive.
+      - name: Update package index
+        run: sudo apt-get update
+
       - name: Install library dependencies
         run: >-
           sudo apt install
