@@ -7,7 +7,7 @@ What's left to remove after phase 1 (#67), phase 2 (#78) and the amitools and le
 | **Status** | Complete. Steps 1–5 and 7 (#119, #120, #138, #139, #140), the cx_Freeze path (#141) and step 6 (#142) are done, and every open question is settled: 6 (#143), 7 (#144) and 8 (#145) |
 | **Date** | 2026-10-26 |
 | **Found with** | vulture 2.16 at 60% confidence; ruff `F401`, `F811`, `F841`; an import graph from `fs-uae-launcher` and the test modules; each finding checked by hand with `git grep` |
-| **Out of scope** | `oyoyo/`. The [netplay rooms design](netplay-rooms-design.md) would delete it whole, so pruning it now is wasted work |
+| **Out of scope** | `oyoyo/`. The [netplay rooms design](netplay-rooms-design.md) would delete it whole, so pruning it now was wasted work. It has since gone, with IRC |
 
 ## Ground rules
 
@@ -117,7 +117,7 @@ vulture also reports about 770 unused methods, variables and attributes at 60% c
 - Qt event overrides and `on_*` handlers called by the framework or looked up by name
 - callback and `__exit__` parameters whose names are part of a signature
 - pytest fixtures used by parameter name or `autouse`: `private_config` in `test_apply_document.py`, `no_retry_delay` in `test_lobby_client.py`
-- IRC handler parameters in `launcher/netplay/irc.py`
+- IRC handler parameters in `launcher/netplay/irc.py` (since removed, with IRC)
 
 The import graph also flags these scripts, which are all in use:
 - `docs/netplay-fixtures/extract_fixtures.py`, `po-update.py`: run by hand

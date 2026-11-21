@@ -363,6 +363,8 @@ class LauncherApp(ApplicationMixin, fsui.Application):
             print(repr(e))
             return
 
+        # Before the old keys go: irc_nick is one of them.
+        LauncherSettings.copy_irc_nick_to_netplay_name()
         for key in LauncherSettings.old_keys:
             if app.settings.get(key):
                 print("[SETTINGS] Removing old key", key)
@@ -407,8 +409,14 @@ class LauncherApp(ApplicationMixin, fsui.Application):
     def start_game(cls):
         from .netplay.netplay import Netplay
 
-        if Netplay.current() and Netplay.current().game_channel:
-            Netplay.current().start_netplay_game()
+        netplay = Netplay.current()
+        if netplay is not None and (
+            netplay.session is not None or netplay.joining is not None
+        ):
+            # A netplay game starts by itself once every player is ready.
+            fsui.show_warning(
+                netplay.start_requested(), gettext("Net Play")
+            )
         else:
             cls.start_local_game()
 

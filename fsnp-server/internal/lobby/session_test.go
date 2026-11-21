@@ -495,3 +495,94 @@ func TestShutdownEndsSessions(t *testing.T) {
 		t.Fatalf("%d games left after shutdown", n)
 	}
 }
+
+func (h *harness) newAutoStartSession(players int, password string) Created {
+	h.t.Helper()
+	var c Created
+	h.mustCall(http.StatusCreated, "POST", "/game", "", CreateRequest{
+		Players: players, Password: password, Tag: "HST", Keys: testKeys, AutoStart: true,
+	}, &c)
+	return c
+}
+
+// TestAutoStart walks an auto_start game to the last ready report, which
+// starts it: not while a slot is empty, not on a mismatch, not on a ready
+// for a config that has since changed.
+func TestAutoStart(t *testing.T) {
+	h := startLobby(t, Config{})
+	c := h.newAutoStartSession(2, "auto")
+	set := h.putConfig(c, testConfig)
+	good := ReadyRequest{ConfigVersion: set.ConfigVersion, Hash: set.Hash}
+
+	// Every claimed slot ready, but one slot is still empty.
+	if st := h.ready(c.ID, 0, c.PlayerToken, good); st != http.StatusNoContent {
+		t.Fatalf("host ready: %d", st)
+	}
+	wantState(t, h.snapshot(c.ID), StateConfiguring)
+
+	j := h.joinSession(c.ID, "PL2")
+	if st := h.ready(c.ID, j.Slot, j.PlayerToken, ReadyRequest{ConfigVersion: set.ConfigVersion, Hash: "other"}); st != http.StatusNoContent {
+		t.Fatalf("mismatched ready: %d", st)
+	}
+	wantState(t, h.snapshot(c.ID), StateConfiguring)
+
+	// The host changes the config: the readiness reported so far is stale,
+	// and a report for the old version is refused.
+	set = h.putConfig(c, map[string]string{"amiga_model": "A1200", "chip_memory": "2048", "x_floppy_drive_0_sha1": ""})
+	if st := h.ready(c.ID, j.Slot, j.PlayerToken, good); st != http.StatusConflict {
+		t.Fatalf("ready for an old version: %d, want 409", st)
+	}
+	good = ReadyRequest{ConfigVersion: set.ConfigVersion, Hash: set.Hash}
+	h.ready(c.ID, j.Slot, j.PlayerToken, good)
+	wantState(t, h.snapshot(c.ID), StateConfiguring) // the host hasn't re-reported
+
+	if st := h.ready(c.ID, 0, c.PlayerToken, good); st != http.StatusNoContent {
+		t.Fatalf("last ready: %d", st)
+	}
+	s := h.snapshot(c.ID)
+	wantState(t, s, StateRunning)
+	if !s.AutoStart || s.Listed {
+		t.Fatalf("snapshot auto_start %v, listed %v", s.AutoStart, s.Listed)
+	}
+	if s.ConfigVersion != set.ConfigVersion {
+		t.Fatalf("started version %d, want %d", s.ConfigVersion, set.ConfigVersion)
+	}
+	if st := h.call("POST", "/game/"+c.ID+"/start", c.HostToken, nil, nil); st != http.StatusConflict {
+		t.Fatalf("start after auto-start: %d, want 409", st)
+	}
+	a, _ := h.joinOK("auto", "HST")
+	b, _ := h.joinOK("auto", "PL2")
+	a.waitFrame()
+	b.waitFrame()
+}
+
+// TestNoAutoStartWithoutTheFlag checks a game created without auto_start
+// waits in ready for the host, as before.
+func TestNoAutoStartWithoutTheFlag(t *testing.T) {
+	h := startLobby(t, Config{})
+	c := h.newSession(1, "")
+	set := h.putConfig(c, testConfig)
+	h.ready(c.ID, 0, c.PlayerToken, ReadyRequest{ConfigVersion: set.ConfigVersion, Hash: set.Hash})
+	wantState(t, h.snapshot(c.ID), StateReady)
+	var s Snapshot
+	h.mustCall(http.StatusOK, "POST", "/game/"+c.ID+"/start", c.HostToken, nil, &s)
+	wantState(t, s, StateRunning)
+}
+
+// TestAutoStartWakesTheListing checks browsers see an auto-started game
+// turn running.
+func TestAutoStartWakesTheListing(t *testing.T) {
+	h := startLobby(t, Config{})
+	var c Created
+	h.mustCall(http.StatusCreated, "POST", "/game", "", CreateRequest{
+		Players: 1, Tag: "HST", Keys: testKeys, AutoStart: true, Listed: true, Title: "Solo",
+	}, &c)
+	set := h.putConfig(c, testConfig)
+	rev := h.listing(ListingRequest{}).Revision
+	got := h.pollListing(rev)
+	h.ready(c.ID, 0, c.PlayerToken, ReadyRequest{ConfigVersion: set.ConfigVersion, Hash: set.Hash})
+	l := waitListing(t, got, "an auto-start")
+	if len(l.Games) != 1 || l.Games[0].State != StateRunning {
+		t.Fatalf("listing after auto-start %+v", l.Games)
+	}
+}

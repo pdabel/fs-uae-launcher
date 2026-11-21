@@ -103,3 +103,74 @@ def test_accepted_keys():
         ],
         local,
     ) == {"amiga_model", "x_floppy_drive_0_sha1", "x_floppy_image_19_sha1"}
+
+
+@pytest.fixture
+def overridden_game(monkeypatch):
+    """This launcher's own game is loaded, with chip_memory overridden
+    for it: what a player who joins from the browser may well have."""
+
+    def load(identity):
+        monkeypatch.setattr(LauncherConfig, "_game_base_identity", identity)
+        monkeypatch.setattr(LauncherConfig, "_game_base_values", {})
+        monkeypatch.setattr(
+            LauncherConfig, "_game_override_values", {"chip_memory": "1024"}
+        )
+        monkeypatch.setattr(LauncherConfig, "_game_overrides_available", True)
+        fsgs.config.set("chip_memory", "1024")
+        assert LauncherConfig.game_overrides_available()
+
+    return load
+
+
+HOSTS_GAME = snapshot({"chip_memory": "512"}, ["chip_memory"], ["chip_memory"])
+
+
+def applied_like_the_host(config_hash):
+    return config_hash == LauncherConfig.checksum_config(
+        HOSTS_GAME["config"], HOSTS_GAME["keys"]["checksum"]
+    )
+
+
+def test_a_players_game_overrides_give_way_to_the_hosts_config(
+    overridden_game,
+):
+    # Loaded from the database: its identity is its variant UUID.
+    fsgs.config.set("variant_uuid", "players-game")
+    overridden_game(("variant_uuid", "players-game"))
+    config_hash, _ = apply_document(HOSTS_GAME)
+    assert fsgs.config.get("chip_memory") == "512"
+    assert applied_like_the_host(config_hash)
+    assert not LauncherConfig.game_overrides_available()
+
+
+def test_a_saved_configs_overrides_give_way_too(overridden_game, monkeypatch):
+    # Loaded from a file: its identity is the path, which the host's
+    # config doesn't change, so the overrides would never stop applying.
+    from launcher.launcher_settings import LauncherSettings
+
+    get = LauncherSettings.get
+    monkeypatch.setattr(
+        LauncherSettings,
+        "get",
+        classmethod(
+            lambda cls, key: (
+                "/configs/Mine.fs-uae" if key == "config_path" else get(key)
+            )
+        ),
+    )
+    overridden_game(LauncherConfig.game_override_identity())
+    config_hash, _ = apply_document(HOSTS_GAME)
+    assert fsgs.config.get("chip_memory") == "512"
+    assert applied_like_the_host(config_hash)
+
+
+def test_a_hosts_own_overrides_stay(overridden_game):
+    # The host's document carries its overridden values, so applying it
+    # back changes nothing and the overrides stay in force.
+    fsgs.config.set("variant_uuid", "host-game")
+    overridden_game(("variant_uuid", "host-game"))
+    doc = snapshot({"chip_memory": "1024"}, ["chip_memory"], ["chip_memory"])
+    apply_document(doc)
+    assert LauncherConfig.game_overrides_available()
+    assert fsgs.config.get("chip_memory") == "1024"

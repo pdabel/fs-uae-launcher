@@ -679,6 +679,36 @@ class LauncherConfig(object):
         cls.notify_game_override_context()
 
     @classmethod
+    def set_from_netplay(cls, items):
+        """Set values a netplay game's host decided.
+
+        An override for this launcher's own game would keep its local
+        value here, and the player's config would differ from the host's.
+        So if the host's config changes an overridden key, the overrides
+        stop applying: this is the host's game now. They stay stored, and
+        apply again when that game is next loaded. A host applying its own
+        document changes none of them, so its overrides stay in force.
+        """
+        items = list(items)
+        overrides = cls.get_game_overrides()
+        if any(
+            key in overrides and fsgs.config.get(key) != value
+            for key, value in items
+        ):
+            cls.leave_game_overrides()
+        cls.set_multiple(items)
+
+    @classmethod
+    def leave_game_overrides(cls):
+        """Stop applying the loaded game's overrides, until a game is next
+        loaded."""
+        cls._game_base_identity = None
+        cls._game_base_values = {}
+        cls._game_override_values = {}
+        cls._game_overrides_available = False
+        cls.notify_game_override_context()
+
+    @classmethod
     def notify_game_override_context(cls):
         fsgs.signal.notify("config", ("__game_override_context", ""))
 

@@ -199,3 +199,61 @@ def test_watcher_thread_is_a_daemon():
     w, _, _, _ = watch()
     assert w.daemon
     assert isinstance(w, threading.Thread)
+
+
+def test_create_game_listed():
+    c, s = client(FakeResponse(201, {"id": "g1"}))
+    c.create_game(
+        2, "", "HST", ["a"], ["a"], listed=True, title="Speedball 2",
+        auto_start=True,
+    )
+    body = s.requests[0]["json"]
+    assert body["listed"] is True
+    assert body["title"] == "Speedball 2"
+    assert body["auto_start"] is True
+
+
+def test_create_game_on_a_lobby_from_before_the_listing():
+    # It refuses fields it doesn't know: the game is created without them.
+    refused = FakeResponse(
+        400, {"error": 'invalid JSON body: json: unknown field "listed"'}
+    )
+    c, s = client(refused, FakeResponse(201, {"id": "g1"}))
+    assert c.create_game(2, "", "HST", ["a"], ["a"], listed=True)["id"] == "g1"
+    assert "listed" in s.requests[0]["json"]
+    assert "listed" not in s.requests[1]["json"]
+    # Any other refusal is the caller's.
+    c, s = client(FakeResponse(400, {"error": "tag longer than 32 bytes"}))
+    with pytest.raises(LobbyError):
+        c.create_game(2, "", "HST", ["a"], ["a"], listed=True)
+    assert len(s.requests) == 1
+
+
+def test_lobby_listing():
+    c, s = client(
+        FakeResponse(200, {"revision": 3, "games": []}),
+        FakeResponse(200, {"revision": 4, "games": []}),
+    )
+    assert c.lobby("m1", "Dave")["revision"] == 3
+    r = s.requests[0]
+    assert (r["method"], r["url"]) == (
+        "POST",
+        "http://lobby.example:25101/lobby",
+    )
+    assert r["json"] == {"member": "m1", "name": "Dave"}
+    assert r["timeout"] == (lobby_client.CONNECT_TIMEOUT, c.timeout)
+    c.lobby("m1", "Dave", since=3)
+    r = s.requests[1]
+    assert r["json"]["since"] == 3
+    assert r["timeout"] == (
+        lobby_client.CONNECT_TIMEOUT,
+        lobby_client.POLL_TIMEOUT,
+    )
+
+
+def test_create_game_unlisted_keeps_its_title():
+    # A player who joins by ID still sees what the game is.
+    c, s = client(FakeResponse(201, {"id": "g1"}))
+    c.create_game(2, "", "HST", ["a"], ["a"], title="Speedball 2")
+    body = s.requests[0]["json"]
+    assert body["title"] == "Speedball 2" and "listed" not in body

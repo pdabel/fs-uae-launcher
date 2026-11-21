@@ -9,7 +9,15 @@ class LauncherSettings(object):
 
     # These are not used any more, and should be removed from settings if
     # found.
-    old_keys = {"config_base", "config_refresh"}
+    old_keys = {
+        "config_base",
+        "config_refresh",
+        # Net play over IRC, and the columns of its tab.
+        "irc_nick",
+        "irc_nickserv_pass",
+        "irc_server",
+        "netplay_column_sizes",
+    }
 
     # The main use of default_settings is actually to hide the corresponding
     # options from advanced settings (because there is UI for them, or
@@ -54,8 +62,6 @@ class LauncherSettings(object):
         Option.GBA_DATABASE: "",
         Option.GBC_DATABASE: "",
         "initial_input_grab": "",
-        "irc_nick": "",
-        "irc_server": "",
         "keep_aspect": "",
         "kickstarts_dir_mtime": "",
         "kickstart_setup": "",
@@ -79,8 +85,12 @@ class LauncherSettings(object):
         Option.NEOGEO_DATABASE: "",
         Option.NES_DATABASE: "",
         "netplay_feature": "1",
+        Option.NETPLAY_HOST_PORT: "",
+        "netplay_last_host_server": "",
+        Option.NETPLAY_NAME: "",
+        Option.NETPLAY_PUBLIC_ADDRESS: "",
+        Option.NETPLAY_SERVERS: "",
         "netplay_tag": "",
-        "netplay_column_sizes": "",
         "parent_uuid": "",
         Option.PLATFORMS_FEATURE: "",
         "primary_joystick": "",
@@ -140,36 +150,27 @@ class LauncherSettings(object):
         LauncherSignal.remove_listener("setting", listener)
 
     @classmethod
-    def get_irc_nick(cls):
-        value = cls.get("irc_nick").strip()
-        if not value:
-            value = get_user_name()
-        # these are probably valid too: \`
-        valid_chars = (
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "abcdefghijklmnopqrstuvwxyz" "_[]{}|^"
+    def copy_irc_nick_to_netplay_name(cls):
+        """The netplay name replaced the IRC nick: start it from the nick a
+        user already chose, before old_keys clears it."""
+        if not cls.get(Option.NETPLAY_NAME).strip():
+            nick = cls.get("irc_nick").strip()
+            if nick:
+                cls.set(Option.NETPLAY_NAME, nick)
+
+    @classmethod
+    def get_netplay_name(cls):
+        """The name other players see, at most 32 bytes as the lobby
+        allows."""
+        value = (
+            cls.get(Option.NETPLAY_NAME).strip() or get_user_name() or "User"
         )
-        extra_valid_chars = "0123456789-"
-        nick = ""
-        for c in value:
-            if c in valid_chars:
-                nick = nick + c
-                if extra_valid_chars:
-                    valid_chars += extra_valid_chars
-                    extra_valid_chars = ""
-        if not nick:
-            nick = "User"
-        return nick
+        return value.encode("utf-8")[:32].decode("utf-8", "ignore")
 
     @classmethod
-    def get_irc_nickserv_pass(cls):
-        value = cls.get("irc_nickserv_pass").strip()
-        if value:
-            return value
-        return ""
-
-    @classmethod
-    def get_irc_server(cls):
-        value = cls.get("irc_server").strip()
-        if value:
-            return value
-        return "irc.fs-uae.net"
+    def get_netplay_host_port(cls):
+        try:
+            port = int(cls.get(Option.NETPLAY_HOST_PORT))
+        except ValueError:
+            port = int(Option.get(Option.NETPLAY_HOST_PORT)["default"])
+        return min(max(port, 1024), 65535)

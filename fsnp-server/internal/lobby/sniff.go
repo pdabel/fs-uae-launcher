@@ -57,6 +57,10 @@ func (l *Lobby) Serve(ctx context.Context, ln net.Listener) error {
 		IdleTimeout:       httpIdleTimeout,
 		MaxHeaderBytes:    httpMaxHeaderBytes,
 	}
+	if l.cfg.Presence {
+		l.wg.Add(1)
+		go l.sweepPresence()
+	}
 	httpDone := make(chan struct{})
 	go func() {
 		defer close(httpDone)

@@ -22,6 +22,10 @@ DEFAULT_TIMEOUT = 10
 # longer than that before calling the connection dead.
 POLL_TIMEOUT = 35
 
+# How long to wait for a lobby to accept the connection at all, when
+# browsing: a server in the list may be gone for good.
+CONNECT_TIMEOUT = 5
+
 # A watcher that loses the lobby retries, waiting this long at first and
 # doubling up to the maximum.
 RETRY_DELAY = 1
@@ -63,27 +67,55 @@ class LobbyClient:
         self.session = session or requests.Session()
         self.timeout = timeout
 
-    def create_game(self, players, password, tag, sync_keys, checksum_keys):
+    def create_game(
+        self,
+        players,
+        password,
+        tag,
+        sync_keys,
+        checksum_keys,
+        listed=False,
+        title="",
+        auto_start=False,
+    ):
         """Create a game, the caller in slot 0.
 
         Returns the lobby's reply: id, password (generated when password
         is empty), players, port, addresses, host_token, slot and
         player_token. checksum_keys is used as given, order and duplicates
-        included, since the hash runs over it.
+        included, since the hash runs over it. listed puts the game in the
+        lobby's listing; title names it there and to whoever joins by ID;
+        auto_start starts it once every slot is ready.
         """
-        return self._request(
-            "POST",
-            "/game",
-            body={
-                "players": players,
-                "password": password,
-                "tag": tag,
-                "keys": {
-                    "sync": list(sync_keys),
-                    "checksum": list(checksum_keys),
-                },
+        body = {
+            "players": players,
+            "password": password,
+            "tag": tag,
+            "keys": {
+                "sync": list(sync_keys),
+                "checksum": list(checksum_keys),
             },
-        )
+        }
+        extras = {}
+        if listed:
+            extras["listed"] = True
+        if title:
+            extras["title"] = title
+        if auto_start:
+            extras["auto_start"] = True
+        try:
+            return self._request("POST", "/game", body={**body, **extras})
+        except LobbyError as e:
+            # A lobby from before the listing refuses fields it doesn't
+            # know. Its games can't be listed or start by themselves, but
+            # the game itself works as before.
+            if (
+                not extras
+                or e.status != 400
+                or "unknown field" not in e.message
+            ):
+                raise
+        return self._request("POST", "/game", body=body)
 
     def game(self, game_id, since=None):
         """The game's snapshot; with since, waits for a later revision."""
@@ -134,6 +166,20 @@ class LobbyClient:
                 "hash": config_hash,
                 "missing": dict(missing),
             },
+        )
+
+    def lobby(self, member, name, since=None):
+        """The lobby's listing: its id, name, revision, games and, with
+        presence, who is online. member and name are this launcher, for
+        presence; with since, waits for a later revision."""
+        body = {"member": member, "name": name}
+        if since:
+            body["since"] = int(since)
+        return self._request(
+            "POST",
+            "/lobby",
+            body=body,
+            timeout=(CONNECT_TIMEOUT, POLL_TIMEOUT if since else self.timeout),
         )
 
     def start(self, game_id, host_token):

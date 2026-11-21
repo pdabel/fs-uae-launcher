@@ -42,3 +42,12 @@ def test_stop_ends_the_lobby(server):
     process = s.process
     s.stop()
     assert process.poll() is not None
+
+
+def test_lobby_with_presence_and_a_name(server):
+    s = server(lobby=True, presence=True, name="Paul's lobby")
+    s.start()
+    listing = LobbyClient("127.0.0.1", s.port).lobby("m1", "Paul")
+    assert listing["name"] == "Paul's lobby"
+    assert listing["presence"] is True
+    assert listing["online"] == ["Paul"]

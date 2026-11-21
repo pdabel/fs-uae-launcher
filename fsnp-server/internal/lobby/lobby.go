@@ -31,13 +31,20 @@ const (
 
 	// DefaultLaunchTimeout reaps a running game whose players have not all
 	// joined. A game from /game/create runs from the moment it is created,
-	// so this is also how long its players have to agree a config over IRC;
+	// so this is also how long its players have to agree a config;
 	// a session game runs from its start, when every launcher is ready.
 	DefaultLaunchTimeout = 15 * time.Minute
 
 	// DefaultIdleTimeout reaps a session game that nobody has touched — no
 	// join, config, ready or poll — before it started.
 	DefaultIdleTimeout = 10 * time.Minute
+
+	// DefaultPresenceTimeout is how long a member counts as online after
+	// its last poll answered: the 25 s long-poll wait, plus margin.
+	DefaultPresenceTimeout = 35 * time.Second
+
+	// MaxMembers caps how many members presence tracks at once.
+	MaxMembers = 256
 
 	// MaxPasswordLength caps a password supplied to /game/create.
 	MaxPasswordLength = 128
@@ -53,10 +60,13 @@ const (
 
 // Config describes a lobby.
 type Config struct {
+	Name            string        // shown to launchers browsing it; may be empty
 	MaxGames        int           // 0 = DefaultMaxGames
 	LaunchTimeout   time.Duration // per game, from when it runs; 0 = DefaultLaunchTimeout
 	IdleTimeout     time.Duration // per session game before start; 0 = DefaultIdleTimeout
 	PublicAddresses []string      // reported to clients; empty = the request's Host
+	Presence        bool          // report who is browsing the listing
+	PresenceTimeout time.Duration // 0 = DefaultPresenceTimeout
 	Clock           game.Clock    // nil = game.RealClock, passed to every game
 	Logger          *slog.Logger  // nil = slog.Default()
 	LogInput        bool          // passed to every game
@@ -69,6 +79,7 @@ var (
 	ErrPasswordLength = fmt.Errorf("lobby: password longer than %d bytes", MaxPasswordLength)
 	ErrPlayers        = fmt.Errorf("lobby: players must be 1..%d", game.MaxPlayers)
 	ErrClosed         = errors.New("lobby: shutting down")
+	ErrTooManyMembers = fmt.Errorf("lobby: more than %d launchers browsing", MaxMembers)
 )
 
 // Info is what Create reports about a new game.
@@ -80,7 +91,8 @@ type Info struct {
 
 // Lobby is a registry of live games, keyed by id and by password hash.
 // A running game's own state is owned by its goroutine as always; the mutex
-// guards the two maps, the closed flag, and every entry's session state.
+// guards the two maps, the closed flag, the listing's revision, and every
+// entry's session state.
 type Lobby struct {
 	cfg Config
 	log *slog.Logger
@@ -89,10 +101,20 @@ type Lobby struct {
 	cancel context.CancelFunc
 	wg     sync.WaitGroup // one per running game and per idle reaper
 
+	// id is random per run, so a launcher can tell two addresses are one
+	// lobby.
+	id string
+
 	mu     sync.Mutex
 	closed bool
 	byID   map[string]*entry
 	byHash map[uint32]*entry // reserved hashes; routed only once entry.g is set
+
+	// revision counts every change to the listing (see listing.go);
+	// changed is closed and replaced on each one, to wake long-polls.
+	revision uint64
+	changed  chan struct{}
+	members  map[string]*member // with Config.Presence: who is browsing
 }
 
 // New creates a lobby. It hosts nothing until Serve is called, but Create
@@ -107,6 +129,9 @@ func New(cfg Config) *Lobby {
 	if cfg.IdleTimeout <= 0 {
 		cfg.IdleTimeout = DefaultIdleTimeout
 	}
+	if cfg.PresenceTimeout <= 0 {
+		cfg.PresenceTimeout = DefaultPresenceTimeout
+	}
 	if cfg.Clock == nil {
 		cfg.Clock = game.RealClock{}
 	}
@@ -115,17 +140,21 @@ func New(cfg Config) *Lobby {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Lobby{
-		cfg:    cfg,
-		log:    cfg.Logger,
-		ctx:    ctx,
-		cancel: cancel,
-		byID:   make(map[string]*entry),
-		byHash: make(map[uint32]*entry),
+		cfg:      cfg,
+		log:      cfg.Logger,
+		ctx:      ctx,
+		cancel:   cancel,
+		id:       newID(),
+		byID:     make(map[string]*entry),
+		byHash:   make(map[uint32]*entry),
+		revision: 1,
+		changed:  make(chan struct{}),
+		members:  make(map[string]*member),
 	}
 }
 
 // Create starts a game for players players, routable at once: the
-// /game/create path, where the config is agreed over IRC. An empty password
+// /game/create path, where the players agree the config. An empty password
 // means the lobby generates one: a lobby game can't be passwordless, because
 // the hash is how a connection finds its game. A supplied password whose
 // hash matches a live game's is refused with ErrPasswordInUse.
@@ -174,6 +203,8 @@ func (l *Lobby) reserveLocked(players int, password string) (*entry, error) {
 	}
 
 	e := newEntry(newID(), hash, password, players)
+	e.lobby = l
+	e.created = l.cfg.Clock.Now()
 	l.byID[e.id] = e
 	l.byHash[hash] = e
 	return e, nil
@@ -334,7 +365,7 @@ func newPassword() string {
 	return string(b[:])
 }
 
-// newID returns a random UUIDv4, the same shape /hostgame puts in
+// newID returns a random UUIDv4, the shape the launcher expects in
 // __netplay_game.
 func newID() string {
 	var b [16]byte

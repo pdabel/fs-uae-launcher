@@ -195,6 +195,20 @@ class NetplaySession:
                 # game's config, not the edit.
                 self._restore_scheduled = False
                 self._apply_quietly(snapshot)
+            elif (
+                self.is_host
+                and snapshot.get("config") is not None
+                and not self._is_local_document(snapshot)
+            ):
+                # The game started itself on the version before an edit
+                # the lobby hadn't got yet: everyone else runs that
+                # version, so the host must too.
+                self._message(
+                    "the game started before your last change reached the "
+                    "players; it runs without it",
+                    True,
+                )
+                self._apply_quietly(snapshot)
             self._launch(snapshot)
 
     def _apply_quietly(self, snapshot):
@@ -229,11 +243,11 @@ class NetplaySession:
             self._push_if_changed()
             return
         if (
-            self.is_host
-            and not missing
+            not missing
             and snapshot.get("hash") is not None
             and config_hash != snapshot["hash"]
         ):
+            # Names only: values include the game's password.
             differing = sorted(
                 {
                     key
@@ -243,9 +257,11 @@ class NetplaySession:
                 }
             )
             detail = ", ".join(differing) or "checksum calculation"
-            self._message(
-                f"host config differs from the lobby for: {detail}", True
-            )
+            if self.is_host:
+                text = f"host config differs from the lobby for: {detail}"
+            else:
+                text = f"your config differs from the host's for: {detail}"
+            self._message(text, True)
         self._call(
             self.client.report_ready,
             self.game_id,
@@ -482,6 +498,57 @@ class NetplaySession:
                 who = s.get("tag") or f"slot {s['slot'] + 1}"
                 reasons.append(f"{who} is {s['status']}")
         return reasons or ["the lobby has not reported ready yet"]
+
+    def status_line(self):
+        """What the game is waiting for, in a sentence, for the panel."""
+        if not self.snapshot or "slots" not in self.snapshot:
+            return "Waiting for the lobby\u2026"
+        if self.state == STATE_RUNNING:
+            return "Starting\u2026" if not self.launched else "Running."
+        if self.state == STATE_ENDED:
+            return "The game has ended."
+        auto_start = bool(self.snapshot.get("auto_start"))
+        slots = self.snapshot["slots"]
+        mine = next((s for s in slots if s["slot"] == self.slot), None)
+        if mine is not None and mine["status"] == SLOT_MISSING:
+            if auto_start:
+                return (
+                    "Starts when you're ready: add the missing file, "
+                    "then Re-check."
+                )
+            return "Add the missing file, then Re-check."
+        if mine is not None and mine["status"] == SLOT_MISMATCH:
+            return "Your config differs from the host's: press Re-check."
+        if self.state == STATE_READY and not self.sending_config:
+            if auto_start:
+                return "Starting\u2026"
+            if self.is_host:
+                return "Everyone is ready: press Start Game."
+            return "Everyone is ready: waiting for the host to start."
+        empty = sum(1 for s in slots if s["status"] == SLOT_EMPTY)
+        reasons = []
+        if self.sending_config:
+            reasons.append("your config changes are still being sent")
+        for s in slots:
+            who = s.get("tag") or f"player {s['slot'] + 1}"
+            if s["status"] == SLOT_MISSING:
+                reasons.append(f"{who} is missing files")
+            elif s["status"] == SLOT_MISMATCH:
+                reasons.append(f"{who}'s config differs")
+            elif s["status"] != SLOT_EMPTY and s["status"] != SLOT_READY:
+                reasons.append(f"{who} is checking the config")
+        if empty and not reasons:
+            starts = "Starts" if auto_start else "Can start"
+            if empty == 1:
+                return f"{starts} when 1 more player joins and is ready."
+            return f"{starts} when {empty} more players join and are ready."
+        if empty:
+            reasons.append(
+                "1 more player to join"
+                if empty == 1
+                else f"{empty} more players to join"
+            )
+        return "Waiting: " + "; ".join(reasons) + "."
 
     # --- Helpers -------------------------------------------------------
 

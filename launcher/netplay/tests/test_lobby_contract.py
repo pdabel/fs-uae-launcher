@@ -108,3 +108,80 @@ def test_refused_config_names_the_key(lobby):
     assert e.value.status == 400
     assert "__netplay_port" in e.value.message
     lobby.end(created["id"], created["host_token"])
+
+
+def test_listing_round_trip(lobby):
+    before = lobby.lobby("m-contract", "Dave")
+    assert before["presence"] is False and "online" not in before
+    listed = lobby.create_game(
+        2, "", "HST", SYNC, CHECKSUM, listed=True, title="Sensible Soccer"
+    )
+    unlisted = lobby.create_game(2, "", "HST", SYNC, CHECKSUM)
+    try:
+        after = lobby.lobby("m-contract", "Dave", since=before["revision"])
+        assert after["id"] == before["id"]
+        assert after["revision"] > before["revision"]
+        games = {g["id"]: g for g in after["games"]}
+        assert unlisted["id"] not in games
+        g = games[listed["id"]]
+        assert (g["title"], g["host"], g["state"], g["players"], g["joined"]) == (
+            "Sensible Soccer",
+            "HST",
+            "created",
+            2,
+            1,
+        )
+    finally:
+        lobby.end(listed["id"], listed["host_token"])
+        lobby.end(unlisted["id"], unlisted["host_token"])
+
+
+def test_a_watcher_sees_a_new_game(lobby):
+    from launcher.netplay.lobby_browser import ONLINE, ServerWatcher
+
+    states, listings = [], []
+    seen = threading.Event()
+
+    def on_listing(listing):
+        listings.append(listing)
+        if any(g["title"] == "Watched" for g in listing["games"]):
+            seen.set()
+
+    watcher = ServerWatcher(
+        lobby, "m-watch", lambda: "Sam", on_listing,
+        lambda state, error, retry_in: states.append(state),
+    )
+    watcher.start()
+    created = None
+    try:
+        created = lobby.create_game(
+            1, "", "HST", SYNC, CHECKSUM, listed=True, title="Watched"
+        )
+        assert seen.wait(10)
+        assert ONLINE in states
+    finally:
+        watcher.stop()
+        if created:
+            lobby.end(created["id"], created["host_token"])
+
+
+def test_auto_start(lobby):
+    created = lobby.create_game(1, "", "HST", SYNC, CHECKSUM, auto_start=True)
+    reply = lobby.set_config(
+        created["id"], created["host_token"], {"amiga_model": "A500", "chip_memory": "512"}
+    )
+    lobby.report_ready(
+        created["id"], 0, created["player_token"],
+        reply["config_version"], reply["hash"], {},
+    )
+    assert lobby.game(created["id"])["state"] == "running"
+    lobby.end(created["id"], created["host_token"])
+
+
+def test_presence(presence_lobby_port):
+    lobby = LobbyClient("127.0.0.1", presence_lobby_port)
+    lobby.lobby("m-sam", "Sam")
+    listing = lobby.lobby("m-dave", "Dave")
+    assert listing["name"] == "Dave's lobby"
+    assert listing["presence"] is True
+    assert listing["online"] == ["Dave", "Sam"]
