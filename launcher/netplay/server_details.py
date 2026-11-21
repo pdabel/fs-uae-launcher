@@ -18,6 +18,8 @@ class ServerDetails(QFrame):
         self.restyle()
         theme_applied.connect(self.restyle)
         layout = QVBoxLayout(self)
+        # Scroll rather than squeeze the controls together when short.
+        layout.setSizeConstraint(QVBoxLayout.SetMinimumSize)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(10)
         heading = QLabel(gettext("Netplay server"))

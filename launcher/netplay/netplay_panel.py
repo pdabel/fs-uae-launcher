@@ -264,6 +264,7 @@ class NetplayPanel(fsui.Panel):
     def on_show(self):
         if not self.netplay.is_connected():
             self.netplay.connect()
+        self.netplay.start_browsing()
         self.input_field.focus()
 
     def on_select_channel(self, index):

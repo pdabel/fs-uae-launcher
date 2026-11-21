@@ -1511,7 +1511,8 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 session_class.return_value.is_host = True
                 with patch("launcher.netplay.netplay.Server") as server_class:
                     server_class.return_value.port = HOST_PORT
-                    with patch("launcher.netplay.netplay.LauncherConfig.set_multiple") as set_config:
+                    with patch("launcher.netplay.netplay.LauncherConfig.set_multiple") as set_config, \
+                            patch("launcher.netplay.netplay.game_title", return_value="Sensible Soccer"):
                         netplay.command_hostgame(["host.example", "2", "secret"])
                         server_class.assert_called_once_with(
                             HOST_PORT, 2, "secret", lobby=True,
@@ -1520,10 +1521,12 @@ class TestLaunchAndNetplay(WidgetTestCase):
                         server_class.return_value.start.assert_called_once_with()
                         # The launcher reaches its own lobby on loopback.
                         client_class.assert_called_once_with("127.0.0.1", HOST_PORT)
+                        # Listed, under the loaded config's name.
                         client.create_game.assert_called_once_with(
                             2, "secret", "HostNick",
                             LauncherConfig.sync_keys_list,
                             LauncherConfig.checksum_keys,
+                            listed=True, title="Sensible Soccer",
                         )
                         self.assertEqual(dict(set_config.call_args.args[0]), {
                             "__netplay_game": CREATED["id"],
@@ -2146,6 +2149,119 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 self.assertFalse(group.remove_button.is_enabled())
             finally:
                 group.on_destroy()
+        self.run_dialog()
+
+    def test_lobby_browser_panel(self):
+        from launcher.netplay.lobby_browser import (
+            LOCAL, NO_LISTING, ONLINE, UNREACHABLE, LobbyBrowser,
+        )
+        from launcher.netplay.lobby_browser_panel import LobbyBrowserPanel
+
+        class Watcher:
+            def __init__(self, client, member, name, on_listing, on_state):
+                self.on_listing, self.on_state = on_listing, on_state
+                self.retried = 0
+
+            def start(self):
+                pass
+
+            def stop(self):
+                pass
+
+            def retry(self):
+                self.retried += 1
+
+        netplay = Mock(browser_listeners=[], activity_listeners=[])
+        netplay.activity_log = [(0, "Earlier line", False)]
+        netplay.browser = LobbyBrowser(
+            name=lambda: "Paul", dispatch=lambda f, *a: f(*a),
+            on_change=lambda: [f() for f in netplay.browser_listeners],
+            on_message=lambda text, warning=False: [
+                f((0, text, warning)) for f in netplay.activity_listeners
+            ],
+            client_factory=lambda host, port: None, watcher_factory=Watcher,
+        )
+        opened = []
+        self.setup_dialog()
+        panel = LobbyBrowserPanel(netplay, open_settings=lambda: opened.append(1))
+        try:
+            # Nothing to browse yet.
+            self.assertFalse(panel.no_servers.isHidden())
+            self.assertTrue(panel.servers_tree.isHidden())
+            panel.add_server_button.click()
+            self.assertEqual(opened, [1])
+            self.assertIn("Earlier line", panel.activity.toPlainText())
+
+            browser = netplay.browser
+            browser.set_servers(["netplay.example.net", "old.example.org", "gone.example"])
+            browser.set_local(25101)
+            local = browser.server(LOCAL).watcher
+            local.on_state(ONLINE, None, None)
+            local.on_listing({
+                "id": "mine", "revision": 1, "presence": True,
+                "online": ["Dave", "Paul"], "games": [],
+            })
+            club = browser.server("netplay.example.net").watcher
+            club.on_state(ONLINE, None, None)
+            club.on_listing({
+                "id": "club", "name": "Amiga Friday", "revision": 3, "games": [
+                    {"id": "g1", "title": "Sensible Soccer", "host": "Kim",
+                     "state": "configuring", "players": 2, "joined": 1},
+                    {"id": "g2", "title": "Speedball 2", "host": "Lee",
+                     "state": "created", "players": 2, "joined": 2},
+                    {"id": "g3", "title": "Turrican II", "host": "Ash",
+                     "state": "running", "players": 2, "joined": 2},
+                    {"id": "g4", "title": "<b>Bold</b>", "host": "Eve",
+                     "state": "created", "players": 2, "joined": 1},
+                ],
+            })
+            old = browser.server("old.example.org").watcher
+            old.on_state(UNREACHABLE, "connection refused", 40)
+            browser.server("gone.example").watcher.on_state(
+                NO_LISTING, "doesn't list games (older server?)", None
+            )
+
+            tree = panel.servers_tree
+            rows = [tree.topLevelItem(i) for i in range(tree.topLevelItemCount())]
+            self.assertEqual(
+                [(row.text(0).strip(), row.text(1)) for row in rows],
+                [
+                    ("● This computer", "no games"),
+                    ("Online: Dave, Paul (you)", ""),
+                    ("● Amiga Friday (netplay.example.net)", "4 games"),
+                    ("○ old.example.org", "can't reach it, retrying in 40 s"),
+                    ("○ gone.example", "doesn't list games (older server?)"),
+                ],
+            )
+            retry = tree.itemWidget(rows[3], 2)
+            retry.click()
+            self.assertEqual(old.retried, 1)
+            self.assertTrue(panel.countdown.isActive())
+
+            games = panel.games_tree
+            rows = [games.topLevelItem(i) for i in range(games.topLevelItemCount())]
+            self.assertEqual(
+                [[row.text(c) for c in range(5)] for row in rows],
+                [
+                    ["<b>Bold</b>", "Eve", "1 of 2", "Amiga Friday", ""],
+                    ["Sensible Soccer", "Kim", "1 of 2", "Amiga Friday", ""],
+                    ["Speedball 2", "Lee", "2 of 2", "Amiga Friday", "full"],
+                    ["Turrican II", "Ash", "running", "Amiga Friday", ""],
+                ],
+            )
+            self.assertEqual([row.isDisabled() for row in rows], [False, False, True, True])
+            self.assertTrue(panel.no_games.isHidden())
+            self.assertIn("Connected to Amiga Friday", panel.activity.toPlainText())
+
+            old.on_state(ONLINE, None, None)
+            old.on_listing({"id": "old", "revision": 1, "games": []})
+            browser.server("gone.example").watcher.on_state(ONLINE, None, None)
+            self.assertFalse(panel.countdown.isActive())
+        finally:
+            panel.shutdown()
+            self.assertEqual(netplay.browser_listeners, [])
+            self.assertEqual(netplay.activity_listeners, [])
+            panel.deleteLater()
         self.run_dialog()
 
     def test_netplay_settings_page(self):

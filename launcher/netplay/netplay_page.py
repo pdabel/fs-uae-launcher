@@ -2,7 +2,9 @@ import json
 
 import fsui
 from fsui.qt import Qt, QHBoxLayout, QScrollArea, QSplitter, QTimer
+from launcher.i18n import gettext
 from launcher.launcher_settings import LauncherSettings
+from launcher.netplay.lobby_browser_panel import LobbyBrowserPanel
 from launcher.netplay.netplay_panel import NetplayPanel
 from launcher.netplay.server_details import ServerDetails
 
@@ -13,11 +15,25 @@ class NetplayPage(fsui.Panel):
         self.widget().setObjectName("netplayPage")
         layout = QHBoxLayout(self.widget())
         layout.setContentsMargins(0, 0, 0, 0)
+        # The lobby browser above the IRC columns, while IRC lasts.
+        self.rows = QSplitter(Qt.Vertical)
+        self.rows.setChildrenCollapsible(False)
+        self.rows.setHandleWidth(16)
+        layout.addWidget(self.rows)
         self.splitter = QSplitter(Qt.Horizontal)
         self.splitter.setChildrenCollapsible(False)
         self.splitter.setHandleWidth(16)
-        layout.addWidget(self.splitter)
         self.panel = NetplayPanel(self, header=False, columns=True)
+        self.browser_panel = LobbyBrowserPanel(
+            self.panel.netplay, open_settings=self._open_netplay_settings
+        )
+        self.browser_area = QScrollArea()
+        self.browser_area.setWidgetResizable(True)
+        self.browser_area.setWidget(self.browser_panel)
+        self.rows.addWidget(self.browser_area)
+        self.rows.addWidget(self.splitter)
+        self.rows.setStretchFactor(0, 2)
+        self.rows.setStretchFactor(1, 3)
         self.channel_area = QScrollArea()
         self.channel_area.setWidgetResizable(True)
         self.channel_area.setMinimumWidth(
@@ -85,10 +101,17 @@ class NetplayPage(fsui.Panel):
             self._column_sizes = sizes
             LauncherSettings.set("netplay_column_sizes", json.dumps(sizes))
 
+    def _open_netplay_settings(self):
+        from launcher.settings.settings_dialog import SettingsDialog
+
+        dialog = SettingsDialog.open(self.get_window())
+        dialog.set_page_by_title(gettext("Net Play"))
+
     def on_show(self):
         self.panel.on_show()
 
     def shutdown(self):
+        self.browser_panel.shutdown()
         self.panel.on_destroy()
         self.server_details.shutdown()
         self.server_details.close()

@@ -30,7 +30,16 @@ def test_normalize(text, want):
 
 @pytest.mark.parametrize(
     "text",
-    ["", "   ", "host:port", "host:0", "host:70000", "a b", "http://x", ":25101"],
+    [
+        "",
+        "   ",
+        "host:port",
+        "host:0",
+        "host:70000",
+        "a b",
+        "http://x",
+        ":25101",
+    ],
 )
 def test_normalize_refuses(text):
     with pytest.raises(ValueError):
@@ -39,7 +48,11 @@ def test_normalize_refuses(text):
 
 def test_split_drops_blanks_bad_entries_and_duplicates():
     value = "a.example; ;B.example:25101;b.example;bad host;c.example:25200"
-    assert split_servers(value) == ["a.example", "b.example", "c.example:25200"]
+    assert split_servers(value) == [
+        "a.example",
+        "b.example",
+        "c.example:25200",
+    ]
 
 
 def test_add_and_remove():

@@ -16,14 +16,19 @@ class NetplaySettingsPage(SettingsPage):
         self.add_option("netplay_name")
         self.lobby_servers_group = LobbyServersGroup(self)
         self.layout.add(
-            self.lobby_servers_group, fill=True, margin_top=10, margin_bottom=10
+            self.lobby_servers_group,
+            fill=True,
+            margin_top=10,
+            margin_bottom=10,
         )
 
         self.add_section(gettext("Hosting on this computer"))
         self.add_option("netplay_public_address")
         self.add_option("netplay_host_port")
         self.layout.add(
-            fsui.Label(self, gettext("Forward this TCP port to this computer.")),
+            fsui.Label(
+                self, gettext("Forward this TCP port to this computer.")
+            ),
             margin_bottom=10,
         )
 

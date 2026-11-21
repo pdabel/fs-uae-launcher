@@ -617,3 +617,95 @@ def test_parse_lobby(text, want):
 def test_format_lobby_round_trips():
     for host in ["lobby.example", "2001:db8::1"]:
         assert parse_lobby(format_lobby(host, 25200)) == (host, 25200)
+
+
+@pytest.fixture
+def netplay_settings(monkeypatch):
+    """Answers the netplay settings these tests set, and the rest as
+    before."""
+    from launcher.launcher_settings import LauncherSettings
+
+    values = {}
+    get = LauncherSettings.get
+    monkeypatch.setattr(
+        LauncherSettings,
+        "get",
+        classmethod(lambda cls, key: values[key] if key in values else get(key)),
+    )
+    return values
+
+
+def test_a_player_browsing_sees_the_hosts_game(
+    lobby_port, ui, launchers, netplay_settings
+):
+    lobby = format_lobby("127.0.0.1", lobby_port)
+    netplay_settings[Option.NETPLAY_SERVERS] = lobby
+    netplay_settings[Option.CONFIG_NAME] = "Speedball 2"
+    host = launchers("HST", ops={"HST"})
+    player = launchers("PL2", ops={"HST"})
+    player.start_browsing()
+
+    assert host.create_session(
+        host.irc.active_channel(),
+        LobbyClient("127.0.0.1", lobby_port),
+        2,
+        "",
+        lobby,
+    )
+    game_id = host.session.game_id
+
+    def listed():
+        return [g for g in player.browser.games() if g.id == game_id]
+
+    ui.pump_until(lambda: bool(listed()))
+    game = listed()[0]
+    assert (game.title, game.host, game.joined, game.players) == (
+        "Speedball 2",
+        "HST",
+        1,
+        2,
+    )
+    assert game.joinable and game.server.key == lobby
+    assert any(text.startswith("Connected to") for _, text, _ in player.activity_log)
+
+    # Removing the server from the list stops watching it.
+    player.on_setting(Option.NETPLAY_SERVERS, "")
+    assert player.browser.servers() == [] and player.browser.games() == []
+
+
+def test_a_private_channels_game_is_not_listed(launchers, netplay_settings):
+    from unittest.mock import Mock
+
+    host = launchers("HST", ops={"HST"})
+    host.irc.private_game_channels = {CHANNEL}
+    client = Mock()
+    client.create_game.side_effect = RuntimeError("stop here")
+    host.create_session(host.irc.active_channel(), client, 2, "", "lobby")
+    assert client.create_game.call_args.kwargs["listed"] is False
+
+
+def test_this_computer_is_browsed_while_its_lobby_runs(
+    fsnp_server_binary, monkeypatch, ui, launchers, netplay_settings
+):
+    from launcher.netplay.lobby_browser import LOCAL
+
+    monkeypatch.setattr(
+        server_module, "find_server_executable", lambda: fsnp_server_binary
+    )
+    monkeypatch.setattr(server_module, "log_file_path", lambda: None)
+    netplay_settings[Option.NETPLAY_SERVERS] = ""
+    netplay_settings[Option.CONFIG_NAME] = "Turrican II"
+    host = launchers("HST", ops={"HST"})
+    view = FakeServerView()
+    host.parent = SimpleNamespace(create_server_view=view.present)
+    host.start_browsing()
+    assert host.browser.server(LOCAL) is None
+
+    host.handle_command("/hostgame 127.0.0.1:0 2")
+    local = host.browser.server(LOCAL)
+    assert local is not None and local.port == view.server.port
+    ui.pump_until(lambda: [g.title for g in host.browser.games()] == ["Turrican II"])
+    assert host.browser.servers()[0].title == "This computer"
+
+    host.command_reset([])
+    assert host.browser.server(LOCAL) is None

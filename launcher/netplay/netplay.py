@@ -1,4 +1,5 @@
 import threading
+import time
 import traceback
 
 from fsgs.context import fsgs
@@ -7,10 +8,13 @@ from .connection_tester import ConnectionTester
 from .irc import IRC, is_game_channel
 from .irc_broadcaster import IRCBroadcaster
 from .irc_color import IRCColor
+from .lobby_browser import LobbyBrowser
 from .lobby_client import LobbyClient
-from .lobby_servers import HOST_PORT, format_lobby, parse_lobby
+from .lobby_servers import HOST_PORT, format_lobby, parse_lobby, split_servers
 from .session import NetplaySession
 from ..launcher_config import LauncherConfig
+from ..launcher_settings import LauncherSettings
+from ..option import Option
 from ..server.Server import PortInUseError, Server, ServerError
 
 
@@ -22,6 +26,12 @@ SESSION_ANNOUNCE = "__session"
 
 # The lobby's limit on a player's tag; IRC nicks are normally shorter.
 MAX_TAG_LENGTH = 32
+
+# The lobby's limit on a game's title.
+MAX_TITLE_LENGTH = 64
+
+# Lines the activity log keeps.
+ACTIVITY_LINES = 200
 
 
 def call_after(function, *args):
@@ -36,6 +46,17 @@ def call_later(duration_ms, function):
     import fsui
 
     fsui.call_later(duration_ms, function)
+
+
+def truncate_utf8(text, length):
+    """text cut to at most length bytes of UTF-8, on a character."""
+    return text.encode("utf-8")[:length].decode("utf-8", "ignore")
+
+
+def game_title():
+    """The loaded config's name, as the lobby lists the game."""
+    title = LauncherSettings.get(Option.CONFIG_NAME).strip()
+    return truncate_utf8(title, MAX_TITLE_LENGTH)
 
 
 class Netplay:
@@ -70,6 +91,21 @@ class Netplay:
         self.hosted_game_left_running = False
         # Called with the session (or None) whenever it changes.
         self.session_listeners = []
+        # Every lobby in the list, and this computer's while it runs;
+        # watched from when the Net Play tab is first shown.
+        self.browser = LobbyBrowser(
+            name=LauncherSettings.get_netplay_name,
+            dispatch=lambda function, *args: call_after(function, *args),
+            on_change=self.notify_browser,
+            on_message=self.activity,
+        )
+        self.browser.on_local_lost = self.update_local_lobby
+        self.browsing = False
+        # Called with no arguments whenever the browser's view changes.
+        self.browser_listeners = []
+        # (time, text, warning) lines, newest last, and who to tell.
+        self.activity_log = []
+        self.activity_listeners = []
 
         LauncherConfig.add_listener(self)
         IRCBroadcaster.add_listener(self)
@@ -84,6 +120,7 @@ class Netplay:
 
     def disconnect(self):
         self.end_session()
+        self.stop_browsing()
         if self.game_window is not None:
             self.game_window.close()
             self.game_window = None
@@ -98,6 +135,48 @@ class Netplay:
 
     def is_connected(self):
         return self.enabled
+
+    # --- Browsing lobbies -------------------------------------------------
+
+    def start_browsing(self):
+        """Watch every lobby in the list. Once started, watching carries on
+        while other tabs show, so this launcher doesn't look offline."""
+        if self.browsing:
+            return
+        self.browsing = True
+        LauncherSettings.add_listener(self)
+        self.browser.set_servers(
+            split_servers(LauncherSettings.get(Option.NETPLAY_SERVERS))
+        )
+        self.update_local_lobby()
+
+    def stop_browsing(self):
+        if self.browsing:
+            self.browsing = False
+            LauncherSettings.remove_listener(self)
+        self.browser.stop()
+
+    def on_setting(self, key, value):
+        if key == Option.NETPLAY_SERVERS and self.browsing:
+            self.browser.set_servers(split_servers(value))
+
+    def update_local_lobby(self):
+        """Watch this computer's lobby while it runs, over loopback."""
+        if not self.browsing:
+            return
+        server = self.running_hosted_server()
+        self.browser.set_local(server.port if server is not None else None)
+
+    def notify_browser(self):
+        for listener in list(self.browser_listeners):
+            listener()
+
+    def activity(self, text, warning=False):
+        """A line for the panel's activity log."""
+        self.activity_log.append((time.time(), text, warning))
+        del self.activity_log[:-ACTIVITY_LINES]
+        for listener in list(self.activity_listeners):
+            listener(self.activity_log[-1])
 
     def player(self, nick):
         try:
@@ -191,6 +270,7 @@ class Netplay:
     def stop_hosted_server(self):
         if self.game_window is not None:
             self.game_window.stop_server()
+        self.update_local_lobby()
 
     def release_hosted_server(self):
         """Stop the /hostgame lobby, unless a game left running is in it."""
@@ -303,7 +383,12 @@ class Netplay:
         """Create a lobby game as its host; returns False on failure.
 
         announce is the host:port players' launchers reach the lobby at.
+        The game is listed in the lobby under the loaded config's name,
+        unless the channel was joined as private.
         """
+        private = channel.name.casefold() in getattr(
+            self.irc, "private_game_channels", ()
+        )
         try:
             created = client.create_game(
                 players,
@@ -311,6 +396,8 @@ class Netplay:
                 self.irc.my_nick[:MAX_TAG_LENGTH],
                 LauncherConfig.sync_keys_list,
                 LauncherConfig.checksum_keys,
+                listed=not private,
+                title=game_title(),
             )
         except Exception as e:
             channel.warning(f"could not create the game: {e}")
@@ -632,6 +719,7 @@ class Netplay:
             self.parent, server, self.session.game_id, server.port, channel_name
         )
         self.game_window.show()
+        self.update_local_lobby()
 
     def start_hosted_server(self, server, channel, port):
         """Start a /hostgame lobby; False, having said why, if it can't."""

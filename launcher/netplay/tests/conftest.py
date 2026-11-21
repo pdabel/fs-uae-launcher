@@ -38,19 +38,38 @@ def fsnp_server_binary(tmp_path_factory):
     pytest.skip("no fsnp-server binary and no Go toolchain to build one")
 
 
-@pytest.fixture(scope="session")
-def lobby_port(fsnp_server_binary):
-    """Port of an fsnp-server --lobby on 127.0.0.1, for the session."""
+def run_lobby(binary, *flags):
+    """Start fsnp-server --lobby on 127.0.0.1; returns it and its port."""
     proc = subprocess.Popen(
-        [fsnp_server_binary, "--lobby", "--host", "127.0.0.1", "--port", "0"],
+        [binary, "--lobby", "--host", "127.0.0.1", "--port", "0", *flags],
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
         text=True,
     )
+    ready = json.loads(proc.stdout.readline())
+    assert ready["event"] == "listening", ready
+    return proc, ready["port"]
+
+
+@pytest.fixture(scope="session")
+def lobby_port(fsnp_server_binary):
+    """Port of an fsnp-server --lobby on 127.0.0.1, for the session."""
+    proc, port = run_lobby(fsnp_server_binary)
     try:
-        ready = json.loads(proc.stdout.readline())
-        assert ready["event"] == "listening", ready
-        yield ready["port"]
+        yield port
+    finally:
+        proc.terminate()
+        proc.wait(timeout=10)
+
+
+@pytest.fixture
+def presence_lobby_port(fsnp_server_binary):
+    """Port of a named fsnp-server --lobby --presence, for one test."""
+    proc, port = run_lobby(
+        fsnp_server_binary, "--presence", "--name", "Dave's lobby"
+    )
+    try:
+        yield port
     finally:
         proc.terminate()
         proc.wait(timeout=10)
