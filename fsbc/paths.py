@@ -4,6 +4,7 @@ import sys
 import unicodedata
 
 import fsboot
+from fsbc.settings import Settings
 from fsbc.system import windows, macosx
 
 
@@ -33,11 +34,7 @@ class Paths(object):
             if cmp_path.startswith("$BASE/"):
                 return cls.join(cls.get_base_dir(), path[6:])
             if cmp_path.startswith("$CONFIG/"):
-                # FIXME: dependency loop, have FS-UAE Launcher register
-                # this prefix with this class instead
-                from launcher.launcher_settings import LauncherSettings
-
-                config_path = LauncherSettings.get("config_path")
+                config_path = Settings.instance().get("config_path")
                 if config_path:
                     return cls.join(
                         os.path.dirname(cls.expand_path(config_path)), path[8:]

@@ -570,8 +570,8 @@ def test_loading_portable_configuration_keeps_relative_preference(
 ):
     import fsboot
     from fsbc.paths import Paths
+    from fsbc.settings import Settings
     from launcher.launcher_config import LauncherConfig
-    from launcher.launcher_settings import LauncherSettings
 
     path = tmp_path / "Game.fs-uae"
     path.write_text("[fs-uae]\namiga_model = A500\n")
@@ -582,10 +582,13 @@ def test_loading_portable_configuration_keeps_relative_preference(
         "get_base_dir",
         lambda slash=False: str(tmp_path) + ("/" if slash else ""),
     )
+    # LauncherSettings and Paths ($CONFIG) both read fsbc's Settings.
     monkeypatch.setattr(
-        LauncherSettings, "get", lambda key: settings.get(key, "")
+        Settings, "get", lambda self, key, default="": settings.get(key, "")
     )
-    monkeypatch.setattr(LauncherSettings, "set", settings.__setitem__)
+    monkeypatch.setattr(
+        Settings, "set", lambda self, key, value: settings.update({key: value})
+    )
     monkeypatch.setattr(LauncherConfig, "load", lambda config: None)
     monkeypatch.setattr(LauncherConfig, "get", lambda key, default="": default)
     monkeypatch.setattr(LauncherConfig, "set", lambda key, value: None)

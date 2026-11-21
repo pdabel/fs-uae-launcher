@@ -11,7 +11,7 @@ from typing import Dict, Optional, Tuple
 import fsboot
 from fsbc.signal import Signal
 from fsbc.util import Version
-from launcher.version import VERSION
+
 
 class Settings(object):
     _instance = None
@@ -203,8 +203,11 @@ class SettingsProvider:
                 cp.add_section(section)
             cp.set(section, key, value)
 
+        # Imported here because fsbc.application imports this module.
+        from fsbc.application import Application
+
         cp.add_section("launcher")
-        cp.set("launcher", "version", VERSION)
+        cp.set("launcher", "version", Application.app_version or "0.0.0")
 
         if not os.path.exists(os.path.dirname(partial_path)):
             os.makedirs(os.path.dirname(partial_path))
