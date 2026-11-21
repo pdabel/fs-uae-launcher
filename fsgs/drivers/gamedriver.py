@@ -13,7 +13,7 @@ from fsbc.system import System
 from fsbc.task import current_task
 from fsgs.FSGSDirectories import FSGSDirectories
 from fsgs.amiga.fsuae import FSUAE
-from launcher.option import Option
+from fsgs.option import Option
 from fsgs.plugins.pluginexecutablefinder import PluginExecutableFinder
 from fsgs.plugins.pluginmanager import PluginManager, Executable
 from fsgs.refreshratetool import RefreshRateTool
@@ -151,10 +151,8 @@ class GameDriver:
                 print("[INPUT] No value specified for", port.type_option)
 
             if not type_value:
-                # FIXME: RETRIEVE DEFAULT VALUE FOR TYPE OPTION
-                try:
-                    type_value = Option.get(port.type_option)["default"]
-                except Exception:
+                type_value = port_info.get("type_default", "")
+                if not type_value:
                     print(
                         "[INPUT] Could not find default for", port.type_option
                     )
@@ -586,25 +584,21 @@ class GameDriver:
 
         self.update_environment_with_centering_info(env)
 
-    def update_environment_with_centering_info(self, env):
-        # FIXME: does not really belong here (dependency loop)
-        from launcher.launcher_config import LauncherConfig
-        from launcher.launcher_settings import LauncherSettings
+    @staticmethod
+    def window_size():
+        """The window size to centre: the config's, else the settings'."""
+        from fsgs.context import fsgs
 
-        width = LauncherConfig.get("window_width") or LauncherSettings.get(
-            "window_width"
-        )
-        height = LauncherConfig.get("window_height") or LauncherSettings.get(
-            "window_height"
-        )
-        try:
-            width = int(width)
-        except:
-            width = 960
-        try:
-            height = int(height)
-        except:
-            height = 540
+        def value(key, default):
+            try:
+                return int(fsgs.config.get(key) or Settings.instance()[key])
+            except ValueError:
+                return default
+
+        return value("window_width", 960), value("window_height", 540)
+
+    def update_environment_with_centering_info(self, env):
+        width, height = self.window_size()
         screen_x, screen_y, screen_w, screen_h = self.screen_rect()
         x = screen_x + max(0, (screen_w - width) // 2)
         y = screen_y + max(0, (screen_h - height) // 2)

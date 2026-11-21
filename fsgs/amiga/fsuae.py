@@ -10,7 +10,7 @@ from fsbc.system import windows
 
 class FSUAE(object):
     @classmethod
-    def start_with_config(cls, config, cwd=None, monitor=None):
+    def start_with_config(cls, config, cwd=None, monitor=""):
         print("FSUAE.start_with_config:")
         tf = tempfile.NamedTemporaryFile(suffix=".fs-uae", delete=False)
         config_file = tf.name
@@ -23,7 +23,7 @@ class FSUAE(object):
         return cls.start_with_args(args, cwd=cwd, monitor=monitor), config_file
 
     @classmethod
-    def start_with_args(cls, args, cwd=None, monitor=None, **kwargs):
+    def start_with_args(cls, args, cwd=None, monitor="", **kwargs):
         print("FSUAE.start_with_args:", args)
         exe = PluginExecutableFinder().find_executable("fs-uae")
         if exe is None:
@@ -72,29 +72,12 @@ class FSUAE(object):
                 env[key] = value
 
     @classmethod
-    def center_window(cls, args, env, monitor=None):
-        # FIXME: does not really belong here (dependency loop)
-        from launcher.launcher_config import LauncherConfig
-        from launcher.launcher_settings import LauncherSettings
-
-        width = LauncherConfig.get("window_width") or LauncherSettings.get(
-            "window_width"
-        )
-        height = LauncherConfig.get("window_height") or LauncherSettings.get(
-            "window_height"
-        )
-        try:
-            width = int(width)
-        except:
-            width = 960
-        try:
-            height = int(height)
-        except:
-            height = 540
+    def center_window(cls, args, env, monitor=""):
+        """Centre the window on monitor, the launch config's: empty is the
+        system default display."""
         from fsgs.drivers.gamedriver import GameDriver
 
-        if monitor is None:
-            monitor = LauncherConfig.effective_monitor()
+        width, height = GameDriver.window_size()
         screen_x, screen_y, screen_w, screen_h = GameDriver.screen_rect_for_monitor(monitor)
         x = screen_x + max(0, (screen_w - width) // 2)
         y = screen_y + max(0, (screen_h - height) // 2)

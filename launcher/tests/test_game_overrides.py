@@ -338,32 +338,18 @@ def test_empty_game_override_does_not_override_cli_value(monkeypatch):
 
 
 def test_empty_monitor_override_uses_system_default(monkeypatch):
-    from fsgs.amiga.fsuae import FSUAE
-    from fsgs.drivers.gamedriver import GameDriver
-
-    settings = {
-        "monitor": "global-display",
-        "window_width": "960",
-        "window_height": "540",
-    }
-    selected_monitors = []
     monkeypatch.setattr(LauncherConfig, "get", lambda key: "")
     monkeypatch.setattr(
         LauncherConfig, "get_game_overrides", lambda: {"monitor": ""}
     )
-    monkeypatch.setattr(
-        LauncherSettings, "get", lambda key: settings.get(key, "")
-    )
-    monkeypatch.setattr(
-        GameDriver,
-        "screen_rect_for_monitor",
-        lambda monitor: selected_monitors.append(monitor)
-        or (0, 0, 1920, 1080),
-    )
-    monkeypatch.setattr(
-        GameDriver, "fsuae_monitor_for_monitor", lambda monitor: None
-    )
+    monkeypatch.setattr(LauncherSettings, "get", lambda key: "global-display")
 
-    FSUAE.center_window([], {})
+    assert LauncherConfig.effective_monitor() == ""
 
-    assert selected_monitors == [""]
+
+def test_monitor_without_override_uses_global_setting(monkeypatch):
+    monkeypatch.setattr(LauncherConfig, "get", lambda key: "")
+    monkeypatch.setattr(LauncherConfig, "get_game_overrides", lambda: {})
+    monkeypatch.setattr(LauncherSettings, "get", lambda key: "global-display")
+
+    assert LauncherConfig.effective_monitor() == "global-display"
