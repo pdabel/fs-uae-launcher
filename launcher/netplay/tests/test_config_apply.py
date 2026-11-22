@@ -188,6 +188,6 @@ def test_put_back_echoes():
 def test_put_back_echoes_gives_up():
     from launcher.netplay.config_apply import ECHO_ROUNDS, put_back_echoes
 
-    calls = []
+    calls: list = []
     put_back_echoes([("k", "1")], lambda key: "", calls.append)
     assert len(calls) == ECHO_ROUNDS

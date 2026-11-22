@@ -66,13 +66,13 @@ class Harness:
         self.client = FakeClient()
         self.executor = QueuedExecutor()
         self.local = {"amiga_model": "A500", "chip_memory": "512"}
-        self.applied = []
-        self.launched = []
+        self.applied: list = []
+        self.launched: list = []
         self.changes = 0
-        self.messages = []
-        self.later = []
+        self.messages: list = []
+        self.later: list = []
         self.missing = missing or {}
-        self.watchers = []
+        self.watchers: list = []
 
         def watcher_factory(*args):
             w = FakeWatcher(*args)

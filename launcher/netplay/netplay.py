@@ -290,7 +290,7 @@ class Netplay:
         self.game_info("checking the game's config again")
         self.session.recheck()
 
-    def on_session_change(self, session):
+    def on_session_change(self, session: NetplaySession):
         if session is not self.session:
             return
         if session.ended:
@@ -629,7 +629,8 @@ class Netplay:
     def stop_lobby(self):
         """The panel's Stop lobby: ends a game waiting in it, but not one
         being played."""
-        if self.running_local_lobby() is None:
+        lobby = self.running_local_lobby()
+        if lobby is None:
             return
         if self.game_running_in_local_lobby():
             self.game_warning(
@@ -639,7 +640,7 @@ class Netplay:
             return
         if self.session is not None and self.session_hosted:
             self.end_session()
-        self.local_lobby.stop()
+        lobby.stop()
         self.local_lobby = None
         self.update_local_lobby()
         self.game_info("stopped the lobby on this computer")

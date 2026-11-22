@@ -87,6 +87,7 @@ class ServerWatcher(threading.Thread):
         since = 0
         delay = RETRY_DELAY
         state = None
+        error: Exception
         while not self.stopped:
             self._wake.clear()
             if state is None:
@@ -99,8 +100,9 @@ class ServerWatcher(threading.Thread):
                 check_listing(listing)
             except LobbyError as e:
                 if e.status in (404, 405):
-                    error = "doesn't list games (older server?)"
-                    state = self._no_listing(error)
+                    state = self._no_listing(
+                        "doesn't list games (older server?)"
+                    )
                     since = 0
                     continue
                 error = e
@@ -231,7 +233,7 @@ class BrowsedServer:
 
     @property
     def online(self):
-        if self.state != ONLINE or not self.presence:
+        if self.state != ONLINE or not self.listing or not self.presence:
             return []
         return list(self.listing.get("online") or [])
 
@@ -424,8 +426,8 @@ class LobbyBrowser:
 
     def _current(self, server, watcher):
         return (
-            self._servers.get(server.key) is server
-            and server.watcher is watcher
+            server.watcher is watcher
+            and self._servers.get(server.key) is server
         )
 
     def _listing(self, server, watcher, listing):

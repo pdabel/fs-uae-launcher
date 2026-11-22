@@ -71,7 +71,7 @@ def resolve_config(document, sync_keys, find_by_sha1):
     to set, and missing maps each SHA-1 key that could not be resolved to
     the SHA-1 it was sent with. Keys outside sync_keys are ignored.
     """
-    updates = []
+    updates: list[tuple[str, str]] = []
     missing = {}
     for key, value in document.items():
         if key not in sync_keys:

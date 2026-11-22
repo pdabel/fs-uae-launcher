@@ -73,7 +73,7 @@ class ConnectionTester:
 
     def _thread_main(self):
         last_host_info = None
-        last_check_time = 0
+        last_check_time = 0.0
         while not self.stopping:
             t = time.time()
             host_info = self.host_info

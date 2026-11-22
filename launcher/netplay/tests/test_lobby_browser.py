@@ -64,7 +64,7 @@ def game(game_id, title, state="created", players=2, joined=1, host="HST"):
 
 class Recorder:
     def __init__(self):
-        self.events = queue.Queue()
+        self.events: queue.Queue = queue.Queue()
 
     def on_listing(self, listing):
         self.events.put(("listing", listing["revision"]))
@@ -386,7 +386,12 @@ def test_presence_on_this_computer(browser, ui):
 
 def test_this_computer_lost(browser, ui):
     lost = []
-    browser.on_local_lost = lambda: (lost.append(1), browser.set_local(None))
+
+    def on_local_lost():
+        lost.append(1)
+        browser.set_local(None)
+
+    browser.on_local_lost = on_local_lost
     browser.set_local(25101)
     browser.server(LOCAL).watcher.on_state(UNREACHABLE, "refused", 2)
     assert lost == [1]
