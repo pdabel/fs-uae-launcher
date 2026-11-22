@@ -7,6 +7,9 @@ from fsbc.application import call_after
 from ..launcher_config import LauncherConfig
 from ..launcher_signal import LauncherSignal
 
+# Seconds to connect to a game's server, and to wait for its PONG.
+TIMEOUT = 5
+
 
 class ConnectionTester:
     def __init__(self):
@@ -14,6 +17,7 @@ class ConnectionTester:
         self.running = False
         self.stopping = False
         self.connection_attempt = 0
+        self.thread = None
 
         LauncherConfig.add_listener(self)
         LauncherSignal.add_listener("quit", self)
@@ -21,6 +25,13 @@ class ConnectionTester:
     def on_quit_signal(self):
         print("on_quit_signal")
         self.stopping = True
+
+    def stop(self):
+        """Stop testing and listening. The thread ends within a second, or
+        once a test in progress times out."""
+        self.stopping = True
+        LauncherConfig.remove_listener(self)
+        LauncherSignal.remove_listener("quit", self)
 
     def on_config(self, key, _):
         if key in ["__netplay_addresses", "__netplay_port"]:
@@ -30,9 +41,12 @@ class ConnectionTester:
             if host_info != self.host_info:
                 self.host_info = host_info
             if not self.running:
-                threading.Thread(
-                    target=self.thread_main, name="ConnectionTesterThread"
-                ).start()
+                self.thread = threading.Thread(
+                    target=self.thread_main,
+                    name="ConnectionTesterThread",
+                    daemon=True,
+                )
+                self.thread.start()
                 self.running = True
 
     def thread_main(self):
@@ -70,6 +84,8 @@ class ConnectionTester:
                 last_host_info = host_info
                 try:
                     result, error = self.test_connection(host_info)
+                    if self.stopping:
+                        break
                     self.set_host(result, error)
                 except Exception as e:
                     traceback.print_exc()
@@ -90,9 +106,8 @@ class ConnectionTester:
             try:
                 try:
                     print("trying", host, port)
-                    s = socket.create_connection((host, port))
+                    s = socket.create_connection((host, port), TIMEOUT)
                     s.send(b"PING")
-                    # FIXME: set timeout, don't want to wait forever here...
                     data = s.recv(4)
                     if data == b"PONG":
                         verified_host = host

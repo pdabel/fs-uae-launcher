@@ -164,7 +164,7 @@ class LauncherSettingsPage(SettingsPage):
             fsui.show_error(str(error), gettext("Unable to save settings"))
 
     def on_defragment_button(self):
-        TaskDialog(self.get_window(), DefragmentDatabasesTask()).show()
+        TaskDialog(self.window, DefragmentDatabasesTask()).show()
 
     def reset_portable_checkbox(self):
         self.portable_checkbox.blockSignals(True)
@@ -193,7 +193,7 @@ class LauncherSettingsPage(SettingsPage):
                 gettext("Portable Mode"),
             )
             return
-        destination = fsui.pick_directory(parent=self.get_window())
+        destination = fsui.pick_directory(parent=self.window)
         if not destination:
             return
         copy_data = True
@@ -221,7 +221,7 @@ class LauncherSettingsPage(SettingsPage):
                 break
             if dialog.clickedButton() != choose_new:
                 return
-            destination = fsui.pick_directory(parent=self.get_window())
+            destination = fsui.pick_directory(parent=self.window)
             if not destination:
                 return
         override = os.environ.get("FS_UAE_BASE_DIR")
