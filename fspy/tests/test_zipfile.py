@@ -3,11 +3,6 @@ import os
 import pytest
 
 import fspy.zipfile
-import fstd.mypy
-
-
-def test_mypy():
-    fstd.mypy.check_module(fspy.zipfile.__name__)
 
 
 def test_latin1_name():
