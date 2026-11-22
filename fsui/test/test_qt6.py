@@ -3788,9 +3788,18 @@ class TestDashboard(WidgetTestCase):
 
         self.setup_dialog()
         application = Mock(qapplication=self.application)
-        with patch("launcher.settings.option_ui.app", application), patch(
+        # Leaving portable mode is refused while FS_UAE_BASE_DIR overrides
+        # the data folder, as it does for the test run (conftest.py).
+        environ = {
+            k: v for k, v in os.environ.items() if k != "FS_UAE_BASE_DIR"
+        }
+        with patch.dict(os.environ, environ, clear=True), patch(
+            "launcher.settings.option_ui.app", application
+        ), patch(
             "launcher.settings.launchersettingspage.app", application
-        ), patch("fsboot.is_portable", return_value=False), patch(
+        ), patch(
+            "fsboot.is_portable", return_value=False
+        ), patch(
             "launcher.portable.PortableModeChange"
         ) as change_class, patch(
             "launcher.scanner.Scanner.running", False
