@@ -181,7 +181,7 @@ class HSLColor(BaseColor):
             return int(round(self.l * 100))
         raise IndexError("Invalid color component")
 
-    def set_components(self, h, s, l):
+    def set_components(self, h, s, l):  # noqa: E741 (HSL lightness)
         self.h = h
         self.s = s
         self.l = l

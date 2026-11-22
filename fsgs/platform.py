@@ -92,9 +92,10 @@ class Platform(PlatformHandler):
         raise NotImplementedError()
 
 
-from fsgs.platforms.amiga import AmigaPlatformHandler
-from fsgs.platforms.cd32 import CD32PlatformHandler
-from fsgs.platforms.cdtv import CDTVPlatformHandler
+# Imported after PlatformHandler, which these modules subclass.
+from fsgs.platforms.amiga import AmigaPlatformHandler  # noqa: E402
+from fsgs.platforms.cd32 import CD32PlatformHandler  # noqa: E402
+from fsgs.platforms.cdtv import CDTVPlatformHandler  # noqa: E402
 
 
 class UnsupportedPlatform(PlatformHandler):

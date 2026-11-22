@@ -245,7 +245,7 @@ class GameDatabaseClient(object):
         x_name = values.get("x_name", "")
         try:
             status = int(values.get("_status", "0"))
-        except:
+        except Exception:
             status = 0
         parent_uuid = values.get("parent_uuid", "")
 

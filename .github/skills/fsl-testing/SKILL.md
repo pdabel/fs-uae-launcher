@@ -11,7 +11,7 @@ description: 'Testing patterns for FS-UAE Launcher: pytest suites, Qt widget tes
 | --- | --- | --- |
 | `venv/bin/python -m pytest fsbc fstd fspy fsgs/tests fsbuild/tests launcher/netplay launcher/server/tests launcher/tests` | Base utilities, game system, packaging helpers, netplay client, golden hash, contract tests, server spawning, launcher behaviour | Yes (`linux-test.yml`, `macos-test.yml`) |
 | `QT_QPA_PLATFORM=offscreen venv/bin/python -m pytest fsui/test` | Qt 6 environment, widgets, panels, themes, the Net Play tab | Yes (same workflows) |
-| `ruff check` | Unused imports/variables, string formatting (rules in `pyproject.toml`) | Yes (`ci.yml`) |
+| `ruff check` | Pyflakes and pycodestyle errors, string formatting (rules in `pyproject.toml`) | Yes (`ci.yml`, before the tests) |
 | `make -C fsnp-server check` | `gofmt -l`, `go vet`, `go test ./... -race -count=1` | Yes (`netplay-server.yml`) |
 | `make -C fsnp-server build` | The binary builds | Yes |
 | `venv/bin/python -m pytest -rs launcher/netplay` | The netplay tests, listing skip reasons | -- |

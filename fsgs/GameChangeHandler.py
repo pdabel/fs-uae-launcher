@@ -81,7 +81,7 @@ class GameChangeHandler(object):
                 shutil.copyfile(sourcepath, destpath)
 
         for filename in oldfiles:
-            if not filename in newfiles:
+            if filename not in newfiles:
                 print("File removed", filename)
                 destpath = os.path.join(state_dir, filename)
                 if not os.path.exists(os.path.dirname(destpath)):
