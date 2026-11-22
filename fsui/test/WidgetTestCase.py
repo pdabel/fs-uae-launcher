@@ -1,5 +1,7 @@
 import unittest
+
 import fsui as fsui
+from fsui.qt import QEvent
 
 
 class WidgetTestCase(unittest.TestCase):
@@ -22,4 +24,9 @@ class WidgetTestCase(unittest.TestCase):
 
         fsui.call_after(run_in_dialog)
         self.dialog.show_modal()
-        self.dialog.destroy()
+        # Delete the dialog and its widgets now, through Qt. Left to the
+        # garbage collector, they go at an arbitrary point in a later test,
+        # and a later application-wide setStyleSheet() can then crash.
+        self.dialog.deleteLater()
+        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+        self.dialog = None

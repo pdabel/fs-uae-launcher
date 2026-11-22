@@ -78,6 +78,7 @@ A skip is not a pass. After an API change, run with `-rs` and confirm the contra
 - **Go:** table-driven tests; a fake clock instead of `time.Sleep`; `-race` is always on, so shared state needs a mutex or a single owning goroutine.
 - **Negative tests:** every allowlist, password, token, or status-code path gets a rejection test (unknown key, wrong token, full game, duplicate password -> 409).
 - **Qt:** cover every theme a change affects (the `LAUNCHER_THEME` values in `launcher/option.py`). `test_qt6.py` loops variants with `subTest` and `patch.object(fsui, "theme_variant", variant)` -- extend that rather than adding a new harness, and restore `fsui.theme`/`fsui.theme_variant` afterwards as the existing tests do.
+- **Qt widget lifetime:** end a dialog test with `run_dialog()`, which deletes the dialog through Qt (`deleteLater` and a `DeferredDelete` flush). A widget tree left to Python's garbage collector is freed at an arbitrary point in a later test and can crash a later application-wide `setStyleSheet()` -- on CI's macOS Python 3.12 job it did. Delete other top-level widgets a test creates the same way.
 
 ---
 
