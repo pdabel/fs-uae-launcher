@@ -12,20 +12,6 @@ from fsui.qt.helpers import QParent
 windows = set()
 
 
-class Margins:
-    def __init__(self):
-        self.top = 0
-        self.left = 0
-        self.right = 0
-        self.bottom = 0
-
-    def set(self, value):
-        self.top = value
-        self.left = value
-        self.right = value
-        self.bottom = value
-
-
 # noinspection PyProtectedMember
 class RealWindow(QMainWindow):
     def __init__(
@@ -38,7 +24,6 @@ class RealWindow(QMainWindow):
         below=False,
     ):
         super().__init__(parent)
-        self.margins = Margins()
 
         flags = Qt.Window
         if macosx:
@@ -69,32 +54,19 @@ class RealWindow(QMainWindow):
 
     def resize_to(self, size):
         print("RealWindow.resize_to", size[0], size[1])
-        x = self.margins.left
-        y = self.margins.top
-        width = size[0] - self.margins.left - self.margins.right
-        height = size[1] - self.margins.top - self.margins.bottom
         assert isinstance(self.child._real_widget, QWidget)
-        self.child._real_widget.setGeometry(x, y, width, height)
+        self.child._real_widget.setGeometry(0, 0, size[0], size[1])
 
     def set_size(self, size):
         self._size_set = True
         print("RealWindow.set_size", size)
-        width = size[0] + self.margins.left + self.margins.right
-        height = size[1] + self.margins.top + self.margins.bottom
-        print("RealWindow.set_size final size", (width, height))
-        self.resize(width, height)
+        self.resize(size[0], size[1])
 
     def position(self):
         return self.pos().x(), self.pos().y()
 
     def set_position(self, position):
         self.move(position[0], position[1])
-
-    def width(self):
-        return super().width() - self.margins.left - self.margins.right
-
-    def height(self):
-        return super().height() - self.margins.top - self.margins.bottom
 
     def closeEvent(self, event):
         print(str(self) + ".closeEvent")
@@ -138,26 +110,20 @@ class RealWindow(QMainWindow):
     def is_fullscreen(self):
         return self.windowState() == Qt.WindowFullScreen
 
-    def restore_margins(self):
-        self.margins.set(0)
-
     def set_maximized(self, maximize=True, geometry=None):
         print("set_maximized", maximize)
         if maximize:
-            self.margins.set(0)
             self.showMaximized()
             print(
                 "size after showMaximized",
                 (self.size().width(), self.size().height()),
             )
         else:
-            self.restore_margins()
             self.setWindowState(Qt.WindowNoState)
 
     def set_fullscreen(self, fullscreen=True, geometry=None):
         print("set_fullscreen", fullscreen)
         if fullscreen:
-            self.margins.set(0)
             # Workaround, without setting size to something initially,
             # showFullScreen sometimes fails to update size on Linux, causing
             # only a small part of the screen to be filled.
@@ -175,7 +141,6 @@ class RealWindow(QMainWindow):
                 (self.size().width(), self.size().height()),
             )
         else:
-            self.restore_margins()
             self.setWindowState(Qt.WindowNoState)
 
     def minimize(self):
