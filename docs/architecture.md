@@ -12,17 +12,16 @@ render on GitHub and in VS Code's Markdown preview.
 
 ## Responsibility groups
 
-These are responsibility groups, not yet strict import layers. The diagram
-shows selected dependencies rather than an exhaustive import graph. `fsbc`
-imports nothing above it, which `fsbc/tests/test_layering.py` enforces: the
-launcher passes in its version, logs directory and translation function
-through `initialize_application()`. `fsui` and `fsgs` translate through that
-hook (`fsui.res.gettext`, `fsgs.res.gettext`), not `launcher.i18n`. `fsgs`
-imports none of `fsui`, `launcher` and `workspace`, which
-`fsgs/tests/test_layering.py` enforces; its game drivers read screen geometry
-from the running Qt application directly. `fsgs` and `fsui` don't import each
-other. The dotted arrow is the import still to untangle: `fsui.qt.window`
-imports `workspace` for its window header.
+The diagram shows selected dependencies rather than an exhaustive import
+graph, but the base packages are strict layers, each with a guard test.
+`fsbc` imports nothing above it (`fsbc/tests/test_layering.py`): the launcher
+passes in its version, logs directory and translation function through
+`initialize_application()`. `fsui` and `fsgs` sit side by side on `fsbc` and
+import neither each other nor `launcher` and `workspace`
+(`fsui/test/test_layering.py`, `fsgs/tests/test_layering.py`). They translate
+through the `fsbc` hook (`fsui.res.gettext`, `fsgs.res.gettext`), not
+`launcher.i18n`, and the game drivers in `fsgs` read screen geometry from the
+running Qt application directly.
 
 ```mermaid
 flowchart TB
@@ -69,7 +68,6 @@ flowchart TB
     fsgs --> openretro
     fsgs -- "screen geometry" --> qt
     fsui --> fsbc
-    fsui -. "window header" .-> workspace
     fsui --> qt
     fsbc --> fsboot
 ```

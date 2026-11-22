@@ -22,7 +22,7 @@ def upward_imports(package_dir, higher_packages):
     """Imports of higher_packages anywhere in package_dir, tests aside."""
     found = []
     for path in sorted(package_dir.rglob("*.py")):
-        if "tests" in path.relative_to(package_dir).parts:
+        if {"test", "tests"} & set(path.relative_to(package_dir).parts):
             continue
         for lineno, package in imported_packages(path):
             if package in higher_packages:
