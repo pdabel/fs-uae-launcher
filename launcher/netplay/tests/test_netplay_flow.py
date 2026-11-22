@@ -244,6 +244,46 @@ def test_end_game_ends_it_for_everyone(lobby_port, ui, launchers):
     wait_for(lambda: gone(LobbyClient("127.0.0.1", lobby_port), game_id))
 
 
+NETPLAY_KEYS = [
+    "__netplay_game",
+    "__netplay_password",
+    "__netplay_players",
+    "__netplay_port",
+    "__netplay_addresses",
+    "__netplay_host",
+]
+
+
+def netplay_config():
+    return {key: fsgs.config.get(key) for key in NETPLAY_KEYS}
+
+
+def test_ending_a_game_before_it_starts_clears_its_netplay_config(
+    lobby_port, ui, launchers
+):
+    # Otherwise the next Start launches a single-player game as this one.
+    host = launchers()
+    game_id = host_on(host, ui, lobby_port)
+    assert fsgs.config.get("__netplay_game") == game_id
+    host.leave_game()
+    assert netplay_config() == dict.fromkeys(NETPLAY_KEYS, "")
+
+
+def test_leaving_a_game_before_it_starts_clears_its_netplay_config(
+    lobby_port, ui, launchers
+):
+    host = launchers()
+    player = launchers()
+    game_id = host_on(host, ui, lobby_port)
+    player.join_game("127.0.0.1", lobby_port, game_id)
+    ui.pump_until(
+        lambda: player.session is not None
+        and player.session.snapshot is not None
+    )
+    player.leave_game()
+    assert netplay_config() == dict.fromkeys(NETPLAY_KEYS, "")
+
+
 def test_join_and_leave(lobby_port, ui, launchers, settings):
     host = launchers()
     player = launchers()
