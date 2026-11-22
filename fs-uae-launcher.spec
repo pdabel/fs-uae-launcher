@@ -61,7 +61,6 @@ make
 
 %install
 make install DESTDIR=%{buildroot} prefix=%{_prefix}
-rm -Rf %{buildroot}%{_prefix}/share/fs-uae-launcher/OpenGL
 
 %clean
 rm -rf %{buildroot}
