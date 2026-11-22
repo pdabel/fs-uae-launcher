@@ -132,6 +132,9 @@ class Netplay:
     def disconnect(self):
         self.end_session()
         self.stop_browsing()
+        if self.connection_tester is not None:
+            self.connection_tester.stop()
+            self.connection_tester = None
         if self.local_lobby is not None:
             self.local_lobby.stop()
             self.local_lobby = None
