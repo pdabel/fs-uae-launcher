@@ -38,7 +38,7 @@ class GameDriverLogger:
 
 # noinspection PyMethodMayBeStatic
 class GameDriver:
-    PORTS = []
+    PORTS: list[dict] = []
 
     def __init__(self, fsgc):
         self.fsgc = fsgc

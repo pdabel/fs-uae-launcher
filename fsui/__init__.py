@@ -39,8 +39,6 @@ from fsui.qt.TextField import TextField, PasswordField
 from fsui.qt.VerticalItemView import VerticalItemView
 from fsui.qt.window import Window
 
-default_window_parent = []
-default_window_center = []
 toolkit = "qt"
 use_qt = True
 theme = ""

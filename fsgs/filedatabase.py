@@ -29,7 +29,7 @@ class FileDatabase(BaseDatabase):
 
     # This (class) map contains information about checksum -> uri locations
     # discovered during runtime. This map is not saved.
-    static_files = {}
+    static_files: dict[str, File] = {}
 
     @classmethod
     def add_static_file(cls, path, size, sha1):

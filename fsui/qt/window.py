@@ -9,7 +9,7 @@ from fsui.qt.qt import init_qt, QEvent
 # noinspection PyProtectedMember
 from fsui.qt.helpers import QParent
 
-windows = set()
+windows: set = set()
 
 
 # noinspection PyProtectedMember

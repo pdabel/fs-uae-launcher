@@ -3,12 +3,6 @@ import threading
 import fsbc.signal
 
 
-def test_mypy():
-    import fstd.mypy
-
-    fstd.mypy.check_module(fsbc.signal.__name__)
-
-
 class Listener:
     def __init__(self):
         self.values = []

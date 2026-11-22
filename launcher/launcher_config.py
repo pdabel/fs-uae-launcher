@@ -196,8 +196,8 @@ LOCAL_DISPLAY_OPTIONS = {
 
 class LauncherConfig(object):
     _game_base_identity = None
-    _game_base_values = {}
-    _game_override_values = {}
+    _game_base_values: dict[str, str] = {}
+    _game_override_values: dict[str, str] = {}
     _game_overrides_available = False
 
     config_keys = [x[0] for x in cfg]

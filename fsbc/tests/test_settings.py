@@ -25,12 +25,6 @@ def test_load_save():
     fsbc.settings.unload()
 
 
-def test_mypy():
-    import fstd.mypy
-
-    fstd.mypy.check_module(fsbc.settings.__name__)
-
-
 def loaded_settings(values, path=None):
     settings = Settings(path=path)
     settings.values.update(values)

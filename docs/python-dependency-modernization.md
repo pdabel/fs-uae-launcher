@@ -177,9 +177,14 @@ and frozen artifacts have not been certified by these local checks.
   Qt classes, which can't have a `window` property without hiding
   `QWidget.window()`), so it can't be removed. `Widget.get_window()` no
   longer warns; `window` stays as an alias on `Widget` and `Window`.
-- [ ] Add CI checks for formatting, linting, and the project's existing
+- [x] Add CI checks for formatting, linting, and the project's existing
   type-checking approach. Begin with changed files or a documented baseline
-  so legacy findings do not obscure new regressions.
+  so legacy findings do not obscure new regressions. `Format`, `Lint` and
+  `Type check` jobs in `ci.yml`. The type check runs mypy over every package
+  with mypy's default strictness, which skips the bodies of unannotated
+  functions; the whole tree passes it, so there is no baseline to keep.
+  Stricter checks (`check_untyped_defs`) are the next step, package by
+  package.
 - [ ] Adopt typing incrementally at module and public API boundaries. Use
   modern built-in generic and union syntax only after the declared minimum
   Python version supports it; do not bulk-rewrite syntax without tests.

@@ -21,7 +21,7 @@ class Scanner:
     stop_flag = False
     status = ("", "")
     error = ""
-    paths = []
+    paths: list[str] = []
     update_game_database = False
     purge_other_dirs = False
     scan_for_files = False

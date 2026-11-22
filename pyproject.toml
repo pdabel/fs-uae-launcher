@@ -18,6 +18,41 @@ select = ["E4", "E7", "E9", "F", "UP031", "UP032"]
 "fsui/qt/signal.py" = ["F401"]
 "fsbc/desktop.py" = ["F403"]
 
+[tool.mypy]
+python_version = "3.12"
+packages = [
+    "fsbc",
+    "fsboot",
+    "fsgs",
+    "fspy",
+    "fstd",
+    "fsui",
+    "launcher",
+    "workspace",
+]
+# QtPy resolves to PySide6 (fsui.qt.qt sets QT_API); without this mypy mixes
+# the bindings' types. `python -m qtpy mypy-args` prints the same flags.
+always_true = ["PYSIDE6"]
+always_false = ["PYQT5", "PYQT6", "PYSIDE2"]
+
+[[tool.mypy.overrides]]
+# Packages without type information.
+module = [
+    "CoreFoundation",
+    "lhafile",
+    "qtawesome",
+    "Quartz",
+    "win32api",
+    "win32con",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Re-exports Qt with star imports from several QtPy modules, which define
+# some of the same names.
+module = "fsui.qt.qt"
+disable_error_code = ["assignment", "misc"]
+
 [tool.pytest.ini_options]
 # A deprecated call into our own code fails the tests, wherever it runs;
 # deprecations raised by third-party packages stay warnings.
