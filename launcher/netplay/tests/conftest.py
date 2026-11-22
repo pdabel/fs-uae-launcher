@@ -46,6 +46,7 @@ def run_lobby(binary, *flags):
         stderr=subprocess.DEVNULL,
         text=True,
     )
+    assert proc.stdout is not None
     ready = json.loads(proc.stdout.readline())
     assert ready["event"] == "listening", ready
     return proc, ready["port"]

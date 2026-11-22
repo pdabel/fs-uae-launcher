@@ -30,7 +30,7 @@ def test_stopped_tester_thread_ends_without_reporting(monkeypatch):
     config = {"__netplay_addresses": "192.0.2.1", "__netplay_port": "25100"}
     monkeypatch.setattr(LauncherConfig, "get", lambda key: config[key])
     tested = threading.Event()
-    reported = []
+    reported: list = []
 
     def test_connection(self, host_info):
         tested.set()
@@ -42,6 +42,7 @@ def test_stopped_tester_thread_ends_without_reporting(monkeypatch):
     tester = ConnectionTester()
     tester.on_config("__netplay_port", "25100")
     assert tested.wait(3)
+    assert tester.thread is not None
     tester.thread.join(3)
     assert not tester.thread.is_alive()
     assert tester.thread.daemon
@@ -53,6 +54,7 @@ def test_disconnect_stops_the_connection_tester(monkeypatch):
     monkeypatch.setattr(netplay, "start_browsing", lambda: None)
     netplay.connect()
     tester = netplay.connection_tester
+    assert tester is not None
     netplay.disconnect()
     assert netplay.connection_tester is None
     assert tester.stopping

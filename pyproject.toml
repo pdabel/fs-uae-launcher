@@ -36,6 +36,12 @@ always_true = ["PYSIDE6"]
 always_false = ["PYQT5", "PYQT6", "PYSIDE2"]
 
 [[tool.mypy.overrides]]
+# Stricter: function bodies are checked even where the function has no
+# annotations. Extended package by package.
+module = ["launcher.netplay", "launcher.netplay.*"]
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
 # Packages without type information.
 module = [
     "CoreFoundation",

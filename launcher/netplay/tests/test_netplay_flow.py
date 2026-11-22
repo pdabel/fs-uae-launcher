@@ -23,7 +23,7 @@ from launcher.server import Server as server_module
 
 class UIThread:
     def __init__(self):
-        self.queue = queue.Queue()
+        self.queue: queue.Queue = queue.Queue()
         self.ran = []
 
     def call_after(self, function, *args):
@@ -86,8 +86,9 @@ def launchers(monkeypatch, settings):
 
     def make():
         n = Netplay()
-        n.launched = []
-        monkeypatch.setattr(n, "do_start_game", lambda: n.launched.append(1))
+        launched: list = []
+        setattr(n, "launched", launched)  # read back as host.launched
+        monkeypatch.setattr(n, "do_start_game", lambda: launched.append(1))
         made.append(n)
         return n
 
@@ -181,7 +182,7 @@ def test_host_and_player_start_together(lobby_port, ui, launchers, settings):
     assert fsgs.config.get("__netplay_game") == game_id
 
     # Nobody presses Start.
-    seen = []
+    seen: list = []
     host.session_listeners.append(seen.append)
     ui.pump_until(lambda: host.launched and player.launched)
     assert client.game(game_id)["state"] == "running"
@@ -289,7 +290,7 @@ def test_join_and_leave(lobby_port, ui, launchers, settings):
     player = launchers()
     game_id = host_on(host, ui, lobby_port)
 
-    sessions = []
+    sessions: list = []
     player.session_listeners.append(sessions.append)
     settings[Option.NETPLAY_NAME] = "Dave"
     player.join_game(
@@ -458,6 +459,7 @@ def test_host_on_this_computer_keeps_the_lobby_between_games(
     assert host.running_local_lobby() is lobby
     assert host.host_game(LOCAL, 2)
     ui.pump_until(lambda: host.session is not None)
+    assert host.session is not None
     assert host.running_local_lobby() is lobby
     assert host.session.game_id != first
     ui.pump_until(

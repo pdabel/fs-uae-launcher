@@ -141,7 +141,8 @@ def snap(revision, state="configuring"):
 
 def watch(*replies):
     c, s = client(*replies)
-    seen, errors = [], []
+    seen: list = []
+    errors: list = []
     w = SessionWatcher(c, "g1", seen.append, errors.append)
     return w, s, seen, errors
 
