@@ -11,6 +11,7 @@ description: 'CI workflows, Dependabot, release flow, and packaging for FS-UAE L
 ci.yml  (push to main/release-*, PRs to main/release-*, dispatch)
   lint                   ruff check (version from Pipfile.lock, rules in pyproject.toml)
   format                 black --check . (version from Pipfile.lock)
+  typecheck              pipenv sync --dev, then mypy ([tool.mypy] in pyproject.toml); doesn't gate the tests
   -> linux-test.yml      needs lint and format. Python 3.12 + 3.15 matrix: apt deps, pipenv sync --dev, test_python_support.py,
                          the Python suite, then fsui/test, both with QT_QPA_PLATFORM=offscreen
   -> macos-test.yml      needs lint and format; same on macOS; installs Go with setup-go from fsnp-server/go.mod
@@ -86,6 +87,7 @@ The module has no third-party Go dependencies, so the `gomod` Dependabot entry s
 | Python tests fail in CI only | CI uses Python 3.12 and 3.15 with `pipenv sync --dev`; locally you may be on 3.13 with a different venv. Check which matrix leg failed |
 | Qt tests fail in CI only | CI runs them headless with `QT_QPA_PLATFORM=offscreen`; run locally the same way |
 | `Lint` fails | A Pyflakes or pycodestyle error (unused import or variable, undefined name, bare `except`), or `%`/`.format()` formatting where an f-string is expected; run `venv/bin/ruff check` locally. The tests don't start until it passes |
+| `Type check` fails | Run `venv/bin/mypy` locally. Usually an unannotated empty list or dict at module or class level, or a PySide6 enum by its old short name (`Qt.AlignLeft` -> `Qt.AlignmentFlag.AlignLeft`). A package without type information goes in the `ignore_missing_imports` override, not a blanket setting |
 | `Format` fails | A file isn't black-clean; run `venv/bin/black .` and commit the result. The tests don't start until it passes |
 | `gofmt clean` fails | Run `make -C fsnp-server fmt` |
 | `go test -race` fails | A data race; see `fsl-debugging` |

@@ -13,6 +13,7 @@ description: 'Testing patterns for FS-UAE Launcher: pytest suites, Qt widget tes
 | `QT_QPA_PLATFORM=offscreen venv/bin/python -m pytest fsui/test` | Qt 6 environment, widgets, panels, themes, the Net Play tab | Yes (same workflows) |
 | `black --check .` | Formatting | Yes (`ci.yml`, before the tests) |
 | `ruff check` | Pyflakes and pycodestyle errors, string formatting (rules in `pyproject.toml`) | Yes (`ci.yml`, before the tests) |
+| `venv/bin/mypy` | Types, every package (`[tool.mypy]` in `pyproject.toml`) | Yes (`ci.yml`, `Type check`) |
 | `make -C fsnp-server check` | `gofmt -l`, `go vet`, `go test ./... -race -count=1` | Yes (`netplay-server.yml`) |
 | `make -C fsnp-server build` | The binary builds | Yes |
 | `venv/bin/python -m pytest -rs launcher/netplay` | The netplay tests, listing skip reasons | -- |
@@ -86,7 +87,7 @@ A skip is not a pass. After an API change, run with `-rs` and confirm the contra
 
 ## Self-check before declaring done
 
-- [ ] `black --check .`, `ruff check` and the Python suite pass.
+- [ ] `black --check .`, `ruff check`, `mypy` and the Python suite pass.
 - [ ] `fsui/test` passes if any UI, theme, panel, or `fsui` code changed. CI runs it, but run it locally before pushing.
 - [ ] `make -C fsnp-server check` passes if anything under `fsnp-server/` changed.
 - [ ] Contract tests ran (not skipped) if the lobby API changed.
