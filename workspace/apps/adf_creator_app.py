@@ -205,15 +205,12 @@ class ADFCreatorWindow(fsui.Window):
         self.show_success(gettext("Disk image created") + ": " + name)
 
     def create_adf(self, f):
-        s = Resources("fsgs").stream("res/amiga/adf.dat")
-        data = s.read()
-        data = zlib.decompress(data)
+        data = zlib.decompress(Resources("fsgs").read("res/amiga/adf.dat"))
         f.write(data)
 
     def create_extended_adf(self, f):
         # Workbench 3.1 does not like the adf_extended file, created by
         # WinUAE (must check why)
-        s = Resources("fsgs").stream("res/amiga/adf_save_disk.dat")
-        data = s.read()
+        data = Resources("fsgs").read("res/amiga/adf_save_disk.dat")
         data = zlib.decompress(data)
         f.write(data)

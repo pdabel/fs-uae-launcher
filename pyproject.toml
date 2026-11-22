@@ -17,3 +17,10 @@ select = ["E4", "E7", "E9", "F", "UP031", "UP032"]
 "fsui/qt/qt.py" = ["E402", "F401", "F403", "F405"]
 "fsui/qt/signal.py" = ["F401"]
 "fsbc/desktop.py" = ["F403"]
+
+[tool.pytest.ini_options]
+# A deprecated call into our own code fails the tests, wherever it runs;
+# deprecations raised by third-party packages stay warnings.
+filterwarnings = [
+    "error::DeprecationWarning:(fsbc|fsboot|fsgs|fspy|fstd|fsui|launcher|workspace)(\\.|$)",
+]

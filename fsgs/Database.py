@@ -44,9 +44,6 @@ class Database(BaseDatabase):
             cls.thread_local.database = cls(cls.SENTINEL)
         return cls.thread_local.database
 
-    def __del__(self):
-        print("Database.__del__")
-
     def get_files(self, ext=None):
         self.init()
         query = "SELECT path, name FROM file WHERE 1 = 1 "

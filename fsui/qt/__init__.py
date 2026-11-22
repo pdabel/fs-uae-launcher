@@ -1,6 +1,7 @@
 import traceback
 import queue
 
+from fsbc.signal import set_dispatch
 from fsui.res import gettext
 from fsui.qt.qt import (
     init_qt,
@@ -61,6 +62,10 @@ event_handler = EventHandler()
 
 def call_after(function, *args, **kwargs):
     event_handler.post_callback(function, *args, **kwargs)
+
+
+# Signals notified from other threads are delivered through call_after.
+set_dispatch(call_after)
 
 
 def call_later(duration, function, *args, **kwargs):

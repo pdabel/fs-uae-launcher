@@ -16,6 +16,25 @@ def imported_packages(path):
                 yield node.lineno, alias.name.split(".")[0]
         elif isinstance(node, ast.ImportFrom) and node.level == 0:
             yield node.lineno, node.module.split(".")[0]
+        elif isinstance(node, ast.Call) and is_dynamic_import(node):
+            yield node.lineno, node.args[0].value.split(".")[0]
+
+
+def is_dynamic_import(call):
+    """__import__("name") or importlib.import_module("name")."""
+    function = call.func
+    if isinstance(function, ast.Name):
+        name = function.id
+    elif isinstance(function, ast.Attribute):
+        name = function.attr
+    else:
+        return False
+    return (
+        name in ("__import__", "import_module")
+        and bool(call.args)
+        and isinstance(call.args[0], ast.Constant)
+        and isinstance(call.args[0].value, str)
+    )
 
 
 def upward_imports(package_dir, higher_packages):
@@ -33,3 +52,17 @@ def upward_imports(package_dir, higher_packages):
 
 def test_fsbc_does_not_import_higher_packages():
     assert upward_imports(FSBC_DIR, HIGHER_PACKAGES) == []
+
+
+def test_dynamic_imports_count(tmp_path):
+    source = tmp_path / "module.py"
+    source.write_text(
+        "import importlib\n"
+        'fsui = __import__("fsui")\n'
+        'launcher = importlib.import_module("launcher.apps")\n'
+    )
+    assert list(imported_packages(source)) == [
+        (1, "importlib"),
+        (2, "fsui"),
+        (3, "launcher"),
+    ]

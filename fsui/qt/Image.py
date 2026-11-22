@@ -16,14 +16,12 @@ class Image(object):
                 self.qimage.loadFromData(name.read())
             elif name.startswith("pkg://"):
                 parts = name.split("/", 3)
-                stream = Resources(parts[2]).stream(parts[3])
-                self.qimage.loadFromData(stream.read())
+                self.qimage.loadFromData(Resources(parts[2]).read(parts[3]))
             else:
                 index = name.find(":")
                 if index > 1:
                     package, file_ = name.split(":", 1)
-                    stream = Resources(package).stream(file_)
-                    self.qimage.loadFromData(stream.read())
+                    self.qimage.loadFromData(Resources(package).read(file_))
                 else:
                     print("loading image from", name)
                     self.qimage.load(name)

@@ -118,9 +118,9 @@ class InputDevice(object):
     def get_config_files():
         print("get_config_files")
         configs = {}
-        input_stream = Resources("fsgs").stream("res/input/manifest.txt")
+        manifest = Resources("fsgs").read("res/input/manifest.txt")
         print("opened input manifest")
-        for line in input_stream.read().split(b"\n"):
+        for line in manifest.split(b"\n"):
             line = line.decode("UTF-8")
             path = line.strip()
             if not path:
@@ -182,8 +182,8 @@ class InputDevice(object):
         if path.startswith("fsgs:"):
             print("reading config from stream", path)
             input_stream = Resources("fsgs").stream(path.split(":", 1)[1])
-            input_stream = io.TextIOWrapper(input_stream, "UTF-8")
-            cp.read_file(input_stream)
+            with io.TextIOWrapper(input_stream, "UTF-8") as f:
+                cp.read_file(f)
         else:
             cp.read(path)
         if cp.has_option("device", "type"):

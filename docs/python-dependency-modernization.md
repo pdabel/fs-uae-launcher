@@ -165,16 +165,25 @@ and frozen artifacts have not been certified by these local checks.
 
 - [x] Establish a scoped Ruff UP032 consistency gate in `pyproject.toml` and
   CI. Broader lint and formatter migration remains a separate task.
-- [ ] Migrate internal `get_window()` calls to the `window` property and
+- [x] Migrate internal `get_window()` calls to the `window` property and
   resolve the deprecation warning before removing the compatibility method.
+  Resolved the other way: `get_window()` is the accessor every fsui
+  container has (`Window`, `LegacyDialog`, `Group`, and the widgets built on
+  Qt classes, which can't have a `window` property without hiding
+  `QWidget.window()`), so it can't be removed. `Widget.get_window()` no
+  longer warns; `window` stays as an alias on `Widget` and `Window`.
 - [ ] Add CI checks for formatting, linting, and the project's existing
   type-checking approach. Begin with changed files or a documented baseline
   so legacy findings do not obscure new regressions.
 - [ ] Adopt typing incrementally at module and public API boundaries. Use
   modern built-in generic and union syntax only after the declared minimum
   Python version supports it; do not bulk-rewrite syntax without tests.
-- [ ] Enable deprecation warnings in focused test jobs and resolve warnings
+- [x] Enable deprecation warnings in focused test jobs and resolve warnings
   from Python and maintained dependencies before they become removals.
+  CI's Python suite runs with `-W default::DeprecationWarning`, and
+  `pyproject.toml`'s pytest `filterwarnings` makes a DeprecationWarning from
+  the project's own packages an error in every test run. Third-party
+  deprecations stay warnings, so a dependency release can't fail the build.
 
 ## Completion Criteria
 

@@ -41,9 +41,6 @@ class BaseDatabase(object):
         self._internal_cursor = None
         self.connection = None
 
-    def __del__(self):
-        print("BaseDatabase.__del__")
-
     def __enter__(self):
         return self
 

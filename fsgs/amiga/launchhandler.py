@@ -415,8 +415,7 @@ class LaunchHandler(object):
         save_image = max_image + 1
 
         if self.config.get("save_disk", "") != "0":
-            s = Resources("fsgs", "res").stream("amiga/adf_save_disk.dat")
-            data = s.read()
+            data = Resources("fsgs", "res").read("amiga/adf_save_disk.dat")
             data = zlib.decompress(data)
             save_disk = os.path.join(self.temp_dir, "Save Disk.adf")
             with open(save_disk, "wb") as f:

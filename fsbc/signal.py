@@ -1,10 +1,20 @@
 import threading
 import traceback
 from weakref import ref
-from typing import Dict, List, Any, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 main_thread_id = threading.current_thread().ident
 _signal_id = 0
+
+# How a notification from another thread reaches the main thread. fsui
+# installs its call_after; until then, such notifications wait in
+# Signal.notifications.
+_dispatch: Optional[Callable[[Callable[[], None]], None]] = None
+
+
+def set_dispatch(function):
+    global _dispatch
+    _dispatch = function
 
 
 def new_signal_id():
@@ -106,13 +116,12 @@ class Signal:
         else:
             with Signal.lock:
                 Signal.notifications.append((self.signal, args))
-            # FIXME: this is just a hack, fsui.call_after should be
-            # replaced with an Application-specified callback function
-            try:
-                fsui = __import__("fsui")
-                fsui.call_after(Signal.process_all_signals)
-            except AttributeError:
-                pass
+            if _dispatch is not None:
+                try:
+                    _dispatch(Signal.process_all_signals)
+                except AttributeError:
+                    # No Qt application to post to yet.
+                    pass
 
     @classmethod
     def process_all_signals(cls):
