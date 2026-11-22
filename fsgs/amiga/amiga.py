@@ -1,6 +1,19 @@
 from typing import Any, Dict, List
 
-from fsgs.amiga.roms import *
+from fsgs.amiga.roms import (
+    A1000_KICKSTARTS,
+    A1200_3_0_KICKSTARTS,
+    A1200_3_1_KICKSTARTS,
+    A3000_KICKSTARTS,
+    A4000_KICKSTARTS,
+    A500_KICKSTARTS,
+    A500P_KICKSTARTS,
+    A600_KICKSTARTS,
+    CD32_EXT_ROMS,
+    CD32_KICKSTARTS,
+    CDTV_EXT_ROMS,
+    CDTV_KICKSTARTS,
+)
 
 
 class Amiga(object):

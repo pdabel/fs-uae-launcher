@@ -88,28 +88,6 @@ class GameNameUtil(object):
         return False
 
     @classmethod
-    def extract_platform(cls, path):
-        p = path.upper()
-        n = os.path.basename(p)
-        for alias, platform in GamePlatform.aliases.items():
-            if "(" + alias + "," in n:
-                return platform
-            if "(" + alias + ")" in n:
-                return platform
-        while os.path.dirname(p) != p:
-            p = os.path.dirname(p)
-            n = os.path.basename(p)
-            for alias, platform in GamePlatform.aliases.items():
-                if "(" + alias + "," in n:
-                    return platform
-                if "(" + alias + ")" in n:
-                    return platform
-            if n in GamePlatform.aliases:
-                return GamePlatform.aliases[n]
-        print("extract_platform returning None for", path)
-        return None
-
-    @classmethod
     def find_base_name(cls, path):
         name = os.path.basename(path)
         pos_list = [name.find("("), name.find("["), name.rfind("."), len(name)]
@@ -385,7 +363,7 @@ class GameNameUtil(object):
             try:
                 add_words = normalize_words[word]
                 print(" - replacement", word, "=>", add_words)
-            except:
+            except Exception:
                 add_words = [word]
 
             for add_word in add_words:

@@ -6,11 +6,14 @@ target-version = "py312"
 line-length = 79
 
 [tool.ruff.lint]
-select = ["F401", "F811", "F841", "UP031", "UP032"]
+# Ruff's defaults (pycodestyle errors and Pyflakes), plus string formatting.
+select = ["E4", "E7", "E9", "F", "UP031", "UP032"]
 
 [tool.ruff.lint.per-file-ignores]
-# Package re-exports. fsui/qt/qt.py is re-exported whole through
-# "from fsui.qt.qt import *", and fsui/qt/signal.py re-exports Signal.
-"__init__.py" = ["F401"]
-"fsui/qt/qt.py" = ["F401"]
+# Package re-exports. fsui/qt/qt.py is the Qt import surface, re-exported
+# whole through "from fsui.qt.qt import *" after QtPy picks the binding;
+# fsui/qt/signal.py re-exports Signal and fsbc/desktop.py fstd.desktop.
+"__init__.py" = ["F401", "F403"]
+"fsui/qt/qt.py" = ["E402", "F401", "F403", "F405"]
 "fsui/qt/signal.py" = ["F401"]
+"fsbc/desktop.py" = ["F403"]

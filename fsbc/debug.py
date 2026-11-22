@@ -34,7 +34,7 @@ def _enable_thread_exception_handler():
         self = threading.current_thread()
         try:
             self._run_()
-        except:
+        except BaseException:
             _handle_exception(*sys.exc_info())
 
     def set_ident(self):
@@ -57,11 +57,11 @@ def _handle_exception(exc_type, exc_value, exc_traceback):
     filename, line, function, dummy = tb.pop()
     try:
         filename = filename.decode(sys.getfilesystemencoding())
-    except:
+    except Exception:
         pass
     try:
         filename = str(filename)
-    except:
+    except Exception:
         pass
     filename = os.path.basename(filename)
     thread = threading.current_thread()

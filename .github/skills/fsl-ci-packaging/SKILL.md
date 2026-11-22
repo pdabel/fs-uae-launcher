@@ -9,10 +9,10 @@ description: 'CI workflows, Dependabot, release flow, and packaging for FS-UAE L
 
 ```text
 ci.yml  (push to main/release-*, PRs to main/release-*, dispatch)
-  check-python-format    ruff check (pinned ruff, rules in pyproject.toml)
-  -> linux-test.yml      Python 3.12 + 3.15 matrix: apt deps, pipenv sync --dev, test_python_support.py,
+  lint                   ruff check (ruff pinned as in Pipfile, rules in pyproject.toml)
+  -> linux-test.yml      needs lint. Python 3.12 + 3.15 matrix: apt deps, pipenv sync --dev, test_python_support.py,
                          the Python suite, then fsui/test, both with QT_QPA_PLATFORM=offscreen
-  -> macos-test.yml      same on macOS; installs Go with setup-go from fsnp-server/go.mod
+  -> macos-test.yml      needs lint; same on macOS; installs Go with setup-go from fsnp-server/go.mod
   -> linux.yml           needs test-linux; called with run-tests: false. fsbuild/version -> bootstrap ->
                          configure -> build -> bundle -> archive, upload (not on PRs)
   -> macos.yml           needs test-macos; same shape on macOS
@@ -82,7 +82,7 @@ The module has no third-party Go dependencies, so the `gomod` Dependabot entry s
 | --- | --- |
 | Python tests fail in CI only | CI uses Python 3.12 and 3.15 with `pipenv sync --dev`; locally you may be on 3.13 with a different venv. Check which matrix leg failed |
 | Qt tests fail in CI only | CI runs them headless with `QT_QPA_PLATFORM=offscreen`; run locally the same way |
-| `ruff check` fails | An unused import or variable, or `%`/`.format()` formatting where an f-string is expected; run `ruff check` locally |
+| `Lint` fails | A Pyflakes or pycodestyle error (unused import or variable, undefined name, bare `except`), or `%`/`.format()` formatting where an f-string is expected; run `venv/bin/ruff check` locally. The tests don't start until it passes |
 | `gofmt clean` fails | Run `make -C fsnp-server fmt` |
 | `go test -race` fails | A data race; see `fsl-debugging` |
 | PyInstaller bundle missing a module | Hidden import; add it to the spec or the entry script's dummy imports |
