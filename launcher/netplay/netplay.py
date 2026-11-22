@@ -209,7 +209,7 @@ class Netplay:
 
     def begin_session(self, client, game_id, slot, player_token, **host):
         """Follow a lobby game; host passes host_token and sync_keys."""
-        self.end_session()
+        self.end_session(keep_config=True)
         self.session = NetplaySession(
             client,
             game_id,
@@ -248,10 +248,14 @@ class Netplay:
             LauncherSettings.set(key, "")
         return result
 
-    def end_session(self):
+    def end_session(self, keep_config=False):
         """Leave the current game. One that hasn't started is ended — by a
         host, for everyone. A running game carries on: it belongs to the
-        players' FS-UAE now (see NetplaySession.leave)."""
+        players' FS-UAE now (see NetplaySession.leave).
+
+        The game's __netplay_* keys are cleared, or the next Start would
+        launch a single-player game as this one. begin_session keeps them:
+        the new game has already set its own."""
         session, self.session = self.session, None
         self.session_title = None
         self.session_server = None
@@ -263,6 +267,8 @@ class Netplay:
             self.session_hosted = False
             session.leave()
             self.notify_session()
+        if not keep_config:
+            self.reset_netplay_config()
 
     def leave_game(self):
         """The panel's Leave (or End game, for a host)."""

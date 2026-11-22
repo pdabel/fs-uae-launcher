@@ -565,14 +565,13 @@ class LauncherApp(ApplicationMixin, fsui.Application):
             if remove_key in config:
                 del config[remove_key]
 
-        # overwrite netplay config
-
-        if config.get("__netplay_host", ""):
-            config["netplay_server"] = config["__netplay_host"]
-        if config.get("__netplay_password", ""):
-            config["netplay_password"] = config["__netplay_password"]
-        if config.get("__netplay_port", ""):
-            config["netplay_port"] = config["__netplay_port"]
+        # A netplay game tells FS-UAE its own server, password and port,
+        # empty ones included, so nothing older in the config survives.
+        # Outside one, keys set by hand for FS-UAE's netplay stay.
+        if config.get("__netplay_game", ""):
+            config["netplay_server"] = config.get("__netplay_host", "")
+            config["netplay_password"] = config.get("__netplay_password", "")
+            config["netplay_port"] = config.get("__netplay_port", "")
 
         # copy actual kickstart options from x_ options
 
