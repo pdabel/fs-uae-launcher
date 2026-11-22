@@ -1,0 +1,5 @@
+# Commits that only reformat code. GitHub's blame view skips them; for
+# git blame, run once: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Format the whole tree with black and check it before the tests (#174)
+0cb866858b5cdec1e2e762cb775fab86cfb05bca
