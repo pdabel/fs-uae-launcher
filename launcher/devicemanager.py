@@ -308,9 +308,7 @@ class DeviceManager:
             mode = config.get(f"{platform}_port_{port}_type")
             if not mode:
                 try:
-                    option = Option.get(
-                        f"{platform}_port_{port}_type"
-                    )
+                    option = Option.get(f"{platform}_port_{port}_type")
                     mode = option["default"]
                 except KeyError:
                     # FIXME: How to handle?

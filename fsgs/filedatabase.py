@@ -270,16 +270,14 @@ class FileDatabase(BaseDatabase):
         try:
             cursor.execute("SELECT count(*) FROM file")
         except sqlite3.OperationalError:
-            cursor.execute(
-                """CREATE TABLE file (
+            cursor.execute("""CREATE TABLE file (
                     id INTEGER PRIMARY KEY,
                     sha1 BLOB,
                     path TEXT,
                     size INTEGER,
                     mtime INTEGER,
                     parent INTEGER
-                    )"""
-            )
+                    )""")
             cursor.execute("CREATE INDEX file_sha1 ON file(sha1)")
             cursor.execute("CREATE INDEX file_path ON file(path)")
             cursor.execute("CREATE INDEX file_parent ON file(parent)")

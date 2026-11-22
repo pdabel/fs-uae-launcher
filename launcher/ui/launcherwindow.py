@@ -194,7 +194,9 @@ class LauncherWindow(WindowWithTabs):
         self.move_to_preferred_screen()
         geometry = self.real_window().screen().availableGeometry()
         self.real_window().setMinimumSize(1000, 720)
-        self.set_size((min(1920, geometry.width()), min(1040, geometry.height())))
+        self.set_size(
+            (min(1920, geometry.width()), min(1040, geometry.height()))
+        )
         self.center_on_screen()
         self.configurations_panel.text_field.focus()
         self.maximize()

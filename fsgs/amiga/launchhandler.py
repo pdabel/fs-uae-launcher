@@ -100,9 +100,9 @@ class LaunchHandler(object):
         self.change_handler = GameChangeHandler(self.temp_dir)
 
         self.config["cdroms_dir"] = FSGSDirectories.get_cdroms_dir()
-        self.config[
-            "configurations_dir"
-        ] = FSGSDirectories.get_configurations_dir()
+        self.config["configurations_dir"] = (
+            FSGSDirectories.get_configurations_dir()
+        )
         self.config["controllers_dir"] = FSGSDirectories.get_controllers_dir()
         self.config["hard_drives_dir"] = FSGSDirectories.get_hard_drives_dir()
         self.config["kickstarts_dir"] = FSGSDirectories.get_kickstarts_dir()
@@ -288,14 +288,30 @@ class LaunchHandler(object):
             if not dest_name:
                 if os.path.isdir(src):
                     try:
-                        entries = [e for e in os.listdir(src) if not e.startswith('.')]
+                        entries = [
+                            e for e in os.listdir(src) if not e.startswith(".")
+                        ]
                     except Exception:
                         entries = []
-                    files = [e for e in entries if os.path.isfile(os.path.join(src, e))]
+                    files = [
+                        e
+                        for e in entries
+                        if os.path.isfile(os.path.join(src, e))
+                    ]
                     if len(files) == 1:
                         dest_name = files[0]
                     else:
-                        preferred_exts = ['.rom', '.adf', '.hd', '.iso', '.cue', '.zip', '.lha', '.7z', '.rp9']
+                        preferred_exts = [
+                            ".rom",
+                            ".adf",
+                            ".hd",
+                            ".iso",
+                            ".cue",
+                            ".zip",
+                            ".lha",
+                            ".7z",
+                            ".rp9",
+                        ]
                         for ext in preferred_exts:
                             for f_name in files:
                                 if f_name.lower().endswith(ext):
@@ -1094,7 +1110,9 @@ class LaunchHandler(object):
         config = self.create_config()
         if self.use_relative_paths:
             process, config_file = FSUAE.start_with_config(
-                config, cwd=self.temp_dir, monitor=self.config.get("monitor", "")
+                config,
+                cwd=self.temp_dir,
+                monitor=self.config.get("monitor", ""),
             )
         else:
             process, config_file = FSUAE.start_with_config(

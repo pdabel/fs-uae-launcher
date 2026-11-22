@@ -148,8 +148,7 @@ class DisplaySettingsPanel(fsui.Panel):
 
     def on_g_sync_setting(self, value):
         self.video_sync_group.value_control.enable(
-            value != "1"
-            and LauncherConfig.game_overrides_available()
+            value != "1" and LauncherConfig.game_overrides_available()
         )
 
     def on_monitor_config(self, value):

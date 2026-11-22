@@ -4,7 +4,12 @@ import time
 
 import qtawesome as qta
 from qtpy.QtCore import QEvent, QRect, Qt
-from qtpy.QtWidgets import QStyle, QStyledItemDelegate, QStyleOptionViewItem, QToolTip
+from qtpy.QtWidgets import (
+    QStyle,
+    QStyledItemDelegate,
+    QStyleOptionViewItem,
+    QToolTip,
+)
 
 from fsgs.Database import Database
 from fsgs.platform import PlatformHandler
@@ -28,12 +33,18 @@ class ConfigurationItemDelegate(QStyledItemDelegate):
             super().paint(painter, option, index)
             return
         style = browser.style()
-        style.drawPrimitive(QStyle.PE_PanelItemViewItem, option, painter, browser)
+        style.drawPrimitive(
+            QStyle.PE_PanelItemViewItem, option, painter, browser
+        )
         text_option = QStyleOptionViewItem(option)
         text_option.rect.adjust(0, 0, -32, 0)
         super().paint(painter, text_option, index)
         selected = bool(option.state & QStyle.State_Selected)
-        color = option.palette.highlightedText().color() if selected else option.palette.text().color()
+        color = (
+            option.palette.highlightedText().color()
+            if selected
+            else option.palette.text().color()
+        )
         icon = qta.icon("fa5s.trash-alt", color=color.name())
         rect = self.delete_rect(option.rect)
         icon_rect = QRect(0, 0, 16, 16)
@@ -117,12 +128,18 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
         if index is None or not 0 <= index < len(self.items):
             return False
         item = self.items[index]
-        return not item["uuid"] and bool(item["path"]) and item["path"].lower().endswith(".fs-uae")
+        return (
+            not item["uuid"]
+            and bool(item["path"])
+            and item["path"].lower().endswith(".fs-uae")
+        )
 
     def delete_index_at(self, position):
         index = self.indexAt(position)
         if index.isValid() and self.can_delete_configuration(index.row()):
-            rect = ConfigurationItemDelegate.delete_rect(self.visualRect(index))
+            rect = ConfigurationItemDelegate.delete_rect(
+                self.visualRect(index)
+            )
             if rect.contains(position):
                 return index.row()
         return None
@@ -154,8 +171,15 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
         super().mouseDoubleClickEvent(event)
 
     def viewportEvent(self, event):
-        if event.type() == QEvent.ToolTip and self.delete_index_at(event.pos()) is not None:
-            QToolTip.showText(event.globalPos(), gettext("Delete Configuration"), self.viewport())
+        if (
+            event.type() == QEvent.ToolTip
+            and self.delete_index_at(event.pos()) is not None
+        ):
+            QToolTip.showText(
+                event.globalPos(),
+                gettext("Delete Configuration"),
+                self.viewport(),
+            )
             return True
         return super().viewportEvent(event)
 
@@ -176,32 +200,52 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
         if not self.can_delete_configuration(index):
             return
         if Scanner.running:
-            fsui.show_error(gettext("Wait for the database scan to finish before deleting a configuration."), gettext("Delete Configuration"), parent=self)
+            fsui.show_error(
+                gettext(
+                    "Wait for the database scan to finish before deleting a configuration."
+                ),
+                gettext("Delete Configuration"),
+                parent=self,
+            )
             return
         item = self.items[index]
         database = Database.get_instance()
         path = database.decode_path(item["path"])
         answer = QMessageBox.question(
-            QParent(self), gettext("Delete Configuration"),
+            QParent(self),
+            gettext("Delete Configuration"),
             gettext(
                 "Permanently delete this configuration file?\n\n{path}\n\n"
                 "Game disks, ROMs, and save data will not be deleted. "
                 "If this configuration is open, its unsaved changes will also be discarded."
             ).format(path=path),
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
         )
         if answer != QMessageBox.Yes:
             return
         if Scanner.running:
-            fsui.show_error(gettext("Wait for the database scan to finish before deleting a configuration."), gettext("Delete Configuration"), parent=self)
+            fsui.show_error(
+                gettext(
+                    "Wait for the database scan to finish before deleting a configuration."
+                ),
+                gettext("Delete Configuration"),
+                parent=self,
+            )
             return
         try:
             ConfigurationScanner.delete_configuration(database, path)
         except (OSError, sqlite3.Error, ValueError) as error:
-            fsui.show_error(str(error), gettext("Unable to delete configuration"), parent=self)
+            fsui.show_error(
+                str(error),
+                gettext("Unable to delete configuration"),
+                parent=self,
+            )
             return
         active_path = LauncherSettings.get("config_path")
-        if active_path and os.path.normcase(os.path.abspath(active_path)) == os.path.normcase(os.path.abspath(path)):
+        if active_path and os.path.normcase(
+            os.path.abspath(active_path)
+        ) == os.path.normcase(os.path.abspath(path)):
             LauncherConfig.load_default_config()
             LauncherSettings.set("parent_uuid", "")
         LauncherSettings.set("__config_deleted", str(time.time_ns()))
@@ -237,11 +281,18 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
                     LauncherConfig.load_default_config()
         elif key == "__config_deleted":
             index = self.get_index()
-            selected = self.items[index] if index is not None and 0 <= index < len(self.items) else None
+            selected = (
+                self.items[index]
+                if index is not None and 0 <= index < len(self.items)
+                else None
+            )
             self.update_search()
             if selected is not None:
                 for index, item in enumerate(self.items):
-                    if item["uuid"] == selected["uuid"] and item["path"] == selected["path"]:
+                    if (
+                        item["uuid"] == selected["uuid"]
+                        and item["path"] == selected["path"]
+                    ):
                         selection = self.selectionModel()
                         blocked = selection.blockSignals(True)
                         try:
@@ -320,9 +371,7 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
         elif item[str("have")] == 4:
             if platform_id not in self.platform_icons:
                 try:
-                    icon = fsui.Image(
-                        f"launcher:res/16x16/{platform_id}.png"
-                    )
+                    icon = fsui.Image(f"launcher:res/16x16/{platform_id}.png")
                 except Exception:
                     icon = self.game_icon
                 self.platform_icons[platform_id] = icon

@@ -65,9 +65,7 @@ class ListsSynchronizer(SynchronizerBase):
                     break
             else:
                 # this old list should be removed
-                self.set_status(
-                    gettext(f"Removing list {existing_list_uuid}")
-                )
+                self.set_status(gettext(f"Removing list {existing_list_uuid}"))
                 self.remove_list(database, existing_list_uuid)
 
         database.commit()

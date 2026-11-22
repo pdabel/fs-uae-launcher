@@ -174,7 +174,9 @@ def test_base_edit_is_written_to_config_and_override_remains_in_database(
     LauncherConfig.set("monitor", "edited-monitor")
     SaveButton.save_config()
 
-    assert "monitor = edited-monitor" in (tmp_path / "Example.fs-uae").read_text()
+    assert (
+        "monitor = edited-monitor" in (tmp_path / "Example.fs-uae").read_text()
+    )
     assert store.get(LauncherConfig.game_override_identity()) == {
         "monitor": "other-monitor"
     }
@@ -218,12 +220,14 @@ def test_context_notified_after_load_and_even_unchanged_edits(game_config):
     context, _, _ = game_config
     LauncherConfig.apply_game_overrides()
     assert context.signal.notify.call_args.args == (
-        "config", ("__game_override_context", "")
+        "config",
+        ("__game_override_context", ""),
     )
     LauncherConfig.set_game_override("monitor", "base-monitor")
     LauncherConfig.clear_game_override("monitor")
     events = [
-        call.args for call in context.signal.notify.call_args_list
+        call.args
+        for call in context.signal.notify.call_args_list
         if call.args == ("config", ("__game_override_context", ""))
     ]
     assert len(events) == 3

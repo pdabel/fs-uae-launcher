@@ -3,7 +3,6 @@ import re
 import unicodedata
 import itertools
 
-
 QUOTED_TERMS_RE = re.compile('["].*?["]')
 
 

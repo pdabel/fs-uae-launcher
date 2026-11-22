@@ -58,7 +58,9 @@ class PortableModeChange:
                 )
             if (
                 not self.enabled
-                and self.normal_path.parent.resolve().is_relative_to(self.destination)
+                and self.normal_path.parent.resolve().is_relative_to(
+                    self.destination
+                )
             ):
                 raise OSError(
                     "Choose a folder that does not contain the data-folder preference."

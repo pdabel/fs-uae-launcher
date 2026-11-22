@@ -91,9 +91,7 @@ def create_option_group(
         )
     elif use_label:
         group.option_label = fsui.Label(group, option_text + ":")
-        group.layout.add(
-            group.option_label, margin_right=label_spacing
-        )
+        group.layout.add(group.option_label, margin_right=label_spacing)
 
     choice_values = []
 

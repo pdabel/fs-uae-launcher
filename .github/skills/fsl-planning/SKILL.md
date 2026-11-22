@@ -42,7 +42,7 @@ description: 'Task planning and approach strategy for FS-UAE Launcher. Use when 
 
 | Condition | Required action | Verification |
 | --- | --- | --- |
-| Any Python change | Python suite and lint pass | `venv/bin/python -m pytest fsbc fstd fspy fsgs/tests fsbuild/tests launcher/netplay launcher/server/tests launcher/tests`; `ruff check` |
+| Any Python change | Format, lint and the Python suite pass | `venv/bin/black --check .`; `venv/bin/ruff check`; `venv/bin/python -m pytest fsbc fstd fspy fsgs/tests fsbuild/tests launcher/netplay launcher/server/tests launcher/tests` |
 | UI, panel, theme, or `fsui` change | Qt tests pass | `QT_QPA_PLATFORM=offscreen venv/bin/python -m pytest fsui/test` |
 | Any `fsnp-server` change | Go checks pass | `make -C fsnp-server check` |
 | Config-hash change | Both suites read the regenerated fixture | Python `test_checksum_golden.py` and Go `confighash_test.go` pass |
@@ -88,4 +88,3 @@ Branches here are often published as a stack of PRs, one per commit.
 - Testing only the default Modern Dark theme.
 - Adding a lobby request field whose absence doesn't mean the old behaviour, so an older lobby or launcher misreads it.
 - Running `pipenv run` and committing an accidental `Pipfile.lock` re-lock.
-- Reformatting a whole legacy file with black inside a behaviour change.

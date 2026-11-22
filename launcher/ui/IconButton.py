@@ -19,12 +19,13 @@ class IconButton(ImageButton):
 
     def _apply_modern_icon(self, name):
         if fsui.theme_variant == "modern" and name in (
-            "16x16/information.png", "info.png"
+            "16x16/information.png",
+            "info.png",
         ):
             import qtawesome as qta
             from fsui.qt import QSize, modern_theme
 
-            self.widget().setIcon(qta.icon(
-                "fa5s.info-circle", color=modern_theme.palette().icon
-            ))
+            self.widget().setIcon(
+                qta.icon("fa5s.info-circle", color=modern_theme.palette().icon)
+            )
             self.widget().setIconSize(QSize(18, 18))

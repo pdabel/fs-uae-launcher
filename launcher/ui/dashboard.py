@@ -2,15 +2,27 @@ import fsui
 from fsui.qt import modern_theme
 from fsui.qt.qt import theme_applied
 from fsui.qt import (
-    Qt, QSize, QButtonGroup, QFrame, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QSizePolicy, QSplitter, QStyle, QToolButton, QVBoxLayout,
-    QWidget, QPoint, QStackedWidget,
+    Qt,
+    QSize,
+    QButtonGroup,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QSplitter,
+    QStyle,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+    QPoint,
+    QStackedWidget,
 )
 from launcher.i18n import gettext
 from launcher.launcher_settings import LauncherSettings
 from launcher.ui.navigation_icons import navigation_icon
 from launcher.ui.play_tile import PlayTile
-
 
 MODERN_STYLESHEET = """
             QWidget#dashboard { background: @window@; }
@@ -193,8 +205,12 @@ class Dashboard(fsui.Panel):
             self.netplay_button.setIcon(self._icon(QStyle.SP_DriveNetIcon))
             for button, icon in self._extra_icons:
                 button.setIcon(self._icon(icon))
-            self.library_toggle.setIcon(self._icon(QStyle.SP_FileDialogContentsView))
-            self.edit_toggle.setIcon(self._icon(QStyle.SP_FileDialogDetailedView))
+            self.library_toggle.setIcon(
+                self._icon(QStyle.SP_FileDialogContentsView)
+            )
+            self.edit_toggle.setIcon(
+                self._icon(QStyle.SP_FileDialogDetailedView)
+            )
             self.play_tile.restyle_icons()
 
     def _toggle_editor(self, checked):
@@ -206,7 +222,8 @@ class Dashboard(fsui.Panel):
         for panel in (self.owner.books[1], self.owner.books[2]):
             widget = panel.widget()
             widget.setMinimumSize(
-                max(280, panel.get_min_width()), max(100, panel.get_min_height())
+                max(280, panel.get_min_width()),
+                max(100, panel.get_min_height()),
             )
 
     def _icon(self, standard_icon):
@@ -245,9 +262,11 @@ class Dashboard(fsui.Panel):
         self.nav_group = QButtonGroup(frame)
         self.nav_buttons = []
         self._extra_icons = []
-        icon_size = QSize(24, 24) if fsui.theme_variant in (
-            "windows311", "workbench"
-        ) else QSize(20, 20)
+        icon_size = (
+            QSize(24, 24)
+            if fsui.theme_variant in ("windows311", "workbench")
+            else QSize(20, 20)
+        )
         for index, (title, icon) in enumerate(self.PAGES):
             button = QPushButton(
                 self._icon(icon), gettext(title).replace("&", "&&")
@@ -391,7 +410,11 @@ class Dashboard(fsui.Panel):
 
     def _tools(self):
         menu = self.owner.create_menu()
-        menu.qmenu.exec(self.navigation.mapToGlobal(QPoint(16, self.navigation.height() - 60)))
+        menu.qmenu.exec(
+            self.navigation.mapToGlobal(
+                QPoint(16, self.navigation.height() - 60)
+            )
+        )
 
     def _toggle_library(self, checked):
         self.library.setVisible(checked)

@@ -89,7 +89,7 @@ Unverified -> don't write it. **Verified** means a call site you read, command o
 | Missing negative test on a non-security path | Non-blocking |
 | New user-visible string not wrapped in `gettext` | Non-blocking |
 | Naming or duplication | Non-blocking, only with a concrete drift scenario; otherwise drop |
-| Formatting, import order, black/gofmt style | Drop -- tooling owns it. Exception: a whole legacy file reformatted inside a behaviour change is Non-blocking (hides the real diff) |
+| Formatting, import order, black/gofmt style | Drop -- tooling owns it: CI's `Format` job and `gofmt` in `netplay-server.yml` |
 | "Could be better" with no failure mode | Drop |
 
 ### Tie-breaks

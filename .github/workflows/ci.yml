@@ -31,21 +31,33 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
-      # The same version as Pipfile's dev-packages.
-      - run: python -m pip install ruff==0.17.5
+      # Pipfile.lock's version, which Dependabot keeps current.
+      - run: python -m pip install "ruff$(jq -r .develop.ruff.version Pipfile.lock)"
       - run: ruff check --output-format=github
+
+  format:
+    name: Format
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      # Pipfile.lock's version, which Dependabot keeps current.
+      - run: python -m pip install "black$(jq -r .develop.black.version Pipfile.lock)"
+      - run: black --check --diff .
 
   test-linux:
     name: Test Linux
     uses: ./.github/workflows/linux-test.yml
-    needs: [lint]
+    needs: [lint, format]
     permissions:
       contents: read
 
   test-macos:
     name: Test macOS
     uses: ./.github/workflows/macos-test.yml
-    needs: [lint]
+    needs: [lint, format]
     permissions:
       contents: read
 

@@ -3,6 +3,7 @@ from fsui.extra.iconheader import IconHeader
 from launcher.ui.skin import LauncherTheme
 from launcher.ui.widgets import CloseButton
 
+
 class InfoDialog(fsui.Window):
     def __init__(self, parent):
         app_name = "Netplay Info"

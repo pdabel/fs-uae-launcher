@@ -57,7 +57,9 @@ class LauncherApp(ApplicationMixin, fsui.Application):
             from launcher.scanner import Scanner
 
             if Scanner.running:
-                raise OSError("Wait for the database scan to finish before changing portable mode.")
+                raise OSError(
+                    "Wait for the database scan to finish before changing portable mode."
+                )
             portable_change.validate()
         arguments = [sys.executable]
         if not getattr(sys, "frozen", False):
@@ -102,7 +104,9 @@ class LauncherApp(ApplicationMixin, fsui.Application):
                     ) from error
                 finally:
                     progress.close()
-                self._restart_arguments[-1] = "--base-dir=" + str(change.destination)
+                self._restart_arguments[-1] = "--base-dir=" + str(
+                    change.destination
+                )
             os.execv(self._restart_arguments[0], self._restart_arguments)
 
     def on_idle(self):
@@ -224,14 +228,9 @@ class LauncherApp(ApplicationMixin, fsui.Application):
             values.update(fsgs.config.config_from_argv())
             max_drives = int(values.get("floppy_drive_count", "4"))
             values.update(
-                {
-                    f"floppy_drive_{k}": v
-                    for k, v in enum_paths[:max_drives]
-                }
+                {f"floppy_drive_{k}": v for k, v in enum_paths[:max_drives]}
             )
-            values.update(
-                {f"floppy_image_{k}": v for k, v in enum_paths[:20]}
-            )
+            values.update({f"floppy_image_{k}": v for k, v in enum_paths[:20]})
             # FIXME: Generate a better config name for save dir?
             values["__config_name"] = "Default"
             return cls.run_config_directly_with_values(values)
@@ -242,14 +241,9 @@ class LauncherApp(ApplicationMixin, fsui.Application):
             values.update(fsgs.config.config_from_argv())
             max_drives = int(values.get("cdrom_drive_count", "1"))
             values.update(
-                {
-                    f"cdrom_drive_{k}": v
-                    for k, v in enum_paths[:max_drives]
-                }
+                {f"cdrom_drive_{k}": v for k, v in enum_paths[:max_drives]}
             )
-            values.update(
-                {f"cdrom_image_{k}": v for k, v in enum_paths[:20]}
-            )
+            values.update({f"cdrom_image_{k}": v for k, v in enum_paths[:20]})
             # FIXME: Generate a better config name for save dir?
             values["__config_name"] = "Default"
             return cls.run_config_directly_with_values(values)
@@ -414,9 +408,7 @@ class LauncherApp(ApplicationMixin, fsui.Application):
             netplay.session is not None or netplay.joining is not None
         ):
             # A netplay game starts by itself once every player is ready.
-            fsui.show_warning(
-                netplay.start_requested(), gettext("Net Play")
-            )
+            fsui.show_warning(netplay.start_requested(), gettext("Net Play"))
         else:
             cls.start_local_game()
 
@@ -459,9 +451,7 @@ class LauncherApp(ApplicationMixin, fsui.Application):
         if platform_id in AMIGA_PLATFORMS:
             cls.start_local_game_amiga()
         else:
-            fsui.show_error(
-                f"Unsupported platform: {platform_id or '(none)'}"
-            )
+            fsui.show_error(f"Unsupported platform: {platform_id or '(none)'}")
 
     @classmethod
     def start_local_game_amiga(cls):

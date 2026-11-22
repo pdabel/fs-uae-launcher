@@ -124,7 +124,13 @@ def test_listing_round_trip(lobby):
         games = {g["id"]: g for g in after["games"]}
         assert unlisted["id"] not in games
         g = games[listed["id"]]
-        assert (g["title"], g["host"], g["state"], g["players"], g["joined"]) == (
+        assert (
+            g["title"],
+            g["host"],
+            g["state"],
+            g["players"],
+            g["joined"],
+        ) == (
             "Sensible Soccer",
             "HST",
             "created",
@@ -148,7 +154,10 @@ def test_a_watcher_sees_a_new_game(lobby):
             seen.set()
 
     watcher = ServerWatcher(
-        lobby, "m-watch", lambda: "Sam", on_listing,
+        lobby,
+        "m-watch",
+        lambda: "Sam",
+        on_listing,
         lambda state, error, retry_in: states.append(state),
     )
     watcher.start()
@@ -168,11 +177,17 @@ def test_a_watcher_sees_a_new_game(lobby):
 def test_auto_start(lobby):
     created = lobby.create_game(1, "", "HST", SYNC, CHECKSUM, auto_start=True)
     reply = lobby.set_config(
-        created["id"], created["host_token"], {"amiga_model": "A500", "chip_memory": "512"}
+        created["id"],
+        created["host_token"],
+        {"amiga_model": "A500", "chip_memory": "512"},
     )
     lobby.report_ready(
-        created["id"], 0, created["player_token"],
-        reply["config_version"], reply["hash"], {},
+        created["id"],
+        0,
+        created["player_token"],
+        reply["config_version"],
+        reply["hash"],
+        {},
     )
     assert lobby.game(created["id"])["state"] == "running"
     lobby.end(created["id"], created["host_token"])

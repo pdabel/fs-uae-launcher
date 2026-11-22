@@ -24,14 +24,16 @@ def test_portable_data_location(tmp_path, monkeypatch, relative):
 
 @pytest.mark.parametrize(
     "environment,expected",
-    [({}, None),
-     ({"LC_ALL": "fr_FR.UTF-8", "LANG": "de_DE.UTF-8"}, "fr_FR"),
-     ({"LC_CTYPE": "UTF-8"}, None),
-     ({"LANG": "C"}, None),
-    ({"LANG": "C.UTF-8"}, locale.normalize("C.UTF-8").split(".", 1)[0]),
-     ({"LANGUAGE": "de_DE:fr_FR"}, "de_DE"),
-     ({"LANG": "sr_RS.UTF-8@latin"}, "sr_RS"),
-     ({"LANG": "de_DE@euro"}, "de_DE")],
+    [
+        ({}, None),
+        ({"LC_ALL": "fr_FR.UTF-8", "LANG": "de_DE.UTF-8"}, "fr_FR"),
+        ({"LC_CTYPE": "UTF-8"}, None),
+        ({"LANG": "C"}, None),
+        ({"LANG": "C.UTF-8"}, locale.normalize("C.UTF-8").split(".", 1)[0]),
+        ({"LANGUAGE": "de_DE:fr_FR"}, "de_DE"),
+        ({"LANG": "sr_RS.UTF-8@latin"}, "sr_RS"),
+        ({"LANG": "de_DE@euro"}, "de_DE"),
+    ],
 )
 def test_default_language(monkeypatch, environment, expected):
     for variable in ("LC_ALL", "LC_CTYPE", "LANG", "LANGUAGE"):

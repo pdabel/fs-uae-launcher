@@ -204,7 +204,13 @@ def test_watcher_thread_is_a_daemon():
 def test_create_game_listed():
     c, s = client(FakeResponse(201, {"id": "g1"}))
     c.create_game(
-        2, "", "HST", ["a"], ["a"], listed=True, title="Speedball 2",
+        2,
+        "",
+        "HST",
+        ["a"],
+        ["a"],
+        listed=True,
+        title="Speedball 2",
         auto_start=True,
     )
     body = s.requests[0]["json"]

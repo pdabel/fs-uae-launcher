@@ -3,7 +3,6 @@ import sqlite3
 import threading
 import fsbc.settings
 
-
 global_database_lock = threading.Lock()
 
 
@@ -87,7 +86,7 @@ class BaseDatabase(object):
         return self.connection.cursor()
 
     def create_cursor(self):
-        """"
+        """ "
         :deprecated:
         """
         return self.cursor()

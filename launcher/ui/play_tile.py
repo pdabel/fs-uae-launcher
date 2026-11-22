@@ -6,7 +6,13 @@ whose state is remembered in launcher settings.
 """
 
 from fsui.qt import (
-    QFrame, QHBoxLayout, QLabel, QPushButton, QSizePolicy, QTimer, QVBoxLayout,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QTimer,
+    QVBoxLayout,
     Qt,
 )
 from launcher.i18n import gettext
@@ -48,7 +54,9 @@ class PlayTile(QFrame):
         self.play_button.setObjectName("playButton")
         self.play_button.setMinimumSize(132, 56)
         self.play_button.setCursor(Qt.PointingHandCursor)
-        self.play_button.setToolTip(gettext("Start the selected game or configuration"))
+        self.play_button.setToolTip(
+            gettext("Start the selected game or configuration")
+        )
         self.play_button.clicked.connect(self.on_play)
         layout.addWidget(self.play_button)
         LauncherSettings.add_listener(self)
@@ -80,7 +88,9 @@ class PlayTile(QFrame):
         if not running:
             self._progress = ""
         self.play_button.setEnabled(not running)
-        self.play_button.setText(gettext("Running") if running else gettext("Play"))
+        self.play_button.setText(
+            gettext("Running") if running else gettext("Play")
+        )
         self._update_subtitle()
 
     def on___progress_config(self, value):
@@ -102,7 +112,9 @@ class PlayTile(QFrame):
         elif LauncherSettings.get("config_path"):
             self.subtitle.setText(gettext("Your saved configuration"))
         else:
-            self.subtitle.setText(gettext("Pick a game from the library below"))
+            self.subtitle.setText(
+                gettext("Pick a game from the library below")
+            )
         self.subtitle.setToolTip(self.subtitle.text())
 
     def play_icon(self):

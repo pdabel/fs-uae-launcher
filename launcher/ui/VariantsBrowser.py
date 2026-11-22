@@ -132,12 +132,12 @@ class VariantsBrowser(fsui.ItemChoice):
             name = variant["name"]
 
             game_database = fsgs.game_database(variant["database"])
-            variant["like_rating"], variant[
-                "work_rating"
-            ] = game_database.get_ratings_for_game(variant["uuid"])
-            variant[
-                "personal_rating"
-            ], ignored = database.get_ratings_for_game(variant["uuid"])
+            variant["like_rating"], variant["work_rating"] = (
+                game_database.get_ratings_for_game(variant["uuid"])
+            )
+            variant["personal_rating"], ignored = (
+                database.get_ratings_for_game(variant["uuid"])
+            )
 
             if variant["published"] == 0:
                 primary_sort = 1

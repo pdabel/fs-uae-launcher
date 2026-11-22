@@ -254,9 +254,7 @@ class LaunchDialog(fsui.Window):
                     print("[PROGRESS]", progress)
                 else:
                     self.sub_title_label.set_text(progress)
-                LauncherConfig.set(
-                    "__progress", f"Preparing: {progress}"
-                )
+                LauncherConfig.set("__progress", f"Preparing: {progress}")
 
         fsui.call_after(function)
 

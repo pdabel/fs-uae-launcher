@@ -1,5 +1,3 @@
-
-
 class Element:
     def __init__(self, parent, delay_create=False):
         self.parent = parent

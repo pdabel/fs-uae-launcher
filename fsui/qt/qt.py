@@ -93,8 +93,7 @@ class ThemeListeners:
 
     def disconnect(self, method):
         self._refs = [
-            ref for ref in self._refs
-            if ref() is not None and ref() != method
+            ref for ref in self._refs if ref() is not None and ref() != method
         ]
 
     def notify(self):
@@ -193,15 +192,16 @@ def theme_default_point_size(launcher_theme):
         from fsui.qt.retro_theme import default_font_size
 
         size = default_font_size(variant)
-    return size or QFontDatabase.systemFont(
-        QFontDatabase.GeneralFont
-    ).pointSize()
+    return (
+        size or QFontDatabase.systemFont(QFontDatabase.GeneralFont).pointSize()
+    )
 
 
 def apply_launcher_theme(qapplication, launcher_theme, font_size=""):
     """Apply a theme to a running application; unknown names mean Fusion."""
     fusion_variant, skin = resolve_launcher_theme(launcher_theme) or (
-        "plain", ""
+        "plain",
+        "",
     )
     qapplication.setStyleSheet("")
     qapplication.setStyle(QStyleFactory.create("Fusion"))

@@ -1,7 +1,6 @@
 from weakref import ref
 from .qt import Qt, QSignal
 
-
 _windows = set()
 
 

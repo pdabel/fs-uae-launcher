@@ -13,4 +13,6 @@ class EditButton(WebButton):
         variant_uuid = LauncherConfig.get("variant_uuid", "")
         if not variant_uuid:
             return
-        return f"{openretro_url_prefix()}/game/{variant_uuid}/edit#{variant_uuid}"
+        return (
+            f"{openretro_url_prefix()}/game/{variant_uuid}/edit#{variant_uuid}"
+        )

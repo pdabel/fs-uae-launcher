@@ -474,8 +474,7 @@ class Database(BaseDatabase):
 
     def update_database_to_version_39(self):
         cursor = self.internal_cursor()
-        cursor.execute(
-            """CREATE TABLE game (
+        cursor.execute("""CREATE TABLE game (
                 id INTEGER PRIMARY KEY,
                 uuid TEXT,
                 name TEXT,
@@ -498,12 +497,10 @@ class Database(BaseDatabase):
                 adult INTEGER,
                 published INTEGER,
                 update_stamp INTEGER
-        )"""
-        )
+        )""")
         cursor.execute("CREATE INDEX game_uuid ON game(uuid)")
         cursor.execute("CREATE INDEX game_sort_key ON game(sort_key)")
-        cursor.execute(
-            """CREATE TABLE game_variant (
+        cursor.execute("""CREATE TABLE game_variant (
                 id INTEGER PRIMARY KEY,
                 database TEXT,
                 uuid TEXT,
@@ -514,8 +511,7 @@ class Database(BaseDatabase):
                 have INTEGER,
                 published INTEGER,
                 update_stamp INTEGER
-        )"""
-        )
+        )""")
         cursor.execute("CREATE INDEX game_variant_uuid ON game_variant(uuid)")
         cursor.execute(
             "CREATE INDEX game_variant_game_uuid " "ON game_variant(game_uuid)"
@@ -527,47 +523,35 @@ class Database(BaseDatabase):
         cursor.execute(
             "ALTER TABLE metadata ADD COLUMN last_file_delete INTEGER"
         )
-        cursor.execute(
-            """CREATE TABLE search_term (
+        cursor.execute("""CREATE TABLE search_term (
                 game INTEGER,
                 term TEXT
-        )"""
-        )
-        cursor.execute(
-            """
+        )""")
+        cursor.execute("""
             CREATE TABLE rating (
                 game_uuid VARCHAR(36) PRIMARY KEY NOT NULL,
                 work_rating INT NOT NULL,
                 like_rating INT NOT NULL,
                 updated TIMESTAMP NULL
             );
-        """
-        )
-        cursor.execute(
-            """CREATE TABLE last_variant (
+        """)
+        cursor.execute("""CREATE TABLE last_variant (
             game_uuid CHAR(36) PRIMARY KEY,
             variant_uuid CHAR(36) NOT NULL
-            )"""
-        )
-        cursor.execute(
-            """CREATE TABLE game_list (
+            )""")
+        cursor.execute("""CREATE TABLE game_list (
             uuid CHAR(36) PRIMARY KEY,
             name TEXT,
             sync VARCHAR(36)
-            )"""
-        )
-        cursor.execute(
-            """CREATE TABLE game_list_game (
+            )""")
+        cursor.execute("""CREATE TABLE game_list_game (
             list_uuid CHAR(36),
             game_uuid CHAR(36),
             variant_uuid CHAR(36),
             position DOUBLE
-            )"""
-        )
-        cursor.execute(
-            """CREATE INDEX game_list_game_list_uuid
-            ON  game_list_game(list_uuid)"""
-        )
+            )""")
+        cursor.execute("""CREATE INDEX game_list_game_list_uuid
+            ON  game_list_game(list_uuid)""")
 
     def update_database_to_version_40(self):
         cursor = self.internal_cursor()

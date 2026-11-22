@@ -19,6 +19,7 @@ from launcher.ui.behaviors.platformbehavior import (
 )
 from fsgs.amiga.amiga import Amiga
 
+
 class MediaListGroup(fsui.Group):
     def __init__(self, parent, cd_mode):
         fsui.Group.__init__(self, parent)

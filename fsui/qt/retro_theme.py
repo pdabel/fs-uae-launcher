@@ -2,13 +2,13 @@ from pathlib import Path
 
 from qtpy.QtGui import QColor, QFont, QFontDatabase, QPalette
 
-
 RETRO_FONT_SIZE = 10
 
 
 def font_candidates(workbench):
     return (
-        ("Liberation Mono", "DejaVu Sans Mono", "Courier New") if workbench
+        ("Liberation Mono", "DejaVu Sans Mono", "Courier New")
+        if workbench
         else ("Liberation Sans", "DejaVu Sans", "Tahoma")
     )
 
@@ -17,7 +17,8 @@ def default_font_size(variant):
     """Point size the theme sets, or 0 when none of its fonts is installed."""
     families = QFontDatabase.families()
     found = any(
-        family in families for family in font_candidates(variant == "workbench")
+        family in families
+        for family in font_candidates(variant == "workbench")
     )
     return RETRO_FONT_SIZE if found else 0
 
@@ -132,5 +133,7 @@ def apply_retro_theme(application, variant):
         """
     for key, value in colors.items():
         stylesheet = stylesheet.replace("@" + key + "@", value)
-    stylesheet = stylesheet.replace("@icons@", (Path(__file__).parent / "res").as_posix())
+    stylesheet = stylesheet.replace(
+        "@icons@", (Path(__file__).parent / "res").as_posix()
+    )
     application.setStyleSheet(stylesheet)

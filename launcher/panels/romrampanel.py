@@ -60,7 +60,9 @@ class KickstartGroup(fsui.Panel):
         self.layout.add(hori_layout, fill=True)
 
         label = fsui.Label(self, gettext("Extended ROM") + ":")
-        label_width = max(kickstart_label.get_min_width(), label.get_min_width())
+        label_width = max(
+            kickstart_label.get_min_width(), label.get_min_width()
+        )
         kickstart_label.set_min_width(label_width)
         label.set_min_width(label_width)
         hori_layout.add(label, margin_left=10, margin_right=10)

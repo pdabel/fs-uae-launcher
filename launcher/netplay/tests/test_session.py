@@ -485,14 +485,16 @@ def test_host_preserves_missing_media_when_applying_config(changed):
     h.session._apply = apply
     h.session.start()
     h.executor.run_all()
-    h.session._handle({
-        "state": "configuring",
-        "config_version": 1,
-        "config": document,
-        "hash": "lobby-hash",
-        "keys": {"checksum": list(document)},
-        "slots": [],
-    })
+    h.session._handle(
+        {
+            "state": "configuring",
+            "config_version": 1,
+            "config": document,
+            "hash": "lobby-hash",
+            "keys": {"checksum": list(document)},
+            "slots": [],
+        }
+    )
     h.executor.run_all()
 
     pushes = h.client.named("set_config")
@@ -501,21 +503,27 @@ def test_host_preserves_missing_media_when_applying_config(changed):
     assert pushes[-1][-1]["chip_memory"] == ("1024" if changed else "512")
     assert any("floppy_drive_0" in warning for warning in h.warnings())
     if not changed:
-        assert h.client.named("report_ready")[0][-1] == {missing_key: requested}
+        assert h.client.named("report_ready")[0][-1] == {
+            missing_key: requested
+        }
         assert not h.session.sending_config
     else:
         published = dict(pushes[-1][-1])
-        h.session._handle({
-            "state": "configuring",
-            "config_version": 2,
-            "config": published,
-            "hash": "new-hash",
-            "keys": {"checksum": list(published)},
-            "slots": [],
-        })
+        h.session._handle(
+            {
+                "state": "configuring",
+                "config_version": 2,
+                "config": published,
+                "hash": "new-hash",
+                "keys": {"checksum": list(published)},
+                "slots": [],
+            }
+        )
         h.executor.run_all()
         assert len(h.client.named("set_config")) == 2
-        assert h.client.named("report_ready")[-1][-1] == {missing_key: requested}
+        assert h.client.named("report_ready")[-1][-1] == {
+            missing_key: requested
+        }
         assert not h.session.sending_config
 
     h.local[missing_key] = "e" * 40
@@ -539,12 +547,14 @@ def test_host_can_explicitly_clear_an_unresolved_media_slot():
     h.session._apply = apply
     h.session.start()
     h.executor.run_all()
-    h.session._handle({
-        "state": "configuring",
-        "config_version": 1,
-        "config": {**HOST_DOC, key: requested},
-        "slots": [],
-    })
+    h.session._handle(
+        {
+            "state": "configuring",
+            "config_version": 1,
+            "config": {**HOST_DOC, key: requested},
+            "slots": [],
+        }
+    )
     h.executor.run_all()
 
     h.session.config_changed(key)
@@ -732,7 +742,9 @@ def test_a_players_mismatch_names_the_keys_without_values():
                 "__netplay_password": "secret",
             },
             "hash": "lobby-hash",
-            "keys": {"checksum": ["joystick_port_1_mode", "__netplay_password"]},
+            "keys": {
+                "checksum": ["joystick_port_1_mode", "__netplay_password"]
+            },
         }
     )
     assert h.warnings() == [
