@@ -15,9 +15,13 @@ defaults:
   run:
     shell: bash
 
+# A newer push to a PR cancels its run. Runs on main and release-* are never
+# cancelled once started, so a merge publishes its artifacts and the edge
+# image; a newer push waits for the running one (of several waiting, only
+# the newest runs).
 concurrency:
   group: ${{ github.ref_name }}-ci
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -56,6 +60,7 @@ jobs:
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
+          cache: pipenv
       # The locked dev environment, so mypy sees what the code imports
       # (PySide6's stubs, pytest) at the versions the tests use.
       - run: python -m pip install pipenv
