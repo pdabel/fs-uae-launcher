@@ -81,7 +81,10 @@ class Signal:
     def disconnect(self, function):
         listener = Listener(self.signal, function)
         with self.lock:
-            listeners = Signal.signal_listeners[self.signal]
+            # Disconnecting what isn't connected is a no-op.
+            listeners = Signal.signal_listeners.get(self.signal)
+            if listeners is None:
+                return
             for i, v in enumerate(listeners):
                 if (
                     v.function == listener.function
@@ -90,7 +93,7 @@ class Signal:
                     del listeners[i]
                     break
 
-            if len(Signal.signal_listeners[self.signal]) == 0:
+            if len(listeners) == 0:
                 del Signal.signal_listeners[self.signal]
 
     def __call__(self, *args):
