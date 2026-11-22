@@ -108,3 +108,9 @@ jobs:
     uses: ./.github/workflows/agent-instructions.yml
     permissions:
       contents: read
+
+  dependency-audit:
+    name: Dependency Audit
+    uses: ./.github/workflows/dependency-audit.yml
+    permissions:
+      contents: read

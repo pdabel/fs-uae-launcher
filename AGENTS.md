@@ -54,7 +54,7 @@ Use `venv/bin/python -m pytest`, not `pipenv run pytest`: `pipenv run` can re-lo
 | `workspace/` | Workspace tool windows: ADF/HDF creators, joystick config, OpenRetro login |
 | `fsnp-server/` | Go module: `cmd/fsnp-server`, `internal/fsnp` (codec), `internal/game`, `internal/lobby` |
 | `fsbuild/` | Packaging scripts (PyInstaller, bundling, signing) used by CI |
-| `.github/workflows/` | CI: `ci.yml` runs the `Lint` (`ruff check`) and `Format` (`black --check`) jobs, then calls reusable `linux-test`/`macos-test` once both pass, plus `linux`/`macos` builds, `container`, `source`, `netplay-server` and `agent-instructions` workflows |
+| `.github/workflows/` | CI: `ci.yml` runs the `Lint` (`ruff check`) and `Format` (`black --check`) jobs, then calls reusable `linux-test`/`macos-test` once both pass, plus `linux`/`macos` builds, `container`, `source`, `netplay-server`, `agent-instructions` and `dependency-audit` (pip-audit on `Pipfile.lock`; also weekly) workflows |
 
 ---
 
