@@ -8,16 +8,16 @@ class _SpinBox(QSpinBox):
     def event(self, event):
         result = super().event(event)
         if event.type() in (
-            QEvent.Resize,
-            QEvent.Show,
-            QEvent.StyleChange,
-            QEvent.LayoutDirectionChange,
+            QEvent.Type.Resize,
+            QEvent.Type.Show,
+            QEvent.Type.StyleChange,
+            QEvent.Type.LayoutDirectionChange,
         ):
             # Qt 6.12 can place the editor outside the stylesheet padding.
             option = QStyleOptionFrame()
             option.initFrom(self)
             contents = self.style().subElementRect(
-                QStyle.SE_LineEditContents, option, self
+                QStyle.SubElement.SE_LineEditContents, option, self
             )
             # QLineEdit adds two pixels before its text; dropdowns do not.
             contents.setLeft(max(0, contents.left() - 2))

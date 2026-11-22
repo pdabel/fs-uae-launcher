@@ -78,10 +78,10 @@ class Widget(QObject):
         return metrics.horizontalAdvance(text), metrics.height()
 
     def set_hand_cursor(self):
-        self.widget().setCursor(Qt.PointingHandCursor)
+        self.widget().setCursor(Qt.CursorShape.PointingHandCursor)
 
     def set_normal_cursor(self):
-        self.widget().setCursor(Qt.ArrowCursor)
+        self.widget().setCursor(Qt.CursorShape.ArrowCursor)
 
     def is_enabled(self):
         return self.widget().isEnabled()
@@ -190,7 +190,7 @@ class Widget(QObject):
 
     def get_background_color(self):
         # noinspection PyUnresolvedReferences
-        return Color(self.widget().palette().color(QPalette.Window))
+        return Color(self.widget().palette().color(QPalette.ColorRole.Window))
 
     def set_background_color(self, color):
         widget = self.widget()

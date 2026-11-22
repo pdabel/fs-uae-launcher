@@ -34,12 +34,15 @@ class ConfigurationItemDelegate(QStyledItemDelegate):
             return
         style = browser.style()
         style.drawPrimitive(
-            QStyle.PE_PanelItemViewItem, option, painter, browser
+            QStyle.PrimitiveElement.PE_PanelItemViewItem,
+            option,
+            painter,
+            browser,
         )
         text_option = QStyleOptionViewItem(option)
         text_option.rect.adjust(0, 0, -32, 0)
         super().paint(painter, text_option, index)
-        selected = bool(option.state & QStyle.State_Selected)
+        selected = bool(option.state & QStyle.StateFlag.State_Selected)
         color = (
             option.palette.highlightedText().color()
             if selected
@@ -146,7 +149,7 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
 
     def mousePressEvent(self, event):
         index = self.delete_index_at(event.position().toPoint())
-        if event.button() == Qt.LeftButton and index is not None:
+        if event.button() == Qt.MouseButton.LeftButton and index is not None:
             self._delete_pressed = self.items[index]["path"]
             event.accept()
             return
@@ -157,7 +160,7 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
         pressed = self._delete_pressed
         self._delete_pressed = None
         index = self.delete_index_at(event.position().toPoint())
-        if event.button() == Qt.LeftButton and pressed is not None:
+        if event.button() == Qt.MouseButton.LeftButton and pressed is not None:
             if index is not None and self.items[index]["path"] == pressed:
                 self.delete_configuration(index)
             event.accept()
@@ -172,7 +175,7 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
 
     def viewportEvent(self, event):
         if (
-            event.type() == QEvent.ToolTip
+            event.type() == QEvent.Type.ToolTip
             and self.delete_index_at(event.pos()) is not None
         ):
             QToolTip.showText(
@@ -184,7 +187,10 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
         return super().viewportEvent(event)
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Delete and event.modifiers() == Qt.NoModifier:
+        if (
+            event.key() == Qt.Key.Key_Delete
+            and event.modifiers() == Qt.KeyboardModifier.NoModifier
+        ):
             index = self.get_index()
             if self.can_delete_configuration(index):
                 self.delete_configuration(index)
@@ -219,10 +225,10 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
                 "Game disks, ROMs, and save data will not be deleted. "
                 "If this configuration is open, its unsaved changes will also be discarded."
             ).format(path=path),
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
-        if answer != QMessageBox.Yes:
+        if answer != QMessageBox.StandardButton.Yes:
             return
         if Scanner.running:
             fsui.show_error(

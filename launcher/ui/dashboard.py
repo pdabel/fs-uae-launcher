@@ -147,7 +147,7 @@ class Dashboard(fsui.Panel):
         self.play_tile = PlayTile(owner)
         workspace_layout.addWidget(self.play_tile)
 
-        self.splitter = QSplitter(Qt.Horizontal)
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
         self.splitter.setChildrenCollapsible(False)
         self.splitter.setHandleWidth(16)
         self.library = self._section(gettext("Library"), "library")
@@ -337,7 +337,7 @@ class Dashboard(fsui.Panel):
         layout.addSpacing(12)
         badge = QLabel(gettext("LOCAL WORKSPACE"))
         badge.setObjectName("badge")
-        badge.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        badge.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         layout.addWidget(badge)
         layout.addSpacing(12)
         self.library_toggle = self._tool(
@@ -437,7 +437,7 @@ class Dashboard(fsui.Panel):
         if key == "config_name":
             metrics = self.configuration_name.fontMetrics()
             self.configuration_name.setText(
-                metrics.elidedText(value, Qt.ElideRight, 250)
+                metrics.elidedText(value, Qt.TextElideMode.ElideRight, 250)
             )
             self.configuration_name.setToolTip(value)
 

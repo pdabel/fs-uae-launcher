@@ -184,7 +184,7 @@ class LauncherWindow(WindowWithTabs):
         from launcher.ui.dashboard import Dashboard
 
         for child in self.real_widget().findChildren(
-            QWidget, options=Qt.FindDirectChildrenOnly
+            QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly
         ):
             child.hide()
         self.dashboard = Dashboard(self)

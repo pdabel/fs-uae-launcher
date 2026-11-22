@@ -32,7 +32,7 @@ def get_mouse_position():
 
 class CustomEvent(QEvent):
     def __init__(self):
-        QEvent.__init__(self, QEvent.User)
+        QEvent.__init__(self, QEvent.Type.User)
 
 
 class EventHandler(QObject):

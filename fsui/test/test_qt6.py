@@ -66,7 +66,7 @@ class TestQt6(WidgetTestCase):
         class ShowObserver(QObject):
             def eventFilter(self, watched, event):
                 if (
-                    event.type() == QEvent.Show
+                    event.type() == QEvent.Type.Show
                     and isinstance(watched, QWidget)
                     and watched.isWindow()
                 ):
@@ -399,17 +399,23 @@ class TestQt6(WidgetTestCase):
             self.assertTrue(indicator.isVisible())
             self.assertIs(indicator.selected, self.application.screens()[0])
             self.assertFalse(indicator.isWindow())
-            self.assertFalse(indicator.windowState() & Qt.WindowFullScreen)
+            self.assertFalse(
+                indicator.windowState() & Qt.WindowState.WindowFullScreen
+            )
             self.assertLessEqual(indicator.width(), 360)
             self.assertLessEqual(indicator.height(), 160)
             self.assertTrue(self.dialog.rect().contains(indicator.geometry()))
             self.assertTrue(
-                indicator.testAttribute(Qt.WA_TransparentForMouseEvents)
+                indicator.testAttribute(
+                    Qt.WidgetAttribute.WA_TransparentForMouseEvents
+                )
             )
             self.assertTrue(
-                indicator.testAttribute(Qt.WA_ShowWithoutActivating)
+                indicator.testAttribute(
+                    Qt.WidgetAttribute.WA_ShowWithoutActivating
+                )
             )
-            self.assertEqual(indicator.focusPolicy(), Qt.NoFocus)
+            self.assertEqual(indicator.focusPolicy(), Qt.FocusPolicy.NoFocus)
             self.assertIsNot(
                 self.dialog.childAt(indicator.geometry().center()), indicator
             )
@@ -500,13 +506,15 @@ class TestQt6(WidgetTestCase):
             self.assertTrue(group.performance_button.is_enabled())
             self.assertFalse(group.restore_button.is_enabled())
             with patch(
-                "fsui.qt.QMessageBox.question", return_value=QMessageBox.No
+                "fsui.qt.QMessageBox.question",
+                return_value=QMessageBox.StandardButton.No,
             ):
                 group.performance_button.widget().click()
             process_class.return_value.start.assert_not_called()
             self.assertIsNone(group.previous)
             with patch(
-                "fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes
+                "fsui.qt.QMessageBox.question",
+                return_value=QMessageBox.StandardButton.Yes,
             ):
                 group.performance_button.widget().click()
             process_class.return_value.start.assert_called_once_with(
@@ -524,13 +532,14 @@ class TestQt6(WidgetTestCase):
             self.assertTrue(group.busy)
             self.assertFalse(group.restore_button.is_enabled())
             read.return_value = performance
-            group.on_process_finished(0, process_class.NormalExit)
+            group.on_process_finished(0, process_class.ExitStatus.NormalExit)
             self.assertFalse(group.busy)
             self.assertTrue(group.restore_button.is_enabled())
             self.assertFalse(group.performance_button.is_enabled())
             self.assertEqual(group.previous, original)
             with patch(
-                "fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes
+                "fsui.qt.QMessageBox.question",
+                return_value=QMessageBox.StandardButton.Yes,
             ):
                 group.restore_button.widget().click()
             self.assertEqual(
@@ -538,7 +547,7 @@ class TestQt6(WidgetTestCase):
                 "powersave",
             )
             read.return_value = original
-            group.on_process_finished(0, process_class.NormalExit)
+            group.on_process_finished(0, process_class.ExitStatus.NormalExit)
             self.assertIsNone(group.previous)
             self.assertTrue(group.performance_button.is_enabled())
         self.run_dialog()
@@ -570,10 +579,11 @@ class TestQt6(WidgetTestCase):
             )
             group = CPUPerformanceGroup(self.dialog)
             with patch(
-                "fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes
+                "fsui.qt.QMessageBox.question",
+                return_value=QMessageBox.StandardButton.Yes,
             ):
                 group.performance_button.widget().click()
-            group.on_process_finished(126, process_class.NormalExit)
+            group.on_process_finished(126, process_class.ExitStatus.NormalExit)
             error.assert_called_once()
             self.assertFalse(group.busy)
             self.assertEqual(group.previous, original)
@@ -628,23 +638,24 @@ class TestQt6(WidgetTestCase):
             "launcher.cpu_performance.shutil.which",
             side_effect=lambda name: "/usr/bin/" + name,
         ), patch(
-            "fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes
+            "fsui.qt.QMessageBox.question",
+            return_value=QMessageBox.StandardButton.Yes,
         ), patch(
             "fsui.show_error"
         ) as error:
             group = CPUPerformanceGroup(self.dialog)
             group.performance_button.widget().click()
-            group.on_process_finished(0, process_class.NormalExit)
+            group.on_process_finished(0, process_class.ExitStatus.NormalExit)
             self.assertIn("not applied", error.call_args.args[0])
             self.assertEqual(group.previous, original)
             error.reset_mock()
             group.performance_button.widget().click()
             group.on_timeout()
             process_class.return_value.kill.assert_called_once()
-            group.on_process_error(process_class.Crashed)
+            group.on_process_error(process_class.ProcessError.Crashed)
             self.assertTrue(group.busy)
             error.assert_not_called()
-            group.on_process_finished(9, process_class.CrashExit)
+            group.on_process_finished(9, process_class.ExitStatus.CrashExit)
             self.assertIn("timed out", error.call_args.args[0])
             self.assertFalse(group.busy)
             self.assertEqual(group.previous, original)
@@ -684,12 +695,18 @@ class TestQt6(WidgetTestCase):
         try:
             apply_modern_theme(self.application)
             self.assertEqual(
-                self.application.palette().color(QPalette.Window).name(),
+                self.application.palette()
+                .color(QPalette.ColorRole.Window)
+                .name(),
                 "#171923",
             )
             self.assertGreater(
-                self.application.palette().color(QPalette.Text).lightness(),
-                self.application.palette().color(QPalette.Base).lightness(),
+                self.application.palette()
+                .color(QPalette.ColorRole.Text)
+                .lightness(),
+                self.application.palette()
+                .color(QPalette.ColorRole.Base)
+                .lightness(),
             )
         finally:
             self.application.setPalette(palette)
@@ -711,10 +728,10 @@ class TestQt6(WidgetTestCase):
         warning = WarningStatusElement(parent)
         warning.coordinates = []
         warning.warnings = [(0, "Warning message", "")]
-        icon = QImage(16, 16, QImage.Format_ARGB32)
+        icon = QImage(16, 16, QImage.Format.Format_ARGB32)
         icon.fill(QColor("#ff8800"))
         warning.icons = [fsui.Image(object=icon)]
-        image = QImage(320, 40, QImage.Format_ARGB32)
+        image = QImage(320, 40, QImage.Format.Format_ARGB32)
         image.fill(QColor("#171923"))
         painter = QPainter(image)
         try:
@@ -729,7 +746,7 @@ class TestQt6(WidgetTestCase):
                         ):
                             palette = element.widget().palette()
                             palette.setColor(
-                                QPalette.WindowText, QColor(color)
+                                QPalette.ColorRole.WindowText, QColor(color)
                             )
                             element.widget().setPalette(palette)
                             with patch.object(
@@ -866,7 +883,7 @@ class TestQt6(WidgetTestCase):
                                 spin.widget()
                                 .style()
                                 .subElementRect(
-                                    QStyle.SE_LineEditContents,
+                                    QStyle.SubElement.SE_LineEditContents,
                                     option,
                                     spin.widget(),
                                 )
@@ -878,9 +895,9 @@ class TestQt6(WidgetTestCase):
                                 combo_option = QStyleOptionComboBox()
                                 choice.initStyleOption(combo_option)
                                 combo_contents = choice.style().subControlRect(
-                                    QStyle.CC_ComboBox,
+                                    QStyle.ComplexControl.CC_ComboBox,
                                     combo_option,
-                                    QStyle.SC_ComboBoxEditField,
+                                    QStyle.SubControl.SC_ComboBoxEditField,
                                     choice,
                                 )
                                 self.assertEqual(
@@ -892,7 +909,7 @@ class TestQt6(WidgetTestCase):
                                     for control in (spin.widget(), choice):
                                         image = QImage(
                                             control.size(),
-                                            QImage.Format_ARGB32,
+                                            QImage.Format.Format_ARGB32,
                                         )
                                         image.fill(0)
                                         control.render(image)
@@ -960,7 +977,11 @@ class TestQt6(WidgetTestCase):
                 icon = navigation_icon("fa5s.save")
                 self.assertFalse(icon.isNull())
                 for extent in (20, 24, 48):
-                    for mode in (QIcon.Normal, QIcon.Selected, QIcon.Disabled):
+                    for mode in (
+                        QIcon.Mode.Normal,
+                        QIcon.Mode.Selected,
+                        QIcon.Mode.Disabled,
+                    ):
                         image = icon.pixmap(
                             QSize(extent, extent), mode
                         ).toImage()
@@ -1078,13 +1099,13 @@ class TestQt6(WidgetTestCase):
                         self.assertIs(modern_theme.palette(), skin)
                         self.assertEqual(
                             self.application.palette()
-                            .color(QPalette.Window)
+                            .color(QPalette.ColorRole.Window)
                             .name(),
                             skin.window,
                         )
                         self.assertEqual(
                             self.application.palette()
-                            .color(QPalette.Link)
+                            .color(QPalette.ColorRole.Link)
                             .name(),
                             skin.accent,
                         )
@@ -1255,13 +1276,13 @@ class TestQt6(WidgetTestCase):
                         self.assertEqual(fsui.theme_variant, variant)
                         self.assertEqual(
                             self.application.palette()
-                            .color(QPalette.Window)
+                            .color(QPalette.ColorRole.Window)
                             .name(),
                             background,
                         )
                         self.assertEqual(
                             self.application.palette()
-                            .color(QPalette.Highlight)
+                            .color(QPalette.ColorRole.Highlight)
                             .name(),
                             highlight,
                         )
@@ -1319,13 +1340,13 @@ class TestQt6(WidgetTestCase):
                         self.assertEqual(self.application.styleSheet(), "")
                         self.assertGreater(
                             self.application.palette()
-                            .color(QPalette.Window)
+                            .color(QPalette.ColorRole.Window)
                             .lightness(),
                             150,
                         )
                         self.assertLess(
                             self.application.palette()
-                            .color(QPalette.Text)
+                            .color(QPalette.ColorRole.Text)
                             .lightness(),
                             100,
                         )
@@ -1367,7 +1388,7 @@ class TestQt6(WidgetTestCase):
 
     def test_image_button(self):
         self.setup_dialog()
-        image = QImage(16, 16, QImage.Format_ARGB32)
+        image = QImage(16, 16, QImage.Format.Format_ARGB32)
         image.fill(fsui.Color(255, 0, 0))
         button = fsui.ImageButton(self.dialog, fsui.Image(object=image))
         calls = []
@@ -1425,8 +1446,10 @@ class TestQt6(WidgetTestCase):
     def test_modal_dialog(self):
         dialog = fsui.Dialog(title="Qt 6")
         dialog.center_on_screen()
-        QTimer.singleShot(0, lambda: dialog.end_modal(QDialog.Accepted))
-        self.assertEqual(dialog.show_modal(), QDialog.Accepted)
+        QTimer.singleShot(
+            0, lambda: dialog.end_modal(QDialog.DialogCode.Accepted)
+        )
+        self.assertEqual(dialog.show_modal(), QDialog.DialogCode.Accepted)
 
     def test_window_centering(self):
         window = fsui.Window(None, title="Qt 6")
@@ -1439,7 +1462,7 @@ class TestQt6(WidgetTestCase):
         window.close()
 
     def test_painting(self):
-        image = QImage(200, 100, QImage.Format_ARGB32)
+        image = QImage(200, 100, QImage.Format.Format_ARGB32)
         image.fill(fsui.Color(255, 255, 255))
         painter = QPainter(image)
         try:
@@ -1548,17 +1571,20 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     browser.visualRect(index)
                 )
                 with patch(
-                    "fsui.qt.QMessageBox.question", return_value=QMessageBox.No
+                    "fsui.qt.QMessageBox.question",
+                    return_value=QMessageBox.StandardButton.No,
                 ):
                     QTest.mouseClick(
-                        browser.viewport(), Qt.LeftButton, pos=rect.center()
+                        browser.viewport(),
+                        Qt.MouseButton.LeftButton,
+                        pos=rect.center(),
                     )
                     with patch(
                         "launcher.launcherapp.LauncherApp.start_game"
                     ) as start:
                         QTest.mouseDClick(
                             browser.viewport(),
-                            Qt.LeftButton,
+                            Qt.MouseButton.LeftButton,
                             pos=rect.center(),
                         )
                         start.assert_not_called()
@@ -1567,10 +1593,12 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 self.assertTrue(path.exists())
                 with patch(
                     "fsui.qt.QMessageBox.question",
-                    return_value=QMessageBox.Yes,
+                    return_value=QMessageBox.StandardButton.Yes,
                 ) as confirmation:
                     QTest.mouseClick(
-                        browser.viewport(), Qt.LeftButton, pos=rect.center()
+                        browser.viewport(),
+                        Qt.MouseButton.LeftButton,
+                        pos=rect.center(),
                     )
                 self.assertIn(str(path), confirmation.call_args.args[2])
                 delete.assert_called_once_with(database, str(path))
@@ -1610,7 +1638,8 @@ class TestLaunchAndNetplay(WidgetTestCase):
         ) as reset, patch(
             "launcher.ui.ConfigurationsBrowser.ConfigurationScanner.delete_configuration"
         ) as delete, patch(
-            "fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes
+            "fsui.qt.QMessageBox.question",
+            return_value=QMessageBox.StandardButton.Yes,
         ), patch(
             "launcher.scanner.Scanner.running", False
         ):
@@ -1656,7 +1685,8 @@ class TestLaunchAndNetplay(WidgetTestCase):
         ), patch(
             "launcher.ui.ConfigurationsBrowser.ConfigurationScanner.delete_configuration"
         ) as delete, patch(
-            "fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes
+            "fsui.qt.QMessageBox.question",
+            return_value=QMessageBox.StandardButton.Yes,
         ) as confirmation, patch(
             "fsui.show_error"
         ) as error, patch(
@@ -1677,7 +1707,7 @@ class TestLaunchAndNetplay(WidgetTestCase):
             browser.selectionModel().blockSignals(True)
             browser.select_item(0)
             browser.selectionModel().blockSignals(False)
-            QTest.keyClick(browser, Qt.Key_Delete)
+            QTest.keyClick(browser, Qt.Key.Key_Delete)
             self.assertEqual(delete.call_count, 2)
             with patch("launcher.scanner.Scanner.running", True):
                 browser.delete_configuration(0)
@@ -1873,7 +1903,7 @@ class TestLaunchAndNetplay(WidgetTestCase):
         text = fsui.TextArea(self.dialog)
         for color in ("#edf0f7", "#121212"):
             palette = text.palette()
-            palette.setColor(QPalette.Text, QColor(color))
+            palette.setColor(QPalette.ColorRole.Text, QColor(color))
             text.setPalette(palette)
             text.append_text("Joined channel", color=(64, 164, 64))
             text.append_text("Default colour", color=None)
@@ -1954,7 +1984,9 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 self.assertEqual(dialog.text_field.selectedText(), title)
                 dialog.reject()
                 dialog.deleteLater()
-                self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+                self.application.sendPostedEvents(
+                    None, QEvent.Type.DeferredDelete
+                )
         self.run_dialog()
 
     def test_lobby_servers_group(self):
@@ -3224,7 +3256,7 @@ class TestDashboard(WidgetTestCase):
             self.assertNotIn("A500", labels)
             self.assertEqual(group.model_choice.currentText(), "Amiga 500")
             tooltip = group.model_choice.itemData(
-                labels.index("Amiga 500"), Qt.ToolTipRole
+                labels.index("Amiga 500"), Qt.ItemDataRole.ToolTipRole
             )
             self.assertIn("most games", tooltip)
             self.assertIn("Technical: A500", tooltip)
@@ -3235,7 +3267,8 @@ class TestDashboard(WidgetTestCase):
             self.assertIn(
                 '512 KB "Slow" RAM',
                 group.sub_model_choice.itemData(
-                    group.sub_model_choice.currentIndex(), Qt.ToolTipRole
+                    group.sub_model_choice.currentIndex(),
+                    Qt.ItemDataRole.ToolTipRole,
                 ),
             )
             # Selecting by everyday name still stores the technical id.
@@ -3541,7 +3574,7 @@ class TestDashboard(WidgetTestCase):
                         self.assertEqual(fsui.theme_skin, skin)
                         self.assertEqual(
                             self.application.palette()
-                            .color(QPalette.Window)
+                            .color(QPalette.ColorRole.Window)
                             .name(),
                             expected.window,
                         )
@@ -3564,7 +3597,9 @@ class TestDashboard(WidgetTestCase):
                 set_setting("launcher_theme", "fusion-windows311")
                 self.assertEqual(fsui.theme_variant, "windows311")
                 self.assertEqual(
-                    self.application.palette().color(QPalette.Window).name(),
+                    self.application.palette()
+                    .color(QPalette.ColorRole.Window)
+                    .name(),
                     "#c0c0c0",
                 )
                 self.assertIn(
@@ -3734,8 +3769,8 @@ class TestDashboard(WidgetTestCase):
             first, second = model.item(0), model.item(1)
             self.assertEqual(first.sizeHint().height(), 44)
             self.assertEqual(first.font().pointSize(), 20)
-            self.assertGreaterEqual(first.font().weight(), QFont.Bold)
-            self.assertLess(second.font().weight(), QFont.Bold)
+            self.assertGreaterEqual(first.font().weight(), QFont.Weight.Bold)
+            self.assertLess(second.font().weight(), QFont.Weight.Bold)
             self.assertEqual(second.font().pointSize(), 20)
             apply_launcher_theme(self.application, "fusion-modern", "10")
             self.assertEqual(model.item(0).sizeHint().height(), 42)
@@ -3762,20 +3797,21 @@ class TestDashboard(WidgetTestCase):
                 page = LauncherSettingsPage(self.dialog)
                 self.assertFalse(page.restart_button.widget().icon().isNull())
                 with patch(
-                    "fsui.qt.QMessageBox.question", return_value=QMessageBox.No
+                    "fsui.qt.QMessageBox.question",
+                    return_value=QMessageBox.StandardButton.No,
                 ):
                     page.restart_button.widget().click()
                     application.request_restart.assert_not_called()
                 with patch(
                     "fsui.qt.QMessageBox.question",
-                    return_value=QMessageBox.Yes,
+                    return_value=QMessageBox.StandardButton.Yes,
                 ):
                     page.restart_button.widget().click()
                     application.request_restart.assert_called_once_with()
                 application.request_restart.side_effect = OSError("Disk full")
                 with patch(
                     "fsui.qt.QMessageBox.question",
-                    return_value=QMessageBox.Yes,
+                    return_value=QMessageBox.StandardButton.Yes,
                 ):
                     with patch("fsui.show_error") as show_error:
                         page.restart_button.widget().click()
@@ -3815,13 +3851,14 @@ class TestDashboard(WidgetTestCase):
                 "fsui.pick_directory", return_value="/example/portable"
             ):
                 with patch(
-                    "fsui.qt.QMessageBox.question", return_value=QMessageBox.No
+                    "fsui.qt.QMessageBox.question",
+                    return_value=QMessageBox.StandardButton.No,
                 ):
                     page.portable_checkbox.click()
                 application.request_restart.assert_not_called()
                 with patch(
                     "fsui.qt.QMessageBox.question",
-                    return_value=QMessageBox.Yes,
+                    return_value=QMessageBox.StandardButton.Yes,
                 ):
                     page.portable_checkbox.click()
                 application.request_restart.assert_called_once_with(
@@ -3835,7 +3872,7 @@ class TestDashboard(WidgetTestCase):
                     "fsui.pick_directory", return_value="/example/normal"
                 ), patch(
                     "fsui.qt.QMessageBox.question",
-                    return_value=QMessageBox.Yes,
+                    return_value=QMessageBox.StandardButton.Yes,
                 ):
                     page.portable_checkbox.click()
                 self.assertTrue(page.portable_checkbox.is_checked())
@@ -3995,7 +4032,7 @@ class TestDashboard(WidgetTestCase):
                         window.close()
                         window.real_window().deleteLater()
                         self.application.sendPostedEvents(
-                            None, QEvent.DeferredDelete
+                            None, QEvent.Type.DeferredDelete
                         )
 
     def test_modern_theme_option(self):

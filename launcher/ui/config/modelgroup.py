@@ -47,7 +47,7 @@ class ModelGroup(fsui.Group):
             self.model_choice.setItemData(
                 index,
                 f"{hint}\n{technical}" if hint else technical,
-                Qt.ToolTipRole,
+                Qt.ItemDataRole.ToolTipRole,
             )
         self.model_choice.set_tooltip(
             gettext("Which Amiga to emulate. Amiga 500 runs most games.")
@@ -184,7 +184,7 @@ class ModelGroup(fsui.Group):
         for index, title in enumerate(self.sub_model_titles):
             self.sub_model_choice.add_item(title)
             self.sub_model_choice.setItemData(
-                index, technical[index], Qt.ToolTipRole
+                index, technical[index], Qt.ItemDataRole.ToolTipRole
             )
         self.sub_model_technical = technical
         self.sub_model_choice.enable(

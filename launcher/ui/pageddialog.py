@@ -94,7 +94,9 @@ class PagedDialog(fsui.Window):
             self.list_view.set_min_width(216)
             self.list_view.set_row_height(42)
             self.list_view.setIconSize(QSize(20, 20))
-            self.list_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+            self.list_view.setHorizontalScrollBarPolicy(
+                Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+            )
             self.list_view.setStyleSheet(modern_theme.render("""
                 QListView { background: @nav@; color: @nav_text@;
                     border: 0; border-right: 1px solid @nav_border@;

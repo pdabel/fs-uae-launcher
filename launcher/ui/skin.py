@@ -21,13 +21,15 @@ class LauncherTheme(object):
         from fsui.qt import QPalette
 
         palette = QPalette()
-        self.sidebar_list_background = fsui.Color(palette.color(QPalette.Base))
+        self.sidebar_list_background = fsui.Color(
+            palette.color(QPalette.ColorRole.Base)
+        )
         self.sidebar_list_row_height = 28
         self.sidebar_list_row_text = fsui.Color(
-            palette.color(QPalette.HighlightedText)
+            palette.color(QPalette.ColorRole.HighlightedText)
         )
         self.sidebar_list_row_background = fsui.Color(
-            palette.color(QPalette.Highlight)
+            palette.color(QPalette.ColorRole.Highlight)
         )
 
     @property

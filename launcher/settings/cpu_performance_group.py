@@ -19,7 +19,7 @@ class CPUPerformanceGroup(fsui.Group):
         self.commands = []
         self.policies = ()
         self.status_label = fsui.MultiLineLabel(self, "", 640)
-        self.status_label._widget.setTextFormat(Qt.PlainText)
+        self.status_label._widget.setTextFormat(Qt.TextFormat.PlainText)
         self.status_label.set_tooltip(
             gettext(
                 "With Intel/AMD dynamic frequency drivers, 'powersave' does not "
@@ -41,7 +41,9 @@ class CPUPerformanceGroup(fsui.Group):
             button.setIcon(
                 qta.icon(
                     icon,
-                    color=button.palette().color(QPalette.ButtonText).name(),
+                    color=button.palette()
+                    .color(QPalette.ColorRole.ButtonText)
+                    .name(),
                 )
             )
         refresh = self.refresh_button.widget()
@@ -158,10 +160,10 @@ class CPUPerformanceGroup(fsui.Group):
             message
             + "\n\n"
             + gettext("Your system may ask for administrator approval."),
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
-        if answer != QMessageBox.Yes:
+        if answer != QMessageBox.StandardButton.Yes:
             return
         if not restore and self.previous is None:
             self.previous = current
@@ -199,7 +201,7 @@ class CPUPerformanceGroup(fsui.Group):
                     "Administrator approval timed out. Check the current governor and restore previous settings if needed."
                 )
             )
-        elif exit_code != 0 or exit_status != QProcess.NormalExit:
+        elif exit_code != 0 or exit_status != QProcess.ExitStatus.NormalExit:
             detail = (
                 bytes(self.process.readAllStandardError())
                 .decode("UTF-8", errors="replace")
@@ -215,7 +217,7 @@ class CPUPerformanceGroup(fsui.Group):
             self.run_next()
 
     def on_process_error(self, error):
-        if self.busy and error == QProcess.FailedToStart:
+        if self.busy and error == QProcess.ProcessError.FailedToStart:
             self.timeout.stop()
             self.complete(
                 gettext("Unable to run the CPU governor utility.")

@@ -25,10 +25,11 @@ def WindowBase(BaseClass):
             self.destroyed.connect(self.__destroyed)
             self.closed.connect(self.__closed)
             self._window = ref(self)
-            self.setAttribute(Qt.WA_DeleteOnClose, True)
+            self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
             if not border:
                 self.setWindowFlags(
-                    Qt.FramelessWindowHint | Qt.NoDropShadowWindowHint
+                    Qt.WindowType.FramelessWindowHint
+                    | Qt.WindowType.NoDropShadowWindowHint
                 )
             self._centered_on_initial_show = False
             if hasattr(self, "accepted"):
@@ -90,16 +91,16 @@ def WindowBase(BaseClass):
             self.setWindowTitle(title)
 
         def is_maximized(self):
-            return self.windowState() == Qt.WindowMaximized
+            return self.windowState() == Qt.WindowState.WindowMaximized
 
         def maximize(self, maximize=True):
             if maximize:
                 self.showMaximized()
             else:
-                self.setWindowState(Qt.WindowNoState)
+                self.setWindowState(Qt.WindowState.WindowNoState)
 
         def minimize(self):
-            self.setWindowState(Qt.WindowMinimized)
+            self.setWindowState(Qt.WindowState.WindowMinimized)
 
         def get_window_center(self):
             return self.x() + self.width() // 2, self.y() + self.height() // 2

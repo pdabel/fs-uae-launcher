@@ -25,23 +25,23 @@ class RealWindow(QMainWindow):
     ):
         super().__init__(parent)
 
-        flags = Qt.Window
+        flags = Qt.WindowType.Window
         if macosx:
-            flags &= ~Qt.WindowFullscreenButtonHint
+            flags &= ~Qt.WindowType.WindowFullscreenButtonHint
 
         if border:
-            flags |= Qt.CustomizeWindowHint
-            flags |= Qt.WindowCloseButtonHint
-            flags |= Qt.WindowTitleHint
+            flags |= Qt.WindowType.CustomizeWindowHint
+            flags |= Qt.WindowType.WindowCloseButtonHint
+            flags |= Qt.WindowType.WindowTitleHint
             if minimizable:
-                flags |= Qt.WindowMinimizeButtonHint
+                flags |= Qt.WindowType.WindowMinimizeButtonHint
             if maximizable:
-                flags |= Qt.WindowMaximizeButtonHint
+                flags |= Qt.WindowType.WindowMaximizeButtonHint
         else:
-            flags |= Qt.FramelessWindowHint
-            flags |= Qt.NoDropShadowWindowHint
+            flags |= Qt.WindowType.FramelessWindowHint
+            flags |= Qt.WindowType.NoDropShadowWindowHint
             if below:
-                flags |= Qt.WindowStaysOnBottomHint
+                flags |= Qt.WindowType.WindowStaysOnBottomHint
         self.setWindowFlags(flags)
 
         self._child = child
@@ -87,7 +87,7 @@ class RealWindow(QMainWindow):
         self.resize_to((size.width(), size.height()))
 
     def changeEvent(self, event):
-        if event.type() == QEvent.WindowStateChange:
+        if event.type() == QEvent.Type.WindowStateChange:
             self.child.on_resize()
         QMainWindow.changeEvent(self, event)
 
@@ -105,10 +105,10 @@ class RealWindow(QMainWindow):
             traceback.print_exc()
 
     def is_maximized(self):
-        return self.windowState() == Qt.WindowMaximized
+        return self.windowState() == Qt.WindowState.WindowMaximized
 
     def is_fullscreen(self):
-        return self.windowState() == Qt.WindowFullScreen
+        return self.windowState() == Qt.WindowState.WindowFullScreen
 
     def set_maximized(self, maximize=True, geometry=None):
         print("set_maximized", maximize)
@@ -119,7 +119,7 @@ class RealWindow(QMainWindow):
                 (self.size().width(), self.size().height()),
             )
         else:
-            self.setWindowState(Qt.WindowNoState)
+            self.setWindowState(Qt.WindowState.WindowNoState)
 
     def set_fullscreen(self, fullscreen=True, geometry=None):
         print("set_fullscreen", fullscreen)
@@ -141,10 +141,10 @@ class RealWindow(QMainWindow):
                 (self.size().width(), self.size().height()),
             )
         else:
-            self.setWindowState(Qt.WindowNoState)
+            self.setWindowState(Qt.WindowState.WindowNoState)
 
     def minimize(self):
-        self.setWindowState(Qt.WindowMinimized)
+        self.setWindowState(Qt.WindowState.WindowMinimized)
 
 
 # noinspection PyProtectedMember
@@ -212,7 +212,9 @@ class Window(QObject):
         self.close_listeners = []
         self.destroyed.connect(self.__destroyed)
 
-        self._real_window.setAttribute(Qt.WA_DeleteOnClose, True)
+        self._real_window.setAttribute(
+            Qt.WidgetAttribute.WA_DeleteOnClose, True
+        )
 
         self.center_on_show = True
         self._centered_on_initial_show = False

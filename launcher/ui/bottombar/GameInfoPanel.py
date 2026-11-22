@@ -250,7 +250,9 @@ class GameInfoPanel(BottomPanel):
         dc.set_font(font)
         dc.set_text_color(modern_color("text"))
         dc.draw_text(
-            metrics.elidedText(self.title, fsui.Qt.ElideRight, text_width),
+            metrics.elidedText(
+                self.title, fsui.Qt.TextElideMode.ElideRight, text_width
+            ),
             16,
             48,
         )
@@ -261,10 +263,16 @@ class GameInfoPanel(BottomPanel):
             value for value in (self.year, self.companies) if value
         )
         dc.draw_text(
-            metrics.elidedText(details, fsui.Qt.ElideRight, text_width), 16, 80
+            metrics.elidedText(
+                details, fsui.Qt.TextElideMode.ElideRight, text_width
+            ),
+            16,
+            80,
         )
         dc.draw_text(
-            metrics.elidedText(self.sub_title, fsui.Qt.ElideRight, text_width),
+            metrics.elidedText(
+                self.sub_title, fsui.Qt.TextElideMode.ElideRight, text_width
+            ),
             16,
             112,
         )
