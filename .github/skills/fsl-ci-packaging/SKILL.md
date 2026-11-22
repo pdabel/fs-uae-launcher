@@ -17,7 +17,8 @@ ci.yml  (push to main/release-*, PRs to main/release-*, dispatch)
   -> linux.yml           needs test-linux; called with run-tests: false. fsbuild/version -> bootstrap ->
                          configure -> build -> bundle -> archive, upload (not on PRs)
   -> macos.yml           needs test-macos; same shape on macOS
-  -> container.yml       buildx fsnp-server/Dockerfile (target base) -> ghcr.io/<owner>/fs-uae-netplay; push not on PRs
+  -> container.yml       buildx fsnp-server/Dockerfile (target base) for linux/amd64, arm64, arm/v7 on every run ->
+                         ghcr.io/<owner>/fs-uae-netplay; pushes edge from main only, never on PRs
   -> source.yml          source bundle
   -> netplay-server.yml  make -C fsnp-server check, then make -C fsnp-server build
   -> agent-instructions.yml  fails if .github/copilot-instructions.md differs from AGENTS.md
@@ -57,7 +58,9 @@ The test workflows are `workflow_call` only. The build workflows are `workflow_c
 
 ## fsnp-server Image
 
-- `fsnp-server/Dockerfile`: build stage `FROM --platform=$BUILDPLATFORM golang:<ver>-alpine`, cross-compiles with `GOOS`/`GOARCH` from `TARGETOS`/`TARGETARCH`, so no QEMU step. Final stage `FROM scratch AS base`, numeric uid 101, one port (25101), lobby mode by default.
+- `fsnp-server/Dockerfile`: build stage `FROM --platform=$BUILDPLATFORM golang:<ver>-alpine`, cross-compiles with `GOOS`/`GOARCH`/`GOARM` from `TARGETOS`/`TARGETARCH`/`TARGETVARIANT`, so no QEMU step. Final stage `FROM scratch AS base`, numeric uid 101, one port (25101), lobby mode by default.
+- Platforms: `linux/amd64`, `linux/arm64`, `linux/arm/v7` (`PLATFORMS` in `container.yml`). PRs build them all without pushing, so a break on one shows before main.
+- Tags: `edge` from `main` only (a `release-*` branch's CI builds but doesn't push); a release pushes `<version>` and `latest`, and `edge` is never `latest`. `release.yml` passes `push: false` on a dry run.
 - Build context is `fsnp-server/`, not the repo root.
 - Configuration is by environment (`LOBBY`, `PORT`, `MAX_GAMES`, ...); there is no entrypoint script. Secret-shaped names (`PASSWORD`) are not declared with `ENV`.
 - `make -C fsnp-server image` builds the same target locally.
@@ -92,4 +95,5 @@ The module has no third-party Go dependencies, so the `gomod` Dependabot entry s
 | PyInstaller bundle missing a module | Hidden import; add it to the spec or the entry script's dummy imports |
 | macOS/Linux build says Go is missing | `fsbuild/build.sh` requires Go; on macOS check the `setup-go` step, on Linux the runner image. Without Go the contract tests skip rather than fail, so check the test jobs too |
 | `Dependency Audit` fails | A package in `Pipfile.lock` has a published advisory; the job summary lists it with the fixed version. Bump it (`pipenv upgrade <pkg>` rewrites the Pipfile and drops `sys_platform` markers, so check the diff) and run both suites. Only an advisory with no fix that can't affect the launcher goes in the workflow's `ignore` list, with a comment saying why |
-| Container build fails on PRs only | PRs `load` instead of `push` and skip SBOM/provenance; check conditionals |
+| Container build fails on PRs only | PRs build without pushing and skip SBOM/provenance; check the `PUSH` conditionals |
+| Container build fails for one platform | Run `docker buildx build --platform <it> --target base fsnp-server` locally; Go cross-compiles, so it doesn't need QEMU |

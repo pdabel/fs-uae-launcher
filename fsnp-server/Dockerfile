@@ -12,11 +12,13 @@ FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS build
 
 ARG TARGETOS
 ARG TARGETARCH
+# "v7" for linux/arm/v7, empty otherwise; GOARM wants just the number.
+ARG TARGETVARIANT
 ENV CGO_ENABLED=0
 
 WORKDIR /src
 COPY . .
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} GOARM=${TARGETVARIANT#v} \
     go build -trimpath -ldflags="-s -w" -o /fsnp-server ./cmd/fsnp-server
 
 # No libc, no shell, no package manager: the binary is the whole image. This
