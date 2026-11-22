@@ -178,8 +178,12 @@ and frozen artifacts have not been certified by these local checks.
 - [ ] Adopt typing incrementally at module and public API boundaries. Use
   modern built-in generic and union syntax only after the declared minimum
   Python version supports it; do not bulk-rewrite syntax without tests.
-- [ ] Enable deprecation warnings in focused test jobs and resolve warnings
+- [x] Enable deprecation warnings in focused test jobs and resolve warnings
   from Python and maintained dependencies before they become removals.
+  CI's Python suite runs with `-W default::DeprecationWarning`, and
+  `pyproject.toml`'s pytest `filterwarnings` makes a DeprecationWarning from
+  the project's own packages an error in every test run. Third-party
+  deprecations stay warnings, so a dependency release can't fail the build.
 
 ## Completion Criteria
 
