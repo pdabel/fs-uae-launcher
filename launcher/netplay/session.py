@@ -361,9 +361,9 @@ class NetplaySession:
         ):
             return True
         # Pushed, but the snapshot on screen is from before the push.
-        return bool(self.snapshot) and (
-            self.snapshot["config_version"] < self._pushed_version
-        )
+        if not self.snapshot:
+            return False
+        return self.snapshot["config_version"] < self._pushed_version
 
     @property
     def can_start(self):

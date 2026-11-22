@@ -74,7 +74,7 @@ def has_game():
 
 def plain_label(text="", object_name=None):
     label = QLabel(text)
-    label.setTextFormat(Qt.PlainText)
+    label.setTextFormat(Qt.TextFormat.PlainText)
     if object_name:
         label.setObjectName(object_name)
     return label
@@ -166,13 +166,17 @@ class LobbyBrowserPanel(QFrame):
         self.servers_tree.setHeaderHidden(True)
         self.servers_tree.setColumnCount(3)
         self.servers_tree.setRootIsDecorated(False)
-        self.servers_tree.setSelectionMode(QAbstractItemView.NoSelection)
-        self.servers_tree.setFocusPolicy(Qt.NoFocus)
-        header = self.servers_tree.header()
-        header.setStretchLastSection(False)
-        header.setSectionResizeMode(0, QHeaderView.Stretch)
-        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.servers_tree.setSelectionMode(
+            QAbstractItemView.SelectionMode.NoSelection
+        )
+        self.servers_tree.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        servers_header = self.servers_tree.header()
+        servers_header.setStretchLastSection(False)
+        servers_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        for column in (1, 2):
+            servers_header.setSectionResizeMode(
+                column, QHeaderView.ResizeMode.ResizeToContents
+            )
         servers_column.addWidget(self.servers_tree, 1)
         self.no_servers = QFrame()
         no_servers_layout = QHBoxLayout(self.no_servers)
@@ -202,12 +206,16 @@ class LobbyBrowserPanel(QFrame):
             ]
         )
         self.games_tree.setRootIsDecorated(False)
-        self.games_tree.setSelectionMode(QAbstractItemView.SingleSelection)
-        header = self.games_tree.header()
-        header.setStretchLastSection(False)
-        header.setSectionResizeMode(0, QHeaderView.Stretch)
+        self.games_tree.setSelectionMode(
+            QAbstractItemView.SelectionMode.SingleSelection
+        )
+        games_header = self.games_tree.header()
+        games_header.setStretchLastSection(False)
+        games_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         for column in range(1, 5):
-            header.setSectionResizeMode(column, QHeaderView.ResizeToContents)
+            games_header.setSectionResizeMode(
+                column, QHeaderView.ResizeMode.ResizeToContents
+            )
         games_column.addWidget(self.games_tree, 1)
         self.no_games = plain_label(gettext("No games waiting for players"))
         self.no_games.setObjectName("lobbyEmpty")
@@ -252,8 +260,10 @@ class LobbyBrowserPanel(QFrame):
         game.addWidget(self.game_heading)
         self.slot_list = QListWidget()
         self.slot_list.setObjectName("lobbySlots")
-        self.slot_list.setSelectionMode(QAbstractItemView.NoSelection)
-        self.slot_list.setFocusPolicy(Qt.NoFocus)
+        self.slot_list.setSelectionMode(
+            QAbstractItemView.SelectionMode.NoSelection
+        )
+        self.slot_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         game.addWidget(self.slot_list, 1)
         self.game_online = plain_label()
         self.game_online.setWordWrap(True)
@@ -352,7 +362,7 @@ class LobbyBrowserPanel(QFrame):
         if has_game():
             title = LauncherSettings.get(Option.CONFIG_NAME).strip()
             metrics = self.host_button.fontMetrics()
-            title = metrics.elidedText(title, Qt.ElideRight, 240)
+            title = metrics.elidedText(title, Qt.TextElideMode.ElideRight, 240)
             self.host_button.setText(
                 gettext("Host game: {0}\u2026").format(title)
             )
@@ -390,7 +400,7 @@ class LobbyBrowserPanel(QFrame):
             item = QTreeWidgetItem(
                 [f"{dot} {server.title}", server_status(server, now), ""]
             )
-            item.setData(0, Qt.UserRole, server.key)
+            item.setData(0, Qt.ItemDataRole.UserRole, server.key)
             if server.error and server.state != ONLINE:
                 item.setToolTip(1, server.error)
             tree.addTopLevelItem(item)
@@ -430,7 +440,9 @@ class LobbyBrowserPanel(QFrame):
                     game_action(game),
                 ]
             )
-            item.setData(0, Qt.UserRole, (game.server.key, game.id))
+            item.setData(
+                0, Qt.ItemDataRole.UserRole, (game.server.key, game.id)
+            )
             if not game.joinable:
                 item.setDisabled(True)
             tree.addTopLevelItem(item)
@@ -481,7 +493,7 @@ class LobbyBrowserPanel(QFrame):
         item = self.games_tree.currentItem()
         if item is None:
             return None
-        return item.data(0, Qt.UserRole)[1]
+        return item.data(0, Qt.ItemDataRole.UserRole)[1]
 
     def on_session(self, session=None):
         """Show the game this launcher is in, or go back to browsing."""
@@ -670,9 +682,12 @@ class JoinByIdDialog(QDialog):
         self.game_id.setPlaceholderText(gettext("The ID the host copied"))
         layout.addRow(gettext("Game ID:"), self.game_id)
         buttons = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel
         )
-        buttons.button(QDialogButtonBox.Ok).setText(gettext("Join"))
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText(
+            gettext("Join")
+        )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addRow(buttons)
@@ -727,9 +742,12 @@ class HostGameDialog(QDialog):
         )
         layout.addRow(note)
         buttons = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel
         )
-        buttons.button(QDialogButtonBox.Ok).setText(gettext("Host"))
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText(
+            gettext("Host")
+        )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addRow(buttons)
