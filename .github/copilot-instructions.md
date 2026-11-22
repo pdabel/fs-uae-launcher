@@ -29,6 +29,7 @@ Use the codebase as the authoritative reference for patterns and style. Plan bef
 
 | Command | Purpose |
 | --- | --- |
+| `venv/bin/black --check . && venv/bin/ruff check` | Format and lint, as CI's `Format` and `Lint` jobs run them before the tests (`venv/bin/black .` to fix formatting) |
 | `venv/bin/python -m pytest fsbc fstd fspy fsgs/tests fsbuild/tests launcher/netplay launcher/server/tests launcher/tests` | The Python suite, as CI runs it |
 | `QT_QPA_PLATFORM=offscreen venv/bin/python -m pytest fsui/test` | Qt widget, panel and theme tests; CI runs them too |
 | `make -C fsnp-server check` | gofmt check, `go vet`, `go test ./... -race` -- what CI runs |
@@ -53,7 +54,7 @@ Use `venv/bin/python -m pytest`, not `pipenv run pytest`: `pipenv run` can re-lo
 | `workspace/` | Workspace tool windows: ADF/HDF creators, joystick config, OpenRetro login |
 | `fsnp-server/` | Go module: `cmd/fsnp-server`, `internal/fsnp` (codec), `internal/game`, `internal/lobby` |
 | `fsbuild/` | Packaging scripts (PyInstaller, bundling, signing) used by CI |
-| `.github/workflows/` | CI: `ci.yml` runs the `Lint` job (`ruff check`), then calls reusable `linux-test`/`macos-test` once it passes, plus `linux`/`macos` builds, `container`, `source`, `netplay-server` and `agent-instructions` workflows |
+| `.github/workflows/` | CI: `ci.yml` runs the `Lint` (`ruff check`) and `Format` (`black --check`) jobs, then calls reusable `linux-test`/`macos-test` once both pass, plus `linux`/`macos` builds, `container`, `source`, `netplay-server` and `agent-instructions` workflows |
 
 ---
 
@@ -82,7 +83,7 @@ Use `venv/bin/python -m pytest`, not `pipenv run pytest`: `pipenv run` can re-lo
 - **UI thread.** No blocking network or disk I/O on the Qt thread; do it on a worker thread and return results with `fsbc.application.call_after`. Every HTTP call has a timeout.
 - **Qt binding.** PySide6 through `fsui.qt`/QtPy. Never import PyQt5 or mix bindings in one process.
 - **Untrusted input.** Lobby responses (game listings, titles, player and lobby names) and peers' config documents are untrusted; names and titles are shown as plain text, never markup. Netplay config is applied only through the sync-key allowlist; files arrive by SHA-1 and resolve through the local file database, never as paths.
-- **Formatting.** `black` with line length 79 (`pyproject.toml`), `gofmt` for Go. CI runs `ruff check` before the tests, with the rules in `pyproject.toml`: ruff's defaults (Pyflakes, pycodestyle errors) and f-string formatting. Many legacy Python files are not black-clean: format the code you change, not whole files.
+- **Formatting and lint.** The whole tree is `black`-clean (line length 79, `pyproject.toml`); `gofmt` for Go. Before the tests, CI's `Format` job runs `black --check .` and its `Lint` job runs `ruff check` with the rules in `pyproject.toml`: ruff's defaults (Pyflakes, pycodestyle errors) and f-string formatting. Both install the versions in `Pipfile.lock`, so use the venv's `black` and `ruff`.
 - **Commits.** Each commit is one reviewable step that passes both suites on its own; branches may be published as a stack of PRs. Branch from a remote ref with `--no-track`.
 - **Design doc status.** `docs/netplay-go-server-design.md` (server, protocol, session API) and `docs/netplay-rooms-design.md` (lobby browser) keep rollout status current. A change that completes or alters a rollout step updates the doc in the same commit.
 

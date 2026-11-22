@@ -234,7 +234,8 @@ Custom portable directory mappings can also change the subfolders shown above.
 | Python support | `python -m pytest fsbuild/tests/test_python_support.py` | Linux and macOS |
 | Python | `python -W default::DeprecationWarning -m pytest fsbc fstd fspy fsgs/tests fsbuild/tests launcher/netplay launcher/server/tests launcher/tests` | Linux and macOS |
 | Qt widgets, panels and themes | `QT_QPA_PLATFORM=offscreen python -m pytest fsui/test` | Linux and macOS, offscreen |
-| Lint | `ruff check` | Ubuntu |
+| Lint (before the tests) | `ruff check` | Ubuntu |
+| Format (before the tests) | `black --check .` | Ubuntu |
 | Go server | `make -C fsnp-server check` | Ubuntu with Go |
 
 CI runs the Python support, Python, and Qt suites in separate reusable
