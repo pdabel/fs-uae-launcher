@@ -71,9 +71,6 @@ class GameDriver:
         # noinspection PyProtectedMember
         self.cwd._path = self.home._path
 
-    def __del__(self):
-        print("GameDriver.__del__")
-
     def prepare(self):
         pass
 
