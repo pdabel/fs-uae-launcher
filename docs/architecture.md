@@ -18,11 +18,11 @@ imports nothing above it, which `fsbc/tests/test_layering.py` enforces: the
 launcher passes in its version, logs directory and translation function
 through `initialize_application()`. `fsui` and `fsgs` translate through that
 hook (`fsui.res.gettext`, `fsgs.res.gettext`), not `launcher.i18n`. `fsgs`
-imports neither `launcher` nor `workspace`, which `fsgs/tests/test_layering.py`
-enforces. The dotted arrows are the imports still to untangle: `fsgs` and
-`fsui` import each other (`fsui.qt.qt` imports `fsgs.option`, and
-`fsgs.drivers.gamedriver` asks `fsui.qt` for screen geometry), and
-`fsui.qt.window` imports `workspace` for its window header.
+imports none of `fsui`, `launcher` and `workspace`, which
+`fsgs/tests/test_layering.py` enforces; its game drivers read screen geometry
+from the running Qt application directly. `fsgs` and `fsui` don't import each
+other. The dotted arrow is the import still to untangle: `fsui.qt.window`
+imports `workspace` for its window header.
 
 ```mermaid
 flowchart TB
@@ -67,9 +67,8 @@ flowchart TB
     fsgs --> fspy
     fsgs --> fsuae
     fsgs --> openretro
+    fsgs -- "screen geometry" --> qt
     fsui --> fsbc
-    fsui -. "option names" .-> fsgs
-    fsgs -. "screen geometry" .-> fsui
     fsui -. "window header" .-> workspace
     fsui --> qt
     fsbc --> fsboot

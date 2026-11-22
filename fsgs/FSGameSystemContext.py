@@ -4,6 +4,7 @@ import threading
 import time
 import traceback
 import weakref
+from fsbc.application import call_after
 from fsbc.paths import Paths
 from fsbc.util import unused
 from fsgs.archive import Archive
@@ -158,10 +159,7 @@ class FileContext(BaseContext):
 
             if license_code:
                 print("URL", url, "has license code", license_code)
-                # FIXME: remove direct dependency on fsui
-                import fsui as fsui
-
-                fsui.call_after(show_license_code)
+                call_after(show_license_code)
                 while not license_status["done"]:
                     time.sleep(0.1)
                 if not license_status["accepted"]:

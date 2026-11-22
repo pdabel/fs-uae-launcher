@@ -99,18 +99,13 @@ def test_native_fsuae_reports_layouts_its_fullscreen_option_cannot_represent():
 
 
 def test_fsuae_starts_on_selected_display_not_launcher_monitor(monkeypatch):
-    import importlib
-
     from fsgs.amiga.fsuae import FSUAE
     from fsgs.drivers.gamedriver import GameDriver
 
     first = display("DP-1")
     selected = display("HDMI-1", -1920)
-    application = SimpleNamespace(
-        screens=lambda: [first, selected], primaryScreen=lambda: first
-    )
     monkeypatch.setattr(
-        importlib.import_module("fsui.qt"), "init_qt", lambda: application
+        GameDriver, "_screens", lambda: ([first, selected], first)
     )
     settings = {
         "monitor": display_id(selected),
@@ -216,19 +211,23 @@ def test_window_size_defaults_when_unset_or_invalid(monkeypatch):
     assert GameDriver.window_size() == (960, 540)
 
 
+def test_screen_helpers_fall_back_without_a_qt_application(monkeypatch):
+    from fsgs.drivers.gamedriver import GameDriver
+
+    monkeypatch.setattr(GameDriver, "_screens", lambda: ([], None))
+    assert GameDriver.screen_rect_for_monitor("primary") == (0, 0, 1280, 720)
+    assert GameDriver.screen_index_for_monitor("primary") == 0
+    assert GameDriver.fsuae_monitor_for_monitor("primary") is None
+    assert GameDriver.screen_refresh_rate_for_monitor("primary") == 0
+
+
 def test_refresh_rate_uses_selected_qt_screen_when_xrandr_does_not_match(
     monkeypatch,
 ):
-    import importlib
     from fsgs.drivers.gamedriver import GameDriver
 
     screen = display("DP-1")
-    application = SimpleNamespace(
-        screens=lambda: [screen], primaryScreen=lambda: screen
-    )
-    monkeypatch.setattr(
-        importlib.import_module("fsui.qt"), "init_qt", lambda: application
-    )
+    monkeypatch.setattr(GameDriver, "_screens", lambda: ([screen], screen))
     tool = SimpleNamespace(
         screens_xrandr=lambda: {(0, 0, 800, 600): {"refresh_rate": 50}}
     )

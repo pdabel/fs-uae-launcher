@@ -312,46 +312,41 @@ class GameDriver:
         rect = self.screen_rect()
         return rect[2], rect[3]
 
-    @classmethod
-    def _screens(cls):
-        from fsui.qt import init_qt
+    @staticmethod
+    def _screens():
+        """The running Qt application's screens and its primary screen."""
+        from qtpy.QtGui import QGuiApplication
 
-        return [
-            [screen.geometry().x(), index, screen.geometry()]
-            for index, screen in enumerate(init_qt().screens())
-        ]
+        application = QGuiApplication.instance()
+        if application is None:
+            return [], None
+        return application.screens(), application.primaryScreen()
 
     @classmethod
     def screen_refresh_rate_for_monitor(cls, monitor):
-        try:
-            from fsui.qt import init_qt
-
-            qapplication = init_qt()
-        except AttributeError:
+        screens, _ = cls._screens()
+        for i, screen in enumerate(screens):
+            print(f"Screen {i} refresh rate (Qt) = {screen.refreshRate()}")
+        if not screens:
             return 0
-        else:
-            for i, screen in enumerate(qapplication.screens()):
-                print(f"Screen {i} refresh rate (Qt) = {screen.refreshRate()}")
-            index = cls.screen_index_for_monitor(monitor)
-            if not qapplication.screens():
-                return 0
-            selected_screen = qapplication.screens()[index]
+        index = cls.screen_index_for_monitor(monitor)
+        selected_screen = screens[index]
 
-            if System.windows or System.macos:
-                return int(round(selected_screen.refreshRate()))
-
-            refresh_rate_tool = RefreshRateTool()
-            screens = refresh_rate_tool.screens_xrandr()
-            rect = cls.screen_rect_for_monitor(monitor)
-            for screen in screens:
-                print(
-                    f"Screen {screen} refresh rate (Xrandr) = "
-                    f"{screens[screen]['refresh_rate']}"
-                )
-            for screen in screens:
-                if rect == screen:
-                    return screens[screen]["refresh_rate"]
+        if System.windows or System.macos:
             return int(round(selected_screen.refreshRate()))
+
+        refresh_rate_tool = RefreshRateTool()
+        xrandr_screens = refresh_rate_tool.screens_xrandr()
+        rect = cls.screen_rect_for_monitor(monitor)
+        for screen in xrandr_screens:
+            print(
+                f"Screen {screen} refresh rate (Xrandr) = "
+                f"{xrandr_screens[screen]['refresh_rate']}"
+            )
+        for screen in xrandr_screens:
+            if rect == screen:
+                return xrandr_screens[screen]["refresh_rate"]
+        return int(round(selected_screen.refreshRate()))
 
     def screen_refresh_rate(self):
         monitor = self.options[Option.MONITOR]
@@ -359,16 +354,10 @@ class GameDriver:
 
     @classmethod
     def screen_index_for_monitor(cls, monitor):
-        from fsui.qt import init_qt
         from fsgs.displays import screen_index
 
-        application = init_qt()
-        return (
-            screen_index(
-                application.screens(), monitor, application.primaryScreen()
-            )
-            or 0
-        )
+        screens, primary = cls._screens()
+        return screen_index(screens, monitor, primary) or 0
 
     def screen_index(self):
         monitor = self.options[Option.MONITOR]
@@ -376,22 +365,17 @@ class GameDriver:
 
     @classmethod
     def fsuae_monitor_for_monitor(cls, monitor):
-        from fsui.qt import init_qt
         from fsgs.displays import fsuae_monitor
 
-        application = init_qt()
-        return fsuae_monitor(
-            application.screens(), monitor, application.primaryScreen()
-        )
+        screens, primary = cls._screens()
+        return fsuae_monitor(screens, monitor, primary)
 
     @classmethod
     def screen_rect_for_monitor(cls, monitor):
-        from fsui.qt import init_qt
         from fsgs.displays import screen_index
 
-        application = init_qt()
-        screens = application.screens()
-        index = screen_index(screens, monitor, application.primaryScreen())
+        screens, primary = cls._screens()
+        index = screen_index(screens, monitor, primary)
         if index is None:
             return 0, 0, 1280, 720
         geometry = screens[index].geometry()
