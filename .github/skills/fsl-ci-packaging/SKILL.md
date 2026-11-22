@@ -21,6 +21,8 @@ ci.yml  (push to main/release-*, PRs to main/release-*, dispatch)
   -> source.yml          source bundle
   -> netplay-server.yml  make -C fsnp-server check, then make -C fsnp-server build
   -> agent-instructions.yml  fails if .github/copilot-instructions.md differs from AGENTS.md
+  -> dependency-audit.yml    pip-audit on every package in Pipfile.lock (default and develop);
+                            fails on any known vulnerability. Also runs weekly on its own schedule
 
 release.yml  (dispatch: type=branch creates a release branch; type=release tags and builds)
   -> linux.yml, macos.yml, container.yml, source.yml with a version input
@@ -89,4 +91,5 @@ The module has no third-party Go dependencies, so the `gomod` Dependabot entry s
 | `go test -race` fails | A data race; see `fsl-debugging` |
 | PyInstaller bundle missing a module | Hidden import; add it to the spec or the entry script's dummy imports |
 | macOS/Linux build says Go is missing | `fsbuild/build.sh` requires Go; on macOS check the `setup-go` step, on Linux the runner image. Without Go the contract tests skip rather than fail, so check the test jobs too |
+| `Dependency Audit` fails | A package in `Pipfile.lock` has a published advisory; the job summary lists it with the fixed version. Bump it (`pipenv upgrade <pkg>` rewrites the Pipfile and drops `sys_platform` markers, so check the diff) and run both suites. Only an advisory with no fix that can't affect the launcher goes in the workflow's `ignore` list, with a comment saying why |
 | Container build fails on PRs only | PRs `load` instead of `push` and skip SBOM/provenance; check conditionals |

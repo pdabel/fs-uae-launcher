@@ -156,10 +156,15 @@ and frozen artifacts have not been certified by these local checks.
 - [ ] Configure automated dependency update PRs for both manifest and lock
   changes. Require the relevant unit tests and platform build checks before
   merging updates.
-- [ ] Add a repeatable dependency/security report to CI (for example, an
+- [x] Add a repeatable dependency/security report to CI (for example, an
   audited SBOM plus vulnerability scanning) and establish how findings are
   triaged. Avoid treating every transitive package alert as an automatic
-  upgrade without build/test validation.
+  upgrade without build/test validation. `dependency-audit.yml` runs
+  pip-audit on every package and hash in `Pipfile.lock`, runtime and
+  development, on each push and pull request and weekly. A finding fails the
+  job and is listed in its summary with the fixed version; the fix is a lock
+  bump that passes both suites. An advisory with no fix that can't affect the
+  launcher is skipped in the workflow, with the reason beside it. No SBOM yet.
 
 ## Priority 2: Standardize Python Code Quality
 
