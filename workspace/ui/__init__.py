@@ -12,7 +12,6 @@ from .menu import Menu
 from .panel import Panel
 from .text_area import TextArea
 from .text_field import TextField
-from .window import Window
 
 
 # noinspection PyPep8Naming

@@ -72,7 +72,7 @@ po/                             Translations; po-update.py extracts strings
 - Netplay client code reaches the UI through listeners and `call_after`, not by holding widgets. `Netplay` exposes `session_listeners`, `browser_listeners` and `activity_listeners`; `NetplaySession` and `LobbyBrowser` take `dispatch`/`on_change` callables, so tests run them without Qt.
 - `config_apply.resolve_config` stays pure: dependencies (file lookup, sync keys) come in as arguments, so it is unit-testable. `apply_config`/`apply_document` are the thin wrappers that touch `LauncherConfig`.
 - The Go server takes the key list from the launcher and treats config keys and values as opaque strings.
-- Base packages already import upward in places (`fsbc/logging.py`, `fsbc/paths.py`, `fsbc/settings.py` reach into `fsgs`/`launcher`). Don't add more; new shared helpers that need launcher state belong in `launcher/` or `fsgs/`.
+- Base packages don't import upward: `fsbc` imports nothing above it, and `fsui` and `fsgs` import neither each other nor `launcher`/`workspace`. A `test_layering.py` in each enforces it. Pass in what a base package needs (as `initialize_application()` does) instead of importing it; helpers that need launcher state belong in `launcher/`.
 - All Qt imports go through `fsui.qt` (QtPy over PySide6).
 
 ---

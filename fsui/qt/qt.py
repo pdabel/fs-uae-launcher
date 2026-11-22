@@ -38,7 +38,8 @@ from qtpy.QtCore import Signal as QSignal
 from qtpy.QtOpenGL import *
 from qtpy.QtOpenGLWidgets import *
 
-from fsgs.option import Option
+# The launcher's theme setting (Option.LAUNCHER_THEME).
+LAUNCHER_THEME = "launcher_theme"
 
 
 def open_url_in_browser(url):
@@ -69,12 +70,12 @@ def init_qt():
 
 
 def initialize_qt_style(qapplication):
-    launcher_theme = Settings.instance().get(Option.LAUNCHER_THEME)
+    launcher_theme = Settings.instance().get(LAUNCHER_THEME)
     for argument in sys.argv[1:]:
         if argument.startswith("--launcher-theme="):
             launcher_theme = argument.split("=", 1)[1]
     if launcher_theme and resolve_launcher_theme(launcher_theme) is None:
-        Settings.instance().set(Option.LAUNCHER_THEME, "fusion-plain")
+        Settings.instance().set(LAUNCHER_THEME, "fusion-plain")
     apply_launcher_theme(
         qapplication,
         launcher_theme,
