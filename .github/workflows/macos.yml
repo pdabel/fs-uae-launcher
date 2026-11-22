@@ -38,7 +38,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12", "3.15"]
+        # PRs build only 3.12, the version releases ship; the tests cover
+        # 3.15 on PRs. Pushes and dispatches build both.
+        python-version: >-
+          ${{ fromJSON(github.event_name == 'pull_request'
+              && '["3.12"]' || '["3.12", "3.15"]') }}
 
     steps:
       - name: Install brew packages
@@ -55,6 +59,7 @@ jobs:
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
+          cache: pipenv
 
       # The macOS runner images do not have Go on PATH (Ubuntu ones do),
       # and fsbuild/build.sh needs it to build fsnp-server.
@@ -119,9 +124,11 @@ jobs:
         run: |
           fsbuild/bundle
 
+      # Only the upload uses the archive, and PRs don't upload.
       - name: Archive
         run: |
           fsbuild/archive
+        if: github.event_name != 'pull_request'
 
       - name: Upload builds to artifact storage
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

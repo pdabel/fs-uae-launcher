@@ -244,9 +244,13 @@ separate jobs: each platform build waits for its corresponding test job to
 pass, while source and container builds and the Go server check are separate
 jobs as well. The Linux and macOS
 [build workflows](../.github/workflows/linux.yml) and
-[build workflows](../.github/workflows/macos.yml) still build for both Python
-versions; when called by CI they skip tests already run by the test jobs.
-Release and manual builds run tests by default.
+[build workflows](../.github/workflows/macos.yml) build for both Python
+versions on pushes and dispatches, but only for 3.12 (what releases ship) on
+pull requests, where they also skip the archive step since nothing is
+uploaded. When called by CI they skip tests already run by the test jobs.
+Release and manual builds run tests by default. A newer push to a pull
+request cancels its CI run; runs on `main` and `release-*` are never
+cancelled once started.
 
 Ruff runs as its own job in `ci.yml`. The Go server checks run in
 [netplay-server.yml](../.github/workflows/netplay-server.yml).

@@ -8,7 +8,7 @@ description: 'CI workflows, Dependabot, release flow, and packaging for FS-UAE L
 ## Workflow Architecture
 
 ```text
-ci.yml  (push to main/release-*, PRs to main/release-*, dispatch)
+ci.yml  (push to main/release-*, PRs to main/release-*, dispatch; a newer push cancels only a PR's run)
   lint                   ruff check (version from Pipfile.lock, rules in pyproject.toml)
   format                 black --check . (version from Pipfile.lock)
   typecheck              pipenv sync --dev, then mypy ([tool.mypy] in pyproject.toml); doesn't gate the tests
@@ -16,7 +16,8 @@ ci.yml  (push to main/release-*, PRs to main/release-*, dispatch)
                          the Python suite, then fsui/test, both with QT_QPA_PLATFORM=offscreen
   -> macos-test.yml      needs lint and format; same on macOS; installs Go with setup-go from fsnp-server/go.mod
   -> linux.yml           needs test-linux; called with run-tests: false. fsbuild/version -> bootstrap ->
-                         configure -> build -> bundle -> archive, upload (not on PRs)
+                         configure -> build -> bundle -> archive, upload (archive and upload not on PRs).
+                         Python 3.12 + 3.15 matrix, 3.12 only on PRs
   -> macos.yml           needs test-macos; same shape on macOS
   -> container.yml       buildx fsnp-server/Dockerfile (target base) for linux/amd64, arm64, arm/v7 on every run ->
                          ghcr.io/<owner>/fs-uae-netplay; pushes edge from main only, never on PRs
@@ -45,6 +46,7 @@ The test workflows are `workflow_call` only. The build workflows are `workflow_c
 | Nothing publishes on `pull_request` | Pushes, uploads, SBOM and provenance are gated on `github.event_name != 'pull_request'` |
 | Run what developers run | Use `make -C fsnp-server ...` and the same pytest paths, not hand-written equivalents, so CI can't drift from local |
 | `shell: bash` default | Set in `defaults.run` |
+| Cache the pipenv environment | Every `setup-python` that precedes `pipenv sync` sets `cache: pipenv`: the virtualenv is cached per OS and Python version, keyed on `Pipfile.lock`, so a lock change rebuilds it |
 | Untrusted expressions | Don't interpolate `${{ github.event.* }}` text (PR titles, branch names from forks) into `run:`; pass it through `env:` |
 
 ## Packaging
