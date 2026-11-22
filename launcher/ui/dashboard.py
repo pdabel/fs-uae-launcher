@@ -106,15 +106,15 @@ PALETTE_STYLESHEET = """
 
 class Dashboard(fsui.Panel):
     PAGES = (
-        ("Overview", QStyle.SP_ComputerIcon),
-        ("Floppy drives", QStyle.SP_DriveFDIcon),
-        ("CD-ROM drives", QStyle.SP_DriveCDIcon),
-        ("Hard drives", QStyle.SP_DriveHDIcon),
-        ("ROM & memory", QStyle.SP_FileDialogDetailedView),
-        ("Controllers", QStyle.SP_DesktopIcon),
-        ("Expansions", QStyle.SP_FileDialogContentsView),
-        ("Display settings", QStyle.SP_TitleBarMaxButton),
-        ("Advanced", QStyle.SP_FileDialogListView),
+        ("Overview", QStyle.StandardPixmap.SP_ComputerIcon),
+        ("Floppy drives", QStyle.StandardPixmap.SP_DriveFDIcon),
+        ("CD-ROM drives", QStyle.StandardPixmap.SP_DriveCDIcon),
+        ("Hard drives", QStyle.StandardPixmap.SP_DriveHDIcon),
+        ("ROM & memory", QStyle.StandardPixmap.SP_FileDialogDetailedView),
+        ("Controllers", QStyle.StandardPixmap.SP_DesktopIcon),
+        ("Expansions", QStyle.StandardPixmap.SP_FileDialogContentsView),
+        ("Display settings", QStyle.StandardPixmap.SP_TitleBarMaxButton),
+        ("Advanced", QStyle.StandardPixmap.SP_FileDialogListView),
     )
 
     def __init__(self, owner):
@@ -202,14 +202,16 @@ class Dashboard(fsui.Panel):
         if hasattr(self, "nav_buttons"):
             for button, (_, icon) in zip(self.nav_buttons, self.PAGES):
                 button.setIcon(self._icon(icon))
-            self.netplay_button.setIcon(self._icon(QStyle.SP_DriveNetIcon))
+            self.netplay_button.setIcon(
+                self._icon(QStyle.StandardPixmap.SP_DriveNetIcon)
+            )
             for button, icon in self._extra_icons:
                 button.setIcon(self._icon(icon))
             self.library_toggle.setIcon(
-                self._icon(QStyle.SP_FileDialogContentsView)
+                self._icon(QStyle.StandardPixmap.SP_FileDialogContentsView)
             )
             self.edit_toggle.setIcon(
-                self._icon(QStyle.SP_FileDialogDetailedView)
+                self._icon(QStyle.StandardPixmap.SP_FileDialogDetailedView)
             )
             self.play_tile.restyle_icons()
 
@@ -230,18 +232,18 @@ class Dashboard(fsui.Panel):
         if isinstance(standard_icon, str):
             return navigation_icon(standard_icon)
         names = {
-            QStyle.SP_ComputerIcon: "fa5s.home",
-            QStyle.SP_DriveFDIcon: "fa5s.save",
-            QStyle.SP_DriveCDIcon: "fa5s.compact-disc",
-            QStyle.SP_DriveHDIcon: "fa5s.hdd",
-            QStyle.SP_FileDialogDetailedView: "fa5s.sliders-h",
-            QStyle.SP_DesktopIcon: "fa5s.gamepad",
-            QStyle.SP_TitleBarMaxButton: "fa5s.desktop",
-            QStyle.SP_FileDialogContentsView: "fa5s.th-large",
-            QStyle.SP_FileDialogListView: "fa5s.code",
-            QStyle.SP_DriveNetIcon: "fa5s.network-wired",
-            QStyle.SP_TitleBarMenuButton: "fa5s.ellipsis-h",
-            QStyle.SP_MediaPlay: "fa5s.play",
+            QStyle.StandardPixmap.SP_ComputerIcon: "fa5s.home",
+            QStyle.StandardPixmap.SP_DriveFDIcon: "fa5s.save",
+            QStyle.StandardPixmap.SP_DriveCDIcon: "fa5s.compact-disc",
+            QStyle.StandardPixmap.SP_DriveHDIcon: "fa5s.hdd",
+            QStyle.StandardPixmap.SP_FileDialogDetailedView: "fa5s.sliders-h",
+            QStyle.StandardPixmap.SP_DesktopIcon: "fa5s.gamepad",
+            QStyle.StandardPixmap.SP_TitleBarMaxButton: "fa5s.desktop",
+            QStyle.StandardPixmap.SP_FileDialogContentsView: "fa5s.th-large",
+            QStyle.StandardPixmap.SP_FileDialogListView: "fa5s.code",
+            QStyle.StandardPixmap.SP_DriveNetIcon: "fa5s.network-wired",
+            QStyle.StandardPixmap.SP_TitleBarMenuButton: "fa5s.ellipsis-h",
+            QStyle.StandardPixmap.SP_MediaPlay: "fa5s.play",
         }
         return navigation_icon(names[standard_icon])
 
@@ -283,7 +285,8 @@ class Dashboard(fsui.Panel):
         self.nav_buttons[0].setChecked(True)
         layout.addStretch(1)
         self.netplay_button = QPushButton(
-            self._icon(QStyle.SP_DriveNetIcon), gettext("Net play")
+            self._icon(QStyle.StandardPixmap.SP_DriveNetIcon),
+            gettext("Net play"),
         )
         self.netplay_button.setProperty("nav", True)
         self.netplay_button.setCheckable(True)
@@ -294,7 +297,11 @@ class Dashboard(fsui.Panel):
         layout.addWidget(self.netplay_button)
         for title, icon, callback in (
             ("Settings", "fa5s.cog", self.owner.on_settings_button),
-            ("Tools & account", QStyle.SP_TitleBarMenuButton, self._tools),
+            (
+                "Tools & account",
+                QStyle.StandardPixmap.SP_TitleBarMenuButton,
+                self._tools,
+            ),
         ):
             button = QPushButton(
                 self._icon(icon), gettext(title).replace("&", "&&")
@@ -334,14 +341,16 @@ class Dashboard(fsui.Panel):
         layout.addWidget(badge)
         layout.addSpacing(12)
         self.library_toggle = self._tool(
-            QStyle.SP_FileDialogContentsView, gettext("Show library")
+            QStyle.StandardPixmap.SP_FileDialogContentsView,
+            gettext("Show library"),
         )
         self.library_toggle.setCheckable(True)
         self.library_toggle.setChecked(True)
         self.library_toggle.toggled.connect(self._toggle_library)
         layout.addWidget(self.library_toggle)
         self.edit_toggle = self._tool(
-            QStyle.SP_FileDialogDetailedView, gettext("Edit configuration")
+            QStyle.StandardPixmap.SP_FileDialogDetailedView,
+            gettext("Edit configuration"),
         )
         self.edit_toggle.setCheckable(True)
         self.edit_toggle.toggled.connect(self._toggle_editor)

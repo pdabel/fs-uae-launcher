@@ -2,7 +2,7 @@ from .client import OGDClient
 
 
 class SynchronizerContext(object):
-    meta = {}
+    meta: dict = {}
 
     def __init__(self):
         pass

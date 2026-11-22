@@ -54,12 +54,22 @@ class DrawingContext(object):
     def draw_text(self, text: str, x: int, y: int) -> None:
         self.qpainter.setPen(QPen(self.text_color))
         self.qpainter.drawText(
-            x, y, 10000, 1000, Qt.AlignLeft | Qt.AlignTop, text
+            x,
+            y,
+            10000,
+            1000,
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop,
+            text,
         )
 
     def measure_text(self, text: str) -> Tuple[int, int]:
         rect = self.qpainter.boundingRect(
-            0, 0, 10000, 1000, Qt.AlignLeft | Qt.AlignTop, text
+            0,
+            0,
+            10000,
+            1000,
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop,
+            text,
         )
         return rect.width(), rect.height()
 

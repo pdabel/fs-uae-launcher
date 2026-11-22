@@ -6,8 +6,6 @@ main_thread_id = threading.current_thread().ident
 
 
 class LauncherSignal(object):
-    listeners = {}
-
     @classmethod
     def add_listener(cls, signal, listener):
         BaseSignal(signal).connect(listener)

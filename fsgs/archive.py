@@ -25,7 +25,7 @@ try:
 except ImportError:
     traceback.print_exc()
     print("[ARCHIVE] SevenZipFile module import problem")
-    SevenZipFile = None
+    SevenZipFile = None  # type: ignore[assignment, misc]
 else:
     archive_extensions.append(".7z")
 

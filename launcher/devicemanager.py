@@ -28,14 +28,14 @@ class Device:
 
 class DeviceManager:
     initialized = False
-    devices = []
-    device_ids = []
-    device_names = []
-    device_types = []
-    device_name_count = {}
+    devices: list[Device] = []
+    device_ids: list[str] = []
+    device_names: list[str] = []
+    device_types: list[str] = []
+    device_name_count: dict[tuple[str, str], int] = {}
 
-    joystick_data = {}
-    sdl_names = {}
+    joystick_data: dict[str, tuple[int, int, int, int, str]] = {}
+    sdl_names: dict[str, str] = {}
 
     @classmethod
     def joystick_buttons(cls, device):

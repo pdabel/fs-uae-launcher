@@ -1,7 +1,7 @@
 from weakref import ref
 from .qt import Qt, QSignal
 
-_windows = set()
+_windows: set = set()
 
 
 # noinspection PyPep8Naming

@@ -3,7 +3,7 @@ from fsui.qt.helpers import QParent
 from fsui.qt.windowbase import WindowBase
 
 
-class Dialog(WindowBase(QDialog)):
+class Dialog(WindowBase(QDialog)):  # type: ignore[misc]
     def __init__(self, parent=None, title=""):
         super().__init__(QParent(parent), title=title)
 
