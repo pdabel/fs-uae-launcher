@@ -419,7 +419,6 @@ class Window(QObject):
     def get_size(self):
         return self.size()
 
-    # DEPRECATED
     def get_window(self):
         return self.top_level()
 

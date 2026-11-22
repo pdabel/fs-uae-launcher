@@ -165,8 +165,13 @@ and frozen artifacts have not been certified by these local checks.
 
 - [x] Establish a scoped Ruff UP032 consistency gate in `pyproject.toml` and
   CI. Broader lint and formatter migration remains a separate task.
-- [ ] Migrate internal `get_window()` calls to the `window` property and
+- [x] Migrate internal `get_window()` calls to the `window` property and
   resolve the deprecation warning before removing the compatibility method.
+  Resolved the other way: `get_window()` is the accessor every fsui
+  container has (`Window`, `LegacyDialog`, `Group`, and the widgets built on
+  Qt classes, which can't have a `window` property without hiding
+  `QWidget.window()`), so it can't be removed. `Widget.get_window()` no
+  longer warns; `window` stays as an alias on `Widget` and `Window`.
 - [ ] Add CI checks for formatting, linting, and the project's existing
   type-checking approach. Begin with changed files or a documented baseline
   so legacy findings do not obscure new regressions.

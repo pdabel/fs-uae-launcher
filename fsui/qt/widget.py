@@ -1,5 +1,4 @@
 from typing import Tuple
-import warnings
 
 from fsui.common.layout import Layout
 from fsui.qt import QPoint
@@ -149,7 +148,9 @@ class Widget(QObject):
         return self._window()
 
     def get_window(self):
-        warnings.warn("use window property instead", DeprecationWarning)
+        """The window this widget is in. Every fsui container has
+        get_window(), including the ones built on Qt widgets, where a window
+        property would hide QWidget.window(); window is an alias here."""
         # noinspection PyCallingNonCallable
         return self._window()
 
