@@ -216,9 +216,15 @@ def test_supported_packaging_uses_pyside6():
     root = Path(__file__).resolve().parents[2]
     manifest = tomllib.loads((root / "Pipfile").read_text())
     locked = json.loads((root / "Pipfile.lock").read_text())
-    assert {"pyside6", "qtpy", "qtawesome"} <= manifest["packages"].keys()
-    assert {"pyside6", "qtpy", "qtawesome"} <= locked["default"].keys()
-    assert locked["default"]["pyside6"]["version"].startswith("==6.")
+    qt = {"pyside6-essentials", "qtpy", "qtawesome"}
+    assert qt <= manifest["packages"].keys()
+    assert qt <= locked["default"].keys()
+    assert locked["default"]["pyside6-essentials"]["version"].startswith(
+        "==6."
+    )
+    # Only the essential Qt modules: not the pyside6 meta-package with
+    # Addons, WebEngine and Pdf.
+    assert "pyside6" not in locked["default"]
     for packages in (
         manifest["packages"],
         manifest["dev-packages"],

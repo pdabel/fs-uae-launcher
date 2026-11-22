@@ -55,17 +55,18 @@ validation on 3.15 remain pending.
 
 ## Requirements
 
-FS-UAE Launcher uses Qt 6 through `PySide6`, the `QtPy` compatibility
-layer, and `QtAwesome` for scalable dashboard icons. Install the latest
+FS-UAE Launcher uses Qt 6 through `PySide6` (its essential modules are
+enough), the `QtPy` compatibility layer, and `QtAwesome` for scalable
+dashboard icons; `lhafile` reads `.lha` archives. Install the latest
 releases supported by your Python version:
 
-  python -m pip install --upgrade PySide6 QtPy QtAwesome requests
+  python -m pip install --upgrade PySide6-Essentials QtPy QtAwesome requests lhafile
 
 The Pipfile also declares these UI dependencies for Pipenv installations.
 An existing virtual environment can be updated in place when its Python
 minor version has not changed:
 
-  venv/bin/python -m pip install --upgrade PySide6 QtPy QtAwesome requests
+  venv/bin/python -m pip install --upgrade PySide6-Essentials QtPy QtAwesome requests lhafile
 
 After an Ubuntu upgrade changes the Python minor version, create a fresh
 environment instead. An old venv can follow the system Python symlink to the
@@ -74,7 +75,7 @@ causing errors such as `ModuleNotFoundError: No module named 'qtpy'`.
 Keep the old environment until the replacement has been verified:
 
   python3 -m venv .venv
-  .venv/bin/python -m pip install PySide6 QtPy QtAwesome requests pillow pyopengl macholib pefile pywin32-ctypes sentry-sdk typing-extensions
+  .venv/bin/python -m pip install PySide6-Essentials QtPy QtAwesome requests lhafile
   .venv/bin/python fs-uae-launcher
 
 If venv creation reports that ensurepip is unavailable, install Ubuntu's

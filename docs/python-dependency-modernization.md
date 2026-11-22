@@ -86,13 +86,20 @@ and frozen artifacts have not been certified by these local checks.
   Windows packaging remains unsupported; no replacement recipe is claimed.
   Packaging regression checks guard the manifest/lock and active build paths;
   clean dependency installation and frozen builds remain separate gates.
-- [ ] Regenerate the lockfile from the agreed manifest with the supported
+- [x] Regenerate the lockfile from the agreed manifest with the supported
   Python version(s), then verify a clean `pipenv sync --dev` and the CI build.
-  Do not hand-edit generated lock data.
-- [ ] Replace unconstrained `*` requirements in `Pipfile` with deliberate
+  Do not hand-edit generated lock data. Regenerated with `pipenv lock` on
+  2026-11-22 after the dependency audit below; a clean `pipenv sync --dev`
+  and both test suites were verified locally, and CI's 3.12/3.15 test and
+  build jobs install from it.
+- [x] Replace unconstrained `*` requirements in `Pipfile` with deliberate
   dependency policy: compatible ranges in package metadata and a reproducible
   lock for applications/builds. Separate runtime, optional, and development
-  dependencies. Keep platform-only packages conditional.
+  dependencies. Keep platform-only packages conditional. Every requirement
+  is a compatible-release range (`~=X.Y`: the tested version up to the next
+  major) except ruff, pinned exactly because the Lint job's results depend
+  on its version. Platform-only packages (macholib for PyInstaller on macOS)
+  now come in through their dependents' markers.
 
 ## Priority 1: Set a Supported Python Policy
 
@@ -126,10 +133,22 @@ and frozen artifacts have not been certified by these local checks.
 
 ## Priority 2: Audit and Maintain Dependencies
 
-- [ ] Inventory direct imports and build-time imports against the declared
+- [x] Inventory direct imports and build-time imports against the declared
   dependencies. Confirm whether Pillow, PyOpenGL, Sentry SDK, typing
   extensions, PyInstaller helpers, and platform-specific packages are still
   needed, then remove only dependencies proven unused across all build paths.
+  Nothing imports Pillow, PyOpenGL, Sentry SDK, typing-extensions or
+  importlib-metadata (Qt's OpenGL modules come from PySide6). macholib,
+  pefile and pywin32-ctypes are PyInstaller's own platform dependencies and
+  come in with it. pylint, rope and pytest-mypy were unused by CI, the build
+  and the tests. The code uses only PySide6's essential modules, so the
+  manifest names `pyside6-essentials`, not the `pyside6` meta-package with
+  Addons, WebEngine and Pdf (QtPy's optional QtDataVisualization import
+  tolerates their absence).
+  The inverse also turned up: `fsgs.archive` imports `lhafile` (optionally)
+  and the Debian and RPM packages require it, but the Pipfile didn't, so CI
+  and the PyInstaller bundles had no `.lha` support. It is now declared, with
+  a test that reads an `.lha` archive.
 - [ ] Review each retained direct dependency for current maintenance,
   supported Python versions, supported platforms, and security advisories.
   Prefer maintained releases compatible with the chosen Qt and Python
@@ -169,8 +188,8 @@ and frozen artifacts have not been certified by these local checks.
 
 ## Review Evidence
 
-- `Pipfile` and `Pipfile.lock`: PySide6, QtPy and QtAwesome are declared and
-  locked; deliberate manifest version ranges remain open work.
+- `Pipfile` and `Pipfile.lock`: PySide6 (essentials), QtPy, QtAwesome and
+  requests are declared with compatible-release ranges and locked.
 - `.github/workflows/linux.yml` and `.github/workflows/macos.yml`: Python
   3.12/3.15 matrices and packaging-policy tests; configuration is not a passed
   platform build. `.github/workflows/source.yml` uses Python 3.12.

@@ -14,7 +14,6 @@ Depends:
  ${python3:Depends},
  ${misc:Depends},
  python3-lhafile,
- python3-opengl,
  python3-pyside6.qtcore,
  python3-pyside6.qtgui,
  python3-pyside6.qtopengl,
