@@ -3,30 +3,28 @@ name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
 
+# Compatible-release ranges (~=X.Y means >=X.Y, <X+1): the lower bound is
+# the version tested, the upper bound the next major. Pipfile.lock pins the
+# exact versions CI and the packaged builds install.
+
 [dev-packages]
-black = "*"
-mypy = "*"
-pyinstaller = "*"
-pylint = "*"
-pytest = "*"
-pytest-mypy = "*"
-rope = "*"
+# The Format job runs this black; its style only changes between major
+# (yearly) releases.
+black = "~=26.10"
+mypy = "~=2.4"
+pyinstaller = "~=6.22"
+pytest = "~=9.2"
+# The Lint job runs exactly this version: ruff adds rules in minor releases.
 ruff = "==0.17.5"
-setuptools = "*"
+setuptools = "~=84.2"
 
 [packages]
-macholib = "*"
-pefile = "*"
-pillow = "*"
-pyopengl = "*"
-pyside6 = "*"
-qtpy = "*"
-qtawesome = "*"
-pywin32-ctypes = "*"
-importlib-metadata = {version = "*", sys_platform = "== 'darwin'"}
-requests = "*"
-sentry-sdk = "*"
-typing-extensions = "*"
+# Only Qt's essential modules (QtCore, QtGui, QtWidgets, QtOpenGL...); the
+# pyside6 meta-package also pulls in Addons, WebEngine and Pdf.
+pyside6-essentials = "~=6.12"
+qtpy = "~=2.4"
+qtawesome = "~=1.4"
+requests = "~=2.34"
 
 [requires]
 python_version = "3.12"
