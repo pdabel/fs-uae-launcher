@@ -12,12 +12,16 @@ class FSUAESettingsPage(SettingsPage):
         self.add_header(icon, "FS-UAE")
 
         if linux:
-            from launcher.settings.cpu_performance_group import CPUPerformanceGroup
+            from launcher.settings.cpu_performance_group import (
+                CPUPerformanceGroup,
+            )
 
             self.add_option(Option.GAME_MODE)
             self.add_option(Option.GOVERNOR_WARNING)
             self.cpu_performance_group = CPUPerformanceGroup(self)
-            self.layout.add(self.cpu_performance_group, fill=True, margin_top=10)
+            self.layout.add(
+                self.cpu_performance_group, fill=True, margin_top=10
+            )
 
         label = fsui.MultiLineLabel(
             self,

@@ -43,9 +43,13 @@ class WarningsElement(StatusElement):
             import qtawesome as qta
             from fsui.qt import modern_theme
 
-            self.notice_icon = Image(object=qta.icon(
-                "fa5s.info-circle", color=modern_theme.palette().icon
-            ).pixmap(16, 16).toImage())
+            self.notice_icon = Image(
+                object=qta.icon(
+                    "fa5s.info-circle", color=modern_theme.palette().icon
+                )
+                .pixmap(16, 16)
+                .toImage()
+            )
         self.icons = [self.error_icon, self.warning_icon, self.notice_icon]
         self.coordinates = []
         self.warnings = []
@@ -327,9 +331,7 @@ class WarningsElement(StatusElement):
             self.warnings.append((WARNING_LEVEL, text, "on_uae_config"))
         if len(self.custom_config):
             if len(self.custom_config) == 1:
-                text = gettext(
-                    f"Custom option: {list(self.custom_config)[0]}"
-                )
+                text = gettext(f"Custom option: {list(self.custom_config)[0]}")
             else:
                 text = gettext("Custom options")
             self.warnings.append((NOTICE_LEVEL, text, "on_uae_config"))

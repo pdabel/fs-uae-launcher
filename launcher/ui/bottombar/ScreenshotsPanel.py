@@ -101,13 +101,21 @@ class ScreenshotsPanel(BottomPanel):
         if fsui.theme_variant == "modern":
             dc.set_text_color(modern_color("text"))
             dc.draw_text(gettext("Screenshots"), 16, 14)
-            images = [image for image in self.images if image is not self.default_image]
+            images = [
+                image
+                for image in self.images
+                if image is not self.default_image
+            ]
             if not images:
                 dc.set_text_color(modern_color("muted"))
                 dc.draw_text(gettext("No screenshots available"), 16, 80)
                 return
-            content_width = sum(image.size[0] for image in images) + 16 * (len(images) - 1)
-            offset = min(0, size[0] - 32 - content_width) if self.x_offset else 0
+            content_width = sum(image.size[0] for image in images) + 16 * (
+                len(images) - 1
+            )
+            offset = (
+                min(0, size[0] - 32 - content_width) if self.x_offset else 0
+            )
             x = 16 + offset
             for image in images:
                 if x + image.size[0] > size[0] - 16:

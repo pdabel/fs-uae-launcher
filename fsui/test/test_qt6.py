@@ -3,7 +3,15 @@ import unittest
 from unittest.mock import Mock, call, patch
 
 import fsui
-from fsui.qt import QDialog, QEvent, QFont, QFontMetrics, QImage, QPainter, QTimer
+from fsui.qt import (
+    QDialog,
+    QEvent,
+    QFont,
+    QFontMetrics,
+    QImage,
+    QPainter,
+    QTimer,
+)
 from fsui.qt.DrawingContext import DrawingContext
 from fsui.qt.qt import configure_qt_environment
 from .WidgetTestCase import WidgetTestCase
@@ -11,7 +19,9 @@ from .WidgetTestCase import WidgetTestCase
 
 class TestQtEnvironment(unittest.TestCase):
     def test_gnome_defaults_to_generic_theme(self):
-        with patch.dict(os.environ, {"XDG_CURRENT_DESKTOP": "ubuntu:GNOME"}, clear=True):
+        with patch.dict(
+            os.environ, {"XDG_CURRENT_DESKTOP": "ubuntu:GNOME"}, clear=True
+        ):
             with patch("sys.platform", "linux"):
                 configure_qt_environment()
                 self.assertEqual(os.environ["QT_QPA_PLATFORMTHEME"], "generic")
@@ -28,7 +38,9 @@ class TestQtEnvironment(unittest.TestCase):
                 self.assertEqual(os.environ["QT_QPA_PLATFORMTHEME"], "qt6ct")
 
     def test_other_desktops_are_unchanged(self):
-        with patch.dict(os.environ, {"XDG_CURRENT_DESKTOP": "KDE"}, clear=True):
+        with patch.dict(
+            os.environ, {"XDG_CURRENT_DESKTOP": "KDE"}, clear=True
+        ):
             with patch("sys.platform", "linux"):
                 configure_qt_environment()
                 self.assertNotIn("QT_QPA_PLATFORMTHEME", os.environ)
@@ -36,7 +48,9 @@ class TestQtEnvironment(unittest.TestCase):
     def test_other_platforms_are_unchanged(self):
         for platform in ("win32", "darwin"):
             with self.subTest(platform=platform):
-                with patch.dict(os.environ, {"XDG_CURRENT_DESKTOP": "GNOME"}, clear=True):
+                with patch.dict(
+                    os.environ, {"XDG_CURRENT_DESKTOP": "GNOME"}, clear=True
+                ):
                     with patch("sys.platform", platform):
                         configure_qt_environment()
                         self.assertNotIn("QT_QPA_PLATFORMTHEME", os.environ)
@@ -76,7 +90,9 @@ class TestQt6(WidgetTestCase):
                         self.assertIs(child.parentWidget(), overlay)
                         self.assertFalse(child.isWindow())
                     self.assertEqual(overlay.hint.isHidden(), not bool(hint))
-                    self.assertEqual(overlay.button.isHidden(), not bool(action))
+                    self.assertEqual(
+                        overlay.button.isHidden(), not bool(action)
+                    )
                     overlay.button.click()
                     clicked.assert_called_once()
                     overlay.set_text("No matches", "Try again")
@@ -112,10 +128,14 @@ class TestQt6(WidgetTestCase):
         owner = Mock()
         owner.real_window.return_value = window
         self.assertIsNone(window.windowHandle())
-        with patch("launcher.ui.launcherwindow.LauncherSettings.get", return_value=""):
+        with patch(
+            "launcher.ui.launcherwindow.LauncherSettings.get", return_value=""
+        ):
             LauncherWindow.move_to_preferred_screen(owner)
         self.assertIsNotNone(window.windowHandle())
-        self.assertIs(window.windowHandle().screen(), self.application.primaryScreen())
+        self.assertIs(
+            window.windowHandle().screen(), self.application.primaryScreen()
+        )
         self.assertFalse(window.isVisible())
         window.close()
 
@@ -134,12 +154,17 @@ class TestQt6(WidgetTestCase):
         order.attach_mock(handle.setScreen, "set_screen")
         owner = Mock()
         owner.real_window.return_value = window
-        with patch("fsui.qt.init_qt", return_value=application), \
-                patch("fsgs.displays.screen_index", return_value=1) as lookup, \
-                patch("launcher.ui.launcherwindow.LauncherSettings.get", return_value="saved"):
+        with patch("fsui.qt.init_qt", return_value=application), patch(
+            "fsgs.displays.screen_index", return_value=1
+        ) as lookup, patch(
+            "launcher.ui.launcherwindow.LauncherSettings.get",
+            return_value="saved",
+        ):
             LauncherWindow.move_to_preferred_screen(owner)
         lookup.assert_called_once_with([primary, selected], "saved", primary)
-        self.assertEqual(order.mock_calls, [call.create(), call.set_screen(selected)])
+        self.assertEqual(
+            order.mock_calls, [call.create(), call.set_screen(selected)]
+        )
 
     def test_screen_info_follows_effective_game_monitor(self):
         from fsbc.signal import Signal
@@ -148,11 +173,27 @@ class TestQt6(WidgetTestCase):
         state = {"monitor": "game", "overrides": {"monitor": "game"}}
         settings = {"fullscreen": "1", "monitor": "global"}
         self.setup_dialog()
-        with patch("launcher.launcher_config.LauncherConfig.get", side_effect=lambda key: state.get(key, "")), \
-                patch("launcher.launcher_config.LauncherConfig.get_game_overrides", side_effect=lambda: state["overrides"]), \
-                patch("launcher.launcher_settings.LauncherSettings.get", side_effect=lambda key: settings.get(key, "")), \
-                patch("launcher.ui.launch.GameDriver.screen_rect_for_monitor", side_effect=lambda monitor: (0, 0, {"game": 1000, "global": 2000, "": 3000}[monitor], 800)), \
-                patch("launcher.ui.launch.GameDriver.screen_refresh_rate_for_monitor", return_value=60):
+        with patch(
+            "launcher.launcher_config.LauncherConfig.get",
+            side_effect=lambda key: state.get(key, ""),
+        ), patch(
+            "launcher.launcher_config.LauncherConfig.get_game_overrides",
+            side_effect=lambda: state["overrides"],
+        ), patch(
+            "launcher.launcher_settings.LauncherSettings.get",
+            side_effect=lambda key: settings.get(key, ""),
+        ), patch(
+            "launcher.ui.launch.GameDriver.screen_rect_for_monitor",
+            side_effect=lambda monitor: (
+                0,
+                0,
+                {"game": 1000, "global": 2000, "": 3000}[monitor],
+                800,
+            ),
+        ), patch(
+            "launcher.ui.launch.GameDriver.screen_refresh_rate_for_monitor",
+            return_value=60,
+        ):
             label = ScreenInfoLabel(self.dialog)
             self.assertIn("1000x800", label.text())
             settings["monitor"] = ""
@@ -181,8 +222,10 @@ class TestQt6(WidgetTestCase):
 
         def display(name, horizontal):
             return SimpleNamespace(
-                name=lambda: name, manufacturer=lambda: "Test",
-                model=lambda: "Test Display", serialNumber=lambda: name,
+                name=lambda: name,
+                manufacturer=lambda: "Test",
+                model=lambda: "Test Display",
+                serialNumber=lambda: name,
                 geometry=lambda: QRect(horizontal, 0, 1920, 1080),
                 geometryChanged=Mock(),
             )
@@ -194,19 +237,29 @@ class TestQt6(WidgetTestCase):
         application.screens.side_effect = lambda: screens
         settings = {"monitor": ""}
         self.setup_dialog()
-        with patch("launcher.settings.monitorbutton.init_qt", return_value=application), \
-            patch("launcher.settings.monitorbutton.MonitorHighlight"), \
-                patch("launcher.settings.monitorbutton.LauncherSettings.get", side_effect=lambda key: settings.get(key, "")), \
-                patch("launcher.settings.monitorbutton.LauncherSettings.set", side_effect=settings.__setitem__):
+        with patch(
+            "launcher.settings.monitorbutton.init_qt", return_value=application
+        ), patch("launcher.settings.monitorbutton.MonitorHighlight"), patch(
+            "launcher.settings.monitorbutton.LauncherSettings.get",
+            side_effect=lambda key: settings.get(key, ""),
+        ), patch(
+            "launcher.settings.monitorbutton.LauncherSettings.set",
+            side_effect=settings.__setitem__,
+        ):
             choice = MonitorChoice(self.dialog)
-            group = OptionUI.create_group(self.dialog, "monitor", help_button=False)
+            group = OptionUI.create_group(
+                self.dialog, "monitor", help_button=False
+            )
             self.assertIsInstance(group.value_control, MonitorChoice)
             self.assertEqual(choice.count(), 3)
             self.assertIn("DP-1", choice.itemText(1))
             choice.set_index(2)
             self.assertEqual(settings["monitor"], display_id(second))
             group.value_control.on_monitor_setting(settings["monitor"])
-            self.assertEqual(group.value_control.values[group.value_control.get_index()], display_id(second))
+            self.assertEqual(
+                group.value_control.values[group.value_control.get_index()],
+                display_id(second),
+            )
             screens[:] = [first]
             choice.refresh()
             self.assertIn("unavailable", choice.currentText())
@@ -244,8 +297,10 @@ class TestQt6(WidgetTestCase):
 
         def display(name, serial):
             return SimpleNamespace(
-                name=lambda: name, manufacturer=lambda: "Test",
-                model=lambda: "Test Display", serialNumber=lambda: serial,
+                name=lambda: name,
+                manufacturer=lambda: "Test",
+                model=lambda: "Test Display",
+                serialNumber=lambda: serial,
                 geometry=lambda: QRect(0, 0, 1920, 1080),
                 geometryChanged=Mock(),
             )
@@ -265,20 +320,36 @@ class TestQt6(WidgetTestCase):
             "available": True,
         }
         self.setup_dialog()
-        with patch("launcher.settings.monitorbutton.init_qt", return_value=application), \
-                patch("launcher.launcher_config.LauncherConfig.get", return_value=""), \
-                patch("launcher.launcher_config.LauncherConfig.game_override_identity", return_value=("variant_uuid", "game")), \
-                patch("launcher.launcher_config.LauncherConfig.game_overrides_available", side_effect=lambda: state["available"]), \
-                patch("launcher.launcher_config.LauncherConfig.get_game_overrides", side_effect=lambda: state["overrides"].copy()), \
-                patch("launcher.launcher_config.LauncherConfig.get_game_base_value", side_effect=lambda key: state["base"].get(key, "")), \
-                patch("launcher.settings.option_ui.LauncherSettings.get", return_value=""), \
-                patch("launcher.settings.monitorbutton.LauncherSettings.get", return_value=""):
+        with patch(
+            "launcher.settings.monitorbutton.init_qt", return_value=application
+        ), patch(
+            "launcher.launcher_config.LauncherConfig.get", return_value=""
+        ), patch(
+            "launcher.launcher_config.LauncherConfig.game_override_identity",
+            return_value=("variant_uuid", "game"),
+        ), patch(
+            "launcher.launcher_config.LauncherConfig.game_overrides_available",
+            side_effect=lambda: state["available"],
+        ), patch(
+            "launcher.launcher_config.LauncherConfig.get_game_overrides",
+            side_effect=lambda: state["overrides"].copy(),
+        ), patch(
+            "launcher.launcher_config.LauncherConfig.get_game_base_value",
+            side_effect=lambda key: state["base"].get(key, ""),
+        ), patch(
+            "launcher.settings.option_ui.LauncherSettings.get", return_value=""
+        ), patch(
+            "launcher.settings.monitorbutton.LauncherSettings.get",
+            return_value="",
+        ):
             monitor = MonitorChoice(self.dialog, per_game=True)
             scale = OptionUI.create_group(
                 self.dialog, "scale", help_button=False, per_game=True
             )
             self.assertIn("unavailable", monitor.currentText())
-            self.assertEqual(monitor.values[monitor.get_index()], display_id(original))
+            self.assertEqual(
+                monitor.values[monitor.get_index()], display_id(original)
+            )
             self.assertIn("custom-a", scale.widget.currentText())
             screens[:] = [reconnected]
             state["base"]["scale"] = "custom-b"
@@ -295,18 +366,27 @@ class TestQt6(WidgetTestCase):
             Signal("fsgs:config").notify("__game_override_context", "")
             self.assertFalse(monitor.isEnabled())
             self.assertFalse(scale.value_control.isEnabled())
-            self.assertEqual(scale.game_state_label.text(), "Overrides unavailable")
+            self.assertEqual(
+                scale.game_state_label.text(), "Overrides unavailable"
+            )
         self.run_dialog()
         self.application.sendPostedEvents(None, QEvent.DeferredDelete)
 
     def test_monitor_highlight_previews_without_saving_and_times_out(self):
         from fsui.qt import QEvent, Qt
-        from launcher.settings.monitorbutton import MonitorChoice, MonitorHighlight
+        from launcher.settings.monitorbutton import (
+            MonitorChoice,
+            MonitorHighlight,
+        )
 
         self.setup_dialog()
         self.dialog.layout = fsui.VerticalLayout()
-        with patch("launcher.settings.monitorbutton.LauncherSettings.get", return_value=""), \
-                patch("launcher.settings.monitorbutton.LauncherSettings.set") as save:
+        with patch(
+            "launcher.settings.monitorbutton.LauncherSettings.get",
+            return_value="",
+        ), patch(
+            "launcher.settings.monitorbutton.LauncherSettings.set"
+        ) as save:
             choice = MonitorChoice(self.dialog)
             self.dialog.layout.add(choice, fill=True)
             self.dialog.set_size((540, 300))
@@ -329,10 +409,16 @@ class TestQt6(WidgetTestCase):
             self.assertLessEqual(indicator.width(), 360)
             self.assertLessEqual(indicator.height(), 160)
             self.assertTrue(self.dialog.rect().contains(indicator.geometry()))
-            self.assertTrue(indicator.testAttribute(Qt.WA_TransparentForMouseEvents))
-            self.assertTrue(indicator.testAttribute(Qt.WA_ShowWithoutActivating))
+            self.assertTrue(
+                indicator.testAttribute(Qt.WA_TransparentForMouseEvents)
+            )
+            self.assertTrue(
+                indicator.testAttribute(Qt.WA_ShowWithoutActivating)
+            )
             self.assertEqual(indicator.focusPolicy(), Qt.NoFocus)
-            self.assertIsNot(self.dialog.childAt(indicator.geometry().center()), indicator)
+            self.assertIsNot(
+                self.dialog.childAt(indicator.geometry().center()), indicator
+            )
             self.assertIn(self.application.screens()[0].name(), indicator.text)
             save.assert_not_called()
             image = indicator.grab().toImage()
@@ -365,19 +451,32 @@ class TestQt6(WidgetTestCase):
         self.setup_dialog()
         preview = MonitorHighlight(self.dialog)
         preview.resize(360, 160)
-        left = SimpleNamespace(geometry=lambda: QRect(-1920, 0, 1920, 1080), name=lambda: "DP-1")
-        upper = SimpleNamespace(geometry=lambda: QRect(0, -1080, 1920, 1080), name=lambda: "HDMI-1")
+        left = SimpleNamespace(
+            geometry=lambda: QRect(-1920, 0, 1920, 1080), name=lambda: "DP-1"
+        )
+        upper = SimpleNamespace(
+            geometry=lambda: QRect(0, -1080, 1920, 1080), name=lambda: "HDMI-1"
+        )
         preview.screens = [left, upper]
         preview.selected = upper
         rectangles = preview.monitor_rects()
         self.assertEqual(len(rectangles), 2)
         for screen, rect in rectangles:
             self.assertTrue(preview.rect().contains(rect))
-        self.assertLess(rectangles[0][1].center().x(), rectangles[1][1].center().x())
-        self.assertGreater(rectangles[0][1].center().y(), rectangles[1][1].center().y())
+        self.assertLess(
+            rectangles[0][1].center().x(), rectangles[1][1].center().x()
+        )
+        self.assertGreater(
+            rectangles[0][1].center().y(), rectangles[1][1].center().y()
+        )
         image = preview.grab().toImage()
         selected_rect = rectangles[1][1]
-        self.assertGreater(image.pixelColor(selected_rect.left(), selected_rect.center().y()).blue(), 180)
+        self.assertGreater(
+            image.pixelColor(
+                selected_rect.left(), selected_rect.center().y()
+            ).blue(),
+            180,
+        )
         self.run_dialog()
 
     def test_cpu_performance_confirmation_and_restore(self):
@@ -385,23 +484,50 @@ class TestQt6(WidgetTestCase):
         from launcher.cpu_performance import CpuPolicy
         from launcher.settings.cpu_performance_group import CPUPerformanceGroup
 
-        original = (CpuPolicy("policy0", "powersave", ("powersave", "performance"), (0, 1)),)
-        performance = (CpuPolicy("policy0", "performance", ("powersave", "performance"), (0, 1)),)
+        original = (
+            CpuPolicy(
+                "policy0", "powersave", ("powersave", "performance"), (0, 1)
+            ),
+        )
+        performance = (
+            CpuPolicy(
+                "policy0", "performance", ("powersave", "performance"), (0, 1)
+            ),
+        )
         self.setup_dialog()
-        with patch("launcher.settings.cpu_performance_group.read_policies", return_value=original) as read, \
-                patch("launcher.settings.cpu_performance_group.QProcess") as process_class, \
-                patch("launcher.cpu_performance.shutil.which", side_effect=lambda name: "/usr/bin/" + name):
+        with patch(
+            "launcher.settings.cpu_performance_group.read_policies",
+            return_value=original,
+        ) as read, patch(
+            "launcher.settings.cpu_performance_group.QProcess"
+        ) as process_class, patch(
+            "launcher.cpu_performance.shutil.which",
+            side_effect=lambda name: "/usr/bin/" + name,
+        ):
             group = CPUPerformanceGroup(self.dialog)
             self.assertTrue(group.performance_button.is_enabled())
             self.assertFalse(group.restore_button.is_enabled())
-            with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.No):
+            with patch(
+                "fsui.qt.QMessageBox.question", return_value=QMessageBox.No
+            ):
                 group.performance_button.widget().click()
             process_class.return_value.start.assert_not_called()
             self.assertIsNone(group.previous)
-            with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+            with patch(
+                "fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes
+            ):
                 group.performance_button.widget().click()
             process_class.return_value.start.assert_called_once_with(
-                "/usr/bin/pkexec", ["--disable-internal-agent", "/usr/bin/cpupower", "--cpu", "0,1", "frequency-set", "--governor", "performance"]
+                "/usr/bin/pkexec",
+                [
+                    "--disable-internal-agent",
+                    "/usr/bin/cpupower",
+                    "--cpu",
+                    "0,1",
+                    "frequency-set",
+                    "--governor",
+                    "performance",
+                ],
             )
             self.assertTrue(group.busy)
             self.assertFalse(group.restore_button.is_enabled())
@@ -411,9 +537,14 @@ class TestQt6(WidgetTestCase):
             self.assertTrue(group.restore_button.is_enabled())
             self.assertFalse(group.performance_button.is_enabled())
             self.assertEqual(group.previous, original)
-            with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+            with patch(
+                "fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes
+            ):
                 group.restore_button.widget().click()
-            self.assertEqual(process_class.return_value.start.call_args.args[1][-1], "powersave")
+            self.assertEqual(
+                process_class.return_value.start.call_args.args[1][-1],
+                "powersave",
+            )
             read.return_value = original
             group.on_process_finished(0, process_class.NormalExit)
             self.assertIsNone(group.previous)
@@ -425,15 +556,30 @@ class TestQt6(WidgetTestCase):
         from launcher.cpu_performance import CpuPolicy
         from launcher.settings.cpu_performance_group import CPUPerformanceGroup
 
-        original = (CpuPolicy("policy0", "powersave", ("powersave", "performance"), (0,)),)
+        original = (
+            CpuPolicy(
+                "policy0", "powersave", ("powersave", "performance"), (0,)
+            ),
+        )
         self.setup_dialog()
-        with patch("launcher.settings.cpu_performance_group.read_policies", return_value=original), \
-                patch("launcher.settings.cpu_performance_group.QProcess") as process_class, \
-                patch("launcher.cpu_performance.shutil.which", side_effect=lambda name: "/usr/bin/" + name), \
-                patch("fsui.show_error") as error:
-            process_class.return_value.readAllStandardError.return_value = b"Not authorized"
+        with patch(
+            "launcher.settings.cpu_performance_group.read_policies",
+            return_value=original,
+        ), patch(
+            "launcher.settings.cpu_performance_group.QProcess"
+        ) as process_class, patch(
+            "launcher.cpu_performance.shutil.which",
+            side_effect=lambda name: "/usr/bin/" + name,
+        ), patch(
+            "fsui.show_error"
+        ) as error:
+            process_class.return_value.readAllStandardError.return_value = (
+                b"Not authorized"
+            )
             group = CPUPerformanceGroup(self.dialog)
-            with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+            with patch(
+                "fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes
+            ):
                 group.performance_button.widget().click()
             group.on_process_finished(126, process_class.NormalExit)
             error.assert_called_once()
@@ -446,11 +592,20 @@ class TestQt6(WidgetTestCase):
         from launcher.cpu_performance import CpuPolicy
         from launcher.settings.cpu_performance_group import CPUPerformanceGroup
 
-        original = (CpuPolicy("policy0", "powersave", ("powersave", "performance"), (0,)),)
+        original = (
+            CpuPolicy(
+                "policy0", "powersave", ("powersave", "performance"), (0,)
+            ),
+        )
         self.setup_dialog()
-        with patch("launcher.settings.cpu_performance_group.read_policies", return_value=original) as read, \
-                patch("launcher.settings.cpu_performance_group.QProcess") as process_class, \
-                patch("launcher.cpu_performance.shutil.which", return_value=None):
+        with patch(
+            "launcher.settings.cpu_performance_group.read_policies",
+            return_value=original,
+        ) as read, patch(
+            "launcher.settings.cpu_performance_group.QProcess"
+        ) as process_class, patch(
+            "launcher.cpu_performance.shutil.which", return_value=None
+        ):
             group = CPUPerformanceGroup(self.dialog)
             self.assertFalse(group.performance_button.is_enabled())
             self.assertIn("powersave", group.status_label._widget.text())
@@ -466,13 +621,25 @@ class TestQt6(WidgetTestCase):
         from launcher.cpu_performance import CpuPolicy
         from launcher.settings.cpu_performance_group import CPUPerformanceGroup
 
-        original = (CpuPolicy("policy0", "powersave", ("powersave", "performance"), (0,)),)
+        original = (
+            CpuPolicy(
+                "policy0", "powersave", ("powersave", "performance"), (0,)
+            ),
+        )
         self.setup_dialog()
-        with patch("launcher.settings.cpu_performance_group.read_policies", return_value=original), \
-                patch("launcher.settings.cpu_performance_group.QProcess") as process_class, \
-                patch("launcher.cpu_performance.shutil.which", side_effect=lambda name: "/usr/bin/" + name), \
-                patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes), \
-                patch("fsui.show_error") as error:
+        with patch(
+            "launcher.settings.cpu_performance_group.read_policies",
+            return_value=original,
+        ), patch(
+            "launcher.settings.cpu_performance_group.QProcess"
+        ) as process_class, patch(
+            "launcher.cpu_performance.shutil.which",
+            side_effect=lambda name: "/usr/bin/" + name,
+        ), patch(
+            "fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes
+        ), patch(
+            "fsui.show_error"
+        ) as error:
             group = CPUPerformanceGroup(self.dialog)
             group.performance_button.widget().click()
             group.on_process_finished(0, process_class.NormalExit)
@@ -560,18 +727,32 @@ class TestQt6(WidgetTestCase):
         painter = QPainter(image)
         try:
             context = DrawingContext(painter)
-            with patch("launcher.ui.statusbar.StatusBar.StatusBar.draw_element_background"):
+            with patch(
+                "launcher.ui.statusbar.StatusBar.StatusBar.draw_element_background"
+            ):
                 for element in (status, warning):
                     for color in ("#edf0f7", "#123456"):
-                        with self.subTest(element=type(element).__name__, color=color):
+                        with self.subTest(
+                            element=type(element).__name__, color=color
+                        ):
                             palette = element.widget().palette()
-                            palette.setColor(QPalette.WindowText, QColor(color))
+                            palette.setColor(
+                                QPalette.WindowText, QColor(color)
+                            )
                             element.widget().setPalette(palette)
-                            with patch.object(element, "create_dc", return_value=context):
-                                with patch.object(context, "draw_text", wraps=context.draw_text) as draw_text:
+                            with patch.object(
+                                element, "create_dc", return_value=context
+                            ):
+                                with patch.object(
+                                    context,
+                                    "draw_text",
+                                    wraps=context.draw_text,
+                                ) as draw_text:
                                     element.on_paint()
                                     draw_text.assert_called_once()
-                            self.assertEqual(context.get_text_color(), QColor(color))
+                            self.assertEqual(
+                                context.get_text_color(), QColor(color)
+                            )
                 status.active = False
                 with patch.object(status, "create_dc", return_value=context):
                     status.on_paint()
@@ -584,15 +765,36 @@ class TestQt6(WidgetTestCase):
         from launcher.ui.skin import Skin
 
         for variant in ("modern", "plain", "windows311", "workbench"):
-            for windows, macosx in ((True, False), (False, True), (False, False)):
-                with self.subTest(variant=variant, windows=windows, macosx=macosx):
+            for windows, macosx in (
+                (True, False),
+                (False, True),
+                (False, False),
+            ):
+                with self.subTest(
+                    variant=variant, windows=windows, macosx=macosx
+                ):
                     with patch.object(fsui, "theme_variant", variant):
-                        with patch("fsbc.system.windows", windows), patch("fsbc.system.macosx", macosx):
-                            with patch("launcher.ui.skin.LauncherSettings.get", return_value=""):
-                                self.assertIsNone(Skin._get_background_color.__wrapped__(Skin))
-                            with patch("launcher.ui.skin.LauncherSettings.get", return_value="#314159"):
+                        with patch("fsbc.system.windows", windows), patch(
+                            "fsbc.system.macosx", macosx
+                        ):
+                            with patch(
+                                "launcher.ui.skin.LauncherSettings.get",
+                                return_value="",
+                            ):
+                                self.assertIsNone(
+                                    Skin._get_background_color.__wrapped__(
+                                        Skin
+                                    )
+                                )
+                            with patch(
+                                "launcher.ui.skin.LauncherSettings.get",
+                                return_value="#314159",
+                            ):
                                 self.assertEqual(
-                                    Skin._get_background_color.__wrapped__(Skin).name(), "#314159"
+                                    Skin._get_background_color.__wrapped__(
+                                        Skin
+                                    ).name(),
+                                    "#314159",
                                 )
 
     def test_modern_control_assets_and_interaction(self):
@@ -601,7 +803,13 @@ class TestQt6(WidgetTestCase):
         from fsui.qt import modern_theme
 
         for name in ("check", "chevron-up", "chevron-down", "retro-chevron"):
-            icon = QIcon(str(Path(modern_theme.__file__).parent / "res" / (name + ".svg")))
+            icon = QIcon(
+                str(
+                    Path(modern_theme.__file__).parent
+                    / "res"
+                    / (name + ".svg")
+                )
+            )
             self.assertFalse(icon.pixmap(16, 16).isNull())
         checkbox = QCheckBox("Default")
         checkbox.click()
@@ -623,7 +831,11 @@ class TestQt6(WidgetTestCase):
 
     def test_numeric_fields_align_with_dropdowns_across_modern_skins(self):
         from fsui.qt import (
-            QComboBox, QSignalBlocker, QStyle, QStyleOptionComboBox, QStyleOptionFrame,
+            QComboBox,
+            QSignalBlocker,
+            QStyle,
+            QStyleOptionComboBox,
+            QStyleOptionFrame,
             modern_theme,
         )
         from fsui.qt.qt import apply_launcher_theme
@@ -641,7 +853,9 @@ class TestQt6(WidgetTestCase):
         try:
             for theme in [
                 *("fusion-" + skin for skin in modern_theme.SKINS),
-                "fusion-plain", "fusion-windows311", "fusion-workbench",
+                "fusion-plain",
+                "fusion-windows311",
+                "fusion-workbench",
                 "fusion-cyberpunk",
             ]:
                 with self.subTest(theme=theme):
@@ -656,8 +870,14 @@ class TestQt6(WidgetTestCase):
                             editor = spin.widget().lineEdit()
                             option = QStyleOptionFrame()
                             option.initFrom(spin.widget())
-                            contents = spin.widget().style().subElementRect(
-                                QStyle.SE_LineEditContents, option, spin.widget()
+                            contents = (
+                                spin.widget()
+                                .style()
+                                .subElementRect(
+                                    QStyle.SE_LineEditContents,
+                                    option,
+                                    spin.widget(),
+                                )
                             )
                             self.assertGreaterEqual(
                                 editor.x(), max(0, contents.x() - 2)
@@ -666,8 +886,10 @@ class TestQt6(WidgetTestCase):
                                 combo_option = QStyleOptionComboBox()
                                 choice.initStyleOption(combo_option)
                                 combo_contents = choice.style().subControlRect(
-                                    QStyle.CC_ComboBox, combo_option,
-                                    QStyle.SC_ComboBoxEditField, choice,
+                                    QStyle.CC_ComboBox,
+                                    combo_option,
+                                    QStyle.SC_ComboBoxEditField,
+                                    choice,
                                 )
                                 self.assertEqual(
                                     editor.x() + 2, combo_contents.x()
@@ -684,9 +906,13 @@ class TestQt6(WidgetTestCase):
                                         control.render(image)
                                         # Compare with blank text so antialiased
                                         # glyphs need not contain a solid pixel.
-                                        blank = QImage(image.size(), image.format())
+                                        blank = QImage(
+                                            image.size(), image.format()
+                                        )
                                         blank.fill(0)
-                                        with QSignalBlocker(spin.widget()), QSignalBlocker(editor):
+                                        with QSignalBlocker(
+                                            spin.widget()
+                                        ), QSignalBlocker(editor):
                                             if control is spin.widget():
                                                 text = editor.text()
                                                 editor.setText("")
@@ -701,12 +927,20 @@ class TestQt6(WidgetTestCase):
                                             x
                                             for x in range(2, 100)
                                             for y in range(10, 40)
-                                            if image.pixel(x, y) != blank.pixel(x, y)
+                                            if image.pixel(x, y)
+                                            != blank.pixel(x, y)
                                         ]
-                                        self.assertTrue(text_pixels, (theme, type(control).__name__))
+                                        self.assertTrue(
+                                            text_pixels,
+                                            (theme, type(control).__name__),
+                                        )
                                         text_positions.append(min(text_pixels))
                                     self.assertLessEqual(
-                                        abs(text_positions[0] - text_positions[1]), 1
+                                        abs(
+                                            text_positions[0]
+                                            - text_positions[1]
+                                        ),
+                                        1,
                                     )
                             self.assertGreater(editor.width(), 0)
                     spin.widget().setEnabled(True)
@@ -728,18 +962,25 @@ class TestQt6(WidgetTestCase):
 
         images = {}
         for variant in ("modern", "plain", "windows311", "workbench"):
-            with self.subTest(variant=variant), patch.object(fsui, "theme_variant", variant):
+            with self.subTest(variant=variant), patch.object(
+                fsui, "theme_variant", variant
+            ):
                 icon = navigation_icon("fa5s.save")
                 self.assertFalse(icon.isNull())
                 for extent in (20, 24, 48):
                     for mode in (QIcon.Normal, QIcon.Selected, QIcon.Disabled):
-                        image = icon.pixmap(QSize(extent, extent), mode).toImage()
+                        image = icon.pixmap(
+                            QSize(extent, extent), mode
+                        ).toImage()
                         self.assertEqual(image.size(), QSize(extent, extent))
-                        self.assertTrue(any(
-                            image.pixelColor(horizontal, vertical).alpha() > 0
-                            for horizontal in range(extent)
-                            for vertical in range(extent)
-                        ))
+                        self.assertTrue(
+                            any(
+                                image.pixelColor(horizontal, vertical).alpha()
+                                > 0
+                                for horizontal in range(extent)
+                                for vertical in range(extent)
+                            )
+                        )
                 images[variant] = icon.pixmap(48, 48).toImage()
         self.assertNotEqual(images["windows311"], images["workbench"])
         self.assertNotEqual(images["modern"], images["workbench"])
@@ -749,12 +990,17 @@ class TestQt6(WidgetTestCase):
         def luminance(value):
             channels = []
             for index in (1, 3, 5):
-                channel = int(value[index:index + 2], 16) / 255
+                channel = int(value[index : index + 2], 16) / 255
                 channels.append(
-                    channel / 12.92 if channel <= 0.03928
+                    channel / 12.92
+                    if channel <= 0.03928
                     else ((channel + 0.055) / 1.055) ** 2.4
                 )
-            return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+            return (
+                0.2126 * channels[0]
+                + 0.7152 * channels[1]
+                + 0.0722 * channels[2]
+            )
 
         lighter, darker = sorted(
             (luminance(foreground), luminance(background)), reverse=True
@@ -796,10 +1042,14 @@ class TestQt6(WidgetTestCase):
                 )
         self.assertEqual(len(windows), len(modern_theme.SKINS))
         self.assertEqual(
-            modern_theme.render("@icons@/check.svg", "modern").endswith("/res/check.svg"),
+            modern_theme.render("@icons@/check.svg", "modern").endswith(
+                "/res/check.svg"
+            ),
             True,
         )
-        self.assertEqual(modern_theme.palette("not-a-skin"), modern_theme.MODERN)
+        self.assertEqual(
+            modern_theme.palette("not-a-skin"), modern_theme.MODERN
+        )
 
     def test_modern_skin_selection(self):
         from fsui.qt import QPalette, modern_theme
@@ -817,9 +1067,16 @@ class TestQt6(WidgetTestCase):
                         if command_line:
                             arguments.append("--launcher-theme=fusion-" + name)
                         with patch("fsui.qt.qt.Settings.instance") as settings:
-                            settings.return_value.get.side_effect = lambda key: (
-                                ("fusion-modern" if command_line else "fusion-" + name)
-                                if key == "launcher_theme" else ""
+                            settings.return_value.get.side_effect = (
+                                lambda key: (
+                                    (
+                                        "fusion-modern"
+                                        if command_line
+                                        else "fusion-" + name
+                                    )
+                                    if key == "launcher_theme"
+                                    else ""
+                                )
                             )
                             with patch("sys.argv", arguments):
                                 initialize_qt_style(self.application)
@@ -828,15 +1085,21 @@ class TestQt6(WidgetTestCase):
                         self.assertEqual(fsui.theme_skin, name)
                         self.assertIs(modern_theme.palette(), skin)
                         self.assertEqual(
-                            self.application.palette().color(QPalette.Window).name(),
+                            self.application.palette()
+                            .color(QPalette.Window)
+                            .name(),
                             skin.window,
                         )
                         self.assertEqual(
-                            self.application.palette().color(QPalette.Link).name(),
+                            self.application.palette()
+                            .color(QPalette.Link)
+                            .name(),
                             skin.accent,
                         )
                         self.assertNotIn("@", self.application.styleSheet())
-                        self.assertIn(skin.accent, self.application.styleSheet())
+                        self.assertIn(
+                            skin.accent, self.application.styleSheet()
+                        )
             # Plain and retro themes leave the active skin at Modern Dark.
             with patch("fsui.qt.qt.Settings.instance") as settings:
                 settings.return_value.get.side_effect = lambda key: (
@@ -867,18 +1130,30 @@ class TestQt6(WidgetTestCase):
                 with self.subTest(skin=name):
                     modern_theme.apply_modern_theme(self.application, name)
                     skin = modern_theme.palette()
-                    with patch.object(fsui, "theme_variant", "modern"), \
-                            patch.object(fsui, "theme_skin", name):
-                        with patch("launcher.ui.navigation_icons.qta.icon", wraps=qta.icon) as icon:
+                    with patch.object(
+                        fsui, "theme_variant", "modern"
+                    ), patch.object(fsui, "theme_skin", name):
+                        with patch(
+                            "launcher.ui.navigation_icons.qta.icon",
+                            wraps=qta.icon,
+                        ) as icon:
                             navigation_icon("fa5s.save")
-                            icon.assert_called_with("fa5s.save", color=skin.icon)
+                            icon.assert_called_with(
+                                "fa5s.save", color=skin.icon
+                            )
                             navigation_icon("fa5s.play", on_accent=True)
-                            icon.assert_called_with("fa5s.play", color=skin.accent_text)
+                            icon.assert_called_with(
+                                "fa5s.play", color=skin.accent_text
+                            )
                         self.setup_dialog()
                         paged = PagedDialog(self.dialog, "Skins")
                         self.assertIn(skin.nav, paged.list_view.styleSheet())
-                        self.assertIn(skin.accent_soft, paged.list_view.styleSheet())
-                        self.assertNotIn("#1c1e2b", paged.list_view.styleSheet())
+                        self.assertIn(
+                            skin.accent_soft, paged.list_view.styleSheet()
+                        )
+                        self.assertNotIn(
+                            "#1c1e2b", paged.list_view.styleSheet()
+                        )
                         paged.close()
                         self.run_dialog()
         finally:
@@ -908,19 +1183,40 @@ class TestQt6(WidgetTestCase):
                     # Just what the modern painters read, without the
                     # settings listeners and image loaders the panels start.
                     panel = SimpleNamespace(
-                        size=lambda: (400, 160), widget=lambda: widget,
-                        create_dc=lambda: dc, images=[], default_image=None,
-                        image=None, x_offset=0, title="Title", year="1990",
-                        companies="Company", sub_title="Variant",
+                        size=lambda: (400, 160),
+                        widget=lambda: widget,
+                        create_dc=lambda: dc,
+                        images=[],
+                        default_image=None,
+                        image=None,
+                        x_offset=0,
+                        title="Title",
+                        year="1990",
+                        companies="Company",
+                        sub_title="Variant",
                     )
-                    panel.draw_background = lambda dc: BottomPanel.draw_background(panel, dc)
+                    panel.draw_background = (
+                        lambda dc: BottomPanel.draw_background(panel, dc)
+                    )
                     with patch.object(fsui, "theme_variant", "modern"):
                         ScreenshotsPanel.on_paint(panel)
                         GameInfoPanel.draw_modern_info(panel, dc)
-                    self.assertEqual(dc.draw_rectangle.call_args.args[4].name(), skin.surface)
                     self.assertEqual(
-                        [c.args[0].name() for c in dc.set_text_color.call_args_list],
-                        [skin.text, skin.muted, skin.muted, skin.text, skin.muted],
+                        dc.draw_rectangle.call_args.args[4].name(),
+                        skin.surface,
+                    )
+                    self.assertEqual(
+                        [
+                            c.args[0].name()
+                            for c in dc.set_text_color.call_args_list
+                        ],
+                        [
+                            skin.text,
+                            skin.muted,
+                            skin.muted,
+                            skin.text,
+                            skin.muted,
+                        ],
                     )
         finally:
             modern_theme.apply_modern_theme(self.application, "modern")
@@ -942,23 +1238,40 @@ class TestQt6(WidgetTestCase):
                 ("workbench", "#0055aa", "#ff8800"),
             ):
                 for command_line in (False, True):
-                    with self.subTest(variant=variant, command_line=command_line):
+                    with self.subTest(
+                        variant=variant, command_line=command_line
+                    ):
                         arguments = ["fs-uae-launcher"]
                         if command_line:
-                            arguments.append("--launcher-theme=fusion-" + variant)
+                            arguments.append(
+                                "--launcher-theme=fusion-" + variant
+                            )
                         with patch("fsui.qt.qt.Settings.instance") as settings:
-                            settings.return_value.get.side_effect = lambda key: (
-                                ("fusion-modern" if command_line else "fusion-" + variant)
-                                if key == "launcher_theme" else ""
+                            settings.return_value.get.side_effect = (
+                                lambda key: (
+                                    (
+                                        "fusion-modern"
+                                        if command_line
+                                        else "fusion-" + variant
+                                    )
+                                    if key == "launcher_theme"
+                                    else ""
+                                )
                             )
                             with patch("sys.argv", arguments):
                                 initialize_qt_style(self.application)
                         self.assertEqual(fsui.theme_variant, variant)
                         self.assertEqual(
-                            self.application.palette().color(QPalette.Window).name(), background
+                            self.application.palette()
+                            .color(QPalette.Window)
+                            .name(),
+                            background,
                         )
                         self.assertEqual(
-                            self.application.palette().color(QPalette.Highlight).name(), highlight
+                            self.application.palette()
+                            .color(QPalette.Highlight)
+                            .name(),
+                            highlight,
                         )
                         self.assertNotIn("@", self.application.styleSheet())
         finally:
@@ -977,8 +1290,15 @@ class TestQt6(WidgetTestCase):
         theme, variant = fsui.theme, fsui.theme_variant
         try:
             for saved in (
-                "fusion-plain", "standard", "native", "fusion", "fusion-adwaita",
-                "fusion-dark", "fusion-windows10", "fws", "unknown-theme",
+                "fusion-plain",
+                "standard",
+                "native",
+                "fusion",
+                "fusion-adwaita",
+                "fusion-dark",
+                "fusion-windows10",
+                "fws",
+                "unknown-theme",
             ):
                 for command_line in (False, True):
                     with self.subTest(saved=saved, command_line=command_line):
@@ -986,18 +1306,37 @@ class TestQt6(WidgetTestCase):
                         if command_line:
                             arguments.append("--launcher-theme=" + saved)
                         with patch("fsui.qt.qt.Settings.instance") as settings:
-                            settings.return_value.get.side_effect = lambda key: (
-                                ("fusion-modern" if command_line else saved)
-                                if key == "launcher_theme" else ""
+                            settings.return_value.get.side_effect = (
+                                lambda key: (
+                                    (
+                                        "fusion-modern"
+                                        if command_line
+                                        else saved
+                                    )
+                                    if key == "launcher_theme"
+                                    else ""
+                                )
                             )
                             with patch("sys.argv", arguments):
                                 initialize_qt_style(self.application)
                             if saved != "fusion-plain":
-                                settings.return_value.set.assert_called_with("launcher_theme", "fusion-plain")
+                                settings.return_value.set.assert_called_with(
+                                    "launcher_theme", "fusion-plain"
+                                )
                         self.assertEqual(fsui.theme_variant, "plain")
                         self.assertEqual(self.application.styleSheet(), "")
-                        self.assertGreater(self.application.palette().color(QPalette.Window).lightness(), 150)
-                        self.assertLess(self.application.palette().color(QPalette.Text).lightness(), 100)
+                        self.assertGreater(
+                            self.application.palette()
+                            .color(QPalette.Window)
+                            .lightness(),
+                            150,
+                        )
+                        self.assertLess(
+                            self.application.palette()
+                            .color(QPalette.Text)
+                            .lightness(),
+                            100,
+                        )
         finally:
             self.application.setPalette(palette)
             self.application.setStyleSheet(stylesheet)
@@ -1012,16 +1351,22 @@ class TestQt6(WidgetTestCase):
         self.setup_dialog()
         with patch.object(fsui, "theme_variant", "modern"):
             with patch("qtawesome.icon", wraps=qta.icon) as icons:
-                help_button = HelpButton(self.dialog, "https://fs-uae.net/options")
+                help_button = HelpButton(
+                    self.dialog, "https://fs-uae.net/options"
+                )
                 info_button = IconButton(self.dialog, "info.png")
                 self.assertEqual(icons.call_count, 2)
                 icons.assert_called_with("fa5s.info-circle", color="#9bcce2")
                 for button in (help_button, info_button):
                     self.assertFalse(button.widget().icon().isNull())
                     self.assertEqual(button.widget().iconSize().width(), 18)
-                with patch("launcher.ui.HelpButton.open_url_in_browser") as open_url:
+                with patch(
+                    "launcher.ui.HelpButton.open_url_in_browser"
+                ) as open_url:
                     help_button.widget().click()
-                    open_url.assert_called_once_with("https://fs-uae.net/options")
+                    open_url.assert_called_once_with(
+                        "https://fs-uae.net/options"
+                    )
         with patch.object(fsui, "theme_variant", "windows311"):
             with patch("qtawesome.icon") as icons:
                 IconButton(self.dialog, "info.png")
@@ -1150,22 +1495,42 @@ class TestLaunchAndNetplay(WidgetTestCase):
         from pathlib import Path
         from qtpy.QtTest import QTest
         from fsui.qt import QMessageBox, Qt
-        from launcher.ui.ConfigurationsBrowser import ConfigurationItemDelegate, ConfigurationsBrowser
+        from launcher.ui.ConfigurationsBrowser import (
+            ConfigurationItemDelegate,
+            ConfigurationsBrowser,
+        )
 
         self.setup_dialog()
         self.dialog.layout = fsui.VerticalLayout()
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "Test.fs-uae"
             path.write_text("[fs-uae]\n")
-            item = {"uuid": None, "name": "Test", "path": str(path), "have": 5, "platform": "", "published": 1, "sort_key": "test"}
+            item = {
+                "uuid": None,
+                "name": "Test",
+                "path": str(path),
+                "have": 5,
+                "platform": "",
+                "published": 1,
+                "sort_key": "test",
+            }
             settings = {"config_path": str(path)}
-            with patch("launcher.ui.ConfigurationsBrowser.Database.get_instance") as database_factory, \
-                    patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.get", side_effect=lambda key: settings.get(key, "")), \
-                    patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.set") as set_setting, \
-                    patch("launcher.ui.ConfigurationsBrowser.LauncherConfig.load_file") as load, \
-                    patch("launcher.ui.ConfigurationsBrowser.LauncherConfig.load_default_config") as reset, \
-                    patch("launcher.ui.ConfigurationsBrowser.ConfigurationScanner.delete_configuration") as delete, \
-                    patch("launcher.scanner.Scanner.running", False):
+            with patch(
+                "launcher.ui.ConfigurationsBrowser.Database.get_instance"
+            ) as database_factory, patch(
+                "launcher.ui.ConfigurationsBrowser.LauncherSettings.get",
+                side_effect=lambda key: settings.get(key, ""),
+            ), patch(
+                "launcher.ui.ConfigurationsBrowser.LauncherSettings.set"
+            ) as set_setting, patch(
+                "launcher.ui.ConfigurationsBrowser.LauncherConfig.load_file"
+            ) as load, patch(
+                "launcher.ui.ConfigurationsBrowser.LauncherConfig.load_default_config"
+            ) as reset, patch(
+                "launcher.ui.ConfigurationsBrowser.ConfigurationScanner.delete_configuration"
+            ) as delete, patch(
+                "launcher.scanner.Scanner.running", False
+            ):
                 database = database_factory.return_value
                 database.find_games_new.return_value = [item]
                 database.decode_path.side_effect = lambda value: value
@@ -1177,6 +1542,7 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     browser.on_setting(key, value)
 
                 set_setting.side_effect = setting_changed
+
                 def delete_file(database, filename):
                     Path(filename).unlink()
                     database.find_games_new.return_value = []
@@ -1186,17 +1552,34 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 self.dialog.show()
                 self.application.processEvents()
                 index = browser.model.index(0, 0)
-                rect = ConfigurationItemDelegate.delete_rect(browser.visualRect(index))
-                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.No):
-                    QTest.mouseClick(browser.viewport(), Qt.LeftButton, pos=rect.center())
-                    with patch("launcher.launcherapp.LauncherApp.start_game") as start:
-                        QTest.mouseDClick(browser.viewport(), Qt.LeftButton, pos=rect.center())
+                rect = ConfigurationItemDelegate.delete_rect(
+                    browser.visualRect(index)
+                )
+                with patch(
+                    "fsui.qt.QMessageBox.question", return_value=QMessageBox.No
+                ):
+                    QTest.mouseClick(
+                        browser.viewport(), Qt.LeftButton, pos=rect.center()
+                    )
+                    with patch(
+                        "launcher.launcherapp.LauncherApp.start_game"
+                    ) as start:
+                        QTest.mouseDClick(
+                            browser.viewport(),
+                            Qt.LeftButton,
+                            pos=rect.center(),
+                        )
                         start.assert_not_called()
                 delete.assert_not_called()
                 load.assert_not_called()
                 self.assertTrue(path.exists())
-                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes) as confirmation:
-                    QTest.mouseClick(browser.viewport(), Qt.LeftButton, pos=rect.center())
+                with patch(
+                    "fsui.qt.QMessageBox.question",
+                    return_value=QMessageBox.Yes,
+                ) as confirmation:
+                    QTest.mouseClick(
+                        browser.viewport(), Qt.LeftButton, pos=rect.center()
+                    )
                 self.assertIn(str(path), confirmation.call_args.args[2])
                 delete.assert_called_once_with(database, str(path))
                 reset.assert_called_once_with()
@@ -1210,17 +1593,35 @@ class TestLaunchAndNetplay(WidgetTestCase):
         from launcher.ui.ConfigurationsBrowser import ConfigurationsBrowser
 
         self.setup_dialog()
-        kept = {"uuid": None, "name": "Keep", "path": "/tmp/Keep.fs-uae", "have": 5, "platform": "", "published": 1, "sort_key": "keep"}
+        kept = {
+            "uuid": None,
+            "name": "Keep",
+            "path": "/tmp/Keep.fs-uae",
+            "have": 5,
+            "platform": "",
+            "published": 1,
+            "sort_key": "keep",
+        }
         removed = dict(kept, name="Remove", path="/tmp/Remove.fs-uae")
         settings = {"config_path": kept["path"]}
-        with patch("launcher.ui.ConfigurationsBrowser.Database.get_instance") as database_factory, \
-                patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.get", side_effect=lambda key: settings.get(key, "")), \
-                patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.set") as set_setting, \
-                patch("launcher.ui.ConfigurationsBrowser.LauncherConfig.load_file") as load, \
-                patch("launcher.ui.ConfigurationsBrowser.LauncherConfig.load_default_config") as reset, \
-                patch("launcher.ui.ConfigurationsBrowser.ConfigurationScanner.delete_configuration") as delete, \
-                patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes), \
-                patch("launcher.scanner.Scanner.running", False):
+        with patch(
+            "launcher.ui.ConfigurationsBrowser.Database.get_instance"
+        ) as database_factory, patch(
+            "launcher.ui.ConfigurationsBrowser.LauncherSettings.get",
+            side_effect=lambda key: settings.get(key, ""),
+        ), patch(
+            "launcher.ui.ConfigurationsBrowser.LauncherSettings.set"
+        ) as set_setting, patch(
+            "launcher.ui.ConfigurationsBrowser.LauncherConfig.load_file"
+        ) as load, patch(
+            "launcher.ui.ConfigurationsBrowser.LauncherConfig.load_default_config"
+        ) as reset, patch(
+            "launcher.ui.ConfigurationsBrowser.ConfigurationScanner.delete_configuration"
+        ) as delete, patch(
+            "fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes
+        ), patch(
+            "launcher.scanner.Scanner.running", False
+        ):
             database = database_factory.return_value
             database.find_games_new.return_value = [kept, removed]
             database.decode_path.side_effect = lambda value: value
@@ -1228,7 +1629,9 @@ class TestLaunchAndNetplay(WidgetTestCase):
             browser.select_item(0)
             load.reset_mock()
             set_setting.side_effect = browser.on_setting
-            delete.side_effect = lambda *arguments: setattr(database.find_games_new, "return_value", [kept])
+            delete.side_effect = lambda *arguments: setattr(
+                database.find_games_new, "return_value", [kept]
+            )
             browser.delete_configuration(1)
             self.assertEqual(browser.get_index(), 0)
             self.assertEqual(browser.items[0]["path"], kept["path"])
@@ -1236,19 +1639,37 @@ class TestLaunchAndNetplay(WidgetTestCase):
             load.assert_not_called()
         self.run_dialog()
 
-    def test_configuration_delete_protects_database_entries_and_reports_errors(self):
+    def test_configuration_delete_protects_database_entries_and_reports_errors(
+        self,
+    ):
         from qtpy.QtTest import QTest
         from fsui.qt import QMessageBox, Qt
         from launcher.ui.ConfigurationsBrowser import ConfigurationsBrowser
 
         self.setup_dialog()
-        item = {"uuid": "database-game", "name": "Game", "path": "/tmp/Test.fs-uae", "have": 5, "platform": "", "published": 1, "sort_key": "game"}
-        with patch("launcher.ui.ConfigurationsBrowser.Database.get_instance") as database_factory, \
-                patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.get", return_value=""), \
-                patch("launcher.ui.ConfigurationsBrowser.ConfigurationScanner.delete_configuration") as delete, \
-                patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes) as confirmation, \
-                patch("fsui.show_error") as error, \
-                patch("launcher.scanner.Scanner.running", False):
+        item = {
+            "uuid": "database-game",
+            "name": "Game",
+            "path": "/tmp/Test.fs-uae",
+            "have": 5,
+            "platform": "",
+            "published": 1,
+            "sort_key": "game",
+        }
+        with patch(
+            "launcher.ui.ConfigurationsBrowser.Database.get_instance"
+        ) as database_factory, patch(
+            "launcher.ui.ConfigurationsBrowser.LauncherSettings.get",
+            return_value="",
+        ), patch(
+            "launcher.ui.ConfigurationsBrowser.ConfigurationScanner.delete_configuration"
+        ) as delete, patch(
+            "fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes
+        ) as confirmation, patch(
+            "fsui.show_error"
+        ) as error, patch(
+            "launcher.scanner.Scanner.running", False
+        ):
             database = database_factory.return_value
             database.find_games_new.return_value = [item]
             database.decode_path.side_effect = lambda value: value
@@ -1278,27 +1699,57 @@ class TestLaunchAndNetplay(WidgetTestCase):
         for frozen in (False, True):
             with self.subTest(frozen=frozen):
                 application = SimpleNamespace(
-                    _restart_arguments=None, qapplication=Mock(), save_settings=Mock()
+                    _restart_arguments=None,
+                    qapplication=Mock(),
+                    save_settings=Mock(),
                 )
                 calls = []
-                application.save_settings.side_effect = lambda: calls.append("save")
-                application.qapplication.closeAllWindows.side_effect = lambda: calls.append("close")
-                application.qapplication.quit.side_effect = lambda: calls.append("quit")
-                with patch("sys.argv", ["fs-uae-launcher", "--launcher-theme=fusion-modern", "game.adf"]):
-                    with patch("sys.executable", "/test/python"), patch("sys.frozen", frozen, create=True):
-                        with patch("fsboot.base_dir", return_value="/test/Amiga Data"):
+                application.save_settings.side_effect = lambda: calls.append(
+                    "save"
+                )
+                application.qapplication.closeAllWindows.side_effect = (
+                    lambda: calls.append("close")
+                )
+                application.qapplication.quit.side_effect = (
+                    lambda: calls.append("quit")
+                )
+                with patch(
+                    "sys.argv",
+                    [
+                        "fs-uae-launcher",
+                        "--launcher-theme=fusion-modern",
+                        "game.adf",
+                    ],
+                ):
+                    with patch("sys.executable", "/test/python"), patch(
+                        "sys.frozen", frozen, create=True
+                    ):
+                        with patch(
+                            "fsboot.base_dir", return_value="/test/Amiga Data"
+                        ):
                             LauncherApp.request_restart(application)
                             LauncherApp.request_restart(application)
                 self.assertEqual(calls, ["save", "close", "quit"])
-                self.assertEqual(application._restart_arguments[0], "/test/python")
-                self.assertEqual(application._restart_arguments[-1], "--base-dir=/test/Amiga Data")
-                self.assertEqual(len(application._restart_arguments), 2 if frozen else 3)
+                self.assertEqual(
+                    application._restart_arguments[0], "/test/python"
+                )
+                self.assertEqual(
+                    application._restart_arguments[-1],
+                    "--base-dir=/test/Amiga Data",
+                )
+                self.assertEqual(
+                    len(application._restart_arguments), 2 if frozen else 3
+                )
                 self.assertNotIn("game.adf", application._restart_arguments)
-                self.assertNotIn("--launcher-theme=fusion-modern", application._restart_arguments)
+                self.assertNotIn(
+                    "--launcher-theme=fusion-modern",
+                    application._restart_arguments,
+                )
                 with patch("launcher.launcherapp.os.execv") as execute:
                     LauncherApp.restart_if_requested(application)
                     execute.assert_called_once_with(
-                        application._restart_arguments[0], application._restart_arguments
+                        application._restart_arguments[0],
+                        application._restart_arguments,
                     )
 
     def test_restart_save_failure_keeps_windows_open(self):
@@ -1306,7 +1757,8 @@ class TestLaunchAndNetplay(WidgetTestCase):
         from launcher.launcherapp import LauncherApp
 
         application = SimpleNamespace(
-            _restart_arguments=None, qapplication=Mock(),
+            _restart_arguments=None,
+            qapplication=Mock(),
             save_settings=Mock(side_effect=OSError("Disk full")),
         )
         with self.assertRaises(OSError):
@@ -1324,10 +1776,14 @@ class TestLaunchAndNetplay(WidgetTestCase):
         for restart_failure in (False, True):
             with self.subTest(restart_failure=restart_failure):
                 events = []
-                with patch("launcher.launcherapp.LauncherApp") as application_class:
+                with patch(
+                    "launcher.launcherapp.LauncherApp"
+                ) as application_class:
                     application = application_class.return_value
                     application.run.side_effect = lambda: events.append("run")
-                    application.save_settings.side_effect = lambda: events.append("save")
+                    application.save_settings.side_effect = (
+                        lambda: events.append("save")
+                    )
 
                     def restart():
                         events.append("restart")
@@ -1335,12 +1791,20 @@ class TestLaunchAndNetplay(WidgetTestCase):
                             raise OSError("Executable unavailable")
 
                     application.restart_if_requested.side_effect = restart
-                    with patch("fsbc.signal.Signal") as signal, patch("sys.argv", ["fs-uae-launcher"]):
-                        signal.return_value.notify.side_effect = lambda: events.append("notify")
+                    with patch("fsbc.signal.Signal") as signal, patch(
+                        "sys.argv", ["fs-uae-launcher"]
+                    ):
+                        signal.return_value.notify.side_effect = (
+                            lambda: events.append("notify")
+                        )
                         with patch("fsui.show_error") as show_error:
                             app_main()
-                            self.assertEqual(events, ["run", "save", "notify", "restart"])
-                            self.assertEqual(show_error.call_count, int(restart_failure))
+                            self.assertEqual(
+                                events, ["run", "save", "notify", "restart"]
+                            )
+                            self.assertEqual(
+                                show_error.call_count, int(restart_failure)
+                            )
 
     def test_portable_restart_copies_final_saved_settings(self):
         import tempfile
@@ -1356,24 +1820,40 @@ class TestLaunchAndNetplay(WidgetTestCase):
             data.mkdir(parents=True)
             settings = data / "Settings.ini"
             change = PortableModeChange(
-                source, root / "portable data", root / "Portable.ini",
-                True, root / "preferences" / "base-dir",
+                source,
+                root / "portable data",
+                root / "Portable.ini",
+                True,
+                root / "preferences" / "base-dir",
             )
             application = SimpleNamespace(
-                _restart_arguments=None, qapplication=Mock(),
-                save_settings=Mock(side_effect=lambda: settings.write_text("[settings]\nstate = saved\n")),
+                _restart_arguments=None,
+                qapplication=Mock(),
+                save_settings=Mock(
+                    side_effect=lambda: settings.write_text(
+                        "[settings]\nstate = saved\n"
+                    )
+                ),
             )
-            with patch("sys.argv", ["fs-uae-launcher"]), \
-                    patch("fsboot.base_dir", return_value=str(source)), \
-                    patch("launcher.scanner.Scanner.running", False):
-                LauncherApp.request_restart(application, portable_change=change)
+            with patch("sys.argv", ["fs-uae-launcher"]), patch(
+                "fsboot.base_dir", return_value=str(source)
+            ), patch("launcher.scanner.Scanner.running", False):
+                LauncherApp.request_restart(
+                    application, portable_change=change
+                )
             self.assertFalse(change.marker.exists())
             settings.write_text("[settings]\nstate = final shutdown save\n")
             with patch("launcher.launcherapp.os.execv") as execute:
                 LauncherApp.restart_if_requested(application)
                 execute.assert_called_once()
-            self.assertIn("final shutdown save", (change.destination / "Data" / "Settings.ini").read_text())
-            self.assertEqual(application._restart_arguments[-1], "--base-dir=" + str(change.destination))
+            self.assertIn(
+                "final shutdown save",
+                (change.destination / "Data" / "Settings.ini").read_text(),
+            )
+            self.assertEqual(
+                application._restart_arguments[-1],
+                "--base-dir=" + str(change.destination),
+            )
 
     def test_portable_restart_failure_does_not_relaunch(self):
         from types import SimpleNamespace
@@ -1383,13 +1863,16 @@ class TestLaunchAndNetplay(WidgetTestCase):
         change.apply.side_effect = OSError("Disk full")
         application = SimpleNamespace(
             _restart_arguments=["python", "--base-dir=/original"],
-            _portable_change=change, qapplication=Mock(),
+            _portable_change=change,
+            qapplication=Mock(),
         )
         with patch("launcher.launcherapp.os.execv") as execute:
             with self.assertRaisesRegex(OSError, "original data"):
                 LauncherApp.restart_if_requested(application)
             execute.assert_not_called()
-        self.assertEqual(application._restart_arguments[-1], "--base-dir=/original")
+        self.assertEqual(
+            application._restart_arguments[-1], "--base-dir=/original"
+        )
 
     def test_default_chat_color_uses_current_palette(self):
         from fsui.qt import QColor, QPalette
@@ -1419,15 +1902,22 @@ class TestLaunchAndNetplay(WidgetTestCase):
         from launcher.launcherapp import LauncherApp
 
         netplay = Mock(session=Mock(), joining=None)
-        netplay.start_requested.return_value = "Waiting: Dave is missing files."
-        with patch("launcher.netplay.netplay.Netplay.current", return_value=netplay), \
-                patch.object(LauncherApp, "start_local_game") as local, \
-                patch("launcher.launcherapp.fsui.show_warning") as warn:
+        netplay.start_requested.return_value = (
+            "Waiting: Dave is missing files."
+        )
+        with patch(
+            "launcher.netplay.netplay.Netplay.current", return_value=netplay
+        ), patch.object(LauncherApp, "start_local_game") as local, patch(
+            "launcher.launcherapp.fsui.show_warning"
+        ) as warn:
             LauncherApp.start_game()
             local.assert_not_called()
-            warn.assert_called_once_with("Waiting: Dave is missing files.", "Net Play")
-        with patch("launcher.netplay.netplay.Netplay.current", return_value=None), \
-                patch.object(LauncherApp, "start_local_game") as local:
+            warn.assert_called_once_with(
+                "Waiting: Dave is missing files.", "Net Play"
+            )
+        with patch(
+            "launcher.netplay.netplay.Netplay.current", return_value=None
+        ), patch.object(LauncherApp, "start_local_game") as local:
             LauncherApp.start_game()
             local.assert_called_once_with()
 
@@ -1443,9 +1933,15 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     task = Mock()
                     dialog = LaunchDialog(None, "Launching test", task)
                     self.assertEqual(dialog.netplay_game_id, game)
-                    task.progressed.connect.assert_called_once_with(dialog.on_progress)
-                    task.finished.connect.assert_called_once_with(dialog.on_complete)
-                    task.failed.connect.assert_called_once_with(dialog.on_error)
+                    task.progressed.connect.assert_called_once_with(
+                        dialog.on_progress
+                    )
+                    task.finished.connect.assert_called_once_with(
+                        dialog.on_complete
+                    )
+                    task.failed.connect.assert_called_once_with(
+                        dialog.on_error
+                    )
                     dialog.was_closed = True
                     dialog.close()
 
@@ -1457,7 +1953,9 @@ class TestLaunchAndNetplay(WidgetTestCase):
         for title in ("Barbarian", "Shadow of the Beast", "new"):
             with self.subTest(title=title):
                 dialog = SimpleTextInputDialog(
-                    self.dialog, "Enter Game Name", "Game Name:",
+                    self.dialog,
+                    "Enter Game Name",
+                    "Game Name:",
                     default_text=title,
                 )
                 self.assertEqual(dialog.text_field.get_text(), title)
@@ -1480,9 +1978,7 @@ class TestLaunchAndNetplay(WidgetTestCase):
         with patch.object(Settings, "_instance", settings):
             group = LobbyServersGroup(self.dialog)
             try:
-                self.assertEqual(
-                    group.list_view.get_item_count(), 2
-                )
+                self.assertEqual(group.list_view.get_item_count(), 2)
                 self.assertFalse(group.remove_button.is_enabled())
                 prompt = "launcher.settings.lobby_servers_group.SimpleTextInputDialog.get_text"
                 with patch(prompt, return_value=" C.Example:25101 "):
@@ -1492,8 +1988,9 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     "b.example;a.example:25200;c.example",
                 )
                 self.assertEqual(group.list_view.get_item_count(), 3)
-                with patch(prompt, return_value="c.example"), \
-                        patch("launcher.settings.lobby_servers_group.fsui.show_error") as error:
+                with patch(prompt, return_value="c.example"), patch(
+                    "launcher.settings.lobby_servers_group.fsui.show_error"
+                ) as error:
                     group.on_add_button()
                     self.assertIn("already", error.call_args.args[0])
                 with patch(prompt, return_value=None):
@@ -1514,7 +2011,11 @@ class TestLaunchAndNetplay(WidgetTestCase):
 
     def test_lobby_browser_panel(self):
         from launcher.netplay.lobby_browser import (
-            LOCAL, NO_LISTING, ONLINE, UNREACHABLE, LobbyBrowser,
+            LOCAL,
+            NO_LISTING,
+            ONLINE,
+            UNREACHABLE,
+            LobbyBrowser,
         )
         from launcher.netplay.lobby_browser_panel import LobbyBrowserPanel
 
@@ -1533,24 +2034,34 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 self.retried += 1
 
         netplay = Mock(
-            browser_listeners=[], activity_listeners=[], session_listeners=[],
-            session=None, joining=None, session_title=None, session_server=None,
-            session_hosted=False, session_listed=True,
+            browser_listeners=[],
+            activity_listeners=[],
+            session_listeners=[],
+            session=None,
+            joining=None,
+            session_title=None,
+            session_server=None,
+            session_hosted=False,
+            session_listed=True,
         )
         netplay.running_local_lobby.return_value = None
         netplay.local_lobby_address.return_value = None
         netplay.activity_log = [(0, "Earlier line", False)]
         netplay.browser = LobbyBrowser(
-            name=lambda: "Paul", dispatch=lambda f, *a: f(*a),
+            name=lambda: "Paul",
+            dispatch=lambda f, *a: f(*a),
             on_change=lambda: [f() for f in netplay.browser_listeners],
             on_message=lambda text, warning=False: [
                 f((0, text, warning)) for f in netplay.activity_listeners
             ],
-            client_factory=lambda host, port: None, watcher_factory=Watcher,
+            client_factory=lambda host, port: None,
+            watcher_factory=Watcher,
         )
         opened = []
         self.setup_dialog()
-        panel = LobbyBrowserPanel(netplay, open_settings=lambda: opened.append(1))
+        panel = LobbyBrowserPanel(
+            netplay, open_settings=lambda: opened.append(1)
+        )
         try:
             # Nothing to browse yet.
             self.assertFalse(panel.no_servers.isHidden())
@@ -1560,28 +2071,64 @@ class TestLaunchAndNetplay(WidgetTestCase):
             self.assertIn("Earlier line", panel.activity.toPlainText())
 
             browser = netplay.browser
-            browser.set_servers(["netplay.example.net", "old.example.org", "gone.example"])
+            browser.set_servers(
+                ["netplay.example.net", "old.example.org", "gone.example"]
+            )
             browser.set_local(25101)
             local = browser.server(LOCAL).watcher
             local.on_state(ONLINE, None, None)
-            local.on_listing({
-                "id": "mine", "revision": 1, "presence": True,
-                "online": ["Dave", "Paul"], "games": [],
-            })
+            local.on_listing(
+                {
+                    "id": "mine",
+                    "revision": 1,
+                    "presence": True,
+                    "online": ["Dave", "Paul"],
+                    "games": [],
+                }
+            )
             club = browser.server("netplay.example.net").watcher
             club.on_state(ONLINE, None, None)
-            club.on_listing({
-                "id": "club", "name": "Amiga Friday", "revision": 3, "games": [
-                    {"id": "g1", "title": "Sensible Soccer", "host": "Kim",
-                     "state": "configuring", "players": 2, "joined": 1},
-                    {"id": "g2", "title": "Speedball 2", "host": "Lee",
-                     "state": "created", "players": 2, "joined": 2},
-                    {"id": "g3", "title": "Turrican II", "host": "Ash",
-                     "state": "running", "players": 2, "joined": 2},
-                    {"id": "g4", "title": "<b>Bold</b>", "host": "Eve",
-                     "state": "created", "players": 2, "joined": 1},
-                ],
-            })
+            club.on_listing(
+                {
+                    "id": "club",
+                    "name": "Amiga Friday",
+                    "revision": 3,
+                    "games": [
+                        {
+                            "id": "g1",
+                            "title": "Sensible Soccer",
+                            "host": "Kim",
+                            "state": "configuring",
+                            "players": 2,
+                            "joined": 1,
+                        },
+                        {
+                            "id": "g2",
+                            "title": "Speedball 2",
+                            "host": "Lee",
+                            "state": "created",
+                            "players": 2,
+                            "joined": 2,
+                        },
+                        {
+                            "id": "g3",
+                            "title": "Turrican II",
+                            "host": "Ash",
+                            "state": "running",
+                            "players": 2,
+                            "joined": 2,
+                        },
+                        {
+                            "id": "g4",
+                            "title": "<b>Bold</b>",
+                            "host": "Eve",
+                            "state": "created",
+                            "players": 2,
+                            "joined": 1,
+                        },
+                    ],
+                }
+            )
             old = browser.server("old.example.org").watcher
             old.on_state(UNREACHABLE, "connection refused", 40)
             browser.server("gone.example").watcher.on_state(
@@ -1589,7 +2136,9 @@ class TestLaunchAndNetplay(WidgetTestCase):
             )
 
             tree = panel.servers_tree
-            rows = [tree.topLevelItem(i) for i in range(tree.topLevelItemCount())]
+            rows = [
+                tree.topLevelItem(i) for i in range(tree.topLevelItemCount())
+            ]
             self.assertEqual(
                 [(row.text(0).strip(), row.text(1)) for row in rows],
                 [
@@ -1606,7 +2155,9 @@ class TestLaunchAndNetplay(WidgetTestCase):
             self.assertTrue(panel.countdown.isActive())
 
             games = panel.games_tree
-            rows = [games.topLevelItem(i) for i in range(games.topLevelItemCount())]
+            rows = [
+                games.topLevelItem(i) for i in range(games.topLevelItemCount())
+            ]
             self.assertEqual(
                 [[row.text(c) for c in range(5)] for row in rows],
                 [
@@ -1616,15 +2167,20 @@ class TestLaunchAndNetplay(WidgetTestCase):
                     ["Turrican II", "Ash", "running", "Amiga Friday", ""],
                 ],
             )
-            self.assertEqual([row.isDisabled() for row in rows], [False, False, True, True])
+            self.assertEqual(
+                [row.isDisabled() for row in rows], [False, False, True, True]
+            )
             self.assertEqual(
                 [games.itemWidget(row, 4) is not None for row in rows],
                 [True, True, False, False],
             )
             games.itemWidget(rows[1], 4).click()
             netplay.join_game.assert_called_once_with(
-                "netplay.example.net", 25101, "g1",
-                title="Sensible Soccer", server="Amiga Friday",
+                "netplay.example.net",
+                25101,
+                "g1",
+                title="Sensible Soccer",
+                server="Amiga Friday",
             )
             netplay.join_game.reset_mock()
             dialog = "launcher.netplay.lobby_browser_panel.JoinByIdDialog.get"
@@ -1646,7 +2202,9 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 panel.join_by_id_button.click()
             netplay.join_game.assert_not_called()
             self.assertTrue(panel.no_games.isHidden())
-            self.assertIn("Connected to Amiga Friday", panel.activity.toPlainText())
+            self.assertIn(
+                "Connected to Amiga Friday", panel.activity.toPlainText()
+            )
 
             old.on_state(ONLINE, None, None)
             old.on_listing({"id": "old", "revision": 1, "games": []})
@@ -1660,18 +2218,21 @@ class TestLaunchAndNetplay(WidgetTestCase):
             self.assertIs(panel.pages.currentWidget(), panel.game_page)
             self.assertEqual(panel.game_heading.text(), "Joining\u2026")
             session = Mock(
-                game_id="g1", is_host=False, started=False,
+                game_id="g1",
+                is_host=False,
+                started=False,
                 snapshot={"slots": [{"slot": 0, "tag": "Paul"}]},
             )
             session.slot_lines.return_value = [
                 "1. Paul \u2014 ready",
                 "2. Dave (you) \u2014 missing: floppy_drive_0",
             ]
-            session.status_line.return_value = (
-                "Starts when you're ready: add the missing file, then Re-check."
-            )
+            session.status_line.return_value = "Starts when you're ready: add the missing file, then Re-check."
             netplay.joining, netplay.session = None, session
-            netplay.session_title, netplay.session_server = "Sensible Soccer", "Dave's lobby"
+            netplay.session_title, netplay.session_server = (
+                "Sensible Soccer",
+                "Dave's lobby",
+            )
             panel.on_session(session)
             self.assertEqual(
                 panel.game_heading.text(),
@@ -1704,7 +2265,8 @@ class TestLaunchAndNetplay(WidgetTestCase):
         from fsui.qt import QApplication
         from launcher.netplay.lobby_browser import LOCAL, ONLINE, LobbyBrowser
         from launcher.netplay.lobby_browser_panel import (
-            HostGameDialog, LobbyBrowserPanel,
+            HostGameDialog,
+            LobbyBrowserPanel,
         )
         from launcher.netplay.netplay import HOSTING
 
@@ -1722,22 +2284,33 @@ class TestLaunchAndNetplay(WidgetTestCase):
         settings._loaded = True
         settings._atexit_registered = True
         settings.verbose = False
-        settings.values.update({
-            "config_name": "Unnamed Configuration",
-            "netplay_public_address": "198.51.100.7",
-            "netplay_last_host_server": "club.example",
-        })
+        settings.values.update(
+            {
+                "config_name": "Unnamed Configuration",
+                "netplay_public_address": "198.51.100.7",
+                "netplay_last_host_server": "club.example",
+            }
+        )
         netplay = Mock(
-            browser_listeners=[], activity_listeners=[], session_listeners=[],
-            activity_log=[], session=None, joining=None, session_title=None,
-            session_server=None, session_hosted=False, session_listed=True,
+            browser_listeners=[],
+            activity_listeners=[],
+            session_listeners=[],
+            activity_log=[],
+            session=None,
+            joining=None,
+            session_title=None,
+            session_server=None,
+            session_hosted=False,
+            session_listed=True,
         )
         netplay.running_local_lobby.return_value = None
         netplay.local_lobby_address.return_value = None
         netplay.browser = LobbyBrowser(
-            name=lambda: "Paul", dispatch=lambda f, *a: f(*a),
+            name=lambda: "Paul",
+            dispatch=lambda f, *a: f(*a),
             on_change=lambda: [f() for f in netplay.browser_listeners],
-            client_factory=lambda host, port: None, watcher_factory=Watcher,
+            client_factory=lambda host, port: None,
+            watcher_factory=Watcher,
         )
         self.setup_dialog()
         with patch.object(Settings, "_instance", settings):
@@ -1745,31 +2318,46 @@ class TestLaunchAndNetplay(WidgetTestCase):
             try:
                 # Nothing loaded: nothing to host.
                 self.assertFalse(panel.host_button.isEnabled())
-                self.assertEqual(panel.host_button.toolTip(), "Choose a game first")
+                self.assertEqual(
+                    panel.host_button.toolTip(), "Choose a game first"
+                )
                 settings.set("config_path", "/configs/Sensible Soccer.fs-uae")
                 settings.set("config_name", "Sensible Soccer")
                 self.assertTrue(panel.host_button.isEnabled())
-                self.assertEqual(panel.host_button.text(), "Host game: Sensible Soccer…")
+                self.assertEqual(
+                    panel.host_button.text(), "Host game: Sensible Soccer…"
+                )
 
                 browser = netplay.browser
                 browser.set_servers(["club.example", "down.example"])
                 club = browser.server("club.example").watcher
                 club.on_state(ONLINE, None, None)
-                club.on_listing({"id": "c", "name": "Club", "revision": 1, "games": []})
+                club.on_listing(
+                    {"id": "c", "name": "Club", "revision": 1, "games": []}
+                )
                 ask = "launcher.netplay.lobby_browser_panel.HostGameDialog.get"
-                with patch(ask, return_value=("club.example", 3, False)) as get:
+                with patch(
+                    ask, return_value=("club.example", 3, False)
+                ) as get:
                     panel.host_button.click()
                 title, choices, last = get.call_args.args[1:]
                 self.assertEqual(title, "Sensible Soccer")
-                self.assertEqual(choices, [
-                    (LOCAL, "This computer (198.51.100.7)"),
-                    ("club.example", "Club (club.example)"),
-                ])
+                self.assertEqual(
+                    choices,
+                    [
+                        (LOCAL, "This computer (198.51.100.7)"),
+                        ("club.example", "Club (club.example)"),
+                    ],
+                )
                 self.assertEqual(last, "club.example")
-                netplay.host_game.assert_called_once_with("club.example", 3, False)
+                netplay.host_game.assert_called_once_with(
+                    "club.example", 3, False
+                )
 
                 # The dialog itself: the last server, 2 players, listed.
-                dialog = HostGameDialog(panel, "Sensible Soccer", choices, "club.example")
+                dialog = HostGameDialog(
+                    panel, "Sensible Soccer", choices, "club.example"
+                )
                 self.assertEqual(dialog.answer(), ("club.example", 2, True))
                 self.assertEqual(dialog.windowTitle(), "Host Sensible Soccer")
                 dialog.players.setCurrentIndex(2)
@@ -1782,39 +2370,68 @@ class TestLaunchAndNetplay(WidgetTestCase):
 
                 netplay.joining = HOSTING
                 panel.on_session()
-                self.assertEqual(panel.game_heading.text(), "Creating the game…")
+                self.assertEqual(
+                    panel.game_heading.text(), "Creating the game…"
+                )
 
                 # Hosting on this computer, unlisted.
                 netplay.joining = None
                 netplay.session_hosted, netplay.session_listed = True, False
-                netplay.session_title, netplay.session_server = "Sensible Soccer", "This computer"
+                netplay.session_title, netplay.session_server = (
+                    "Sensible Soccer",
+                    "This computer",
+                )
                 netplay.running_local_lobby.return_value = Mock(port=25101)
                 netplay.local_lobby_address.return_value = "198.51.100.7:25101"
                 browser.set_local(25101)
                 local = browser.server(LOCAL).watcher
                 local.on_state(ONLINE, None, None)
-                local.on_listing({
-                    "id": "mine", "revision": 1, "presence": True,
-                    "online": ["Dave", "Paul", "Sam"], "games": [],
-                })
-                session = Mock(game_id="6f1c0000-aaaa", is_host=True, started=False, snapshot={})
-                session.slot_lines.return_value = ["1. Paul (you) — ready", "2. open"]
-                session.status_line.return_value = "Starts when 1 more player joins and is ready."
+                local.on_listing(
+                    {
+                        "id": "mine",
+                        "revision": 1,
+                        "presence": True,
+                        "online": ["Dave", "Paul", "Sam"],
+                        "games": [],
+                    }
+                )
+                session = Mock(
+                    game_id="6f1c0000-aaaa",
+                    is_host=True,
+                    started=False,
+                    snapshot={},
+                )
+                session.slot_lines.return_value = [
+                    "1. Paul (you) — ready",
+                    "2. open",
+                ]
+                session.status_line.return_value = (
+                    "Starts when 1 more player joins and is ready."
+                )
                 netplay.session = session
                 panel.on_session(session)
                 self.assertEqual(
                     panel.game_heading.text(),
                     "Sensible Soccer, hosted by you on This computer",
                 )
-                self.assertEqual(panel.game_online.text(), "Online in your lobby: Dave, Sam")
-                self.assertEqual(panel.game_address.text(), "Players reach you at 198.51.100.7:25101")
+                self.assertEqual(
+                    panel.game_online.text(), "Online in your lobby: Dave, Sam"
+                )
+                self.assertEqual(
+                    panel.game_address.text(),
+                    "Players reach you at 198.51.100.7:25101",
+                )
                 self.assertFalse(panel.copy_game_id_button.isHidden())
                 self.assertFalse(panel.game_stop_lobby_button.isHidden())
                 self.assertEqual(panel.leave_button.text(), "End game")
                 panel.game_copy_address_button.click()
-                self.assertEqual(QApplication.clipboard().text(), "198.51.100.7:25101")
+                self.assertEqual(
+                    QApplication.clipboard().text(), "198.51.100.7:25101"
+                )
                 panel.copy_game_id_button.click()
-                self.assertEqual(QApplication.clipboard().text(), "6f1c0000-aaaa")
+                self.assertEqual(
+                    QApplication.clipboard().text(), "6f1c0000-aaaa"
+                )
                 panel.game_stop_lobby_button.click()
                 netplay.stop_lobby.assert_called_once_with()
 
@@ -1849,7 +2466,10 @@ class TestLaunchAndNetplay(WidgetTestCase):
         keys = ["amiga_model", "joystick_port_1_mode"]
         doc = {
             "config_version": 1,
-            "config": {"amiga_model": "A500", "joystick_port_1_mode": "joystick"},
+            "config": {
+                "amiga_model": "A500",
+                "joystick_port_1_mode": "joystick",
+            },
             "keys": {"sync": keys, "checksum": keys},
         }
         self.setup_dialog()
@@ -1867,9 +2487,12 @@ class TestLaunchAndNetplay(WidgetTestCase):
 
                 config_hash, missing = apply_document(doc)
                 self.assertEqual(missing, {})
-                self.assertEqual(fsgs.config.get("joystick_port_1_mode"), "joystick")
                 self.assertEqual(
-                    config_hash, LauncherConfig.checksum_config(doc["config"], keys)
+                    fsgs.config.get("joystick_port_1_mode"), "joystick"
+                )
+                self.assertEqual(
+                    config_hash,
+                    LauncherConfig.checksum_config(doc["config"], keys),
                 )
             finally:
                 selector.on_destroy()
@@ -1890,8 +2513,10 @@ class TestLaunchAndNetplay(WidgetTestCase):
                 self.assertEqual(
                     page.options_on_page,
                     {
-                        "netplay_name", "netplay_tag",
-                        "netplay_public_address", "netplay_host_port",
+                        "netplay_name",
+                        "netplay_tag",
+                        "netplay_public_address",
+                        "netplay_host_port",
                     },
                 )
             finally:
@@ -1905,14 +2530,24 @@ class TestDashboard(WidgetTestCase):
         from launcher.settings.settings_page import SettingsPage
 
         self.setup_dialog()
-        with patch("launcher.settings.option_ui.LauncherSettings.get", return_value=""):
-            with patch("launcher.settings.option_ui.app", Mock(qapplication=self.application)):
-                with patch("launcher.settings.option_ui.OverrideWarning", side_effect=lambda parent, name: fsui.Label(parent, "")):
+        with patch(
+            "launcher.settings.option_ui.LauncherSettings.get", return_value=""
+        ):
+            with patch(
+                "launcher.settings.option_ui.app",
+                Mock(qapplication=self.application),
+            ):
+                with patch(
+                    "launcher.settings.option_ui.OverrideWarning",
+                    side_effect=lambda parent, name: fsui.Label(parent, ""),
+                ):
                     page = SettingsPage(self.dialog)
                     text_group = page.add_option("netplay_name")
                     choice_group = page.add_option(Option.LOW_LATENCY_VSYNC)
                     integer_group = page.add_option(Option.LAUNCHER_FONT_SIZE)
-        with patch("launcher.settings.option_ui.LauncherSettings.set") as set_value:
+        with patch(
+            "launcher.settings.option_ui.LauncherSettings.set"
+        ) as set_value:
             text_group.value_control.set_text("  Player  ")
             set_value.reset_mock()
             text_group.value_control.on_changed()
@@ -1930,14 +2565,24 @@ class TestDashboard(WidgetTestCase):
             set_value.assert_called_once_with(Option.LAUNCHER_FONT_SIZE, "14")
             integer_group.default_checkbox.check()
             self.assertFalse(integer_group.value_control.is_enabled())
-            self.assertEqual(integer_group.value_control.get_value(), Option.get(Option.LAUNCHER_FONT_SIZE)["default"])
-            self.assertEqual(set_value.call_args.args, (Option.LAUNCHER_FONT_SIZE, ""))
-        with patch("launcher.settings.settings_page.LauncherSettings.set") as reset:
+            self.assertEqual(
+                integer_group.value_control.get_value(),
+                Option.get(Option.LAUNCHER_FONT_SIZE)["default"],
+            )
+            self.assertEqual(
+                set_value.call_args.args, (Option.LAUNCHER_FONT_SIZE, "")
+            )
+        with patch(
+            "launcher.settings.settings_page.LauncherSettings.set"
+        ) as reset:
             page.reset_to_defaults()
             self.assertEqual(
                 {call.args for call in reset.call_args_list},
-                {("netplay_name", ""), (Option.LOW_LATENCY_VSYNC, ""),
-                 (Option.LAUNCHER_FONT_SIZE, "")},
+                {
+                    ("netplay_name", ""),
+                    (Option.LOW_LATENCY_VSYNC, ""),
+                    (Option.LAUNCHER_FONT_SIZE, ""),
+                },
             )
         self.run_dialog()
 
@@ -1951,8 +2596,11 @@ class TestDashboard(WidgetTestCase):
         options.get.return_value = ""
         factory.options = options
         with patch("launcher.ui.options.OptionsBehavior"):
-            for key in (Option.JIT_COMPILER, Option.FLOPPY_DRIVE_SPEED,
-                        Option.FLOPPY_DRIVE_VOLUME_EMPTY):
+            for key in (
+                Option.JIT_COMPILER,
+                Option.FLOPPY_DRIVE_SPEED,
+                Option.FLOPPY_DRIVE_VOLUME_EMPTY,
+            ):
                 with self.subTest(option=key):
                     group = factory.create(self.dialog, key)
                     checkbox = group.option_label
@@ -1995,14 +2643,22 @@ class TestDashboard(WidgetTestCase):
         try:
             for variant in ("modern", "plain", "windows311", "workbench"):
                 self.application.setStyleSheet("")
-                self.application.setPalette(self.application.style().standardPalette())
+                self.application.setPalette(
+                    self.application.style().standardPalette()
+                )
                 self.application.setFont(font)
                 if variant == "modern":
                     apply_modern_theme(self.application)
                 elif variant != "plain":
                     apply_retro_theme(self.application, variant)
-                for panel_type in (RomRamPanel, ExpansionsPanel, AdditionalConfigPanel):
-                    with self.subTest(theme=variant, panel=panel_type.__name__), patch.object(fsui, "theme_variant", variant):
+                for panel_type in (
+                    RomRamPanel,
+                    ExpansionsPanel,
+                    AdditionalConfigPanel,
+                ):
+                    with self.subTest(
+                        theme=variant, panel=panel_type.__name__
+                    ), patch.object(fsui, "theme_variant", variant):
                         self.setup_dialog()
                         self.dialog.layout = fsui.VerticalLayout()
                         panel = panel_type(self.dialog)
@@ -2013,23 +2669,56 @@ class TestDashboard(WidgetTestCase):
                                 with self.subTest(width=width):
                                     self.dialog.set_size((width, 700))
                                     self.application.processEvents()
-                                    group = panel.memory_group if isinstance(panel, RomRamPanel) else panel
-                                    choices = group.widget().findChildren(QComboBox)
+                                    group = (
+                                        panel.memory_group
+                                        if isinstance(panel, RomRamPanel)
+                                        else panel
+                                    )
+                                    choices = group.widget().findChildren(
+                                        QComboBox
+                                    )
                                     self.assertGreater(len(choices), 1)
-                                    widths = [choice.width() for choice in choices]
-                                    self.assertLessEqual(max(widths) - min(widths), 1)
+                                    widths = [
+                                        choice.width() for choice in choices
+                                    ]
+                                    self.assertLessEqual(
+                                        max(widths) - min(widths), 1
+                                    )
                                     self.assertGreater(min(widths), 75)
-                                    controls = choices + group.widget().findChildren(QSpinBox)
+                                    controls = (
+                                        choices
+                                        + group.widget().findChildren(QSpinBox)
+                                    )
                                     for control in controls:
-                                        self.assertEqual(control.width(), choices[0].width())
+                                        self.assertEqual(
+                                            control.width(), choices[0].width()
+                                        )
                                         self.assertGreaterEqual(control.x(), 0)
-                                        self.assertLessEqual(control.geometry().right(), control.parentWidget().width())
-                                        checkbox = control.parentWidget().findChild(fsui.qt.QCheckBox)
-                                        self.assertGreaterEqual(control.x() - checkbox.geometry().right() - 1, 20)
+                                        self.assertLessEqual(
+                                            control.geometry().right(),
+                                            control.parentWidget().width(),
+                                        )
+                                        checkbox = (
+                                            control.parentWidget().findChild(
+                                                fsui.qt.QCheckBox
+                                            )
+                                        )
+                                        self.assertGreaterEqual(
+                                            control.x()
+                                            - checkbox.geometry().right()
+                                            - 1,
+                                            20,
+                                        )
                                     if isinstance(panel, RomRamPanel):
                                         roms = panel.kickstart_group
-                                        self.assertEqual(roms.text_field.x(), roms.ext_text_field.x())
-                                        self.assertEqual(roms.kickstart_type_choice.width(), roms.ext_rom_type_choice.width())
+                                        self.assertEqual(
+                                            roms.text_field.x(),
+                                            roms.ext_text_field.x(),
+                                        )
+                                        self.assertEqual(
+                                            roms.kickstart_type_choice.width(),
+                                            roms.ext_rom_type_choice.width(),
+                                        )
                         finally:
                             self.run_dialog()
         finally:
@@ -2043,14 +2732,28 @@ class TestDashboard(WidgetTestCase):
 
         self.setup_dialog()
         self.dialog.layout = fsui.VerticalLayout()
-        item = {"uuid": "u1", "name": "Test", "path": "", "have": 4,
-                "platform": "Amiga", "published": 1, "sort_key": "test"}
+        item = {
+            "uuid": "u1",
+            "name": "Test",
+            "path": "",
+            "have": 4,
+            "platform": "Amiga",
+            "published": 1,
+            "sort_key": "test",
+        }
         settings = {"config_search": ""}
-        with patch("launcher.ui.ConfigurationsBrowser.Database.get_instance") as database_factory, \
-                patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.get", side_effect=lambda key: settings.get(key, "")), \
-                patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.set") as set_setting, \
-                patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.add_listener"), \
-                patch("launcher.ui.ConfigurationsBrowser.LauncherSettings.remove_listener"):
+        with patch(
+            "launcher.ui.ConfigurationsBrowser.Database.get_instance"
+        ) as database_factory, patch(
+            "launcher.ui.ConfigurationsBrowser.LauncherSettings.get",
+            side_effect=lambda key: settings.get(key, ""),
+        ), patch(
+            "launcher.ui.ConfigurationsBrowser.LauncherSettings.set"
+        ) as set_setting, patch(
+            "launcher.ui.ConfigurationsBrowser.LauncherSettings.add_listener"
+        ), patch(
+            "launcher.ui.ConfigurationsBrowser.LauncherSettings.remove_listener"
+        ):
             database = database_factory.return_value
             database.find_games_new.return_value = []
             browser = ConfigurationsBrowser(self.dialog)
@@ -2072,7 +2775,9 @@ class TestDashboard(WidgetTestCase):
             settings["config_search"] = "zzz"
             browser.update_search()
             self.assertFalse(overlay.isHidden())
-            self.assertEqual(overlay.title.text(), "Nothing matches your search")
+            self.assertEqual(
+                overlay.title.text(), "Nothing matches your search"
+            )
             self.assertEqual(overlay.button.text(), "Clear search")
             overlay.button.click()
             set_setting.assert_called_with("config_search", "")
@@ -2097,13 +2802,18 @@ class TestDashboard(WidgetTestCase):
             browser.update_search()
             self.assertFalse(overlay.isHidden())
 
-        with patch("launcher.ui.floppyselector.fsgs") as fsgs_mock, \
-                patch("launcher.ui.floppyselector.LauncherConfig.get", return_value=""):
+        with patch("launcher.ui.floppyselector.fsgs") as fsgs_mock, patch(
+            "launcher.ui.floppyselector.LauncherConfig.get", return_value=""
+        ):
             fsgs_mock.config.get.return_value = "amiga"
             first = FloppySelector(self.dialog, 0)
             second = FloppySelector(self.dialog, 1)
-            self.assertIn("No disk inserted", first.text_field.placeholderText())
-            self.assertEqual(second.text_field.placeholderText(), "Empty drive")
+            self.assertIn(
+                "No disk inserted", first.text_field.placeholderText()
+            )
+            self.assertEqual(
+                second.text_field.placeholderText(), "Empty drive"
+            )
             first.set_mode(FloppySelector.CD_MODE)
             self.assertIn("No CD inserted", first.text_field.placeholderText())
         self.run_dialog()
@@ -2135,17 +2845,36 @@ class TestDashboard(WidgetTestCase):
                 listener.on_setting(key, value)
 
         self.setup_dialog()
-        with patch.object(LauncherSettings, "get", side_effect=lambda key: settings.get(key, "")), \
-                patch.object(LauncherSettings, "set", side_effect=set_setting) as write_setting, \
-                patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
-                patch.object(LauncherSettings, "remove_listener"), \
-                patch("launcher.ui.behaviors.configbehavior.LauncherConfig.add_listener"), \
-                patch("launcher.ui.behaviors.configbehavior.LauncherConfig.get", return_value=""), \
-                patch("launcher.launcher_config.LauncherConfig.game_override_identity", return_value=("variant_uuid", "game")), \
-                patch("launcher.launcher_config.LauncherConfig.game_overrides_available", return_value=True), \
-                patch("launcher.ui.launch.GameDriver.screen_rect_for_monitor", return_value=(0, 0, 1920, 1080)), \
-                patch("launcher.ui.launch.GameDriver.screen_refresh_rate_for_monitor", return_value=60), \
-                patch.object(OptionUI, "create_group", wraps=OptionUI.create_group) as create_group:
+        with patch.object(
+            LauncherSettings,
+            "get",
+            side_effect=lambda key: settings.get(key, ""),
+        ), patch.object(
+            LauncherSettings, "set", side_effect=set_setting
+        ) as write_setting, patch.object(
+            LauncherSettings, "add_listener", side_effect=listeners.append
+        ), patch.object(
+            LauncherSettings, "remove_listener"
+        ), patch(
+            "launcher.ui.behaviors.configbehavior.LauncherConfig.add_listener"
+        ), patch(
+            "launcher.ui.behaviors.configbehavior.LauncherConfig.get",
+            return_value="",
+        ), patch(
+            "launcher.launcher_config.LauncherConfig.game_override_identity",
+            return_value=("variant_uuid", "game"),
+        ), patch(
+            "launcher.launcher_config.LauncherConfig.game_overrides_available",
+            return_value=True,
+        ), patch(
+            "launcher.ui.launch.GameDriver.screen_rect_for_monitor",
+            return_value=(0, 0, 1920, 1080),
+        ), patch(
+            "launcher.ui.launch.GameDriver.screen_refresh_rate_for_monitor",
+            return_value=60,
+        ), patch.object(
+            OptionUI, "create_group", wraps=OptionUI.create_group
+        ) as create_group:
             area = ConfigScrollArea(self.dialog)
             panel = DisplaySettingsPanel(area)
             area.set_widget(panel)
@@ -2153,7 +2882,14 @@ class TestDashboard(WidgetTestCase):
             self.dialog.layout.add(area, fill=True, expand=True)
             self.assertEqual(
                 [args[0][1] for args in create_group.call_args_list],
-                ["scale", "stretch", "bezel", "zoom", "scanlines", "video_sync"],
+                [
+                    "scale",
+                    "stretch",
+                    "bezel",
+                    "zoom",
+                    "scanlines",
+                    "video_sync",
+                ],
             )
             scale = create_group.call_args_list[0].args[0]
             self.assertTrue(scale.is_enabled())
@@ -2189,7 +2925,9 @@ class TestDashboard(WidgetTestCase):
             set_setting("g_sync", "")
             self.assertTrue(panel.video_sync_group.value_control.is_enabled())
             self.assertGreater(panel.monitor_choice.count(), 0)
-            with patch("launcher.panels.displaysettingspanel.SettingsDialog.open") as open_settings:
+            with patch(
+                "launcher.panels.displaysettingspanel.SettingsDialog.open"
+            ) as open_settings:
                 panel.on_settings_button()
                 open_settings.assert_called_once_with(panel.window)
             self.dialog.set_size((420, 360))
@@ -2245,7 +2983,10 @@ class TestDashboard(WidgetTestCase):
         from launcher.ui.dashboard import Dashboard
         from launcher.ui.play_tile import EDITOR_SETTING
 
-        settings = {"config_name": "Lotus Turbo Challenge 2", "parent_uuid": "abc"}
+        settings = {
+            "config_name": "Lotus Turbo Challenge 2",
+            "parent_uuid": "abc",
+        }
         listeners = []
 
         def set_setting(key, value):
@@ -2266,12 +3007,22 @@ class TestDashboard(WidgetTestCase):
             owner.on_settings_button = Mock()
             return owner
 
-        with patch.object(LauncherSettings, "get", side_effect=lambda key: settings.get(key, "")), \
-                patch.object(LauncherSettings, "set", side_effect=set_setting), \
-                patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
-                patch.object(LauncherSettings, "remove_listener", side_effect=listeners.remove), \
-                patch("launcher.ui.behaviors.configbehavior.LauncherConfig.add_listener"), \
-                patch("launcher.ui.behaviors.configbehavior.LauncherConfig.get", return_value=""):
+        with patch.object(
+            LauncherSettings,
+            "get",
+            side_effect=lambda key: settings.get(key, ""),
+        ), patch.object(
+            LauncherSettings, "set", side_effect=set_setting
+        ), patch.object(
+            LauncherSettings, "add_listener", side_effect=listeners.append
+        ), patch.object(
+            LauncherSettings, "remove_listener", side_effect=listeners.remove
+        ), patch(
+            "launcher.ui.behaviors.configbehavior.LauncherConfig.add_listener"
+        ), patch(
+            "launcher.ui.behaviors.configbehavior.LauncherConfig.get",
+            return_value="",
+        ):
             owner = make_owner()
             dashboard = Dashboard(owner)
             owner.layout = fsui.VerticalLayout()
@@ -2299,7 +3050,9 @@ class TestDashboard(WidgetTestCase):
             # Editor hidden by default for a clean first impression.
             self.assertFalse(dashboard.edit_toggle.isChecked())
             self.assertTrue(dashboard.editor.isHidden())
-            self.assertEqual(dashboard.edit_toggle.toolTip(), "Edit configuration")
+            self.assertEqual(
+                dashboard.edit_toggle.toolTip(), "Edit configuration"
+            )
             self.assertFalse(hasattr(tile, "edit_button"))
             self.assertFalse(hasattr(dashboard, "launch_bar"))
             self.assertFalse(hasattr(dashboard, "quick_toggle"))
@@ -2312,10 +3065,14 @@ class TestDashboard(WidgetTestCase):
             self.assertFalse(tile.play_button.isEnabled())
             self.assertEqual(tile.play_button.text(), "Running")
             tile.on___progress_config("Preparing: Downloading game (25%)")
-            self.assertEqual(tile.subtitle.text(), "Preparing: Downloading game (25%)")
+            self.assertEqual(
+                tile.subtitle.text(), "Preparing: Downloading game (25%)"
+            )
             self.assertEqual(tile.subtitle.toolTip(), tile.subtitle.text())
             set_setting("config_path", "/configs/current.fs-uae")
-            self.assertEqual(tile.subtitle.text(), "Preparing: Downloading game (25%)")
+            self.assertEqual(
+                tile.subtitle.text(), "Preparing: Downloading game (25%)"
+            )
             tile.on___progress_config("Running: Emulator")
             self.assertEqual(tile.subtitle.text(), "Running: Emulator")
             tile.on___running_config("0")
@@ -2384,7 +3141,10 @@ class TestDashboard(WidgetTestCase):
     def test_plain_language_model_labels(self):
         from fsui.qt import Qt
         from launcher.ui.config.model_labels import (
-            MODEL_LABELS, VARIANT_LABELS, model_label, variant_label,
+            MODEL_LABELS,
+            VARIANT_LABELS,
+            model_label,
+            variant_label,
         )
         from launcher.ui.config.modelgroup import ModelGroup
         from fsgs.amiga.amiga import Amiga
@@ -2392,10 +3152,14 @@ class TestDashboard(WidgetTestCase):
         # Every model and variant has an everyday label.
         families = {model["id"].split("/", 1)[0] for model in Amiga.models}
         self.assertEqual(families, set(MODEL_LABELS))
-        self.assertEqual({model["id"] for model in Amiga.models}, set(VARIANT_LABELS))
+        self.assertEqual(
+            {model["id"] for model in Amiga.models}, set(VARIANT_LABELS)
+        )
         self.assertEqual(model_label("A500"), "Amiga 500")
         self.assertEqual(model_label("unknown"), "unknown")
-        self.assertEqual(variant_label("A1200/1230", "x"), "Blizzard 1230 accelerator")
+        self.assertEqual(
+            variant_label("A1200/1230", "x"), "Blizzard 1230 accelerator"
+        )
         self.assertEqual(variant_label("unknown", "fallback"), "fallback")
         self.assertNotIn("memory", VARIANT_LABELS["A1200/020"].lower())
         self.assertIn("68020", VARIANT_LABELS["A1200/020"])
@@ -2407,8 +3171,10 @@ class TestDashboard(WidgetTestCase):
 
         tree = ast.parse(inspect.getsource(model_labels))
         marked = {
-            node.args[0].value for node in ast.walk(tree)
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+            node.args[0].value
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
             and node.func.id == "N_"
         }
         expected = {text for pair in MODEL_LABELS.values() for text in pair}
@@ -2416,49 +3182,79 @@ class TestDashboard(WidgetTestCase):
         self.assertEqual(expected - marked, set())
         for name in ("MODEL_LABELS", "VARIANT_LABELS"):
             assignment = next(
-                node for node in tree.body
+                node
+                for node in tree.body
                 if isinstance(node, ast.Assign) and node.targets[0].id == name
             )
             wrapped = {
-                id(node.args[0]) for node in ast.walk(assignment.value)
+                id(node.args[0])
+                for node in ast.walk(assignment.value)
                 if isinstance(node, ast.Call)
             }
             keys = {id(key) for key in assignment.value.keys}
             bare = [
-                node.value for node in ast.walk(assignment.value)
-                if isinstance(node, ast.Constant) and isinstance(node.value, str)
-                and id(node) not in wrapped and id(node) not in keys
+                node.value
+                for node in ast.walk(assignment.value)
+                if isinstance(node, ast.Constant)
+                and isinstance(node.value, str)
+                and id(node) not in wrapped
+                and id(node) not in keys
             ]
             self.assertEqual(bare, [])
 
         self.setup_dialog()
-        config = {"amiga_model": "", "platform": "amiga", "accuracy": "", "ntsc_mode": ""}
-        with patch("launcher.ui.config.modelgroup.LauncherConfig.get", side_effect=lambda key, default="": config.get(key, default)), \
-                patch("launcher.ui.config.modelgroup.LauncherConfig.set") as set_config, \
-                patch("launcher.ui.behaviors.configbehavior.LauncherConfig.get", side_effect=lambda key, default="": config.get(key, default)), \
-                patch("launcher.ui.behaviors.configbehavior.LauncherConfig.add_listener"), \
-                patch("launcher.ui.config.ConfigCheckBox.LauncherConfig.get", side_effect=lambda key, default="": config.get(key, default)):
+        config = {
+            "amiga_model": "",
+            "platform": "amiga",
+            "accuracy": "",
+            "ntsc_mode": "",
+        }
+        with patch(
+            "launcher.ui.config.modelgroup.LauncherConfig.get",
+            side_effect=lambda key, default="": config.get(key, default),
+        ), patch(
+            "launcher.ui.config.modelgroup.LauncherConfig.set"
+        ) as set_config, patch(
+            "launcher.ui.behaviors.configbehavior.LauncherConfig.get",
+            side_effect=lambda key, default="": config.get(key, default),
+        ), patch(
+            "launcher.ui.behaviors.configbehavior.LauncherConfig.add_listener"
+        ), patch(
+            "launcher.ui.config.ConfigCheckBox.LauncherConfig.get",
+            side_effect=lambda key, default="": config.get(key, default),
+        ):
             group = ModelGroup(self.dialog)
-            labels = [group.model_choice.itemText(i) for i in range(group.model_choice.count())]
+            labels = [
+                group.model_choice.itemText(i)
+                for i in range(group.model_choice.count())
+            ]
             self.assertIn("Amiga 500", labels)
             self.assertNotIn("A500", labels)
             self.assertEqual(group.model_choice.currentText(), "Amiga 500")
-            tooltip = group.model_choice.itemData(labels.index("Amiga 500"), Qt.ToolTipRole)
+            tooltip = group.model_choice.itemData(
+                labels.index("Amiga 500"), Qt.ToolTipRole
+            )
             self.assertIn("most games", tooltip)
             self.assertIn("Technical: A500", tooltip)
             self.assertEqual(
-                group.sub_model_choice.currentText(), "Standard (1 MB total memory)"
+                group.sub_model_choice.currentText(),
+                "Standard (1 MB total memory)",
             )
             self.assertIn(
                 '512 KB "Slow" RAM',
-                group.sub_model_choice.itemData(group.sub_model_choice.currentIndex(), Qt.ToolTipRole),
+                group.sub_model_choice.itemData(
+                    group.sub_model_choice.currentIndex(), Qt.ToolTipRole
+                ),
             )
             # Selecting by everyday name still stores the technical id.
             group.model_choice.set_index(group.model_ids.index("A1200"))
             set_config.assert_called_with("amiga_model", "A1200")
             group.on_amiga_model_config("A1200/1230")
             self.assertEqual(group.model_choice.currentText(), "Amiga 1200")
-            self.assertEqual(group.sub_model_choice.currentText(), "Blizzard 1230 accelerator")
+            self.assertEqual(
+                group.sub_model_choice.currentText(),
+                "Blizzard 1230 accelerator",
+            )
             self.assertIn("Blizzard 1230", group.sub_model_choice.toolTip())
             self.assertTrue(group.model_choice.toolTip())
             # Single-variant families have a disabled combo, so the control
@@ -2487,14 +3283,25 @@ class TestDashboard(WidgetTestCase):
 
         self.setup_dialog()
         application = Mock(qapplication=self.application)
-        with patch.object(LauncherSettings, "get", side_effect=lambda key: settings.get(key, "")), \
-                patch.object(LauncherSettings, "set", side_effect=set_setting), \
-                patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
-                patch.object(LauncherSettings, "remove_listener", side_effect=listeners.remove), \
-                patch("launcher.settings.option_ui.app", application), \
-                patch("launcher.settings.launchersettingspage.app", application), \
-                patch("launcher.settings.ui_scale.default_point_size", return_value=12), \
-                patch("launcher.settings.launchersettingspage.apply_launcher_theme"):
+        with patch.object(
+            LauncherSettings,
+            "get",
+            side_effect=lambda key: settings.get(key, ""),
+        ), patch.object(
+            LauncherSettings, "set", side_effect=set_setting
+        ), patch.object(
+            LauncherSettings, "add_listener", side_effect=listeners.append
+        ), patch.object(
+            LauncherSettings, "remove_listener", side_effect=listeners.remove
+        ), patch(
+            "launcher.settings.option_ui.app", application
+        ), patch(
+            "launcher.settings.launchersettingspage.app", application
+        ), patch(
+            "launcher.settings.ui_scale.default_point_size", return_value=12
+        ), patch(
+            "launcher.settings.launchersettingspage.apply_launcher_theme"
+        ):
             page = LauncherSettingsPage(self.dialog)
             slider = page.ui_scale
             self.assertEqual(slider.default, 12)
@@ -2503,11 +3310,19 @@ class TestDashboard(WidgetTestCase):
             self.assertEqual(slider.value(), slider.default)
             self.assertTrue(slider.caption.text().startswith("Default"))
             self.assertFalse(slider.reset_button.is_enabled())
-            self.assertEqual((slider.slider.minimum(), slider.slider.maximum()), (6, 18))
+            self.assertEqual(
+                (slider.slider.minimum(), slider.slider.maximum()), (6, 18)
+            )
             self.assertEqual(slider.title.text(), "Interface Font Size")
-            self.assertEqual(slider.slider.accessibleName(), "Interface Font Size")
-            self.assertEqual(slider.spinbox.accessibleName(), "Interface Font Size")
-            self.assertEqual((slider.spinbox.minimum(), slider.spinbox.maximum()), (6, 18))
+            self.assertEqual(
+                slider.slider.accessibleName(), "Interface Font Size"
+            )
+            self.assertEqual(
+                slider.spinbox.accessibleName(), "Interface Font Size"
+            )
+            self.assertEqual(
+                (slider.spinbox.minimum(), slider.spinbox.maximum()), (6, 18)
+            )
             self.assertEqual(slider.spinbox.value(), slider.default)
             self.assertEqual(slider.spinbox.suffix(), " pt")
 
@@ -2529,7 +3344,9 @@ class TestDashboard(WidgetTestCase):
             self.assertEqual(slider.value(), 18)
 
             slider.slider.setValue(slider.default + 3)
-            self.assertEqual(settings["launcher_font_size"], str(slider.default + 3))
+            self.assertEqual(
+                settings["launcher_font_size"], str(slider.default + 3)
+            )
             self.assertTrue(slider.caption.text().startswith("Larger"))
             self.assertTrue(slider.reset_button.is_enabled())
             self.assertEqual(slider.spinbox.value(), slider.default + 3)
@@ -2537,12 +3354,16 @@ class TestDashboard(WidgetTestCase):
             # Dragging only commits on release.
             slider.slider.setSliderDown(True)
             slider.slider.setValue(slider.default - 2)
-            self.assertEqual(settings["launcher_font_size"], str(slider.default + 3))
+            self.assertEqual(
+                settings["launcher_font_size"], str(slider.default + 3)
+            )
             self.assertTrue(slider.caption.text().startswith("Smaller"))
             self.assertEqual(slider.spinbox.value(), slider.default - 2)
             slider.slider.setSliderDown(False)
             slider.slider.sliderReleased.emit()
-            self.assertEqual(settings["launcher_font_size"], str(slider.default - 2))
+            self.assertEqual(
+                settings["launcher_font_size"], str(slider.default - 2)
+            )
 
             slider.reset_button.widget().click()
             self.assertEqual(settings["launcher_font_size"], "")
@@ -2583,10 +3404,19 @@ class TestDashboard(WidgetTestCase):
 
         self.setup_dialog()
         try:
-            with patch.object(LauncherSettings, "get", side_effect=lambda key: settings.get(key, "")), \
-                    patch.object(LauncherSettings, "set", side_effect=set_setting), \
-                    patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
-                    patch.object(LauncherSettings, "remove_listener", side_effect=listeners.remove):
+            with patch.object(
+                LauncherSettings,
+                "get",
+                side_effect=lambda key: settings.get(key, ""),
+            ), patch.object(
+                LauncherSettings, "set", side_effect=set_setting
+            ), patch.object(
+                LauncherSettings, "add_listener", side_effect=listeners.append
+            ), patch.object(
+                LauncherSettings,
+                "remove_listener",
+                side_effect=listeners.remove,
+            ):
                 system = Mock(return_value=QFont("DejaVu Sans", 9))
                 with patch("fsui.qt.qt.QFontDatabase.systemFont", system):
                     apply_launcher_theme(self.application, "fusion-plain", "")
@@ -2611,7 +3441,10 @@ class TestDashboard(WidgetTestCase):
                     self.assertFalse(slider.reset_button.is_enabled())
 
                     # Boundary defaults clamp into the slider range.
-                    with patch("launcher.settings.ui_scale.default_point_size", return_value=30):
+                    with patch(
+                        "launcher.settings.ui_scale.default_point_size",
+                        return_value=30,
+                    ):
                         slider.refresh_default()
                         self.assertEqual(slider.default, 18)
                         slider.slider.setValue(18)
@@ -2640,7 +3473,10 @@ class TestDashboard(WidgetTestCase):
         stylesheet = self.application.styleSheet()
         font = self.application.font()
         state = fsui.theme, fsui.theme_variant, fsui.theme_skin
-        settings = {"launcher_theme": "fusion-modern", "launcher_font_size": ""}
+        settings = {
+            "launcher_theme": "fusion-modern",
+            "launcher_font_size": "",
+        }
         listeners = []
 
         def set_setting(key, value):
@@ -2651,12 +3487,23 @@ class TestDashboard(WidgetTestCase):
         self.setup_dialog()
         application = Mock(qapplication=self.application)
         try:
-            with patch.object(LauncherSettings, "get", side_effect=lambda key: settings.get(key, "")), \
-                    patch.object(LauncherSettings, "set", side_effect=set_setting), \
-                    patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
-                    patch.object(LauncherSettings, "remove_listener", side_effect=listeners.remove), \
-                    patch("launcher.settings.option_ui.app", application), \
-                    patch("launcher.settings.launchersettingspage.app", application):
+            with patch.object(
+                LauncherSettings,
+                "get",
+                side_effect=lambda key: settings.get(key, ""),
+            ), patch.object(
+                LauncherSettings, "set", side_effect=set_setting
+            ), patch.object(
+                LauncherSettings, "add_listener", side_effect=listeners.append
+            ), patch.object(
+                LauncherSettings,
+                "remove_listener",
+                side_effect=listeners.remove,
+            ), patch(
+                "launcher.settings.option_ui.app", application
+            ), patch(
+                "launcher.settings.launchersettingspage.app", application
+            ):
                 modern_theme.apply_modern_theme(self.application, "modern")
                 fsui.theme_variant, fsui.theme_skin = "modern", "modern"
                 owner = fsui.Window(None, title="Preview")
@@ -2671,38 +3518,66 @@ class TestDashboard(WidgetTestCase):
                 owner.on_settings_button = Mock()
                 dashboard = Dashboard(owner)
                 netplay = Mock(
-                    browser_listeners=[], activity_listeners=[],
-                    session_listeners=[], activity_log=[], session=None,
+                    browser_listeners=[],
+                    activity_listeners=[],
+                    session_listeners=[],
+                    activity_log=[],
+                    session=None,
                     joining=None,
                 )
                 netplay.running_local_lobby.return_value = None
                 netplay.browser = LobbyBrowser(
-                    name=lambda: "Paul", dispatch=lambda f, *a: f(*a),
+                    name=lambda: "Paul",
+                    dispatch=lambda f, *a: f(*a),
                 )
                 details = LobbyBrowserPanel(netplay)
                 page = LauncherSettingsPage(self.dialog)
-                self.assertIn("previewed immediately", page.preview_label._widget.text())
-                self.assertIn(modern_theme.MODERN.window, dashboard.widget().styleSheet())
+                self.assertIn(
+                    "previewed immediately", page.preview_label._widget.text()
+                )
+                self.assertIn(
+                    modern_theme.MODERN.window, dashboard.widget().styleSheet()
+                )
 
-                for theme, skin in (("fusion-hologram", "hologram"), ("fusion-terminal", "terminal")):
+                for theme, skin in (
+                    ("fusion-hologram", "hologram"),
+                    ("fusion-terminal", "terminal"),
+                ):
                     with self.subTest(theme=theme):
                         set_setting("launcher_theme", theme)
                         expected = modern_theme.SKINS[skin]
                         self.assertEqual(fsui.theme_skin, skin)
                         self.assertEqual(
-                            self.application.palette().color(QPalette.Window).name(),
+                            self.application.palette()
+                            .color(QPalette.Window)
+                            .name(),
                             expected.window,
                         )
-                        self.assertIn(expected.window, dashboard.widget().styleSheet())
+                        self.assertIn(
+                            expected.window, dashboard.widget().styleSheet()
+                        )
                         self.assertIn(expected.surface, details.styleSheet())
-                        self.assertNotIn(modern_theme.MODERN.window, dashboard.widget().styleSheet())
-                        icon = dashboard.nav_buttons[0].icon().pixmap(20, 20).toImage()
+                        self.assertNotIn(
+                            modern_theme.MODERN.window,
+                            dashboard.widget().styleSheet(),
+                        )
+                        icon = (
+                            dashboard.nav_buttons[0]
+                            .icon()
+                            .pixmap(20, 20)
+                            .toImage()
+                        )
                         self.assertFalse(icon.isNull())
 
                 set_setting("launcher_theme", "fusion-windows311")
                 self.assertEqual(fsui.theme_variant, "windows311")
-                self.assertEqual(self.application.palette().color(QPalette.Window).name(), "#c0c0c0")
-                self.assertIn("palette(window)", dashboard.widget().styleSheet())
+                self.assertEqual(
+                    self.application.palette().color(QPalette.Window).name(),
+                    "#c0c0c0",
+                )
+                self.assertIn(
+                    "palette(window)", dashboard.widget().styleSheet()
+                )
                 self.assertIn("palette(window)", details.styleSheet())
 
                 set_setting("launcher_font_size", "14")
@@ -2711,7 +3586,9 @@ class TestDashboard(WidgetTestCase):
                 self.assertNotEqual(self.application.font().pointSize(), 14)
 
                 # Unrelated settings do not re-apply the theme.
-                with patch("launcher.settings.launchersettingspage.apply_launcher_theme") as apply_theme:
+                with patch(
+                    "launcher.settings.launchersettingspage.apply_launcher_theme"
+                ) as apply_theme:
                     set_setting("netplay_name", "Player")
                     apply_theme.assert_not_called()
 
@@ -2719,9 +3596,13 @@ class TestDashboard(WidgetTestCase):
                 details.shutdown()
                 owner.closed.emit()
                 set_setting("launcher_theme", "fusion-modern")
-                self.assertIn("palette(window)", dashboard.widget().styleSheet())
+                self.assertIn(
+                    "palette(window)", dashboard.widget().styleSheet()
+                )
                 self.assertEqual(fsui.theme_skin, "modern")
-                self.assertNotIn(dashboard.restyle, [ref() for ref in theme_applied._refs])
+                self.assertNotIn(
+                    dashboard.restyle, [ref() for ref in theme_applied._refs]
+                )
         finally:
             theme_applied._refs = []
             modern_theme.apply_modern_theme(self.application, "modern")
@@ -2758,12 +3639,23 @@ class TestDashboard(WidgetTestCase):
         self.setup_dialog()
         application = Mock(qapplication=self.application)
         try:
-            with patch.object(LauncherSettings, "get", side_effect=lambda key: settings.get(key, "")), \
-                    patch.object(LauncherSettings, "set", side_effect=set_setting), \
-                    patch.object(LauncherSettings, "add_listener", side_effect=listeners.append), \
-                    patch.object(LauncherSettings, "remove_listener", side_effect=listeners.remove), \
-                    patch("launcher.settings.option_ui.app", application), \
-                    patch("launcher.settings.launchersettingspage.app", application):
+            with patch.object(
+                LauncherSettings,
+                "get",
+                side_effect=lambda key: settings.get(key, ""),
+            ), patch.object(
+                LauncherSettings, "set", side_effect=set_setting
+            ), patch.object(
+                LauncherSettings, "add_listener", side_effect=listeners.append
+            ), patch.object(
+                LauncherSettings,
+                "remove_listener",
+                side_effect=listeners.remove,
+            ), patch(
+                "launcher.settings.option_ui.app", application
+            ), patch(
+                "launcher.settings.launchersettingspage.app", application
+            ):
                 apply_launcher_theme(self.application, "fusion-cyberpunk", "")
                 page = LauncherSettingsPage(self.dialog)
                 self.assertEqual(fsui.theme_skin, "cyberpunk")
@@ -2776,7 +3668,8 @@ class TestDashboard(WidgetTestCase):
                 self.assertEqual(fsui.theme_variant, "plain")
 
                 layouts = [
-                    group.label_layout for group in page.option_groups
+                    group.label_layout
+                    for group in page.option_groups
                     if hasattr(group, "label_layout")
                 ]
                 self.assertTrue(layouts)
@@ -2785,7 +3678,9 @@ class TestDashboard(WidgetTestCase):
                 set_setting("launcher_font_size", "24")
                 large = layouts[0].min_width
                 self.assertGreater(large, small)
-                self.assertEqual({layout.min_width for layout in layouts}, {large})
+                self.assertEqual(
+                    {layout.min_width for layout in layouts}, {large}
+                )
             self.finish_dialog()
         finally:
             theme_applied._refs = []
@@ -2818,7 +3713,9 @@ class TestDashboard(WidgetTestCase):
             before = label.height()
             apply_launcher_theme(self.application, "fusion-plain", "24")
             self.assertGreater(label.height(), before)
-            self.assertGreaterEqual(label.height(), label.minimumSizeHint().height())
+            self.assertGreaterEqual(
+                label.height(), label.minimumSizeHint().height()
+            )
             self.dialog.close()
         finally:
             modern_theme.apply_modern_theme(self.application, "modern")
@@ -2841,7 +3738,9 @@ class TestDashboard(WidgetTestCase):
             apply_launcher_theme(self.application, "fusion-modern", "10")
             self.setup_dialog()
             paged = PagedDialog(self.dialog, "Navigation")
-            paged.add_page("Common", lambda parent: fsui.Panel(parent), bold=True)
+            paged.add_page(
+                "Common", lambda parent: fsui.Panel(parent), bold=True
+            )
             paged.add_page("Other", lambda parent: fsui.Panel(parent))
             model = paged.list_view.model()
             self.assertEqual(model.item(0).sizeHint().height(), 42)
@@ -2871,17 +3770,27 @@ class TestDashboard(WidgetTestCase):
         self.setup_dialog()
         application = Mock(qapplication=self.application)
         with patch("launcher.settings.option_ui.app", application):
-            with patch("launcher.settings.launchersettingspage.app", application):
+            with patch(
+                "launcher.settings.launchersettingspage.app", application
+            ):
                 page = LauncherSettingsPage(self.dialog)
                 self.assertFalse(page.restart_button.widget().icon().isNull())
-                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.No):
+                with patch(
+                    "fsui.qt.QMessageBox.question", return_value=QMessageBox.No
+                ):
                     page.restart_button.widget().click()
                     application.request_restart.assert_not_called()
-                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+                with patch(
+                    "fsui.qt.QMessageBox.question",
+                    return_value=QMessageBox.Yes,
+                ):
                     page.restart_button.widget().click()
                     application.request_restart.assert_called_once_with()
                 application.request_restart.side_effect = OSError("Disk full")
-                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+                with patch(
+                    "fsui.qt.QMessageBox.question",
+                    return_value=QMessageBox.Yes,
+                ):
                     with patch("fsui.show_error") as show_error:
                         page.restart_button.widget().click()
                         show_error.assert_called_once()
@@ -2893,11 +3802,13 @@ class TestDashboard(WidgetTestCase):
 
         self.setup_dialog()
         application = Mock(qapplication=self.application)
-        with patch("launcher.settings.option_ui.app", application), \
-                patch("launcher.settings.launchersettingspage.app", application), \
-                patch("fsboot.is_portable", return_value=False), \
-                patch("launcher.portable.PortableModeChange") as change_class, \
-                patch("launcher.scanner.Scanner.running", False):
+        with patch("launcher.settings.option_ui.app", application), patch(
+            "launcher.settings.launchersettingspage.app", application
+        ), patch("fsboot.is_portable", return_value=False), patch(
+            "launcher.portable.PortableModeChange"
+        ) as change_class, patch(
+            "launcher.scanner.Scanner.running", False
+        ):
             page = LauncherSettingsPage(self.dialog)
             self.assertFalse(page.portable_checkbox.is_checked())
             self.assertFalse(page.portable_folder_button.is_enabled())
@@ -2905,11 +3816,18 @@ class TestDashboard(WidgetTestCase):
                 page.portable_checkbox.click()
             application.request_restart.assert_not_called()
             self.assertFalse(page.portable_checkbox.is_checked())
-            with patch("fsui.pick_directory", return_value="/example/portable"):
-                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.No):
+            with patch(
+                "fsui.pick_directory", return_value="/example/portable"
+            ):
+                with patch(
+                    "fsui.qt.QMessageBox.question", return_value=QMessageBox.No
+                ):
                     page.portable_checkbox.click()
                 application.request_restart.assert_not_called()
-                with patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+                with patch(
+                    "fsui.qt.QMessageBox.question",
+                    return_value=QMessageBox.Yes,
+                ):
                     page.portable_checkbox.click()
                 application.request_restart.assert_called_once_with(
                     portable_change=change_class.return_value
@@ -2918,8 +3836,12 @@ class TestDashboard(WidgetTestCase):
             application.request_restart.reset_mock()
             with patch("fsboot.is_portable", return_value=True):
                 page.reset_portable_checkbox()
-                with patch("fsui.pick_directory", return_value="/example/normal"), \
-                        patch("fsui.qt.QMessageBox.question", return_value=QMessageBox.Yes):
+                with patch(
+                    "fsui.pick_directory", return_value="/example/normal"
+                ), patch(
+                    "fsui.qt.QMessageBox.question",
+                    return_value=QMessageBox.Yes,
+                ):
                     page.portable_checkbox.click()
                 self.assertTrue(page.portable_checkbox.is_checked())
                 self.assertFalse(change_class.call_args.args[3])
@@ -2937,12 +3859,16 @@ class TestDashboard(WidgetTestCase):
         font = self.application.font()
         try:
             for variant in ("modern", "plain", "windows311", "workbench"):
-                with self.subTest(variant=variant), patch.object(fsui, "theme_variant", variant):
+                with self.subTest(variant=variant), patch.object(
+                    fsui, "theme_variant", variant
+                ):
                     if variant == "modern":
                         apply_modern_theme(self.application)
                     elif variant == "plain":
                         self.application.setStyleSheet("")
-                        self.application.setPalette(self.application.style().standardPalette())
+                        self.application.setPalette(
+                            self.application.style().standardPalette()
+                        )
                     else:
                         apply_retro_theme(self.application, variant)
                     self._check_workspace_settings_navigation()
@@ -2957,20 +3883,32 @@ class TestDashboard(WidgetTestCase):
         from launcher.settings.settings_dialog import SettingsDialog
 
         with patch("qtawesome.icon", wraps=qta.icon) as icons, patch(
-            "launcher.settings.option_ui.app", Mock(qapplication=self.application)
+            "launcher.settings.option_ui.app",
+            Mock(qapplication=self.application),
         ):
-            with patch("launcher.settings.settings_dialog.LauncherSettings.set"):
-                with patch("launcher.settings.settings_dialog.LauncherSignal.broadcast"):
+            with patch(
+                "launcher.settings.settings_dialog.LauncherSettings.set"
+            ):
+                with patch(
+                    "launcher.settings.settings_dialog.LauncherSignal.broadcast"
+                ):
                     window = SettingsDialog(None)
                     try:
                         window.show()
-                        for title in ("WHDLoad", "Audio", "Keyboard", "WHDLoad"):
+                        for title in (
+                            "WHDLoad",
+                            "Audio",
+                            "Keyboard",
+                            "WHDLoad",
+                        ):
                             index = window.set_page_by_title(title)
                             self.application.processEvents()
                             self.assertEqual(window.get_index(), index)
                             self.assertIs(window.page, window.pages[index])
                             self.assertFalse(window.page.widget().isHidden())
-                            self.assertIsNone(window.page.icon_header.image_view)
+                            self.assertIsNone(
+                                window.page.icon_header.image_view
+                            )
                             self.assertEqual(
                                 window.page.icon_header.title_label.font().pixelSize(),
                                 25,
@@ -2978,66 +3916,126 @@ class TestDashboard(WidgetTestCase):
                         for index in range(len(window.pages)):
                             item = window.list_view.model().item(index)
                             self.assertFalse(item.icon().isNull())
-                            expected_height = 42 if fsui.theme_variant == "modern" else 44
-                            self.assertEqual(item.sizeHint().height(), expected_height)
+                            expected_height = (
+                                42 if fsui.theme_variant == "modern" else 44
+                            )
+                            self.assertEqual(
+                                item.sizeHint().height(), expected_height
+                            )
                         for width in (1000, 1280):
                             window.set_size((width, 760))
                             for index in range(len(window.pages)):
                                 title = window.get_page_title(index)
-                                with self.subTest(theme=fsui.theme_variant, page=title, width=width):
+                                with self.subTest(
+                                    theme=fsui.theme_variant,
+                                    page=title,
+                                    width=width,
+                                ):
                                     window.set_page_by_title(title)
                                     self.application.processEvents()
-                                    groups = getattr(window.page, "option_groups", [])
+                                    groups = getattr(
+                                        window.page, "option_groups", []
+                                    )
                                     fields = []
                                     help_positions = []
                                     for group in groups:
                                         control = group.value_control
-                                        control = getattr(control, "_widget", control)
+                                        control = getattr(
+                                            control, "_widget", control
+                                        )
                                         self.assertGreater(control.width(), 60)
-                                        self.assertLessEqual(control.geometry().right(), control.parentWidget().width())
-                                        help_button = group.help_button.widget()
-                                        self.assertLess(control.geometry().right(), help_button.x())
+                                        self.assertLessEqual(
+                                            control.geometry().right(),
+                                            control.parentWidget().width(),
+                                        )
+                                        help_button = (
+                                            group.help_button.widget()
+                                        )
+                                        self.assertLess(
+                                            control.geometry().right(),
+                                            help_button.x(),
+                                        )
                                         help_positions.append(help_button.x())
-                                        if not hasattr(group, "default_checkbox"):
-                                            fields.append((control.x(), control.width()))
+                                        if not hasattr(
+                                            group, "default_checkbox"
+                                        ):
+                                            fields.append(
+                                                (control.x(), control.width())
+                                            )
                                         if hasattr(group, "label_layout"):
-                                            self.assertGreaterEqual(control.x() - group.label_layout.get_min_width(), 20)
+                                            self.assertGreaterEqual(
+                                                control.x()
+                                                - group.label_layout.get_min_width(),
+                                                20,
+                                            )
                                     self.assertLessEqual(len(set(fields)), 1)
-                                    self.assertLessEqual(len(set(help_positions)), 1)
+                                    self.assertLessEqual(
+                                        len(set(help_positions)), 1
+                                    )
                         colors = {
-                            "modern": "#9bcce2", "windows311": "#183867",
-                            "workbench": "#0055aa", "plain": "#000000",
+                            "modern": "#9bcce2",
+                            "windows311": "#183867",
+                            "workbench": "#0055aa",
+                            "plain": "#000000",
                         }
-                        icons.assert_any_call("fa5s.globe", color=colors[fsui.theme_variant])
-                        icons.assert_any_call("fa5s.hdd", color=colors[fsui.theme_variant])
+                        icons.assert_any_call(
+                            "fa5s.globe", color=colors[fsui.theme_variant]
+                        )
+                        icons.assert_any_call(
+                            "fa5s.hdd", color=colors[fsui.theme_variant]
+                        )
                         if fsui.theme_variant != "modern":
-                            self.assertEqual(window.list_view.iconSize().width(), 20 if fsui.theme_variant == "plain" else 24)
-                            self.assertIn("palette(highlight)", window.list_view.styleSheet())
-                            self.assertNotIn("#1c1e2b", window.list_view.styleSheet())
+                            self.assertEqual(
+                                window.list_view.iconSize().width(),
+                                20 if fsui.theme_variant == "plain" else 24,
+                            )
+                            self.assertIn(
+                                "palette(highlight)",
+                                window.list_view.styleSheet(),
+                            )
+                            self.assertNotIn(
+                                "#1c1e2b", window.list_view.styleSheet()
+                            )
                     finally:
                         window.close()
                         window.real_window().deleteLater()
-                        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+                        self.application.sendPostedEvents(
+                            None, QEvent.DeferredDelete
+                        )
 
     def test_modern_theme_option(self):
         from launcher.option import Option
         from launcher.settings.option_ui import OptionUI
 
         self.setup_dialog()
-        with patch("launcher.settings.option_ui.LauncherSettings.get", return_value=""):
+        with patch(
+            "launcher.settings.option_ui.LauncherSettings.get", return_value=""
+        ):
             group = OptionUI.create_group(
                 self.dialog, Option.LAUNCHER_THEME, help_button=False
             )
-        labels = [group.widget.itemText(index) for index in range(group.widget.count())]
+        labels = [
+            group.widget.itemText(index)
+            for index in range(group.widget.count())
+        ]
         self.assertIn("Modern Dark", labels)
         self.assertEqual(labels[0], "Modern Dark (*)")
         self.assertEqual(labels.count("Windows 3.11"), 1)
         self.assertEqual(labels.count("Amiga Workbench 1.3"), 1)
-        self.assertEqual(labels, [
-            "Modern Dark (*)", "Modern Dark", "Neon City", "Synthwave Sunset",
-            "Holo Grid", "Phosphor Terminal", "Fusion", "Windows 3.11",
-            "Amiga Workbench 1.3",
-        ])
+        self.assertEqual(
+            labels,
+            [
+                "Modern Dark (*)",
+                "Modern Dark",
+                "Neon City",
+                "Synthwave Sunset",
+                "Holo Grid",
+                "Phosphor Terminal",
+                "Fusion",
+                "Windows 3.11",
+                "Amiga Workbench 1.3",
+            ],
+        )
         self.run_dialog()
 
     def test_navigation_and_responsive_layout(self):
@@ -3051,19 +4049,29 @@ class TestDashboard(WidgetTestCase):
         skin_state = fsui.theme_skin
         try:
             for variant in (
-                "modern", "plain", "windows311", "workbench",
-                "modern:cyberpunk", "modern:synthwave", "modern:hologram",
+                "modern",
+                "plain",
+                "windows311",
+                "workbench",
+                "modern:cyberpunk",
+                "modern:synthwave",
+                "modern:hologram",
                 "modern:terminal",
             ):
                 variant, _, skin = variant.partition(":")
                 with self.subTest(variant=variant, skin=skin):
-                    with patch.object(fsui, "theme_variant", variant), \
-                            patch.object(fsui, "theme_skin", skin):
+                    with patch.object(
+                        fsui, "theme_variant", variant
+                    ), patch.object(fsui, "theme_skin", skin):
                         if variant == "modern":
-                            apply_modern_theme(self.application, skin or "modern")
+                            apply_modern_theme(
+                                self.application, skin or "modern"
+                            )
                         elif variant == "plain":
                             self.application.setStyleSheet("")
-                            self.application.setPalette(self.application.style().standardPalette())
+                            self.application.setPalette(
+                                self.application.style().standardPalette()
+                            )
                         else:
                             apply_retro_theme(self.application, variant)
                         self._check_navigation_and_responsive_layout()
@@ -3123,34 +4131,57 @@ class TestDashboard(WidgetTestCase):
                 self.assertTrue(dashboard.editor.isHidden())
                 dashboard.edit_toggle.click()
                 self.assertFalse(dashboard.editor.isHidden())
-                with patch("launcher.netplay.netplay.Netplay.start_browsing") as browse:
+                with patch(
+                    "launcher.netplay.netplay.Netplay.start_browsing"
+                ) as browse:
                     with patch("launcher.netplay.netplay.ConnectionTester"):
                         dashboard.netplay_button.click()
                         page = dashboard.netplay_page
-                        self.assertIs(dashboard.content_stack.currentWidget(), page.widget())
-                        self.assertIs(page.browser_panel.window(), owner.real_window())
-                        self.assertFalse(page.browser_panel.info_button.isHidden())
-                        with patch("launcher.ui.InfoDialog.InfoDialog") as info:
+                        self.assertIs(
+                            dashboard.content_stack.currentWidget(),
+                            page.widget(),
+                        )
+                        self.assertIs(
+                            page.browser_panel.window(), owner.real_window()
+                        )
+                        self.assertFalse(
+                            page.browser_panel.info_button.isHidden()
+                        )
+                        with patch(
+                            "launcher.ui.InfoDialog.InfoDialog"
+                        ) as info:
                             page.browser_panel.info_button.click()
                             info.assert_called_once_with(page)
                         if fsui.theme_variant != "modern":
-                            self.assertNotIn("#212431", page.browser_panel.styleSheet())
-                            self.assertNotIn("#171923", dashboard.widget().styleSheet())
+                            self.assertNotIn(
+                                "#212431", page.browser_panel.styleSheet()
+                            )
+                            self.assertNotIn(
+                                "#171923", dashboard.widget().styleSheet()
+                            )
                         self.assertTrue(dashboard.netplay_button.isChecked())
                         self.assertFalse(dashboard.edit_toggle.isEnabled())
                         self.assertFalse(dashboard.library_toggle.isEnabled())
                         page.netplay.activity("Persistent line")
                         dashboard.nav_buttons[0].click()
-                        self.assertIs(dashboard.content_stack.currentWidget(), dashboard.workspace)
+                        self.assertIs(
+                            dashboard.content_stack.currentWidget(),
+                            dashboard.workspace,
+                        )
                         self.assertTrue(dashboard.edit_toggle.isEnabled())
                         dashboard.netplay_button.click()
                         self.assertIs(dashboard.netplay_page, page)
-                        self.assertIn("Persistent line", page.browser_panel.activity.toPlainText())
+                        self.assertIn(
+                            "Persistent line",
+                            page.browser_panel.activity.toPlainText(),
+                        )
                         browse.assert_called_once_with()
                         from launcher.ui.launcherwindow import LauncherWindow
 
                         owner.dashboard = dashboard
-                        with patch("launcher.netplay.netplay_page.NetplayPage") as new_page:
+                        with patch(
+                            "launcher.netplay.netplay_page.NetplayPage"
+                        ) as new_page:
                             LauncherWindow.on_net_play(owner)
                             new_page.assert_not_called()
                         # Closing the window stops the lobby on this computer.

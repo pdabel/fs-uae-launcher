@@ -49,7 +49,9 @@ class ConfigurationsPanel(fsui.Panel):
         )
         self.text_field.on_changed = self.on_search_changed
         if modern:
-            self.text_field.setPlaceholderText(gettext("Search games and configurations"))
+            self.text_field.setPlaceholderText(
+                gettext("Search games and configurations")
+            )
             self.text_field.setClearButtonEnabled(True)
             vert_layout.add(self.text_field, fill=True, margin=10)
         elif VariantsBrowser.use_horizontal_layout():

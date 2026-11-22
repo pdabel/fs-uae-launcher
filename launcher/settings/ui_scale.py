@@ -1,10 +1,16 @@
 import fsui
 from fsui.qt import (
-    QHBoxLayout, QLabel, QSignalBlocker, QSlider, QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QSignalBlocker,
+    QSlider,
+    QVBoxLayout,
     Qt,
 )
 from fsui.qt.qt import (
-    applied_launcher_theme, theme_applied, theme_default_point_size,
+    applied_launcher_theme,
+    theme_applied,
+    theme_default_point_size,
 )
 from launcher.i18n import gettext
 from launcher.launcher_settings import LauncherSettings
@@ -32,7 +38,9 @@ class UIScaleSlider(fsui.Panel):
         option = Option.get(Option.LAUNCHER_FONT_SIZE)
         self.minimum = option["min"]
         self.maximum = option["max"]
-        self.default = max(self.minimum, min(self.maximum, default_point_size()))
+        self.default = max(
+            self.minimum, min(self.maximum, default_point_size())
+        )
         container = self.widget()
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -56,10 +64,12 @@ class UIScaleSlider(fsui.Panel):
         self.slider.setTickPosition(QSlider.TicksBelow)
         self.slider.setTickInterval(1)
         self.slider.setAccessibleName(gettext("Interface Font Size"))
-        self.slider.setToolTip(gettext(
-            "Adjust the interface font size in points. "
-            "Use Default Size restores the selected theme's default."
-        ))
+        self.slider.setToolTip(
+            gettext(
+                "Adjust the interface font size in points. "
+                "Use Default Size restores the selected theme's default."
+            )
+        )
         row.addWidget(self.slider, 1)
         larger = QLabel(gettext("Larger"))
         row.addWidget(larger)
@@ -84,7 +94,10 @@ class UIScaleSlider(fsui.Panel):
 
         self.slider.valueChanged.connect(self.on_value_changed)
         self.slider.sliderReleased.connect(self.commit)
-        self.on_setting(Option.LAUNCHER_FONT_SIZE, LauncherSettings.get(Option.LAUNCHER_FONT_SIZE))
+        self.on_setting(
+            Option.LAUNCHER_FONT_SIZE,
+            LauncherSettings.get(Option.LAUNCHER_FONT_SIZE),
+        )
         LauncherSettings.add_listener(self)
         theme_applied.connect(self.refresh_default)
 
@@ -132,7 +145,9 @@ class UIScaleSlider(fsui.Panel):
         self.slider.setValue(self.spinbox.value())
 
     def has_override(self):
-        return bool(str(LauncherSettings.get(Option.LAUNCHER_FONT_SIZE)).strip())
+        return bool(
+            str(LauncherSettings.get(Option.LAUNCHER_FONT_SIZE)).strip()
+        )
 
     def commit(self):
         LauncherSettings.set(Option.LAUNCHER_FONT_SIZE, self.stored_value())

@@ -358,9 +358,7 @@ def updateSpecFile(path: str, version: Version) -> None:
     with open(path, "r", encoding="UTF-8") as f:
         for line in f:
             if line.startswith("%define fsbuild_version "):
-                lines.append(
-                    f"%define fsbuild_version {rpm_version}\n"
-                )
+                lines.append(f"%define fsbuild_version {rpm_version}\n")
             else:
                 lines.append(line)
     with open(path, "w", newline="\n") as f:
@@ -435,9 +433,7 @@ def calculateVersion(
         if githubRef.startswith("refs/heads/"):
             branch = githubRef[len("refs/heads/") :]
         if githubRef.startswith("refs/pull/"):
-            branch = "pull" + githubRef[len("refs/pull/") :].replace(
-                "/", ""
-            )
+            branch = "pull" + githubRef[len("refs/pull/") :].replace("/", "")
     if not branch:
         branch = subprocess.check_output(
             ["git", "symbolic-ref", "--short", "HEAD"], encoding="UTF-8"

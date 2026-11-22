@@ -153,9 +153,7 @@ class Server:
         if self.lobby:
             args.append("--lobby")
             if self.public_addresses:
-                args.append(
-                    f"--public-addresses={self.public_addresses}"
-                )
+                args.append(f"--public-addresses={self.public_addresses}")
             if self.presence:
                 args.append("--presence")
             if self.name:
@@ -224,9 +222,7 @@ class Server:
             message = event.get("message") or line
             if event.get("reason") == "address_in_use":
                 raise PortInUseError(self.port, message)
-            raise ServerError(
-                f"Netplay server could not start: {message}"
-            )
+            raise ServerError(f"Netplay server could not start: {message}")
         if event.get("event") != "listening":
             self.stop()
             raise ServerError(
@@ -269,17 +265,13 @@ class Server:
             )
         if isinstance(line, Exception):
             self.stop()
-            raise ServerError(
-                f"Could not read from netplay server: {line}"
-            )
+            raise ServerError(f"Could not read from netplay server: {line}")
         if not line:
             # EOF on stdout: the server exited instead of starting up. Its
             # own error message has already gone to stderr.
             returncode = self.process.wait(timeout=STOP_TIMEOUT)
             self.process = None
-            raise ServerError(
-                f"Netplay server exited with code {returncode}"
-            )
+            raise ServerError(f"Netplay server exited with code {returncode}")
         return line.decode("UTF-8", "replace").strip()
 
     def stop(self):

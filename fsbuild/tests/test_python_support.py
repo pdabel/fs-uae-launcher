@@ -29,9 +29,11 @@ def test_python_sources_compile_strictly():
     import warnings
 
     root = Path(__file__).resolve().parents[2]
-    filenames = subprocess.check_output(
-        ["git", "ls-files", "-z"], cwd=root
-    ).decode().split("\0")
+    filenames = (
+        subprocess.check_output(["git", "ls-files", "-z"], cwd=root)
+        .decode()
+        .split("\0")
+    )
     with warnings.catch_warnings():
         warnings.simplefilter("error", SyntaxWarning)
         for filename in filter(None, filenames):
@@ -47,9 +49,11 @@ def test_python_sources_compile_strictly():
 
 def test_python_literal_templates_use_f_strings():
     root = Path(__file__).resolve().parents[2]
-    filenames = subprocess.check_output(
-        ["git", "ls-files", "-z"], cwd=root
-    ).decode().split("\0")
+    filenames = (
+        subprocess.check_output(["git", "ls-files", "-z"], cwd=root)
+        .decode()
+        .split("\0")
+    )
     legacy_calls = []
     for filename in filter(None, filenames):
         path = root / filename
@@ -70,7 +74,9 @@ def test_python_literal_templates_use_f_strings():
                 and isinstance(node.func.value.value, str)
             ):
                 legacy_calls.append(f"{filename}:{node.lineno}")
-    assert not legacy_calls, "Literal .format calls: " + ", ".join(legacy_calls)
+    assert not legacy_calls, "Literal .format calls: " + ", ".join(
+        legacy_calls
+    )
 
 
 def test_translation_precedes_template_substitution():
@@ -101,7 +107,8 @@ def test_translation_precedes_template_substitution():
     for filename, template, translated, value, expected in cases:
         tree = ast.parse((root / filename).read_bytes())
         calls = [
-            node for node in ast.walk(tree)
+            node
+            for node in ast.walk(tree)
             if isinstance(node, ast.Call)
             and isinstance(node.func, ast.Attribute)
             and node.func.attr == "format"
@@ -131,7 +138,8 @@ def test_whdload_logging_uses_lazy_arguments():
     filename = "fsgs/amiga/whdload.py"
     tree = ast.parse((root / filename).read_bytes())
     call = next(
-        node for node in ast.walk(tree)
+        node
+        for node in ast.walk(tree)
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
         and node.func.attr == "debug"
@@ -150,7 +158,13 @@ def test_whdload_logging_uses_lazy_arguments():
         ("[WHDLOAD] %s => %s", "Game.lha", "CUSTOM1=1 PRELOAD")
     ]
     record = logging.LogRecord(
-        "test", logging.DEBUG, filename, 0, captured[0][0], captured[0][1:], None
+        "test",
+        logging.DEBUG,
+        filename,
+        0,
+        captured[0][0],
+        captured[0][1:],
+        None,
     )
     assert record.getMessage() == "[WHDLOAD] Game.lha => CUSTOM1=1 PRELOAD"
 
@@ -206,15 +220,21 @@ def test_supported_packaging_uses_pyside6():
     assert {"pyside6", "qtpy", "qtawesome"} <= locked["default"].keys()
     assert locked["default"]["pyside6"]["version"].startswith("==6.")
     for packages in (
-        manifest["packages"], manifest["dev-packages"],
-        locked["default"], locked["develop"],
+        manifest["packages"],
+        manifest["dev-packages"],
+        locked["default"],
+        locked["develop"],
     ):
         assert not any(name.lower().startswith("pyqt") for name in packages)
 
     paths = [
-        "fsbuild/build.sh", "fsbuild/bundle.sh", "fsbuild/fix-qt.py",
-        "fs-uae-launcher.spec", "debian/control",
-        ".github/workflows/linux.yml", ".github/workflows/macos.yml",
+        "fsbuild/build.sh",
+        "fsbuild/bundle.sh",
+        "fsbuild/fix-qt.py",
+        "fs-uae-launcher.spec",
+        "debian/control",
+        ".github/workflows/linux.yml",
+        ".github/workflows/macos.yml",
     ]
     for filename in paths:
         source = (root / filename).read_text().lower()
@@ -228,11 +248,16 @@ def test_supported_packaging_uses_pyside6():
     assert "PySide6/Qt" in build
     helper = ast.parse((root / "fsbuild/fix-qt.py").read_bytes())
     defaults = [
-        node for node in ast.walk(helper)
+        node
+        for node in ast.walk(helper)
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
         and node.func.attr == "setdefault"
-        and [argument.value for argument in node.args
-             if isinstance(argument, ast.Constant)] == ["QT_API", "pyside6"]
+        and [
+            argument.value
+            for argument in node.args
+            if isinstance(argument, ast.Constant)
+        ]
+        == ["QT_API", "pyside6"]
     ]
     assert len(defaults) == 1

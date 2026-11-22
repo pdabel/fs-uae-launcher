@@ -1,7 +1,6 @@
 from collections import namedtuple
 from fsgs.platforms import PLATFORM_AMIGA
 
-
 KnownFile = namedtuple("KnownFile", ["sha1", "platform", "name"])
 KnownFileMod = namedtuple("KnownFileMod", ["sha1", "mod"])
 

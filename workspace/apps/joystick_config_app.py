@@ -291,9 +291,7 @@ class JoystickConfigWindow(fsui.Window):
         for i, button in enumerate(BUTTONS):
             panel = self.button_panels[i]
             if panel.event_name:
-                button_config.append(
-                    f"{panel.event_name} = {button[3]}"
-                )
+                button_config.append(f"{panel.event_name} = {button[3]}")
         config.extend(sorted(button_config))
         with open(
             self.get_save_path(self.get_joystick_id() + ".conf"),

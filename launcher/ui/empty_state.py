@@ -5,8 +5,14 @@ view's viewport, and hides itself as soon as the view has rows.
 """
 
 from fsui.qt import (
-    QLabel, QListView, QModelIndex, QPushButton, QSizePolicy, QVBoxLayout,
-    QWidget, Qt,
+    QLabel,
+    QListView,
+    QModelIndex,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+    Qt,
 )
 
 
@@ -44,7 +50,9 @@ class EmptyStateOverlay(QWidget):
         model = self._model()
         if model is not None:
             for signal in (
-                model.rowsInserted, model.rowsRemoved, model.modelReset,
+                model.rowsInserted,
+                model.rowsRemoved,
+                model.modelReset,
                 model.layoutChanged,
             ):
                 signal.connect(self.refresh)
@@ -55,7 +63,10 @@ class EmptyStateOverlay(QWidget):
         return QListView.model(self.view)
 
     def eventFilter(self, watched, event):
-        if watched is self.view.viewport() and event.type() == event.Type.Resize:
+        if (
+            watched is self.view.viewport()
+            and event.type() == event.Type.Resize
+        ):
             self.setGeometry(self.view.viewport().rect())
         return False
 

@@ -10,9 +10,7 @@ class OverrideWarning(fsui.ImageView):
         )
         setattr(self, f"on_{name}_config", self.on_config)
         ConfigBehavior(self, [name])
-        text = gettext(
-            f"Option {name} is overridden by current configuration"
-        )
+        text = gettext(f"Option {name} is overridden by current configuration")
         self.set_tool_tip(text)
 
     def on_config(self, value):

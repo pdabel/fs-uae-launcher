@@ -3,8 +3,17 @@ import qtawesome as qta
 import fsui
 from fsui.qt import modern_theme
 from fsui.qt import (
-    QApplication, QColor, QIcon, QIconEngine, QPainter, QPainterPath, QPalette, QPen, QPixmap,
-    QRect, Qt,
+    QApplication,
+    QColor,
+    QIcon,
+    QIconEngine,
+    QPainter,
+    QPainterPath,
+    QPalette,
+    QPen,
+    QPixmap,
+    QRect,
+    Qt,
 )
 
 
@@ -65,7 +74,9 @@ class RetroNavigationIcon(QIconEngine):
         pixmap.fill(Qt.transparent)
         painter = QPainter(pixmap)
         try:
-            self.paint(painter, QRect(0, 0, size.width(), size.height()), mode, state)
+            self.paint(
+                painter, QRect(0, 0, size.width(), size.height()), mode, state
+            )
         finally:
             painter.end()
         return pixmap
@@ -77,7 +88,9 @@ def navigation_icon(name, on_accent=False):
         return QIcon(RetroNavigationIcon(name, fsui.theme_variant))
     if on_accent and fsui.theme_variant == "modern":
         return qta.icon(name, color=modern_theme.palette().accent_text)
-    color = modern_theme.palette().icon if fsui.theme_variant == "modern" else (
-        QApplication.palette().color(QPalette.ButtonText).name()
+    color = (
+        modern_theme.palette().icon
+        if fsui.theme_variant == "modern"
+        else (QApplication.palette().color(QPalette.ButtonText).name())
     )
     return qta.icon(name, color=color)

@@ -81,8 +81,7 @@ class AdvancedSettingsPage(SettingsPage):
             value = app.settings[key]
             if LauncherConfig.get(key):
                 text += (
-                    f"\n# {key} is overridden by current "
-                    "configuration\n"
+                    f"\n# {key} is overridden by current " "configuration\n"
                 )
             text += f"{key} = {value}\n"
             if LauncherConfig.get(key):

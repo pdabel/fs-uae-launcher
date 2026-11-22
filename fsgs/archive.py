@@ -77,9 +77,7 @@ class GzipHandler(object):
         elif ext == ".roz":
             self.name = name + ".rom"
         else:
-            raise Exception(
-                f"Unexpected extension {ext} in GzipHandler"
-            )
+            raise Exception(f"Unexpected extension {ext} in GzipHandler")
 
     def exists(self, name):
         return name == self.name

@@ -166,7 +166,9 @@ class RefreshRateTool(object):
                 height = Quartz.CGDisplayModeGetHeight(current_mode)
                 refresh = Quartz.CGDisplayModeGetRefreshRate(current_mode)
                 if not refresh:
-                    print("WARNING: returned refresh rate was 0. assuming 60 Hz")
+                    print(
+                        "WARNING: returned refresh rate was 0. assuming 60 Hz"
+                    )
                     refresh = 60
                 # A bit weird that it crashes, since this is supposed to be a
                 # copy of the mode...?

@@ -65,8 +65,7 @@ class DownloadGameWindow(fsui.Window):
         label = fsui.HeadingLabel(
             self,
             gettext(
-                "Download to the following directory, and then "
-                "click '{0}':"
+                "Download to the following directory, and then " "click '{0}':"
             ).format(gettext("Scan Downloads")),
         )
         label.set_min_width(500)

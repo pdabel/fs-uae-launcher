@@ -164,7 +164,10 @@ def test_game_override_config_paths_are_rebased_in_copy(tmp_path, enabled):
     original = GameOverrideStore(
         change.source / "Data" / "Databases" / "GameOverrides.sqlite"
     )
-    internal = ("config_path", str(change.source / "Configurations" / "a.fs-uae"))
+    internal = (
+        "config_path",
+        str(change.source / "Configurations" / "a.fs-uae"),
+    )
     external = ("config_path", str(tmp_path / "external.fs-uae"))
     variant = ("variant_uuid", "abc")
     original.set(internal, "monitor", "")

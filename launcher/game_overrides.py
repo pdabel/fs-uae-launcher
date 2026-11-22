@@ -15,8 +15,7 @@ class GameOverrideStore:
         path = self.path
         if path is None:
             path = (
-                Path(FSGSDirectories.databases_dir())
-                / "GameOverrides.sqlite"
+                Path(FSGSDirectories.databases_dir()) / "GameOverrides.sqlite"
             )
         path.parent.mkdir(parents=True, exist_ok=True)
         try:

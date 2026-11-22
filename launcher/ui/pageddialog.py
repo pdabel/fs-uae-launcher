@@ -27,8 +27,7 @@ class PagedDialog(fsui.Window):
         self.list_view.set_row_height(
             self.window.theme.sidebar_list_row_height
         )
-        self.list_view.setStyleSheet(
-            f"""
+        self.list_view.setStyleSheet(f"""
         QListView {{
             padding-top: 20px;
             background-color: {self.window.theme.sidebar_list_background.to_hex()};
@@ -42,8 +41,7 @@ class PagedDialog(fsui.Window):
             background-color: {self.window.theme.sidebar_list_row_background.to_hex()};
             color: {self.window.theme.sidebar_list_row_text.to_hex()};
         }}
-        """
-        )
+        """)
         self.restyle_navigation()
         theme_applied.connect(self.restyle_navigation)
         self.closed.connect(self._disconnect_theme_signal)
@@ -85,7 +83,12 @@ class PagedDialog(fsui.Window):
 
     def restyle_navigation(self):
         """Apply theme colours to the page list; rerun on live theme change."""
-        if fsui.theme_variant in ("modern", "plain", "windows311", "workbench"):
+        if fsui.theme_variant in (
+            "modern",
+            "plain",
+            "windows311",
+            "workbench",
+        ):
             from fsui.qt import QSize, Qt
 
             self.list_view.set_min_width(216)
@@ -105,7 +108,11 @@ class PagedDialog(fsui.Window):
             """))
             if fsui.theme_variant != "modern":
                 self.list_view.set_row_height(44)
-                self.list_view.setIconSize(QSize(20, 20) if fsui.theme_variant == "plain" else QSize(24, 24))
+                self.list_view.setIconSize(
+                    QSize(20, 20)
+                    if fsui.theme_variant == "plain"
+                    else QSize(24, 24)
+                )
                 stylesheet = """
                     QListView { background: palette(window);
                         color: palette(window-text); border: 0;

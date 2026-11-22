@@ -195,39 +195,29 @@ class GameDatabase(BaseDatabase):
 
     def update_database_to_version_19(self):
         cursor = self.internal_cursor()
-        cursor.execute(
-            """
+        cursor.execute("""
             ALTER TABLE metadata ADD COLUMN games_version
             INTEGER NOT NULL DEFAULT 0;
-        """
-        )
-        cursor.execute(
-            """
+        """)
+        cursor.execute("""
             CREATE TABLE game (
                 id INTEGER PRIMARY KEY,
                 uuid BLOB,
                 data BLOB
             );
-        """
-        )
-        cursor.execute(
-            """
+        """)
+        cursor.execute("""
             CREATE INDEX game_uuid ON game (uuid);
-        """
-        )
-        cursor.execute(
-            """
+        """)
+        cursor.execute("""
             CREATE TABLE rating (
                 game_uuid VARCHAR(36) PRIMARY KEY NOT NULL,
                 work_rating INT NOT NULL,
                 like_rating INT NOT NULL,
                 updated TIMESTAMP NULL
             );
-        """
-        )
-        cursor.execute(
-            """
+        """)
+        cursor.execute("""
             ALTER TABLE metadata ADD COLUMN database_version
             INTEGER NOT NULL DEFAULT 0;
-        """
-        )
+        """)

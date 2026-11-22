@@ -15,7 +15,10 @@ from launcher.ui.behaviors.platformbehavior import (
 )
 from launcher.ui.config.ConfigCheckBox import ConfigCheckBox
 from launcher.ui.config.model_labels import (
-    model_hint, model_label, technical_tooltip, variant_label,
+    model_hint,
+    model_label,
+    technical_tooltip,
+    variant_label,
 )
 
 
@@ -42,7 +45,8 @@ class ModelGroup(fsui.Group):
             hint = model_hint(model_id)
             technical = technical_tooltip(self.model_titles[index])
             self.model_choice.setItemData(
-                index, f"{hint}\n{technical}" if hint else technical,
+                index,
+                f"{hint}\n{technical}" if hint else technical,
                 Qt.ToolTipRole,
             )
         self.model_choice.set_tooltip(
@@ -56,15 +60,19 @@ class ModelGroup(fsui.Group):
         self.accuracy_choice = fsui.Choice(
             self, [gettext("High"), gettext("Medium"), gettext("Low")]
         )
-        self.accuracy_choice.set_tooltip(gettext(
-            "High is most faithful to real hardware. Lower settings run "
-            "faster on slow computers but some games may misbehave."
-        ))
+        self.accuracy_choice.set_tooltip(
+            gettext(
+                "High is most faithful to real hardware. Lower settings run "
+                "faster on slow computers but some games may misbehave."
+            )
+        )
         self.ntsc_checkbox = ConfigCheckBox(self, "NTSC", Option.NTSC_MODE)
-        self.ntsc_checkbox.set_tooltip(gettext(
-            "Use the American 60 Hz video mode. Leave off for European "
-            "(PAL) games."
-        ))
+        self.ntsc_checkbox.set_tooltip(
+            gettext(
+                "Use the American 60 Hz video mode. Leave off for European "
+                "(PAL) games."
+            )
+        )
 
         AmigaShowBehavior(self.accuracy_label)
         AmigaShowBehavior(self.accuracy_choice)

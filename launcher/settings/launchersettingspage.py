@@ -36,15 +36,19 @@ class LauncherSettingsPage(SettingsPage):
         self.layout.add(self.preview_label, fill=True, margin_bottom=10)
         self.restart_button = fsui.Button(self, gettext("Restart Launcher"))
         palette = self.restart_button.widget().palette()
-        self.restart_button.widget().setIcon(qta.icon(
-            "fa5s.redo", color=palette.color(QPalette.ButtonText).name()
-        ))
+        self.restart_button.widget().setIcon(
+            qta.icon(
+                "fa5s.redo", color=palette.color(QPalette.ButtonText).name()
+            )
+        )
         self.restart_button.set_tooltip(
             gettext("Restart to fully apply the selected theme and font")
         )
         self.restart_button.activated.connect(self.on_restart_button)
         self.ui_scale = UIScaleSlider(self)
-        self.layout.add(self.ui_scale, fill=True, margin_top=10, margin_bottom=10)
+        self.layout.add(
+            self.ui_scale, fill=True, margin_top=10, margin_bottom=10
+        )
         self.options_on_page.add(Option.LAUNCHER_FONT_SIZE)
         self.layout.add(self.restart_button, margin_bottom=10)
         LauncherSettings.add_listener(self)
@@ -81,11 +85,16 @@ class LauncherSettingsPage(SettingsPage):
         self.layout.add(
             fsui.MultiLineLabel(self, fsboot.base_dir(), 640), fill=True
         )
-        self.portable_folder_button = fsui.Button(self, gettext("Choose Data Folder..."))
+        self.portable_folder_button = fsui.Button(
+            self, gettext("Choose Data Folder...")
+        )
         palette = self.portable_folder_button.widget().palette()
-        self.portable_folder_button.widget().setIcon(qta.icon(
-            "fa5s.folder-open", color=palette.color(QPalette.ButtonText).name()
-        ))
+        self.portable_folder_button.widget().setIcon(
+            qta.icon(
+                "fa5s.folder-open",
+                color=palette.color(QPalette.ButtonText).name(),
+            )
+        )
         self.portable_folder_button.enable(fsboot.is_portable())
         self.portable_folder_button.activated.connect(self.on_portable_folder)
         self.layout.add(self.portable_folder_button, margin_top=10)
@@ -178,7 +187,9 @@ class LauncherSettingsPage(SettingsPage):
 
         if Scanner.running:
             fsui.show_error(
-                gettext("Wait for the database scan to finish before changing portable mode."),
+                gettext(
+                    "Wait for the database scan to finish before changing portable mode."
+                ),
                 gettext("Portable Mode"),
             )
             return
@@ -214,22 +225,34 @@ class LauncherSettingsPage(SettingsPage):
             if not destination:
                 return
         override = os.environ.get("FS_UAE_BASE_DIR")
-        if not enabled and override and os.path.realpath(override) != os.path.realpath(destination):
+        if (
+            not enabled
+            and override
+            and os.path.realpath(override) != os.path.realpath(destination)
+        ):
             fsui.show_error(
-                gettext("This launch uses FS_UAE_BASE_DIR, which overrides the normal data folder. Choose that folder or launch without this override."),
+                gettext(
+                    "This launch uses FS_UAE_BASE_DIR, which overrides the normal data folder. Choose that folder or launch without this override."
+                ),
                 gettext("Unable to change portable mode"),
             )
             return
         marker_root = fsboot.portable_dir() or fsboot.executable_dir()
         change = PortableModeChange(
-            fsboot.base_dir(), destination,
-            os.path.join(marker_root, "Portable.ini"), enabled,
+            fsboot.base_dir(),
+            destination,
+            os.path.join(marker_root, "Portable.ini"),
+            enabled,
             os.path.join(fsboot.app_config_dir("fs-uae-launcher"), "base-dir"),
             copy_data=copy_data,
         )
         try:
             change.validate()
-            title = gettext("Enable Portable Mode") if enabled else gettext("Disable Portable Mode")
+            title = (
+                gettext("Enable Portable Mode")
+                if enabled
+                else gettext("Disable Portable Mode")
+            )
             if copy_data:
                 message = gettext(
                     "Copy launcher data to this folder and restart?\n\n"
@@ -243,14 +266,19 @@ class LauncherSettingsPage(SettingsPage):
                     "{folder}\n\nIts existing contents will not be changed."
                 ).format(folder=destination)
             answer = QMessageBox.question(
-                QParent(self), title,
-                message + gettext(
+                QParent(self),
+                title,
+                message
+                + gettext(
                     "\n\nActive netplay sessions and hosted servers will "
                     "stop. Unsaved configuration changes may be lost."
                 ),
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
             )
             if answer == QMessageBox.Yes:
                 app.request_restart(portable_change=change)
         except OSError as error:
-            fsui.show_error(str(error), gettext("Unable to change portable mode"))
+            fsui.show_error(
+                str(error), gettext("Unable to change portable mode")
+            )

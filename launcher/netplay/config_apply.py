@@ -126,7 +126,9 @@ def apply_config(document, sync_keys):
     )
     if updates:
         LauncherConfig.set_from_netplay(updates)
-        put_back_echoes(updates, fsgs.config.get, LauncherConfig.set_from_netplay)
+        put_back_echoes(
+            updates, fsgs.config.get, LauncherConfig.set_from_netplay
+        )
     return missing
 
 

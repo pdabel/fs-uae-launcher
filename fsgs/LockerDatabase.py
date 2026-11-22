@@ -64,10 +64,8 @@ class LockerDatabase(BaseDatabase):
         try:
             cursor.execute("SELECT count(*) FROM file")
         except sqlite3.OperationalError:
-            cursor.execute(
-                """CREATE TABLE file (
+            cursor.execute("""CREATE TABLE file (
                     sha1 BLOB PRIMARY KEY
-                    )"""
-            )
+                    )""")
 
         cursor.execute("ALTER TABLE metadata ADD COLUMN sync_version TEXT")

@@ -8,7 +8,6 @@ from io import BytesIO
 # noinspection PyUnresolvedReferences
 from typing import List, Dict
 
-
 B_SIZE = 512
 B_COUNT = 880 * 2
 T_HEADER = 2
@@ -169,9 +168,7 @@ class ADFFile(object):
 
         bm_flag = b.ulong(B_SIZE - 200)
         if bm_flag != 0xFFFFFFFF:
-            self.warnings.append(
-                f"bm_flag != 0xffffffff ({bm_flag:8x})"
-            )
+            self.warnings.append(f"bm_flag != 0xffffffff ({bm_flag:8x})")
             if bm_flag == 0:
                 self.warnings.append("bm_flag is ZERO")
         for i in range(25):

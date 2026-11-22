@@ -7,6 +7,7 @@ from fsgs.checksumtool import ChecksumTool
 from fsgs.FSGSDirectories import FSGSDirectories
 from fsgs.amiga.amiga import Amiga
 
+
 class AmigaContext(BaseContext):
     def __init__(self, main_context):
         BaseContext.__init__(self, main_context)

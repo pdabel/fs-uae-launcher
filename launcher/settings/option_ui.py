@@ -11,8 +11,14 @@ from launcher.ui.HelpButton import HelpButton
 class OptionUI(object):
     @classmethod
     def create_group(
-        cls, parent, name, description=None, help_button=True, thin=False,
-        expand=False, per_game=False,
+        cls,
+        parent,
+        name,
+        description=None,
+        help_button=True,
+        thin=False,
+        expand=False,
+        per_game=False,
     ):
         group = fsui.Group(parent)
         group.layout = fsui.HorizontalLayout()
@@ -56,9 +62,7 @@ class OptionUI(object):
             current_value = (
                 stored_value
                 if has_override
-                else base_value
-                if base_value
-                else inherit_value
+                else base_value if base_value else inherit_value
             )
             if has_override and stored_value == "":
                 current_value = option_default_value
@@ -133,14 +137,12 @@ class OptionUI(object):
                     current_value = option_default_value
             else:
                 current_value = (
-                    LauncherConfig.get_game_base_value(name)
-                    or inherit_value
+                    LauncherConfig.get_game_base_value(name) or inherit_value
                 )
             effective_value = (
                 overrides[name]
                 if name in overrides
-                else base_value
-                or effective_global_value()
+                else base_value or effective_global_value()
             )
             if option["type"].lower() == "string":
                 with group.value_control.changed.inhibit:
@@ -159,9 +161,7 @@ class OptionUI(object):
                     group.value_control.set_value(effective_integer)
                 with group.default_checkbox.changed.inhibit:
                     group.default_checkbox.check(inherited)
-                group.value_control.set_enabled(
-                    game_enabled and not inherited
-                )
+                group.value_control.set_enabled(game_enabled and not inherited)
             if hasattr(group, "widget") and isinstance(
                 group.widget, fsui.Choice
             ):
@@ -175,15 +175,11 @@ class OptionUI(object):
                             value_description(effective_global_value())
                         ),
                     )
-                    if (
-                        current_value not in {
-                            inherit_value,
-                            option_default_value,
-                        }
-                        and all(
-                            value != current_value
-                            for value, _ in choice_values
-                        )
+                    if current_value not in {
+                        inherit_value,
+                        option_default_value,
+                    } and all(
+                        value != current_value for value, _ in choice_values
                     ):
                         choice_values.append(
                             (
@@ -204,9 +200,7 @@ class OptionUI(object):
                             ):
                                 label = gettext(
                                     "{value} (Game override)"
-                                ).format(
-                                    value=label
-                                )
+                                ).format(value=label)
                             group.widget.add_item(label)
                         selected = next(
                             (
@@ -241,11 +235,13 @@ class OptionUI(object):
             choice_values.append(
                 (
                     inherit_value if per_game else "",
-                    gettext("Default ({0})").format(
-                        value_description(effective_global_value())
-                    )
-                    if per_game
-                    else default_desc,
+                    (
+                        gettext("Default ({0})").format(
+                            value_description(effective_global_value())
+                        )
+                        if per_game
+                        else default_desc
+                    ),
                 )
             )
             if per_game:
@@ -267,11 +263,13 @@ class OptionUI(object):
             choice_values.append(
                 (
                     inherit_value if per_game else "",
-                    gettext("Default ({0})").format(
-                        value_description(effective_global_value())
-                    )
-                    if per_game
-                    else default_desc,
+                    (
+                        gettext("Default ({0})").format(
+                            value_description(effective_global_value())
+                        )
+                        if per_game
+                        else default_desc
+                    ),
                 )
             )
             if per_game:
@@ -368,7 +366,8 @@ class OptionUI(object):
         if choice_values:
             if (
                 per_game
-                and current_value not in {
+                and current_value
+                not in {
                     inherit_value,
                     option_default_value,
                 }

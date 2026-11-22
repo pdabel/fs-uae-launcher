@@ -14,7 +14,6 @@ if b"\0"[0] == 0:  # Python 3
     def byte_value(x):
         return x
 
-
 else:
 
     def byte_value(x):

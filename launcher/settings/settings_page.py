@@ -32,7 +32,8 @@ class SettingsPage(fsui.Panel):
 
     def _sync_label_widths(self, reset=False):
         label_layouts = [
-            item.label_layout for item in self.option_groups
+            item.label_layout
+            for item in self.option_groups
             if hasattr(item, "label_layout")
         ]
         if reset:

@@ -77,9 +77,7 @@ class Config(ContextAware):
             if old_config.get(changed_key, None) == changed_value:
                 return
             if self.log_config:
-                print(
-                    f"[CONFIG] set {changed_key} to {changed_value}"
-                )
+                print(f"[CONFIG] set {changed_key} to {changed_value}")
             add_changed_key(changed_key)
             self.values[changed_key] = changed_value
 

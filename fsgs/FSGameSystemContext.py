@@ -38,17 +38,33 @@ class FileContext(BaseContext):
         # If the DB/cache returned a directory (e.g. an extracted temp
         # folder), try to resolve a sensible file inside it. If we can
         # determine a single candidate, return that file path instead.
-        if result and not result.startswith("locker://") and os.path.isdir(result):
+        if (
+            result
+            and not result.startswith("locker://")
+            and os.path.isdir(result)
+        ):
             try:
-                entries = [e for e in os.listdir(result) if not e.startswith('.')]
+                entries = [
+                    e for e in os.listdir(result) if not e.startswith(".")
+                ]
             except Exception:
                 entries = []
-            files = [e for e in entries if os.path.isfile(os.path.join(result, e))]
+            files = [
+                e for e in entries if os.path.isfile(os.path.join(result, e))
+            ]
             if len(files) == 1:
                 return os.path.join(result, files[0])
             # Prefer common Amiga/image/archive extensions if multiple files
             preferred_exts = [
-                '.rom', '.adf', '.hd', '.iso', '.cue', '.zip', '.lha', '.7z', '.rp9'
+                ".rom",
+                ".adf",
+                ".hd",
+                ".iso",
+                ".cue",
+                ".zip",
+                ".lha",
+                ".7z",
+                ".rp9",
             ]
             for ext in preferred_exts:
                 for f in files:
@@ -151,8 +167,7 @@ class FileContext(BaseContext):
                 if not license_status["accepted"]:
                     # FIXME: custom exception here
                     raise Exception(
-                        f'Usage terms "{license_code}" was not '
-                        "accepted"
+                        f'Usage terms "{license_code}" was not ' "accepted"
                     )
         path = Downloader.cache_file_from_url(url)
         return path + hash_part
@@ -200,7 +215,9 @@ class FileContext(BaseContext):
         if isinstance(ifs, str):
             # If the resolved path is a directory, treat as not found
             if os.path.isdir(ifs):
-                raise NotFoundError(f"Expected file but found directory: {ifs}")
+                raise NotFoundError(
+                    f"Expected file but found directory: {ifs}"
+                )
             # we got a direct path
             try:
                 os.link(ifs, dst)
@@ -350,12 +367,12 @@ class FSGameSystemContext(object):
         sortable_items = []
         for i, variant in enumerate(variants):
             game_database = self.game_database(variant["database"])
-            variant["like_rating"], variant[
-                "work_rating"
-            ] = game_database.get_ratings_for_game(variant["uuid"])
-            variant[
-                "personal_rating"
-            ], ignored = database.get_ratings_for_game(variant["uuid"])
+            variant["like_rating"], variant["work_rating"] = (
+                game_database.get_ratings_for_game(variant["uuid"])
+            )
+            variant["personal_rating"], ignored = (
+                database.get_ratings_for_game(variant["uuid"])
+            )
 
             name = variant["name"]
             # FIXME: name replacement needed any more?

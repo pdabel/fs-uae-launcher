@@ -2,7 +2,6 @@ import fsui
 from .application import Application
 from .theme import WorkspaceTheme
 
-
 TEXT_SPACING = 2
 
 

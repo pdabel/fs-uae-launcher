@@ -151,21 +151,35 @@ def build_cfg():
     ]
     for _i in range(Amiga.MAX_FLOPPY_DRIVES):
         cfg.append((f"floppy_drive_{_i}", ""))
-        cfg.append((f"x_floppy_drive_{_i}_sha1", "", "checksum", "sync", "no_save"))
+        cfg.append(
+            (f"x_floppy_drive_{_i}_sha1", "", "checksum", "sync", "no_save")
+        )
     for _i in range(Amiga.MAX_FLOPPY_IMAGES):
         cfg.append((f"floppy_image_{_i}", ""))
-        cfg.append((f"x_floppy_image_{_i}_sha1", "", "checksum", "sync", "no_save"))
+        cfg.append(
+            (f"x_floppy_image_{_i}_sha1", "", "checksum", "sync", "no_save")
+        )
     for _i in range(Amiga.MAX_CDROM_DRIVES):
         cfg.append((f"cdrom_drive_{_i}", ""))
-        cfg.append((f"x_cdrom_drive_{_i}_sha1", "", "checksum", "sync", "no_save"))
+        cfg.append(
+            (f"x_cdrom_drive_{_i}_sha1", "", "checksum", "sync", "no_save")
+        )
     for _i in range(Amiga.MAX_CDROM_IMAGES):
         cfg.append((f"cdrom_image_{_i}", ""))
-        cfg.append((f"x_cdrom_image_{_i}_sha1", "", "checksum", "sync", "no_save"))
+        cfg.append(
+            (f"x_cdrom_image_{_i}_sha1", "", "checksum", "sync", "no_save")
+        )
     for _i in range(Amiga.MAX_HARD_DRIVES):
         cfg.append((f"hard_drive_{_i}", ""))
-        cfg.append((f"hard_drive_{_i}_label", "", "checksum", "sync", "custom"))
-        cfg.append((f"hard_drive_{_i}_priority", "", "checksum", "sync", "custom"))
-        cfg.append((f"x_hard_drive_{_i}_sha1", "", "checksum", "sync", "no_save"))
+        cfg.append(
+            (f"hard_drive_{_i}_label", "", "checksum", "sync", "custom")
+        )
+        cfg.append(
+            (f"hard_drive_{_i}_priority", "", "checksum", "sync", "custom")
+        )
+        cfg.append(
+            (f"x_hard_drive_{_i}_sha1", "", "checksum", "sync", "no_save")
+        )
     return cfg
 
 
@@ -195,9 +209,7 @@ class LauncherConfig(object):
     key_order = [x[0] for x in cfg]
     checksum_keys = [x[0] for x in cfg if "checksum" in x]
     sync_keys_list = [
-        x[0]
-        for x in cfg
-        if "sync" in x and x[0] not in LOCAL_DISPLAY_OPTIONS
+        x[0] for x in cfg if "sync" in x and x[0] not in LOCAL_DISPLAY_OPTIONS
     ]
     sync_keys_set = set(sync_keys_list)
     no_custom_config = [x[0] for x in cfg if "custom" not in x]

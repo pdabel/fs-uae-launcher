@@ -9,6 +9,7 @@ from fsgs.option import Option
 from fsgs.amiga import whdload
 from fsgs.amiga.amiga import Amiga
 
+
 class ValueConfigLoader(object):
     DB_VERSION_MAX = 1
 
@@ -21,7 +22,9 @@ class ValueConfigLoader(object):
         self._file_list = None
         self._cue_sheets = None
         if uuid:
-            self.options["database_url"] = f"{openretro_url_prefix()}/game/{uuid}"
+            self.options["database_url"] = (
+                f"{openretro_url_prefix()}/game/{uuid}"
+            )
 
     def get_config(self):
         return self.config.copy()

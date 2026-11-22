@@ -2,7 +2,6 @@ from fsui.qt import Qt, QSize, Signal, QFont
 from fsui.qt import QListView, QStandardItemModel, QStandardItem
 from .widget_mixin import WidgetMixin
 
-
 BOLD_ROLE = Qt.UserRole + 1
 
 

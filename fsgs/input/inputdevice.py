@@ -67,9 +67,7 @@ class InputDevice(object):
             if hasattr(self, method_name):
                 getattr(self, method_name)(name, sclist=sclist)
             else:
-                print(
-                    f"{name} does not support platform {platform}"
-                )
+                print(f"{name} does not support platform {platform}")
                 raise MissingPlatformSupportException(
                     "No input device support for platform"
                 )

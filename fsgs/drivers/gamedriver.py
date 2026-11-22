@@ -81,7 +81,9 @@ class GameDriver:
         self.files.install()
 
     def run(self):
-        executable = PluginExecutableFinder().find_executable(self.emulator.name)
+        executable = PluginExecutableFinder().find_executable(
+            self.emulator.name
+        )
         if executable is None:
             raise LookupError(
                 "Could not find emulator " + repr(self.emulator.name)
@@ -329,9 +331,7 @@ class GameDriver:
             return 0
         else:
             for i, screen in enumerate(qapplication.screens()):
-                print(
-                    f"Screen {i} refresh rate (Qt) = {screen.refreshRate()}"
-                )
+                print(f"Screen {i} refresh rate (Qt) = {screen.refreshRate()}")
             index = cls.screen_index_for_monitor(monitor)
             if not qapplication.screens():
                 return 0
@@ -363,7 +363,12 @@ class GameDriver:
         from fsgs.displays import screen_index
 
         application = init_qt()
-        return screen_index(application.screens(), monitor, application.primaryScreen()) or 0
+        return (
+            screen_index(
+                application.screens(), monitor, application.primaryScreen()
+            )
+            or 0
+        )
 
     def screen_index(self):
         monitor = self.options[Option.MONITOR]
@@ -375,7 +380,9 @@ class GameDriver:
         from fsgs.displays import fsuae_monitor
 
         application = init_qt()
-        return fsuae_monitor(application.screens(), monitor, application.primaryScreen())
+        return fsuae_monitor(
+            application.screens(), monitor, application.primaryScreen()
+        )
 
     @classmethod
     def screen_rect_for_monitor(cls, monitor):
@@ -611,7 +618,9 @@ class GameDriver:
         env["SDL_VIDEO_WINDOW_POS"] = str(f"{x},{y}")
         env["FSGS_WINDOW_POS"] = str(f"{x},{y}")
 
-        env["FSGS_WINDOW_CENTER"] = f"{screen_x + screen_w // 2},{screen_y + screen_h // 2}"
+        env["FSGS_WINDOW_CENTER"] = (
+            f"{screen_x + screen_w // 2},{screen_y + screen_h // 2}"
+        )
 
     def emulator_skin_paths(self):
         left = self.temp_file("left.png").path
@@ -695,9 +704,7 @@ class GameDriver:
         print("")
         if System.windows:
             kwargs["close_fds"] = True
-        current_task.set_progress(
-            f"Starting {emulator}"
-        )
+        current_task.set_progress(f"Starting {emulator}")
         process = emulator.popen(args, **kwargs)
         self.write_emulator_pid_file(self.emulator_pid_file(), process)
         return process

@@ -4,6 +4,7 @@ regenerates the fixtures from any similarly-captured session.
 
 Usage: python3 extract_fixtures.py <path-to-pcap> <output-dir>
 """
+
 import struct
 import sys
 import json
@@ -21,10 +22,10 @@ def parse_pcap(path):
         if off + 16 > len(data):
             break
         ts_sec, ts_usec, incl_len, orig_len = struct.unpack(
-            endian + "IIII", data[off:off + 16]
+            endian + "IIII", data[off : off + 16]
         )
         off += 16
-        pkt = data[off:off + incl_len]
+        pkt = data[off : off + incl_len]
         off += incl_len
 
         # network == 0: BSD loopback (NULL), 4-byte address-family header
@@ -42,7 +43,11 @@ def parse_pcap(path):
             ">HHIIBB", tcp[:14]
         )
         data_off = (offres >> 4) * 4
-        payload = tcp[data_off: total_len - ihl] if total_len >= ihl else tcp[data_off:]
+        payload = (
+            tcp[data_off : total_len - ihl]
+            if total_len >= ihl
+            else tcp[data_off:]
+        )
         if not payload:
             continue
         streams[(srcport, dstport)].append((seq, bytes(payload)))
@@ -63,7 +68,9 @@ def reassemble(streams, key):
             payload = payload[overlap:]
             seq = expected
         if seq > expected:
-            raise ValueError(f"gap in stream {key}: expected {expected}, got {seq}")
+            raise ValueError(
+                f"gap in stream {key}: expected {expected}, got {seq}"
+            )
         out += payload
         expected = seq + len(payload)
     return bytes(out)
@@ -86,7 +93,7 @@ def attribute_checks(stream):
     the server's attribution rule (checks for frame f arrive before the ack
     for f, see docs/netplay-go-server-design.md)."""
     n = len(stream) // 4
-    words = struct.unpack(f">{n}I", stream[:n * 4])
+    words = struct.unpack(f">{n}I", stream[: n * 4])
     current_frame = -1
     mem, rnd = {}, {}
     for w in words:
@@ -110,9 +117,12 @@ def main():
     streams = parse_pcap(pcap_path)
     handshakes = sorted(find_netplay_connections(streams))
     if len(handshakes) != 2:
-        print(f"expected 2 client connections, found {len(handshakes)}: {handshakes}")
+        print(
+            f"expected 2 client connections, found {len(handshakes)}: {handshakes}"
+        )
 
     import os
+
     os.makedirs(out_dir, exist_ok=True)
 
     manifest = {"connections": []}
@@ -127,24 +137,30 @@ def main():
         open(f"{out_dir}/server-to-client{i}.bin", "wb").write(s2c)
 
         mem, rnd = attribute_checks(body_c2s)
-        manifest["connections"].append({
-            "index": i,
-            "client_port": client_port,
-            "server_port": server_port,
-            "tag": handshake[21:24].rstrip(b"\x00").decode("ascii", "replace"),
-            "player_byte": handshake[20],
-            "emulator_version": {
-                "name": handshake[9:14].decode("ascii", "replace"),
-                "major": handshake[14],
-                "minor": handshake[15],
-                "revision": handshake[16],
-            },
-            "resume_from_packet": struct.unpack(">I", handshake[24:28])[0],
-            "client_to_server_bytes": len(body_c2s),
-            "server_to_client_bytes": len(s2c),
-            "max_frame": max(mem.keys()) if mem else None,
-            "zero_mem_check_frames": sorted(f for f, v in mem.items() if v == 0),
-        })
+        manifest["connections"].append(
+            {
+                "index": i,
+                "client_port": client_port,
+                "server_port": server_port,
+                "tag": handshake[21:24]
+                .rstrip(b"\x00")
+                .decode("ascii", "replace"),
+                "player_byte": handshake[20],
+                "emulator_version": {
+                    "name": handshake[9:14].decode("ascii", "replace"),
+                    "major": handshake[14],
+                    "minor": handshake[15],
+                    "revision": handshake[16],
+                },
+                "resume_from_packet": struct.unpack(">I", handshake[24:28])[0],
+                "client_to_server_bytes": len(body_c2s),
+                "server_to_client_bytes": len(s2c),
+                "max_frame": max(mem.keys()) if mem else None,
+                "zero_mem_check_frames": sorted(
+                    f for f, v in mem.items() if v == 0
+                ),
+            }
+        )
 
     if len(handshakes) == 2:
         (p1, s1), (p2, s2) = handshakes

@@ -224,9 +224,7 @@ class MonitorChoice(fsui.Choice):
                 selected = 1
             else:
                 selected = (
-                    selected_index + 2
-                    if selected_index is not None
-                    else None
+                    selected_index + 2 if selected_index is not None else None
                 )
         else:
             current = LauncherSettings.get(self.setting_key)
@@ -291,11 +289,15 @@ class MonitorChoice(fsui.Choice):
                     LauncherConfig.set_game_override("monitor", value)
                 self.show_monitor_highlight(self.get_index(), 1800)
             else:
-                if self.setting_key == "monitor" and fsuae_monitor(
-                    self.application.screens(),
-                    value,
-                    self.application.primaryScreen(),
-                ) is None:
+                if (
+                    self.setting_key == "monitor"
+                    and fsuae_monitor(
+                        self.application.screens(),
+                        value,
+                        self.application.primaryScreen(),
+                    )
+                    is None
+                ):
                     fsui.show_warning(
                         gettext(
                             "FS-UAE 3.x cannot uniquely select this monitor in fullscreen with the current display layout. Windowed placement will be requested, but the desktop may override it."
