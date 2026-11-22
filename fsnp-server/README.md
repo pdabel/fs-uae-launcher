@@ -15,6 +15,8 @@ It runs in one of two modes:
 docker run -d --name fs-uae-netplay -p 25101:25101 ghcr.io/pdabel/fs-uae-netplay:<version>
 ```
 
+Tags: `latest` is the newest release, `<version>` a specific one (`3.2.0`, without the `v`), and `edge` the current `main`, which is never `latest`. Each runs on `linux/amd64`, `linux/arm64` and `linux/arm/v7`, so a Raspberry Pi can host a lobby.
+
 That's the only port: the HTTP API and every game share **25101**. The server looks at the first four bytes of each connection. HTTP goes to the API, `PING` gets `PONG` (the launcher's connection test), and an FSNP handshake goes to the game its password names. So behind a router you forward one TCP port, not a range.
 
 Players add `lobby.example.org` (or `host:port`, if it isn't on 25101) to their lobby servers in the launcher's Settings → Net Play. Their Net Play tab then lists every game waiting on it. **Host game** creates one there, **Join** takes a slot, and the game starts by itself once every player is ready. Set `LOBBY_NAME` to give the lobby a name in their lists, and `PRESENCE=1` to show them who else is browsing it.

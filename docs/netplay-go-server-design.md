@@ -363,7 +363,7 @@ The Python side changes in one place: `launcher/server/Server.py`. It stops re-e
 | Spawn | `sys.executable + sys.argv + --server` (whole launcher, all imports) | ✓ `fsnp-server --port= --players= --password= --exit-on-stdin-close`, static binary, `CGO_ENABLED=0`, cross-compiled per platform |
 | Readiness | `time.sleep(2.0)` | ✓ Read stdout until `{"event":"listening","port":25102}` — 0.38 s measured, and a failure to come up is now an error instead of a 2 s wait followed by a broken game |
 | Shutdown | `process.kill()` from the window's close handler | ✓ `Server.stop()` closes stdin; the server cancels its context, sends `ERROR_GAME_STOPPED`, exits (1 ms measured, both players notified). `kill()` after `STOP_TIMEOUT` is the fallback, and remains as a deprecated alias |
-| Docker | `python:3.13-alpine`, single game on 25101 | ✓ `FROM scratch`, a lobby on 25101 since step 9 (`LOBBY=false` for one fixed game), all settings by env. **6.9 MB** on disk, 2.9 MB compressed — up from 3.7 MB before the lobby, almost all of it `net/http`. `compose.yaml` adds an IRC server |
+| Docker | `python:3.13-alpine`, single game on 25101 | ✓ `FROM scratch`, a lobby on 25101 since step 9 (`LOBBY=false` for one fixed game), all settings by env, built for `linux/amd64`, `linux/arm64` and `linux/arm/v7`. **6.9 MB** on disk, 2.9 MB compressed — up from 3.7 MB before the lobby, almost all of it `net/http`. `compose.yaml` adds an IRC server |
 | Packaging | Nothing extra — it's Python | ✓ `fsbuild/build.sh` compiles the binary into `$BINDIR` — the PyInstaller output directory — right after the Qt trimming, and `bundle.sh` carries it into the plugin unchanged |
 
 ### Locating the binary

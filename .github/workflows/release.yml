@@ -124,6 +124,7 @@ jobs:
     uses: ./.github/workflows/container.yml
     with:
       version: ${{ needs.release-variables.outputs.version }}
+      push: ${{ ! inputs.dry_run }}
     permissions:
       contents: read
       packages: write # for docker/build-push-action to push to GHCR
