@@ -1,6 +1,5 @@
 import logging
 import os
-import warnings
 from configparser import ConfigParser
 from functools import lru_cache
 
@@ -13,12 +12,6 @@ from fsbc.user import get_documents_dir
 
 
 class FSGSDirectories(object):
-    @classmethod
-    def initialize(cls):
-        warnings.warn(DeprecationWarning)
-        logging.debug("[DEPRECATED] FSGSDirectories.initialize")
-        cls._initialize()
-
     @classmethod
     def _initialize(cls):
         if hasattr(cls, "_initialized") and cls._initialized:

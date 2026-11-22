@@ -7,7 +7,6 @@ Debug script used to dump information about detected plugins
 
 
 def app_main():
-    FSGSDirectories.initialize()
     Settings.instance().verbose = False
     Settings.instance().load()
     print("base_dir", FSGSDirectories.get_base_dir())
