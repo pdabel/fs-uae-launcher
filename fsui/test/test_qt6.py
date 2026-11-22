@@ -211,7 +211,6 @@ class TestQt6(WidgetTestCase):
             Signal("fsgs:config").notify("monitor", "game")
             self.assertIn("1000x800", label.text())
         self.run_dialog()
-        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
 
     def test_detected_monitor_choices_persist_and_handle_disconnect(self):
         from types import SimpleNamespace
@@ -283,10 +282,6 @@ class TestQt6(WidgetTestCase):
             choice.set_index(0)
             self.assertEqual(settings["monitor"], "")
         self.run_dialog()
-        from fsui.qt import QEvent
-
-        self.dialog.deleteLater()
-        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
 
     def test_per_game_controls_refresh_when_context_changes(self):
         from fsbc.signal import Signal
@@ -370,10 +365,9 @@ class TestQt6(WidgetTestCase):
                 scale.game_state_label.text(), "Overrides unavailable"
             )
         self.run_dialog()
-        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
 
     def test_monitor_highlight_previews_without_saving_and_times_out(self):
-        from fsui.qt import QEvent, Qt
+        from fsui.qt import Qt
         from launcher.settings.monitorbutton import (
             MonitorChoice,
             MonitorHighlight,
@@ -440,8 +434,6 @@ class TestQt6(WidgetTestCase):
             self.assertFalse(indicator.isVisible())
             save.assert_not_called()
         self.run_dialog()
-        self.dialog.deleteLater()
-        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
 
     def test_monitor_preview_diagram_preserves_layout_and_stays_bounded(self):
         from types import SimpleNamespace
@@ -3457,7 +3449,7 @@ class TestDashboard(WidgetTestCase):
             self.application.setStyleSheet(stylesheet)
             self.application.setFont(font)
             fsui.theme, fsui.theme_variant, fsui.theme_skin = state
-        self.finish_dialog()
+        self.run_dialog()
 
     def test_live_theme_preview(self):
         from fsui.qt import QPalette, modern_theme
@@ -3612,12 +3604,6 @@ class TestDashboard(WidgetTestCase):
             fsui.theme, fsui.theme_variant, fsui.theme_skin = state
         self.run_dialog()
 
-    def finish_dialog(self):
-        """run_dialog, then delete the dialog so later style changes skip it."""
-        self.run_dialog()
-        self.dialog.deleteLater()
-        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
-
     def test_font_preview_keeps_command_line_theme_and_relayouts(self):
         from fsui.qt import modern_theme
         from fsui.qt.qt import apply_launcher_theme, theme_applied
@@ -3681,7 +3667,7 @@ class TestDashboard(WidgetTestCase):
                 self.assertEqual(
                     {layout.min_width for layout in layouts}, {large}
                 )
-            self.finish_dialog()
+            self.run_dialog()
         finally:
             theme_applied._refs = []
             modern_theme.apply_modern_theme(self.application, "modern")
@@ -3723,7 +3709,7 @@ class TestDashboard(WidgetTestCase):
             self.application.setStyleSheet(stylesheet)
             self.application.setFont(font)
             fsui.theme, fsui.theme_variant, fsui.theme_skin = state
-        self.finish_dialog()
+        self.run_dialog()
 
     def test_paged_dialog_navigation_follows_font_and_theme(self):
         from fsui.qt import QFont, modern_theme
@@ -3761,7 +3747,7 @@ class TestDashboard(WidgetTestCase):
             self.application.setStyleSheet(stylesheet)
             self.application.setFont(font)
             fsui.theme, fsui.theme_variant, fsui.theme_skin = state
-        self.finish_dialog()
+        self.run_dialog()
 
     def test_restart_button_confirmation(self):
         from fsui.qt import QMessageBox
