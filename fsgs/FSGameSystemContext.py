@@ -432,22 +432,6 @@ class FSGameSystemContext(object):
         self.config.load(loader.load_values(values))
         return True
 
-    def run_game(self):
-        from fsgs.platform import PlatformHandler
-
-        platform_handler = PlatformHandler.create(self.game.platform.id)
-        runner = platform_handler.get_runner(self)
-
-        from fsgs.input.enumeratehelper import EnumerateHelper
-
-        device_helper = EnumerateHelper()
-        device_helper.default_port_selection(runner.ports, runner.options)
-
-        runner.prepare()
-        process = runner.run()
-        process.wait()
-        runner.finish()
-
 
 class GameContext(object):
     def __init__(self, context):

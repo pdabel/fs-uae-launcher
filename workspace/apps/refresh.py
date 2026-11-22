@@ -1,4 +1,4 @@
-from fsgs.ogd.refresh import DatabaseRefreshTask
+from launcher.database_refresh import DatabaseRefreshTask
 import fsui
 from fsui.extra.iconheader import IconHeader
 
