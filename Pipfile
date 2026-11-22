@@ -25,6 +25,9 @@ pyside6-essentials = "~=6.12"
 qtpy = "~=2.4"
 qtawesome = "~=1.4"
 requests = "~=2.34"
+# .lha archives (fsgs.archive); without it they are skipped. Wheels up to
+# CPython 3.13; newer Pythons build it from source.
+lhafile = "~=0.3.1"
 
 [requires]
 python_version = "3.12"

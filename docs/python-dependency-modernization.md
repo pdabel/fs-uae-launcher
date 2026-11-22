@@ -145,6 +145,10 @@ and frozen artifacts have not been certified by these local checks.
   manifest names `pyside6-essentials`, not the `pyside6` meta-package with
   Addons, WebEngine and Pdf (QtPy's optional QtDataVisualization import
   tolerates their absence).
+  The inverse also turned up: `fsgs.archive` imports `lhafile` (optionally)
+  and the Debian and RPM packages require it, but the Pipfile didn't, so CI
+  and the PyInstaller bundles had no `.lha` support. It is now declared, with
+  a test that reads an `.lha` archive.
 - [ ] Review each retained direct dependency for current maintenance,
   supported Python versions, supported platforms, and security advisories.
   Prefer maintained releases compatible with the chosen Qt and Python
