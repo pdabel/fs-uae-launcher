@@ -14,21 +14,17 @@ class Icon(object):
         self.name = name
         self.path = path
 
-    def stream_for_size(self, size):
+    def data_for_size(self, size):
         assert self.path.startswith("pkg:")
-        package = self.path[4:]
+        resources = Resources(self.path[4:])
         try:
-            name = f"res/{size}x{size}/{self.name}.png"
-            stream = Resources(package).stream(name)
+            return resources.read(f"res/{size}x{size}/{self.name}.png")
         except LookupError:
-            name = f"res/{size}/{self.name}.png"
-            stream = Resources(package).stream(name)
-        return stream
+            return resources.read(f"res/{size}/{self.name}.png")
 
     def qimage(self, size):
-        stream = self.stream_for_size(size)
         qimage = QImage()
-        qimage.loadFromData(stream.read())
+        qimage.loadFromData(self.data_for_size(size))
         return qimage
 
     def image(self, size):

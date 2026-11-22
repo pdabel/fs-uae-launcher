@@ -27,6 +27,11 @@ class Resources(object):
         except FileNotFoundError:
             raise LookupError(resource)
 
+    def read(self, resource):
+        """The resource's bytes, with its stream closed."""
+        with self.stream(resource) as stream:
+            return stream.read()
+
     def path(self, resource):
         application = Application.get_instance()
         resource_name = self.resource_name(resource)

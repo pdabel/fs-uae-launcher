@@ -624,29 +624,23 @@ class GameDriver:
         if paths is None:
             paths = self.emulator_skin_paths()
         with open(paths["left"], "wb") as f:
-            f.write(Resources("fsgs").stream("res/emu/left.png").read())
+            f.write(Resources("fsgs").read("res/emu/left.png"))
         if env is not None:
             env["FSGS_BEZEL_LEFT"] = paths["left"]
             env["FSGS_SKIN_LEFT"] = paths["left"]
         if "left-overlay" in paths:
             with open(paths["left-overlay"], "wb") as f:
-                f.write(
-                    Resources("fsgs").stream("res/emu/left-overlay.png").read()
-                )
+                f.write(Resources("fsgs").read("res/emu/left-overlay.png"))
             if env is not None:
                 env["FSGS_BEZEL_LEFT_OVERLAY"] = paths["left-overlay"]
         with open(paths["right"], "wb") as f:
-            f.write(Resources("fsgs").stream("res/emu/right.png").read())
+            f.write(Resources("fsgs").read("res/emu/right.png"))
         if env is not None:
             env["FSGS_BEZEL_RIGHT"] = paths["right"]
             env["FSGS_SKIN_RIGHT"] = paths["right"]
         if "right-overlay" in paths:
             with open(paths["right-overlay"], "wb") as f:
-                f.write(
-                    Resources("fsgs")
-                    .stream("res/emu/right-overlay.png")
-                    .read()
-                )
+                f.write(Resources("fsgs").read("res/emu/right-overlay.png"))
             if env is not None:
                 env["FSGS_BEZEL_RIGHT_OVERLAY"] = paths["right-overlay"]
         self._emulator_skin_prepared = paths
