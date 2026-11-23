@@ -364,8 +364,11 @@ class LauncherConfig(object):
             if kickstart_file == "internal":
                 config_dict["x_kickstart_file_sha1"] = Amiga.INTERNAL_ROM_SHA1
             else:
-                # FIXME: set checksum
-                pass
+                sha1 = cls.checksum_explicit_rom(
+                    kickstart_file,
+                    FSGSDirectories.get_kickstarts_dir(),
+                )
+                config_dict["x_kickstart_file_sha1"] = sha1
         else:
             checksums = Amiga.get_model_config(model)["kickstarts"]
             for checksum in checksums:
@@ -383,7 +386,11 @@ class LauncherConfig(object):
             config_dict["x_kickstart_ext_file"] = config_dict[
                 "kickstart_ext_file"
             ]
-            # FIXME: set checksum
+            sha1 = cls.checksum_explicit_rom(
+                config_dict["kickstart_ext_file"],
+                FSGSDirectories.get_kickstarts_dir(),
+            )
+            config_dict["x_kickstart_ext_file_sha1"] = sha1
         else:
             checksums = Amiga.get_model_config(model)["ext_roms"]
             if len(checksums) == 0:
@@ -399,7 +406,25 @@ class LauncherConfig(object):
                 else:
                     config_dict["x_kickstart_ext_file"] = ""
                     config_dict["x_kickstart_ext_file_sha1"] = ""
-                    # FIXME: set sha1 and name x_options also
+
+    @classmethod
+    def checksum_explicit_rom(cls, path, base_dir):
+        if path.startswith("http://") or path.startswith("https://"):
+            return path
+        resolved_path = Paths.expand_path(path)
+        if not os.path.exists(resolved_path):
+            resolved_path = os.path.join(base_dir, path)
+        if not os.path.isfile(resolved_path):
+            return ""
+        try:
+            return ChecksumTool(None).checksum_rom(resolved_path)
+        except Exception as e:
+            print(
+                "WARNING: could not checksum kickstart ROM:",
+                repr(path),
+                repr(e),
+            )
+            return ""
 
     @classmethod
     def update_kickstart(cls):
@@ -882,7 +907,6 @@ class LauncherConfig(object):
                 FSGSDirectories.get_hard_drives_dir(),
             )
 
-        # FIXME: need to handle checksums for Cloanto here
         fix_file_checksum(
             "x_kickstart_file_sha1",
             "x_kickstart_file",

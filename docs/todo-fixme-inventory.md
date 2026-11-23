@@ -11,9 +11,19 @@ This file is a review-only inventory of tracked `TODO` and `FIXME` markers in th
 - Removed a noisy dead-listener diagnostic and the obsolete `check_valid_name` no-op.
 - Compatibility environment variables and legacy architecture notes were deliberately preserved.
 
+## Priority 2 status
+
+- **Status:** Complete.
+- Explicit main and extension kickstart paths now calculate their ROM SHA-1.
+- Cloanto/decrypted ROMs use `ChecksumTool.checksum_rom()`, the same ROM-aware
+  checksum path used by the ROM panel and launch config loader.
+- Internal ROM and URL kickstart values retain their existing special forms.
+- Missing or unreadable ROM paths produce an empty SHA-1 instead of inventing
+  a checksum, and errors are logged for diagnosis.
+
 ## Scope
 
-- **Tracked matches:** 229
+- **Tracked matches:** 225
 - **Tracked files:** 95
 - **Source:** `git grep -n -I -E '\b(TODO|FIXME)\b'` across tracked files, excluding this generated inventory
 - **Generated:** 2026-11-23
@@ -23,7 +33,7 @@ References in documentation are included as matches, but are not necessarily imp
 
 ## FIXME relevance and priority review
 
-There are **214 source-level FIXME markers** and 15 TODO markers in the
+There are **210 source-level FIXME markers** and 15 TODO markers in the
 tracked inventory. The source count is dominated by comments left in mature
 code: many describe older implementation concerns, while some represent real
 unfinished behavior. "Effort" below is implementation effort, including tests
@@ -34,7 +44,7 @@ and documentation where applicable.
 | Priority | Area | Recommendation | Effort | Benefit |
 |---|---|---|---|---|
 | 1 | Stale markers and dead compatibility shims | **Complete.** Removed confirmed stale comments, methods, and no-op code; preserved compatibility env vars and legacy architecture notes | Low | High maintenance clarity |
-| 2 | Kickstart and ROM metadata | Finish checksum and SHA-1 resolution consistently; this is directly used by netplay config sync | Medium | High |
+| 2 | Kickstart and ROM metadata | **Complete.** Explicit ROM paths now resolve to consistent SHA-1 metadata for netplay config sync | Medium | High |
 | 3 | CD and floppy metadata | Calculate CD checksums and centralize floppy extension detection | Medium | High |
 | 4 | Network and media error handling | Replace broad/default handling with visible, actionable errors and worker-thread-safe status updates | Medium | High |
 | 5 | Archive and binary stream correctness | Handle odd reads and archive-vs-directory ambiguity; add corruption and malformed-path tests | Medium | High |
@@ -497,14 +507,10 @@ The following markers should remain unimplemented unless requirements change:
 ### `launcher/launcher_config.py`
 
 - [L68](../launcher/launcher_config.py#L68) — **FIXME** — <code>(&quot;__version&quot;, &quot;FIXME&quot;),</code>
-- [L367](../launcher/launcher_config.py#L367) — **FIXME** — <code># FIXME: set checksum</code>
-- [L386](../launcher/launcher_config.py#L386) — **FIXME** — <code># FIXME: set checksum</code>
-- [L402](../launcher/launcher_config.py#L402) — **FIXME** — <code># FIXME: set sha1 and name x_options also</code>
-- [L552](../launcher/launcher_config.py#L552) — **FIXME** — <code># FIXME: errors should be logged / displayed</code>
-- [L563](../launcher/launcher_config.py#L563) — **FIXME** — <code># FIXME: errors should be logged / displayed</code>
-- [L814](../launcher/launcher_config.py#L814) — **FIXME** — <code># FIXME: parent</code>
-- [L885](../launcher/launcher_config.py#L885) — **FIXME** — <code># FIXME: need to handle checksums for Cloanto here</code>
-- [L906](../launcher/launcher_config.py#L906) — **FIXME** — <code># FIXME: Set changed!</code>
+- [L577](../launcher/launcher_config.py#L577) — **FIXME** — <code># FIXME: errors should be logged / displayed</code>
+- [L588](../launcher/launcher_config.py#L588) — **FIXME** — <code># FIXME: errors should be logged / displayed</code>
+- [L839](../launcher/launcher_config.py#L839) — **FIXME** — <code># FIXME: parent</code>
+- [L930](../launcher/launcher_config.py#L930) — **FIXME** — <code># FIXME: Set changed!</code>
 
 ### `launcher/launcherapp.py`
 
