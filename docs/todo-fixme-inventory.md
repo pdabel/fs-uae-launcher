@@ -12,6 +12,141 @@ This file is a review-only inventory of tracked `TODO` and `FIXME` markers in th
 
 References in documentation are included as matches, but are not necessarily implementation markers. Inspect each entry before deciding whether it should be implemented, removed, or replanned.
 
+## FIXME relevance and priority review
+
+There are **225 source-level FIXME markers** and 15 TODO markers in the
+tracked inventory. The source count is dominated by comments left in mature
+code: many describe older implementation concerns, while some represent real
+unfinished behavior. "Effort" below is implementation effort, including tests
+and documentation where applicable.
+
+### Recommended order
+
+| Priority | Area | Recommendation | Effort | Benefit |
+|---|---|---|---|---|
+| 1 | Stale markers and dead compatibility shims | Remove confirmed stale comments and methods; do not remove compatibility env vars until callers are confirmed against the supported FS-UAE build | Low | High maintenance clarity |
+| 2 | Kickstart and ROM metadata | Finish checksum and SHA-1 resolution consistently; this is directly used by netplay config sync | Medium | High |
+| 3 | CD and floppy metadata | Calculate CD checksums and centralize floppy extension detection | Medium | High |
+| 4 | Network and media error handling | Replace broad/default handling with visible, actionable errors and worker-thread-safe status updates | Medium | High |
+| 5 | Archive and binary stream correctness | Handle odd reads and archive-vs-directory ambiguity; add corruption and malformed-path tests | Medium | High |
+| 6 | Async UI operations | Move rating and configuration rescans onto existing worker queue patterns, using `call_after` for UI updates | Medium | Medium |
+| 7 | Amiga hardware/default selection | Replace assumptions for joystick ports, refresh rate, memory, expansions, and sound/network cards with explicit model/device validation | High | High |
+| 8 | Save snapshots | Implement snapshot directory and timestamp support only if snapshot storage is an intended user feature | High | Medium |
+
+### Clear removals or replans
+
+- [gamedriver.py](../fsgs/drivers/gamedriver.py#L274) marks
+  `use_smoothing()` and `use_stretching()` as removable. Repository search
+  finds no calls to either method; remove both methods and their stale
+  FIXME comments.
+- [amigacontext.py](../fsgs/amiga/amigacontext.py#L9) has duplicate
+  markers around fixed four-drive loops even though the Amiga class already
+  defines `MAX_FLOPPY_IMAGES`; replan as one central drive-limit helper rather
+  than isolated comments.
+- [fsuaeamigadriver.py](../fsgs/amiga/fsuaeamigadriver.py#L131) says
+  the code assumes PAL for some game configurations. This is an actual
+  model/variant gap, not a comment-only cleanup.
+- [fsbc/debug.py](../fsbc/debug.py#L55), [fsbc/signal.py](../fsbc/signal.py#L71),
+  [launcher/filescanner.py](../launcher/filescanner.py#L371), and
+  [fs-uae-launcher](../fs-uae-launcher#L40) contain Python 2-era or vague
+  markers that describe work which is no longer applicable or lacks a concrete
+  failure mode. Remove or replace them with code/specs.
+- [fsbc/application.py](../fsbc/application.py#L113) is an empty FIXME
+  beside cache directory code. It has no actionable requirement and should
+  be removed unless XDG cache conventions are now in scope.
+- [application.py](../fsbc/application.py#L135),
+  [paths.py](../fsbc/paths.py#L44), [logging.py](../fsbc/logging.py#L53),
+  and [settings.py](../fsbc/settings.py#L244) are legacy architecture
+  notes. None proves an active bug; retain only if a concrete migration or
+  behavior change is accepted.
+- [gamedriver.py](../fsgs/drivers/gamedriver.py#L588) has FIXME comments
+  beside legacy window-centering environment variables. Existing tests assert
+  `SDL_VIDEO_WINDOW_POS`, so these variables remain compatibility-sensitive.
+  Preserve their behavior; replace stale comments only after checking which
+  variables are still consumed by the supported FS-UAE emulator.
+- [fsuaeamigadriver.py](../fsgs/amiga/fsuaeamigadriver.py#L21) and
+  [fsuaeamigadriver.py](../fsgs/amiga/fsuaeamigadriver.py#L37) use
+  placeholder labels for missing devices/ports. These should become explicit
+  option vocabulary or be removed if no UI/config path exposes them.
+
+### Real implementation gaps
+
+#### High benefit
+
+1. **ROM and file checksum metadata** - The netplay sync allowlist includes
+   kickstart and file SHA-1 keys, and
+   [launcher_config.py](../launcher/launcher_config.py#L365) leaves checksum
+   paths incomplete when a configured kickstart or extension ROM is already
+   specified. Implement resolution and tests for explicit, internal, and
+   Cloanto-provided ROM cases.
+2. **CD checksum calculation** - [cd_manager.py](../launcher/cd_manager.py#L46)
+   explicitly inserts CDs with an empty checksum. Netplay and file database
+   lookup can be unable to identify the media. Use the existing checksum
+   facility and add success/failure tests.
+3. **Archive safety** - [archive.py](../fsgs/archive.py#L255) asserts after
+   word-swapping reads and [archive.py](../fsgs/archive.py#L293) can
+   interpret a directory name as an archive subpath. Replace assertions with
+   bounded validation and tests.
+4. **Model-specific hardware validation** - The highest-density cluster is
+   [expand.py](../launcher/ui/config/expand.py), with unchecked values,
+   ambiguous defaults, joystick mappings, memory behavior, and unsupported
+   cards. Treat this as a feature/validation backlog rather than 25 separate
+   code comments.
+5. **Refresh-rate assumptions** - [fsuaeamigadriver.py](../fsgs/amiga/fsuaeamigadriver.py#L131)
+   and [refreshratetool.py](../fsgs/refreshratetool.py) need explicit
+   PAL/NTSC/monitor behavior, not a FIXME cleanup.
+6. **WHDLoad option parsing** - [launchhandler.py](../fsgs/amiga/launchhandler.py#L944)
+   splits startup sequences on semicolons, but semicolons may belong inside
+   WHDLoad `CONFIG` values. This can change launched game configuration and
+   should have a focused regression fixture.
+
+#### Medium benefit
+
+- Finish or remove the `FIXME: handle problem` branch in
+  [connection_tester.py](../launcher/netplay/connection_tester.py#L92);
+  it already presents a host error, but exception presentation should be
+  stable and covered.
+- Replace direct settings writes and thread comments in
+  [update_manager.py](../launcher/update_manager.py#L56) with the existing
+  signal path as the documented UI boundary.
+- Move warnings and settings-page navigation out of the status bar
+  [WarningsElement.py](../launcher/ui/statusbar/WarningsElement.py#L368), but
+  this is architecture cleanup, not a user-visible fix.
+- Move OGD rating writes off the Qt/UI path in
+  [ConfigurationsPanel.py](../launcher/ui/ConfigurationsPanel.py#L195),
+  preserving existing database semantics.
+- Add missing asynchronous rescans in
+  [download.py](../launcher/ui/download.py#L168) and
+  [database_refresh.py](../launcher/database_refresh.py#L54) only if the
+  synchronous network/database work is perceptibly blocking the UI.
+- Finish [gamechanges](../fsgs/GameChangeHandler.py#L5) by deciding whether
+  save metadata belongs in the change handler; otherwise remove or reword the
+  TODO so it records a roadmap, not implementation debt.
+
+### Likely no-action items
+
+The following markers should remain unimplemented unless requirements change:
+
+- Snapshot support in [saves.py](../fsgs/saves.py#L11); no snapshot UI or
+  storage format is present.
+- [whdload-support.md](../docs/whdload-support.md#L65) UUID launch documentation
+  unless UUID launching is being promoted as supported behavior.
+- "Add more documentation" in
+  [fs_uae_launcher.py](../launcher/apps/fs_uae_launcher.py#L77); replace with
+  targeted docs only after API behavior is stabilized.
+- [FIXME inventory](todo-fixme-inventory.md) documentation references and
+  prose quotations are search hits, not implementation tasks.
+
+### TODO review
+
+- The Python/dependency modernization queue is the only broad, actionable
+  TODO document. It should be maintained as an implementation queue only after
+  CI support claims are separated from local validation claims.
+- `GameChangeHandler` needs a requirement decision before implementation.
+- `saves.py` snapshot support is a feature proposal, not a bug fix.
+- The launcher bootstrap documentation marker is low-value and can be removed
+  once user-facing launcher documentation is covered elsewhere.
+
 ## Entries
 
 ### `.github/copilot-instructions.md`
