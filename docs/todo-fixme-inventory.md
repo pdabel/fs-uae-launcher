@@ -2,19 +2,28 @@
 
 This file is a review-only inventory of tracked `TODO` and `FIXME` markers in the repository.
 
+## Priority 1 status
+
+- **Status:** Complete.
+- Removed unreferenced `use_smoothing` and `use_stretching` methods.
+- Replaced duplicated floppy-drive loops with `Amiga.MAX_FLOPPY_DRIVES`.
+- Removed confirmed stale Python 2-era comments and an empty cache marker.
+- Removed a noisy dead-listener diagnostic and the obsolete `check_valid_name` no-op.
+- Compatibility environment variables and legacy architecture notes were deliberately preserved.
+
 ## Scope
 
-- **Tracked matches:** 240
-- **Tracked files:** 97
-- **Source:** `git grep -n -I -E '\b(TODO|FIXME)\b'` across tracked files
+- **Tracked matches:** 229
+- **Tracked files:** 95
+- **Source:** `git grep -n -I -E '\b(TODO|FIXME)\b'` across tracked files, excluding this generated inventory
 - **Generated:** 2026-11-23
-- **Intentionally excluded:** untracked files, binaries excluded by `git grep -I`, and dependency/environment directories such as `venv-*`
+- **Intentionally excluded:** untracked files, binaries excluded by `git grep -I`, dependency/environment directories such as `venv-*`, and this inventory itself
 
 References in documentation are included as matches, but are not necessarily implementation markers. Inspect each entry before deciding whether it should be implemented, removed, or replanned.
 
 ## FIXME relevance and priority review
 
-There are **225 source-level FIXME markers** and 15 TODO markers in the
+There are **214 source-level FIXME markers** and 15 TODO markers in the
 tracked inventory. The source count is dominated by comments left in mature
 code: many describe older implementation concerns, while some represent real
 unfinished behavior. "Effort" below is implementation effort, including tests
@@ -24,7 +33,7 @@ and documentation where applicable.
 
 | Priority | Area | Recommendation | Effort | Benefit |
 |---|---|---|---|---|
-| 1 | Stale markers and dead compatibility shims | Remove confirmed stale comments and methods; do not remove compatibility env vars until callers are confirmed against the supported FS-UAE build | Low | High maintenance clarity |
+| 1 | Stale markers and dead compatibility shims | **Complete.** Removed confirmed stale comments, methods, and no-op code; preserved compatibility env vars and legacy architecture notes | Low | High maintenance clarity |
 | 2 | Kickstart and ROM metadata | Finish checksum and SHA-1 resolution consistently; this is directly used by netplay config sync | Medium | High |
 | 3 | CD and floppy metadata | Calculate CD checksums and centralize floppy extension detection | Medium | High |
 | 4 | Network and media error handling | Replace broad/default handling with visible, actionable errors and worker-thread-safe status updates | Medium | High |
@@ -185,19 +194,9 @@ The following markers should remain unimplemented unless requirements change:
 
 - [L65](./whdload-support.md#L65) — **FIXME** — <code>FIXME: Write about launching games using game / variant UUIDs.</code>
 
-### `fs-uae-launcher`
-
-- [L40](../fs-uae-launcher#L40) — **FIXME** — <code># FIXME: share-dir?</code>
-- [L41](../fs-uae-launcher#L41) — **FIXME** — <code># FIXME: expose variable outside of module?</code>
-
 ### `fsbc/application.py`
 
-- [L113](../fsbc/application.py#L113) — **FIXME** — <code># FIXME:</code>
-- [L135](../fsbc/application.py#L135) — **FIXME** — <code># FIXME: $XDG_DATA_DIRS, $XDG_DATA_HOME</code>
-
-### `fsbc/debug.py`
-
-- [L55](../fsbc/debug.py#L55) — **FIXME** — <code># FIXME: PYTHON3</code>
+- [L134](../fsbc/application.py#L134) — **FIXME** — <code># FIXME: $XDG_DATA_DIRS, $XDG_DATA_HOME</code>
 
 ### `fsbc/logging.py`
 
@@ -219,8 +218,6 @@ The following markers should remain unimplemented unless requirements change:
 - [L31](../fsbc/signal.py#L31) — **FIXME** — <code># FIXME: temporary hack for legacy code</code>
 - [L34](../fsbc/signal.py#L34) — **FIXME** — <code># FIXME: temporary hack for legacy code</code>
 - [L37](../fsbc/signal.py#L37) — **FIXME** — <code># FIXME: temporary hack for legacy code</code>
-- [L71](../fsbc/signal.py#L71) — **FIXME** — <code># FIXME: should have type Dict[str, Callable]</code>
-- [L138](../fsbc/signal.py#L138) — **FIXME** — <code>print(&quot;FIXME: remove dead listener&quot;, listener)</code>
 
 ### `fsbc/util.py`
 
@@ -289,16 +286,14 @@ The following markers should remain unimplemented unless requirements change:
 
 ### `fsgs/amiga/amigacontext.py`
 
-- [L16](../fsgs/amiga/amigacontext.py#L16) — **FIXME** — <code># FIXME: MAX_AMIGA_FLOPPY_DRIVES</code>
-- [L36](../fsgs/amiga/amigacontext.py#L36) — **FIXME** — <code># FIXME: max floppy drives</code>
-- [L58](../fsgs/amiga/amigacontext.py#L58) — **FIXME** — <code>print(&quot;FIXME: not calculating CD checksum just yet&quot;)</code>
-- [L77](../fsgs/amiga/amigacontext.py#L77) — **FIXME** — <code># FIXME: get list of floppy extensions from a central</code>
-- [L128](../fsgs/amiga/amigacontext.py#L128) — **FIXME** — <code># FIXME: dependency loop</code>
-- [L132](../fsgs/amiga/amigacontext.py#L132) — **FIXME** — <code># FIXME: dependency loop</code>
-- [L136](../fsgs/amiga/amigacontext.py#L136) — **FIXME** — <code># FIXME: dependency loop</code>
-- [L140](../fsgs/amiga/amigacontext.py#L140) — **FIXME** — <code># FIXME: dependency loop</code>
-- [L144](../fsgs/amiga/amigacontext.py#L144) — **FIXME** — <code># FIXME: dependency loop</code>
-- [L148](../fsgs/amiga/amigacontext.py#L148) — **FIXME** — <code># FIXME: dependency loop</code>
+- [L56](../fsgs/amiga/amigacontext.py#L56) — **FIXME** — <code>print(&quot;FIXME: not calculating CD checksum just yet&quot;)</code>
+- [L75](../fsgs/amiga/amigacontext.py#L75) — **FIXME** — <code># FIXME: get list of floppy extensions from a central</code>
+- [L126](../fsgs/amiga/amigacontext.py#L126) — **FIXME** — <code># FIXME: dependency loop</code>
+- [L130](../fsgs/amiga/amigacontext.py#L130) — **FIXME** — <code># FIXME: dependency loop</code>
+- [L134](../fsgs/amiga/amigacontext.py#L134) — **FIXME** — <code># FIXME: dependency loop</code>
+- [L138](../fsgs/amiga/amigacontext.py#L138) — **FIXME** — <code># FIXME: dependency loop</code>
+- [L142](../fsgs/amiga/amigacontext.py#L142) — **FIXME** — <code># FIXME: dependency loop</code>
+- [L146](../fsgs/amiga/amigacontext.py#L146) — **FIXME** — <code># FIXME: dependency loop</code>
 
 ### `fsgs/amiga/fsuaeamigadriver.py`
 
@@ -346,13 +341,11 @@ The following markers should remain unimplemented unless requirements change:
 - [L31](../fsgs/drivers/gamedriver.py#L31) — **FIXME** — <code># FIXME: Store warning and show in some kind of launch log</code>
 - [L133](../fsgs/drivers/gamedriver.py#L133) — **FIXME** — <code># FIXME: MOVE TO Port CONSTRUCTOR</code>
 - [L139](../fsgs/drivers/gamedriver.py#L139) — **FIXME** — <code># FIXME: MOVE CODE TO port CLASS</code>
-- [L274](../fsgs/drivers/gamedriver.py#L274) — **FIXME** — <code># FIXME: REMOVE</code>
-- [L278](../fsgs/drivers/gamedriver.py#L278) — **FIXME** — <code># FIXME: REMOVE</code>
-- [L443](../fsgs/drivers/gamedriver.py#L443) — **FIXME** — <code># FIXME: create new API fsgc.file.path(file_uri), returns path</code>
-- [L594](../fsgs/drivers/gamedriver.py#L594) — **FIXME** — <code># FIXME: REMOVE</code>
-- [L598](../fsgs/drivers/gamedriver.py#L598) — **FIXME** — <code># FIXME: REMOVE</code>
-- [L814](../fsgs/drivers/gamedriver.py#L814) — **FIXME** — <code># FIXME: if development_mode ?</code>
-- [L879](../fsgs/drivers/gamedriver.py#L879) — **FIXME** — <code># FIXME: remove</code>
+- [L433](../fsgs/drivers/gamedriver.py#L433) — **FIXME** — <code># FIXME: create new API fsgc.file.path(file_uri), returns path</code>
+- [L584](../fsgs/drivers/gamedriver.py#L584) — **FIXME** — <code># FIXME: REMOVE</code>
+- [L588](../fsgs/drivers/gamedriver.py#L588) — **FIXME** — <code># FIXME: REMOVE</code>
+- [L804](../fsgs/drivers/gamedriver.py#L804) — **FIXME** — <code># FIXME: if development_mode ?</code>
+- [L869](../fsgs/drivers/gamedriver.py#L869) — **FIXME** — <code># FIXME: remove</code>
 
 ### `fsgs/filedatabase.py`
 
@@ -485,12 +478,11 @@ The following markers should remain unimplemented unless requirements change:
 
 ### `launcher/filescanner.py`
 
-- [L213](../launcher/filescanner.py#L213) — **FIXME** — <code># FIXME: NES header hack. Would be better to add a proper notion of</code>
-- [L215](../launcher/filescanner.py#L215) — **FIXME** — <code># FIXME: This will confuse some functionality, such as the</code>
-- [L226](../launcher/filescanner.py#L226) — **FIXME** — <code># FIXME: Check if 128 is a fixed or variable number of bytes</code>
-- [L321](../launcher/filescanner.py#L321) — **FIXME** — <code># FIXME: Enable use of filter mechanism for Cloanto ROMs</code>
-- [L333](../launcher/filescanner.py#L333) — **FIXME** — <code># FIXME: size is incorrect here -- it&#x27;s the size of the parent</code>
-- [L371](../launcher/filescanner.py#L371) — **FIXME** — <code># FIXME: not needed for Python 3</code>
+- [L209](../launcher/filescanner.py#L209) — **FIXME** — <code># FIXME: NES header hack. Would be better to add a proper notion of</code>
+- [L211](../launcher/filescanner.py#L211) — **FIXME** — <code># FIXME: This will confuse some functionality, such as the</code>
+- [L222](../launcher/filescanner.py#L222) — **FIXME** — <code># FIXME: Check if 128 is a fixed or variable number of bytes</code>
+- [L317](../launcher/filescanner.py#L317) — **FIXME** — <code># FIXME: Enable use of filter mechanism for Cloanto ROMs</code>
+- [L329](../launcher/filescanner.py#L329) — **FIXME** — <code># FIXME: size is incorrect here -- it&#x27;s the size of the parent</code>
 
 ### `launcher/floppy_manager.py`
 

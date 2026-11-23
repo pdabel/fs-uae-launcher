@@ -13,8 +13,7 @@ class AmigaContext(BaseContext):
         BaseContext.__init__(self, main_context)
 
     def reset_all_floppies(self):
-        # FIXME: MAX_AMIGA_FLOPPY_DRIVES
-        for i in range(4):
+        for i in range(Amiga.MAX_FLOPPY_DRIVES):
             self.eject_floppy(i)
         self.clear_floppy_list()
 
@@ -33,8 +32,7 @@ class AmigaContext(BaseContext):
         self.set_config(values)
 
     def insert_floppy_in_free_drive(self, path, sha1=None):
-        # FIXME: max floppy drives
-        for i in range(4):
+        for i in range(Amiga.MAX_FLOPPY_DRIVES):
             if not self.config.get(f"floppy_drive_{i}"):
                 self.insert_floppy(i, path, sha1=sha1)
                 return True

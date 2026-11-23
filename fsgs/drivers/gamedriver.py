@@ -271,16 +271,6 @@ class GameDriver:
     def bezel(self):
         return self.options[Option.BEZEL] == "1"
 
-    # FIXME: REMOVE
-    def use_smoothing(self):
-        return True
-
-    # FIXME: REMOVE
-    def use_stretching(self):
-        if self.options[Option.KEEP_ASPECT] == "1":
-            return
-        return True
-
     def use_auto_load(self):
         if self.options[Option.AUTO_LOAD] == "0":
             return False

@@ -110,7 +110,6 @@ class Application(object):
         return fsboot.executable_dir()
 
     def cache_dir(self):
-        # FIXME:
         return os.path.join(Paths.get_base_dir(), "Cache")
 
     @memoize

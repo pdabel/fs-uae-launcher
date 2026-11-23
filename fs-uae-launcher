@@ -37,10 +37,6 @@ def frozen_requests_ca_cert():
 
     data_dirs = [fsboot.executable_dir()]
 
-    # FIXME: share-dir?
-    # FIXME: expose variable outside of module?
-    # get_data_dirs() ? get_data_dir()?
-
     if sys.platform == "darwin":
         data_dir = os.path.abspath(
             os.path.join(fsboot.executable_dir(), "..", "Resources", "Data")

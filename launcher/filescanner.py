@@ -117,16 +117,12 @@ class FileScanner(object):
         dir_content = os.listdir(dir_)
         if not all_files:
             for name in dir_content:
-                if not check_valid_name(name):
-                    continue
                 l_name = name.lower()
                 if l_name.endswith(".slave") or l_name.endswith(".slav"):
                     all_files = True
                     break
 
         for name in sorted(dir_content):
-            if not check_valid_name(name):
-                continue
             if self.stop_check():
                 return
             if name in [".git", "Cache", "Save States"]:
@@ -363,14 +359,3 @@ class FileScanner(object):
             if self.on_rom_found:
                 self.on_rom_found(path, sha1)
         return file_id
-
-
-def check_valid_name(name):
-    # check that the file is actually unicode object (indirectly). listdir
-    # will return str objects for file names on Linux with invalid encoding.
-    # FIXME: not needed for Python 3
-    try:
-        str(name)
-    except UnicodeDecodeError:
-        return False
-    return True

@@ -67,9 +67,6 @@ class Listener(object):
 
 
 class Signal:
-
-    # FIXME: should have type Dict[str, Callable]
-    # or # type_xxx: Dict[str, Function]
     signal_listeners: Dict[str, Any] = {}
     notifications: List[Tuple[str, Any]] = []
     lock = threading.Lock()
@@ -135,7 +132,6 @@ class Signal:
             if len(remove_listeners) > 0:
                 with Signal.lock:
                     for listener in remove_listeners:
-                        print("FIXME: remove dead listener", listener)
                         Signal.signal_listeners[signal].remove(listener)
                     if len(Signal.signal_listeners[signal]) == 0:
                         del Signal.signal_listeners[signal]

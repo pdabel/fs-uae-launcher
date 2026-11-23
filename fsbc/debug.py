@@ -52,13 +52,8 @@ def _handle_exception(exc_type, exc_value, exc_traceback):
         print("handle_exception: KeyboardInterrupt caught")
         sys.exit(1)
 
-    # FIXME: PYTHON3
     tb = traceback.extract_tb(exc_traceback)
     filename, line, function, dummy = tb.pop()
-    try:
-        filename = filename.decode(sys.getfilesystemencoding())
-    except Exception:
-        pass
     try:
         filename = str(filename)
     except Exception:
