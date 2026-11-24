@@ -40,20 +40,24 @@ class PlayTile(QFrame):
         text.addWidget(self.eyebrow)
         self.title = QLabel()
         self.title.setObjectName("playTitle")
-        self.title.setTextFormat(Qt.PlainText)
-        self.title.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        self.title.setTextFormat(Qt.TextFormat.PlainText)
+        self.title.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred
+        )
         self.title.setMinimumWidth(160)
         text.addWidget(self.title)
         self.subtitle = QLabel()
         self.subtitle.setObjectName("playSubtitle")
-        self.subtitle.setTextFormat(Qt.PlainText)
-        self.subtitle.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        self.subtitle.setTextFormat(Qt.TextFormat.PlainText)
+        self.subtitle.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred
+        )
         text.addWidget(self.subtitle)
         layout.addLayout(text, 1)
         self.play_button = QPushButton(self.play_icon(), gettext("Play"))
         self.play_button.setObjectName("playButton")
         self.play_button.setMinimumSize(132, 56)
-        self.play_button.setCursor(Qt.PointingHandCursor)
+        self.play_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.play_button.setToolTip(
             gettext("Start the selected game or configuration")
         )
@@ -125,7 +129,11 @@ class PlayTile(QFrame):
         if fsui.theme_variant == "modern":
             color = modern_theme.palette().accent_text
         else:
-            color = QApplication.palette().color(QPalette.ButtonText).name()
+            color = (
+                QApplication.palette()
+                .color(QPalette.ColorRole.ButtonText)
+                .name()
+            )
         return qta.icon("fa5s.play", color=color)
 
     def _update_title(self):
@@ -137,7 +145,9 @@ class PlayTile(QFrame):
         )
         available = self.width() - button_width - 16 * 2 - 16
         width = max(160, available)
-        self.title.setText(metrics.elidedText(name, Qt.ElideRight, width))
+        self.title.setText(
+            metrics.elidedText(name, Qt.TextElideMode.ElideRight, width)
+        )
         self.title.setToolTip(name)
         self.play_button.setAccessibleName(
             gettext("Play {name}").format(name=name)

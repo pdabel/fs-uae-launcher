@@ -22,9 +22,9 @@ class FileDialog(QFileDialog):
         if directory:
             self.setDirectory(directory)
         if dir_mode:
-            self.setFileMode(QFileDialog.Directory)
+            self.setFileMode(QFileDialog.FileMode.Directory)
         if multiple:
-            self.setFileMode(QFileDialog.ExistingFiles)
+            self.setFileMode(QFileDialog.FileMode.ExistingFiles)
 
     def __del__(self):
         print("FileDialog.__del__")
@@ -69,9 +69,9 @@ def pick_file(parent=None, message="", directory="", what=FILE):
         if directory:
             dialog.setDirectory(directory)
         if what == DIRECTORY:
-            dialog.setFileMode(QFileDialog.Directory)
+            dialog.setFileMode(QFileDialog.FileMode.Directory)
         elif what == FILES:
-            dialog.setFileMode(QFileDialog.ExistingFiles)
+            dialog.setFileMode(QFileDialog.FileMode.ExistingFiles)
         modal_result = dialog.exec()
         if not modal_result:
             result = None

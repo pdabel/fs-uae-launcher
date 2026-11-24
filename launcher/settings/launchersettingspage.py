@@ -38,7 +38,8 @@ class LauncherSettingsPage(SettingsPage):
         palette = self.restart_button.widget().palette()
         self.restart_button.widget().setIcon(
             qta.icon(
-                "fa5s.redo", color=palette.color(QPalette.ButtonText).name()
+                "fa5s.redo",
+                color=palette.color(QPalette.ColorRole.ButtonText).name(),
             )
         )
         self.restart_button.set_tooltip(
@@ -92,7 +93,7 @@ class LauncherSettingsPage(SettingsPage):
         self.portable_folder_button.widget().setIcon(
             qta.icon(
                 "fa5s.folder-open",
-                color=palette.color(QPalette.ButtonText).name(),
+                color=palette.color(QPalette.ColorRole.ButtonText).name(),
             )
         )
         self.portable_folder_button.enable(fsboot.is_portable())
@@ -153,10 +154,10 @@ class LauncherSettingsPage(SettingsPage):
                 "Active netplay sessions and hosted servers will stop. "
                 "Unsaved configuration changes may be lost."
             ),
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
         )
-        if answer != QMessageBox.Yes:
+        if answer != QMessageBox.StandardButton.Yes:
             return
         try:
             app.request_restart()
@@ -208,13 +209,15 @@ class LauncherSettingsPage(SettingsPage):
                 ).format(folder=destination)
             )
             use_existing = dialog.addButton(
-                gettext("Use Existing Data"), QMessageBox.AcceptRole
+                gettext("Use Existing Data"), QMessageBox.ButtonRole.AcceptRole
             )
             choose_new = dialog.addButton(
-                gettext("Choose New Folder"), QMessageBox.ActionRole
+                gettext("Choose New Folder"), QMessageBox.ButtonRole.ActionRole
             )
-            dialog.addButton(QMessageBox.Cancel)
-            dialog.setDefaultButton(dialog.button(QMessageBox.Cancel))
+            dialog.addButton(QMessageBox.StandardButton.Cancel)
+            dialog.setDefaultButton(
+                dialog.button(QMessageBox.StandardButton.Cancel)
+            )
             dialog.exec()
             if dialog.clickedButton() == use_existing:
                 copy_data = False
@@ -273,10 +276,10 @@ class LauncherSettingsPage(SettingsPage):
                     "\n\nActive netplay sessions and hosted servers will "
                     "stop. Unsaved configuration changes may be lost."
                 ),
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
             )
-            if answer == QMessageBox.Yes:
+            if answer == QMessageBox.StandardButton.Yes:
                 app.request_restart(portable_change=change)
         except OSError as error:
             fsui.show_error(

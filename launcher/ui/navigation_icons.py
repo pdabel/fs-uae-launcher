@@ -37,8 +37,8 @@ class RetroNavigationIcon(QIconEngine):
             rect.y() + (rect.height() - extent) / 2,
         )
         painter.scale(extent / 24, extent / 24)
-        painter.setRenderHint(QPainter.Antialiasing)
-        if mode == QIcon.Disabled:
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        if mode == QIcon.Mode.Disabled:
             painter.setOpacity(0.4)
         if self.variant == "workbench":
             outline = QPainterPath()
@@ -66,12 +66,17 @@ class RetroNavigationIcon(QIconEngine):
             painter.setPen(QPen(QColor("#d7e7f5"), 1))
             painter.drawLine(3, 20, 20, 20)
             glyph_rect = QRect(5, 7, 13, 12)
-        self.glyph.paint(painter, glyph_rect, Qt.AlignCenter, QIcon.Normal)
+        self.glyph.paint(
+            painter,
+            glyph_rect,
+            Qt.AlignmentFlag.AlignCenter,
+            QIcon.Mode.Normal,
+        )
         painter.restore()
 
     def pixmap(self, size, mode, state):
         pixmap = QPixmap(size)
-        pixmap.fill(Qt.transparent)
+        pixmap.fill(Qt.GlobalColor.transparent)
         painter = QPainter(pixmap)
         try:
             self.paint(
@@ -91,6 +96,8 @@ def navigation_icon(name, on_accent=False):
     color = (
         modern_theme.palette().icon
         if fsui.theme_variant == "modern"
-        else (QApplication.palette().color(QPalette.ButtonText).name())
+        else (
+            QApplication.palette().color(QPalette.ColorRole.ButtonText).name()
+        )
     )
     return qta.icon(name, color=color)

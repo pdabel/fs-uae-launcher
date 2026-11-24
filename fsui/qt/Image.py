@@ -45,7 +45,9 @@ class Image(object):
         return QIcon(QPixmap(self.qimage))
 
     def grey_scale(self):
-        copy = self.qimage.convertToFormat(QImage.Format_ARGB32, Qt.AutoColor)
+        copy = self.qimage.convertToFormat(
+            QImage.Format.Format_ARGB32, Qt.ImageConversionFlag.AutoColor
+        )
 
         # WARNING: this is presumably a bit slow...
         for y in range(self.size[1]):
@@ -67,9 +69,9 @@ class Image(object):
         if size == self.size:
             return
         if filter:
-            q = Qt.SmoothTransformation
+            q = Qt.TransformationMode.SmoothTransformation
         else:
-            q = Qt.FastTransformation
+            q = Qt.TransformationMode.FastTransformation
         self.qimage = self.qimage.scaled(
-            size[0], size[1], Qt.IgnoreAspectRatio, q
+            size[0], size[1], Qt.AspectRatioMode.IgnoreAspectRatio, q
         )

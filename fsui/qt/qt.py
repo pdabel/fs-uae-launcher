@@ -148,9 +148,9 @@ def relayout_widgets():
     # QApplication.setFont does not reliably reach already-created widgets;
     # each window passes the change on to its children.
     for widget in QApplication.topLevelWidgets():
-        if widget.windowType() in (Qt.Window, Qt.Dialog):
+        if widget.windowType() in (Qt.WindowType.Window, Qt.WindowType.Dialog):
             QApplication.sendEvent(
-                widget, QEvent(QEvent.ApplicationFontChange)
+                widget, QEvent(QEvent.Type.ApplicationFontChange)
             )
     owners = []
     for top in QApplication.topLevelWidgets():
@@ -194,7 +194,10 @@ def theme_default_point_size(launcher_theme):
 
         size = default_font_size(variant)
     return (
-        size or QFontDatabase.systemFont(QFontDatabase.GeneralFont).pointSize()
+        size
+        or QFontDatabase.systemFont(
+            QFontDatabase.SystemFont.GeneralFont
+        ).pointSize()
     )
 
 
@@ -207,7 +210,9 @@ def apply_launcher_theme(qapplication, launcher_theme, font_size=""):
     qapplication.setStyleSheet("")
     qapplication.setStyle(QStyleFactory.create("Fusion"))
     qapplication.setPalette(qapplication.style().standardPalette())
-    qapplication.setFont(QFontDatabase.systemFont(QFontDatabase.GeneralFont))
+    qapplication.setFont(
+        QFontDatabase.systemFont(QFontDatabase.SystemFont.GeneralFont)
+    )
     if fusion_variant == "modern":
         from fsui.qt.modern_theme import apply_modern_theme
 

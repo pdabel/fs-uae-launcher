@@ -328,30 +328,36 @@ def apply_modern_theme(application, skin=DEFAULT_SKIN):
     p = _active
     qpalette = QPalette()
     colors = {
-        QPalette.Window: p.window,
-        QPalette.WindowText: p.text,
-        QPalette.Base: p.surface,
-        QPalette.AlternateBase: p.raised,
-        QPalette.Text: p.text,
-        QPalette.Button: p.raised,
-        QPalette.ButtonText: p.text,
-        QPalette.ToolTipBase: p.raised,
-        QPalette.ToolTipText: p.text,
-        QPalette.Highlight: p.highlight,
-        QPalette.HighlightedText: "#ffffff",
-        QPalette.Link: p.accent,
-        QPalette.BrightText: p.danger,
-        QPalette.Light: p.light,
-        QPalette.Midlight: p.midlight,
-        QPalette.Mid: p.mid,
-        QPalette.Dark: p.dark,
-        QPalette.Shadow: p.dark,
-        QPalette.PlaceholderText: p.muted,
+        QPalette.ColorRole.Window: p.window,
+        QPalette.ColorRole.WindowText: p.text,
+        QPalette.ColorRole.Base: p.surface,
+        QPalette.ColorRole.AlternateBase: p.raised,
+        QPalette.ColorRole.Text: p.text,
+        QPalette.ColorRole.Button: p.raised,
+        QPalette.ColorRole.ButtonText: p.text,
+        QPalette.ColorRole.ToolTipBase: p.raised,
+        QPalette.ColorRole.ToolTipText: p.text,
+        QPalette.ColorRole.Highlight: p.highlight,
+        QPalette.ColorRole.HighlightedText: "#ffffff",
+        QPalette.ColorRole.Link: p.accent,
+        QPalette.ColorRole.BrightText: p.danger,
+        QPalette.ColorRole.Light: p.light,
+        QPalette.ColorRole.Midlight: p.midlight,
+        QPalette.ColorRole.Mid: p.mid,
+        QPalette.ColorRole.Dark: p.dark,
+        QPalette.ColorRole.Shadow: p.dark,
+        QPalette.ColorRole.PlaceholderText: p.muted,
     }
     for role, value in colors.items():
         qpalette.setColor(role, QColor(value))
-    for role in (QPalette.Text, QPalette.WindowText, QPalette.ButtonText):
-        qpalette.setColor(QPalette.Disabled, role, QColor(p.disabled_text))
+    for role in (
+        QPalette.ColorRole.Text,
+        QPalette.ColorRole.WindowText,
+        QPalette.ColorRole.ButtonText,
+    ):
+        qpalette.setColor(
+            QPalette.ColorGroup.Disabled, role, QColor(p.disabled_text)
+        )
     application.setPalette(qpalette)
     families = QFontDatabase.families()
     for family in p.fonts:

@@ -19,10 +19,10 @@ from launcher.ui.behaviors.settingsbehavior import SettingsBehavior
 
 class MonitorHighlight(QWidget):
     def __init__(self, parent):
-        super().__init__(parent, Qt.Widget)
-        self.setAttribute(Qt.WA_TransparentForMouseEvents)
-        self.setAttribute(Qt.WA_ShowWithoutActivating)
-        self.setFocusPolicy(Qt.NoFocus)
+        super().__init__(parent, Qt.WindowType.Widget)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.text = ""
         self.screens = []
         self.selected = None
@@ -65,9 +65,11 @@ class MonitorHighlight(QWidget):
         painter.setPen(QColor(theme.brand))
         painter.drawText(
             QRect(10, 4, max(1, self.width() - 20), metrics.height() + 8),
-            Qt.AlignLeft | Qt.AlignVCenter,
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             metrics.elidedText(
-                self.text, Qt.ElideRight, max(1, self.width() - 20)
+                self.text,
+                Qt.TextElideMode.ElideRight,
+                max(1, self.width() - 20),
             ),
         )
         for screen, rect in self.monitor_rects():
@@ -85,9 +87,11 @@ class MonitorHighlight(QWidget):
             painter.setPen(QColor(theme.brand))
             painter.drawText(
                 rect.adjusted(4, 0, -4, 0),
-                Qt.AlignCenter,
+                Qt.AlignmentFlag.AlignCenter,
                 metrics.elidedText(
-                    screen.name(), Qt.ElideRight, max(1, rect.width() - 8)
+                    screen.name(),
+                    Qt.TextElideMode.ElideRight,
+                    max(1, rect.width() - 8),
                 ),
             )
 
@@ -272,7 +276,9 @@ class MonitorChoice(fsui.Choice):
             for value, label in entries:
                 self.add_item(label)
                 self.setItemData(
-                    self.count() - 1, label, fsui.qt.Qt.ToolTipRole
+                    self.count() - 1,
+                    label,
+                    fsui.qt.Qt.ItemDataRole.ToolTipRole,
                 )
             self.set_index(selected)
         if self.per_game:

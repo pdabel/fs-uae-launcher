@@ -39,35 +39,41 @@ def apply_retro_theme(application, variant):
     }
     palette = QPalette()
     for role, key in (
-        (QPalette.Window, "window"),
-        (QPalette.WindowText, "window_text"),
-        (QPalette.Base, "base"),
-        (QPalette.AlternateBase, "button"),
-        (QPalette.Text, "text"),
-        (QPalette.Button, "button"),
-        (QPalette.ButtonText, "text"),
-        (QPalette.Highlight, "highlight"),
-        (QPalette.HighlightedText, "selected_text"),
-        (QPalette.ToolTipBase, "base"),
-        (QPalette.ToolTipText, "text"),
-        (QPalette.Link, "text"),
-        (QPalette.Light, "light"),
-        (QPalette.Midlight, "button"),
-        (QPalette.Mid, "disabled"),
-        (QPalette.Dark, "shadow"),
-        (QPalette.Shadow, "shadow"),
-        (QPalette.PlaceholderText, "disabled"),
+        (QPalette.ColorRole.Window, "window"),
+        (QPalette.ColorRole.WindowText, "window_text"),
+        (QPalette.ColorRole.Base, "base"),
+        (QPalette.ColorRole.AlternateBase, "button"),
+        (QPalette.ColorRole.Text, "text"),
+        (QPalette.ColorRole.Button, "button"),
+        (QPalette.ColorRole.ButtonText, "text"),
+        (QPalette.ColorRole.Highlight, "highlight"),
+        (QPalette.ColorRole.HighlightedText, "selected_text"),
+        (QPalette.ColorRole.ToolTipBase, "base"),
+        (QPalette.ColorRole.ToolTipText, "text"),
+        (QPalette.ColorRole.Link, "text"),
+        (QPalette.ColorRole.Light, "light"),
+        (QPalette.ColorRole.Midlight, "button"),
+        (QPalette.ColorRole.Mid, "disabled"),
+        (QPalette.ColorRole.Dark, "shadow"),
+        (QPalette.ColorRole.Shadow, "shadow"),
+        (QPalette.ColorRole.PlaceholderText, "disabled"),
     ):
         palette.setColor(role, QColor(colors[key]))
-    for role in (QPalette.Text, QPalette.WindowText, QPalette.ButtonText):
-        palette.setColor(QPalette.Disabled, role, QColor(colors["disabled"]))
+    for role in (
+        QPalette.ColorRole.Text,
+        QPalette.ColorRole.WindowText,
+        QPalette.ColorRole.ButtonText,
+    ):
+        palette.setColor(
+            QPalette.ColorGroup.Disabled, role, QColor(colors["disabled"])
+        )
     application.setPalette(palette)
     families = QFontDatabase.families()
     for family in font_candidates(workbench):
         if family in families:
             font = QFont(family, RETRO_FONT_SIZE)
             if workbench:
-                font.setStretch(QFont.SemiCondensed)
+                font.setStretch(QFont.Stretch.SemiCondensed)
             application.setFont(font)
             break
     stylesheet = """

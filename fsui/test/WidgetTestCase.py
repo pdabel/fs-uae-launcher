@@ -28,5 +28,5 @@ class WidgetTestCase(unittest.TestCase):
         # garbage collector, they go at an arbitrary point in a later test,
         # and a later application-wide setStyleSheet() can then crash.
         self.dialog.deleteLater()
-        self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+        self.application.sendPostedEvents(None, QEvent.Type.DeferredDelete)
         self.dialog = None

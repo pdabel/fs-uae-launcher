@@ -57,11 +57,11 @@ class UIScaleSlider(fsui.Panel):
         row.setSpacing(10)
         smaller = QLabel(gettext("Smaller"))
         row.addWidget(smaller)
-        self.slider = QSlider(Qt.Horizontal)
+        self.slider = QSlider(Qt.Orientation.Horizontal)
         self.slider.setRange(self.minimum, self.maximum)
         self.slider.setSingleStep(1)
         self.slider.setPageStep(2)
-        self.slider.setTickPosition(QSlider.TicksBelow)
+        self.slider.setTickPosition(QSlider.TickPosition.TicksBelow)
         self.slider.setTickInterval(1)
         self.slider.setAccessibleName(gettext("Interface Font Size"))
         self.slider.setToolTip(

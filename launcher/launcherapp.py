@@ -85,7 +85,7 @@ class LauncherApp(ApplicationMixin, fsui.Application):
                 )
                 progress = QProgressDialog(progress_message, "", 0, 0)
                 progress.setCancelButton(None)
-                progress.setWindowModality(Qt.ApplicationModal)
+                progress.setWindowModality(Qt.WindowModality.ApplicationModal)
                 progress.setMinimumDuration(0)
                 progress.show()
 
