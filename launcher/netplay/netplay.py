@@ -9,6 +9,9 @@ listener lists.
 import threading
 import time
 
+from fsgs.context import fsgs
+from launcher.i18n import gettext
+
 from .config_apply import apply_document
 from .connection_tester import ConnectionTester
 from .lobby_browser import LOCAL, LOCAL_HOST, LobbyBrowser
@@ -454,6 +457,14 @@ class Netplay:
         The lobby call runs off the UI thread, as a join does. Returns
         False if it couldn't get that far, having said why.
         """
+        if fsgs.amiga.cd_checksums_pending:
+            self.game_warning(
+                gettext(
+                    "CD image checksums are still being calculated; "
+                    "wait and try hosting again"
+                )
+            )
+            return False
         title = game_title()
         if server == LOCAL:
             lobby = self.ensure_local_lobby()

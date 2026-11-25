@@ -493,6 +493,7 @@ class LauncherConfig(object):
         else:
             # Mark config as unchanged (i.e. does not need to be saved).
             cls.set("__changed", "0")
+        fsgs.amiga.update_cd_checksums()
 
     @classmethod
     def fix_joystick_ports(cls, config):
@@ -839,7 +840,9 @@ class LauncherConfig(object):
         # FIXME: parent
         checksum_tool = ChecksumTool(None)
 
-        def fix_file_checksum(sha1_key, key, base_dir, is_rom=False):
+        def fix_file_checksum(
+            sha1_key, key, base_dir, is_rom=False, deferred=False
+        ):
             path = config.get(key, "")
             # hack to synchronize URLs
             if path.startswith("http://") or path.startswith("https://"):
@@ -852,6 +855,10 @@ class LauncherConfig(object):
                 return
             if sha1:
                 # assuming sha1 is correct
+                return
+            if deferred:
+                # CD images can be large; resolve them after loading, on the
+                # same worker used when inserting media.
                 return
             if not os.path.exists(path):
                 print(repr(path), "does not exist")
@@ -893,12 +900,14 @@ class LauncherConfig(object):
                 f"x_cdrom_drive_{i}_sha1",
                 f"cdrom_drive_{i}",
                 FSGSDirectories.get_cdroms_dir(),
+                deferred=True,
             )
         for i in range(Amiga.MAX_CDROM_IMAGES):
             fix_file_checksum(
                 f"x_cdrom_image_{i}_sha1",
                 f"cdrom_image_{i}",
                 FSGSDirectories.get_cdroms_dir(),
+                deferred=True,
             )
         for i in range(Amiga.MAX_HARD_DRIVES):
             fix_file_checksum(

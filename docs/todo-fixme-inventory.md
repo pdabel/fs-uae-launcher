@@ -21,19 +21,31 @@ This file is a review-only inventory of tracked `TODO` and `FIXME` markers in th
 - Missing or unreadable ROM paths produce an empty SHA-1 instead of inventing
   a checksum, and errors are logged for diagnosis.
 
+## WP1: CD checksum status
+
+- **Status:** Complete.
+- Single and multiple CD selections and loaded configurations resolve missing
+  checksums on a worker, without the previous 64 MB limit for CD images.
+- Scanned checksums are reused only when size and modification time match.
+- Late results cannot overwrite an ejected or replaced CD. Missing/unreadable
+  images leave the checksum empty and produce a diagnostic.
+- Floppy extension centralization remains a separate task; unrelated import
+  cycle comments were not changed.
+
 ## Scope
 
-- **Tracked matches:** 225
-- **Tracked files:** 95
+- **Tracked matches:** 223
+- **Tracked files:** 94
 - **Source:** `git grep -n -I -E '\b(TODO|FIXME)\b'` across tracked files, excluding this generated inventory
 - **Generated:** 2026-11-23
+- **Updated:** 2026-11-25 for WP1
 - **Intentionally excluded:** untracked files, binaries excluded by `git grep -I`, dependency/environment directories such as `venv-*`, and this inventory itself
 
 References in documentation are included as matches, but are not necessarily implementation markers. Inspect each entry before deciding whether it should be implemented, removed, or replanned.
 
 ## FIXME relevance and priority review
 
-There are **210 source-level FIXME markers** and 15 TODO markers in the
+There are **208 source-level FIXME markers** and 15 TODO markers in the
 tracked inventory. The source count is dominated by comments left in mature
 code: many describe older implementation concerns, while some represent real
 unfinished behavior. "Effort" below is implementation effort, including tests
@@ -45,7 +57,7 @@ and documentation where applicable.
 |---|---|---|---|---|
 | 1 | Stale markers and dead compatibility shims | **Complete.** Removed confirmed stale comments, methods, and no-op code; preserved compatibility env vars and legacy architecture notes | Low | High maintenance clarity |
 | 2 | Kickstart and ROM metadata | **Complete.** Explicit ROM paths now resolve to consistent SHA-1 metadata for netplay config sync | Medium | High |
-| 3 | CD and floppy metadata | Calculate CD checksums and centralize floppy extension detection | Medium | High |
+| 3 | CD and floppy metadata | **CD checksums complete (WP1).** Floppy extension detection remains separate | Medium | High |
 | 4 | Network and media error handling | Replace broad/default handling with visible, actionable errors and worker-thread-safe status updates | Medium | High |
 | 5 | Archive and binary stream correctness | Handle odd reads and archive-vs-directory ambiguity; add corruption and malformed-path tests | Medium | High |
 | 6 | Async UI operations | Move rating and configuration rescans onto existing worker queue patterns, using `call_after` for UI updates | Medium | Medium |
@@ -98,10 +110,9 @@ and documentation where applicable.
    paths incomplete when a configured kickstart or extension ROM is already
    specified. Implement resolution and tests for explicit, internal, and
    Cloanto-provided ROM cases.
-2. **CD checksum calculation** - [cd_manager.py](../launcher/cd_manager.py#L46)
-   explicitly inserts CDs with an empty checksum. Netplay and file database
-   lookup can be unable to identify the media. Use the existing checksum
-   facility and add success/failure tests.
+2. **CD checksum calculation — complete (WP1).** Single/multiple selections
+   and loaded configurations use background checksum resolution, with
+   regression tests for cache reuse, failures and stale worker results.
 3. **Archive safety** - [archive.py](../fsgs/archive.py#L255) asserts after
    word-swapping reads and [archive.py](../fsgs/archive.py#L293) can
    interpret a directory name as an archive subpath. Replace assertions with
@@ -296,7 +307,6 @@ The following markers should remain unimplemented unless requirements change:
 
 ### `fsgs/amiga/amigacontext.py`
 
-- [L56](../fsgs/amiga/amigacontext.py#L56) — **FIXME** — <code>print(&quot;FIXME: not calculating CD checksum just yet&quot;)</code>
 - [L75](../fsgs/amiga/amigacontext.py#L75) — **FIXME** — <code># FIXME: get list of floppy extensions from a central</code>
 - [L126](../fsgs/amiga/amigacontext.py#L126) — **FIXME** — <code># FIXME: dependency loop</code>
 - [L130](../fsgs/amiga/amigacontext.py#L130) — **FIXME** — <code># FIXME: dependency loop</code>
@@ -467,10 +477,6 @@ The following markers should remain unimplemented unless requirements change:
 ### `launcher/apps/fs_uae_launcher.py`
 
 - [L77](../launcher/apps/fs_uae_launcher.py#L77) — **TODO** — <code>TODO: Add more documentation</code>
-
-### `launcher/cd_manager.py`
-
-- [L46](../launcher/cd_manager.py#L46) — **FIXME** — <code>print(&quot;FIXME: not calculating CD checksum just yet&quot;)</code>
 
 ### `launcher/configuration_scanner.py`
 

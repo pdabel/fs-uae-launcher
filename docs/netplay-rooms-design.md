@@ -172,6 +172,10 @@ Wireframes are for layout and wording, not pixels.
 
 ### Host game
 
+The launcher asks the host to wait if a local CD checksum calculation is still
+pending. CD selections and their SHA-1 metadata are published together when
+the worker finishes, avoiding an intermediate empty hash in the session.
+
 **Host game** opens a small dialog. The button names the loaded config, so it's clear what will be shared.
 
 ```

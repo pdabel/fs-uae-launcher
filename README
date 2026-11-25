@@ -414,6 +414,20 @@ lobby is kept between games until Stop lobby, which won't stop a game being
 played, or until the launcher closes. The server's bind result determines
 whether the port is available; a busy port produces an explicit message.
 
+## CD Image Checksums
+
+Selecting a CD image, selecting several CDs, or loading a saved CD
+configuration resolves missing SHA-1 checksums in a background worker,
+including images larger than 64 MB. The launcher reuses a scanned checksum
+when the file's size and modification time still match; otherwise it reads
+the image without blocking the interface. These checksums let netplay resolve
+the same media on each computer, including locally selected, unscanned images.
+New selections are applied together with their checksums once the worker
+finishes, so an already-hosted game never receives an intermediate empty hash.
+Hosting while checksum calculation is pending asks you to wait and retry.
+Ejecting or replacing a CD discards any pending result for the old selection.
+An unreadable or missing image leaves the checksum empty and logs the error.
+
 ## UI Regression Tests
 
 Run the widget, dialog, menu, painting, and screen tests without a display:
