@@ -32,20 +32,30 @@ This file is a review-only inventory of tracked `TODO` and `FIXME` markers in th
 - Floppy extension centralization remains a separate task; unrelated import
   cycle comments were not changed.
 
+## WP2: Archive stream status
+
+- **Status:** Complete.
+- Word-swapped reads support odd-sized requests, short source reads, and an
+  unmatched final byte without assertions or premature EOF.
+- Archive-looking directories remain directories, including when they contain
+  a real archive. Existing archive member syntax is preserved.
+- Non-actionable archive metadata API comments were removed without changing
+  that API.
+
 ## Scope
 
-- **Tracked matches:** 223
-- **Tracked files:** 94
+- **Tracked matches:** 219
+- **Tracked files:** 93
 - **Source:** `git grep -n -I -E '\b(TODO|FIXME)\b'` across tracked files, excluding this generated inventory
 - **Generated:** 2026-11-23
-- **Updated:** 2026-11-25 for WP1
+- **Updated:** 2026-11-25 for WP1 and WP2
 - **Intentionally excluded:** untracked files, binaries excluded by `git grep -I`, dependency/environment directories such as `venv-*`, and this inventory itself
 
 References in documentation are included as matches, but are not necessarily implementation markers. Inspect each entry before deciding whether it should be implemented, removed, or replanned.
 
 ## FIXME relevance and priority review
 
-There are **208 source-level FIXME markers** and 15 TODO markers in the
+There are **204 source-level FIXME markers** and 15 TODO markers in the
 tracked inventory. The source count is dominated by comments left in mature
 code: many describe older implementation concerns, while some represent real
 unfinished behavior. "Effort" below is implementation effort, including tests
@@ -59,7 +69,7 @@ and documentation where applicable.
 | 2 | Kickstart and ROM metadata | **Complete.** Explicit ROM paths now resolve to consistent SHA-1 metadata for netplay config sync | Medium | High |
 | 3 | CD and floppy metadata | **CD checksums complete (WP1).** Floppy extension detection remains separate | Medium | High |
 | 4 | Network and media error handling | Replace broad/default handling with visible, actionable errors and worker-thread-safe status updates | Medium | High |
-| 5 | Archive and binary stream correctness | Handle odd reads and archive-vs-directory ambiguity; add corruption and malformed-path tests | Medium | High |
+| 5 | Archive and binary stream correctness | **Complete (WP2).** Correct odd/short reads and archive-vs-directory handling with regression tests | Medium | High |
 | 6 | Async UI operations | Move rating and configuration rescans onto existing worker queue patterns, using `call_after` for UI updates | Medium | Medium |
 | 7 | Amiga hardware/default selection | Replace assumptions for joystick ports, refresh rate, memory, expansions, and sound/network cards with explicit model/device validation | High | High |
 | 8 | Save snapshots | Implement snapshot directory and timestamp support only if snapshot storage is an intended user feature | High | Medium |
@@ -113,10 +123,9 @@ and documentation where applicable.
 2. **CD checksum calculation — complete (WP1).** Single/multiple selections
    and loaded configurations use background checksum resolution, with
    regression tests for cache reuse, failures and stale worker results.
-3. **Archive safety** - [archive.py](../fsgs/archive.py#L255) asserts after
-   word-swapping reads and [archive.py](../fsgs/archive.py#L293) can
-   interpret a directory name as an archive subpath. Replace assertions with
-   bounded validation and tests.
+3. **Archive stream correctness — complete (WP2).** Word-swapped reads retain
+   split words across calls, and archive-looking directories are not split
+   into archive member paths.
 4. **Model-specific hardware validation** - The highest-density cluster is
    [expand.py](../launcher/ui/config/expand.py), with unchecked values,
    ambiguous defaults, joystick mappings, memory behavior, and unsupported
@@ -343,13 +352,6 @@ The following markers should remain unimplemented unless requirements change:
 ### `fsgs/amiga/whdload.py`
 
 - [L129](../fsgs/amiga/whdload.py#L129) — **FIXME** — <code># FIXME: Should MAG be included?</code>
-
-### `fsgs/archive.py`
-
-- [L39](../fsgs/archive.py#L39) — **FIXME** — <code># FIXME: getinfo needs to work for everything (return dummy data if necessary)</code>
-- [L186](../fsgs/archive.py#L186) — **FIXME** — <code># FIXME: Should instead add getinfo to LhaFile...</code>
-- [L255](../fsgs/archive.py#L255) — **FIXME** — <code># FIXME: Support odd length reads</code>
-- [L293](../fsgs/archive.py#L293) — **FIXME** — <code># FIXME: should also check that it isn&#x27;t a dir</code>
 
 ### `fsgs/download.py`
 

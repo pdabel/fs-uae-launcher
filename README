@@ -428,6 +428,13 @@ Hosting while checksum calculation is pending asks you to wait and retry.
 Ejecting or replacing a CD discards any pending result for the old selection.
 An unreadable or missing image leaves the checksum empty and logs the error.
 
+## Archive and ROM Reads
+
+Folders whose names end in an archive extension (for example `games.zip`)
+remain ordinary folders; real archives inside them can still be opened.
+Word-swapped ROM reads support any requested chunk size and short source
+reads without losing bytes. A final unmatched byte is preserved unchanged.
+
 ## UI Regression Tests
 
 Run the widget, dialog, menu, painting, and screen tests without a display:

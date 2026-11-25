@@ -3,7 +3,6 @@ import lzma
 import io
 import os
 import traceback
-from io import BytesIO
 
 from fspy.zipfile import ZipFile
 
@@ -34,9 +33,6 @@ archive_extensions.extend(archive_extensions_gz)
 
 archive_extensions_xz = [".xz"]
 archive_extensions.extend(archive_extensions_xz)
-
-
-# FIXME: getinfo needs to work for everything (return dummy data if necessary)
 
 
 class ZipHandler(object):
@@ -183,7 +179,6 @@ class LhaHandler(object):
             return False
 
     def getinfo(self, name):
-        # FIXME: Should instead add getinfo to LhaFile...
         return self._lhafile.NameToInfo[self.encode_name(name)]
 
     def list_files(self, sub_path):
@@ -249,17 +244,37 @@ class ByteSwapWordsFilter:
     def __init__(self, stream):
         print("[ARCHIVE] ByteSwapWords filter for", stream)
         self.stream = stream
+        self._pending = b""
+        self._buffer = bytearray()
+        self._eof = False
 
     def read(self, n=-1):
-        data = self.stream.read(n)
-        # FIXME: Support odd length reads
-        assert len(data) % 2 == 0
-        io = BytesIO()
-        for i in range(0, len(data), 2):
-            io.write(data[i + 1 : i + 2])
-            io.write(data[i : i + 1])
-        io.seek(0)
-        return io.getvalue()
+        if n is None:
+            n = -1
+        if n == 0:
+            return b""
+        while not self._eof and (n < 0 or len(self._buffer) < n):
+            size = -1 if n < 0 else max(2, n - len(self._buffer))
+            data = self.stream.read(size)
+            if not data:
+                # An unmatched final byte is not a word; preserve it.
+                self._buffer.extend(self._pending)
+                self._pending = b""
+                self._eof = True
+                break
+            data = self._pending + data
+            paired = len(data) - len(data) % 2
+            swapped = bytearray(paired)
+            swapped[0::2] = data[1:paired:2]
+            swapped[1::2] = data[:paired:2]
+            self._buffer.extend(swapped)
+            # Retain a split word across short source reads, and retain
+            # swapped output when the caller asks for only one byte.
+            self._pending = data[paired:]
+        count = len(self._buffer) if n < 0 else min(n, len(self._buffer))
+        result = bytes(self._buffer[:count])
+        del self._buffer[:count]
+        return result
 
 
 class Archive(object):
@@ -290,10 +305,11 @@ class Archive(object):
             n, ext = os.path.splitext(part)
             ext = ext.lower()
             if ext in archive_extensions:
-                # FIXME: should also check that it isn't a dir
-                path = str(os.sep).join(parts[: i + 1])
+                candidate = str(os.sep).join(parts[: i + 1])
+                if os.path.isdir(candidate):
+                    continue
                 sub_path = str(os.sep).join(parts[i + 1 :])
-                return path, sub_path
+                return candidate, sub_path
         return path, ""
 
     def get_handler(self):
