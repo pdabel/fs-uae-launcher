@@ -15,7 +15,7 @@ mypy = "~=2.4"
 pyinstaller = "~=6.22"
 pytest = "~=9.2"
 # The Lint job runs exactly this version: ruff adds rules in minor releases.
-ruff = "==0.17.5"
+ruff = "==0.17.6"
 setuptools = "~=84.2"
 
 [packages]
