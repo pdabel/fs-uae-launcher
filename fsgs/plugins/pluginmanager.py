@@ -15,6 +15,7 @@ from fsgs.FSGSDirectories import FSGSDirectories
 X86_MACHINES = ["x86", "i386", "i486", "i586", "i686"]
 X86_64_MACHINES = ["x86_64", "x86-64", "amd64"]
 X86_ANY_MACHINES = X86_MACHINES + X86_64_MACHINES
+ARM64_MACHINES: list[str] = ["arm64", "aarch64"]
 
 logger = logging.getLogger("PLUGINS")
 
@@ -97,6 +98,8 @@ class Plugin(BasePlugin):
 
     @staticmethod
     def arch_name(pretty=False):
+        if platform.machine().lower() in ARM64_MACHINES:
+            return "ARM64"
         if platform.machine().lower() in X86_ANY_MACHINES:
             if platform.architecture()[0] == "64bit":
                 return "x86-64"

@@ -114,6 +114,9 @@ delay before the next retry.
 Explicit `uae_sana2` values are preserved independently of `uae_rtc`; when
 unset, `uae_sana2` defaults to `false`.
 
+Plugin discovery supports `x86`, `x86-64`, and `ARM64` architecture folders,
+including Apple Silicon and 64-bit ARM Linux.
+
 ## Game Monitor Selection
 
 Quick Settings selects a monitor for the loaded game. This per-game choice is

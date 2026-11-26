@@ -106,11 +106,12 @@ def getAppName() -> str:
 
 def getArchitecture() -> str:
     machine = platform.machine()
-    if machine == "arm64":
-        arch = "ARM64"
-    else:
-        arch = "x86-64"  # FIXME
-    return arch
+    normalized_machine = machine.lower()
+    if normalized_machine in ("arm64", "aarch64"):
+        return "ARM64"
+    if normalized_machine in ("x86_64", "amd64"):
+        return "x86-64"
+    raise RuntimeError(f"Unsupported architecture: {machine}")
 
 
 def getBundleName() -> str:
