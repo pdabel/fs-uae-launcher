@@ -109,6 +109,9 @@ code-marker work is planned task by task in
 OpenRetro download failure messages show the retry attempt and the actual
 delay before the next retry.
 
+Explicit `uae_sana2` values are preserved independently of `uae_rtc`; when
+unset, `uae_sana2` defaults to `false`.
+
 ## Game Monitor Selection
 
 Quick Settings selects a monitor for the loaded game. This per-game choice is

@@ -50,7 +50,7 @@ Each one is a **separate branch** with **one commit**.
 |---|---|---|---|
 | T1 | `fix/update-check-timeout` | XS | Complete |
 | T2 | `fix/ogd-retry-countdown` | XS | Complete |
-| T3 | `fix/uae-sana2-explicit-value` | XS | Pending |
+| T3 | `fix/uae-sana2-explicit-value` | XS | Complete |
 | T4 | `fix/variant-rating-off-ui-thread` | S | Pending |
 | T5 | `fix/arm64-plugin-arch` | S | Pending |
 | T6 | `fix/options-behavior-disconnect` | XS | Pending |

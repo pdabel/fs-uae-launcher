@@ -1664,9 +1664,7 @@ def _uae_rtc(c, f):
 # noinspection PyUnusedLocal,SpellCheckingInspection,PyUnresolvedReferences
 def _uae_sana2(c, f):
     if c.uae_sana2.explicit:
-        # FIXME: ok? keep already specified value
-        value = c.uae_rtc.explicit
-        # FIXME: match and normalize uae boolean
+        value = c.uae_sana2.explicit
     else:
         value = "false"
     c.uae_sana2 = value
