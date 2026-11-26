@@ -5,6 +5,7 @@ from fsgs.Database import Database
 import fsui
 from ..launcher_config import LauncherConfig
 from ..launcher_settings import LauncherSettings
+from ..launcher_signal import LauncherSignal
 
 
 class VariantsBrowser(fsui.ItemChoice):
@@ -41,10 +42,19 @@ class VariantsBrowser(fsui.ItemChoice):
         self.fav_icon = fsui.Image("launcher:res/rating_fav_16.png")
 
         LauncherSettings.add_listener(self)
+        LauncherSignal.add_listener("variant_rating", self)
         self.on_setting("parent_uuid", LauncherSettings.get("parent_uuid"))
 
     def on_destroy(self):
         LauncherSettings.remove_listener(self)
+        LauncherSignal.remove_listener("variant_rating", self)
+
+    def on_variant_rating_signal(self, variant_uuid, rating):
+        for item in self.items:
+            if item["uuid"] == variant_uuid:
+                item["personal_rating"] = rating
+                self.update()
+                break
 
     def on_select_item(self, index):
         if index is None:

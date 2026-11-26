@@ -105,6 +105,8 @@ work items. For a map of the packages, startup sequence, theme engine and
 data stores, see [docs/architecture.md](docs/architecture.md). Remaining
 code-marker work is planned task by task in
 [docs/fixme-implementation-plan.md](docs/fixme-implementation-plan.md).
+Variant ratings are sent and saved in order on a background worker; a failure
+is reported without presenting the unconfirmed rating as saved.
 
 OpenRetro download failure messages show the retry attempt and the actual
 delay before the next retry.

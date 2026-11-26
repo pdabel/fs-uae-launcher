@@ -2822,6 +2822,30 @@ class TestDashboard(WidgetTestCase):
         ConfigurationsPanel.on_setting(panel, "config_search", "abc")
         panel.text_field.set_text.assert_not_called()
 
+    def test_variant_rating_choice_waits_for_confirmation(self):
+        from launcher.ui.ConfigurationsPanel import RatingChoice
+
+        self.setup_dialog()
+        with patch("launcher.ui.ConfigurationsPanel.ConfigBehavior"), patch(
+            "launcher.ui.ConfigurationsPanel.SettingsBehavior"
+        ), patch(
+            "launcher.ui.ConfigurationsPanel.LauncherConfig.get",
+            return_value="variant",
+        ), patch(
+            "launcher.ui.ConfigurationsPanel.LauncherSettings.get",
+            return_value="1",
+        ), patch.object(
+            RatingChoice, "set_rating_for_variant"
+        ) as submit:
+            choice = RatingChoice(self.dialog)
+            choice.on___variant_rating_setting("1")
+            choice.set_index(1)
+            self.assertEqual(choice.get_index(), 3)
+            submit.assert_called_once_with("variant", 5)
+            choice.on___variant_rating_setting("5")
+            self.assertEqual(choice.get_index(), 1)
+        self.run_dialog()
+
     def test_display_settings_controls_and_fullscreen(self):
         from launcher.launcher_settings import LauncherSettings
         from launcher.panels.displaysettingspanel import DisplaySettingsPanel

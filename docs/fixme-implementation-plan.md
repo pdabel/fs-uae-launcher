@@ -51,7 +51,7 @@ Each one is a **separate branch** with **one commit**.
 | T1 | `fix/update-check-timeout` | XS | Complete |
 | T2 | `fix/ogd-retry-countdown` | XS | Complete |
 | T3 | `fix/uae-sana2-explicit-value` | XS | Complete |
-| T4 | `fix/variant-rating-off-ui-thread` | S | Pending |
+| T4 | `fix/variant-rating-off-ui-thread` | S | Complete |
 | T5 | `fix/arm64-plugin-arch` | S | Pending |
 | T6 | `fix/options-behavior-disconnect` | XS | Pending |
 | T7 | `refactor/floppy-extensions` | S | Pending |
@@ -189,34 +189,20 @@ an HTTP request to OpenRetro and writes SQLite on the Qt thread, freezing
 the window. It breaks the UI-thread rule in `AGENTS.md`. Neither
 `OGDClient.rate_variant` nor `OGDClient.post` sets a timeout.
 
-**Files:** `launcher/ui/ConfigurationsPanel.py`, `fsgs/ogd/client.py`, new
-`launcher/tests/test_variant_rating.py`.
+**Files:** `launcher/ui/ConfigurationsPanel.py`, `launcher/ui/VariantsBrowser.py`,
+`fsgs/ogd/client.py`, new `launcher/tests/test_variant_rating.py`, and
+`fsui/test/test_qt6.py`.
 
-**Pattern to copy:** the CD checksum worker in `fsgs/amiga/amigacontext.py`
-(`threading.Thread(..., daemon=True)` plus `fsbc.application.call_after`).
+**Implemented:** a serial daemon worker sends ratings with a 30-second
+timeout and writes them using its own SQLite connection. It posts results
+back to the UI, updates the matching variant's cached rating even after a
+selection change, and reports failures without displaying an unconfirmed
+rating. POST requests also have a 30-second timeout. The earlier suggestion
+to write SQLite from the UI callback violated the UI-thread invariant.
 
-**Steps:**
-1. `fsgs/ogd/client.py`: add `timeout=30` to the `requests.get` in
-   `rate_variant` and the `requests.post` in `post`.
-2. `ConfigurationsPanel.py`: split `set_rating_for_variant` into:
-   - a worker function that calls `OGDClient().rate_variant(...)` and
-     catches `Exception` (print it with `traceback.print_exc()` and return
-     without changing anything);
-   - an apply function, run with `call_after`, that writes the `rating`
-     table with `Database.instance()` and sets `__variant_rating`. The
-     database object is per-thread, so it must be opened in this
-     UI-thread function.
-   Start the worker on a daemon thread. Keep the method name and its
-   `@staticmethod` so callers don't change.
-3. Delete the `# FIXME: Do asynchronously, add to queue` line.
-
-**Tests:** monkeypatch `OGDClient.rate_variant` to return
-`{"like": 5, "work": 4}`, replace `threading.Thread` in the module with a
-fake that runs the target straight away, and replace `call_after` with a
-function that calls its argument. Use a fake `Database.instance()` that records
-`execute` calls. Assert the insert and `LauncherSettings.set("__variant_rating",
-"5")` happen. Add a second test where `rate_variant` raises: no database
-writes, no exception.
+**Tests:** cover worker and UI thread ownership, ordered rapid submissions,
+variant switches, network and database failures, and HTTP timeouts.
+The Qt choice test checks that unconfirmed selections are restored.
 
 **Commit:** `fix: rate game variants off the UI thread`
 

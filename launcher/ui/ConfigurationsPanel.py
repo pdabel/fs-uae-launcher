@@ -1,10 +1,16 @@
+import queue
+import threading
+import traceback
+
 import fsui
+from fsbc.application import call_after
 from fsgs.Database import Database
 from fsgs.ogd.client import OGDClient
 from fsui import Image, Choice
 from launcher.i18n import gettext
 from launcher.launcher_config import LauncherConfig
 from launcher.launcher_settings import LauncherSettings
+from launcher.launcher_signal import LauncherSignal
 from launcher.ui.ConfigGroup import ConfigGroup
 from launcher.ui.ConfigurationsBrowser import ConfigurationsBrowser
 from launcher.ui.GameListSelector import GameListSelector
@@ -13,6 +19,71 @@ from launcher.ui.skin import Skin
 from launcher.ui.VariantsBrowser import VariantsBrowser
 from launcher.ui.behaviors.configbehavior import ConfigBehavior
 from launcher.ui.newbutton import NewButton
+
+
+class VariantRatingQueue:
+    def __init__(self):
+        self._queue: queue.Queue[tuple[str, int]] = queue.Queue()
+        self._lock = threading.Lock()
+        self._started = False
+
+    def submit(self, variant_uuid, rating):
+        with self._lock:
+            if not self._started:
+                threading.Thread(target=self._run, daemon=True).start()
+                self._started = True
+            self._queue.put((variant_uuid, rating))
+
+    def _run(self):
+        while True:
+            variant_uuid, rating = self._queue.get()
+            try:
+                result = OGDClient().rate_variant(variant_uuid, like=rating)
+                like_rating = result.get("like", 0)
+                work_rating = result.get("work", 0)
+                database = Database.instance()
+                try:
+                    cursor = database.cursor()
+                    cursor.execute(
+                        "DELETE FROM rating WHERE game_uuid = ?",
+                        (variant_uuid,),
+                    )
+                    cursor.execute(
+                        "INSERT INTO rating "
+                        "(game_uuid, work_rating, like_rating) "
+                        "VALUES (?, ?, ?)",
+                        (variant_uuid, work_rating, like_rating),
+                    )
+                    database.commit()
+                except Exception:
+                    if database.connection:
+                        database.rollback()
+                    raise
+            except Exception:
+                traceback.print_exc()
+                call_after(self._failed)
+            else:
+                call_after(self._applied, variant_uuid, like_rating)
+            finally:
+                self._queue.task_done()
+
+    @staticmethod
+    def _applied(variant_uuid, like_rating):
+        LauncherSignal.broadcast("variant_rating", variant_uuid, like_rating)
+        if LauncherConfig.get("variant_uuid", "") == variant_uuid:
+            LauncherSettings.set("__variant_rating", str(like_rating))
+
+    @staticmethod
+    def _failed():
+        fsui.show_error(
+            gettext(
+                "Could not save the variant rating. The server may have "
+                "received it; please try again."
+            )
+        )
+
+
+_variant_ratings = VariantRatingQueue()
 
 
 class ConfigurationsPanel(fsui.Panel):
@@ -180,6 +251,9 @@ class RatingChoice(Choice):
         if not variant_uuid:
             return
         rating = self.index_to_rating(self.get_index())
+        self.on___variant_rating_setting(
+            LauncherSettings.get("__variant_rating")
+        )
         self.set_rating_for_variant(variant_uuid, rating)
 
     @staticmethod
@@ -192,23 +266,7 @@ class RatingChoice(Choice):
 
     @staticmethod
     def set_rating_for_variant(variant_uuid, rating):
-        # FIXME: Do asynchronously, add to queue
-        client = OGDClient()
-        result = client.rate_variant(variant_uuid, like=rating)
-        like_rating = result.get("like", 0)
-        work_rating = result.get("work", 0)
-        database = Database.instance()
-        cursor = database.cursor()
-        cursor.execute(
-            "DELETE FROM rating WHERE game_uuid = ?", (variant_uuid,)
-        )
-        cursor.execute(
-            "INSERT INTO rating (game_uuid, work_rating, like_rating) "
-            "VALUES (?, ?, ?)",
-            (variant_uuid, work_rating, like_rating),
-        )
-        database.commit()
-        LauncherSettings.set("__variant_rating", str(like_rating))
+        _variant_ratings.submit(variant_uuid, rating)
 
     def on___variant_rating_setting(self, value):
         with self.changed.inhibit:

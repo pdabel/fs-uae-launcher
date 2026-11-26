@@ -111,7 +111,11 @@ class OGDClient(object):
             headers["Content-Type"] = "application/x-www-form-urlencoded"
         print(url, headers)
         r = requests.post(
-            url, data, headers=headers, auth=(self.auth() if auth else None)
+            url,
+            data,
+            headers=headers,
+            auth=(self.auth() if auth else None),
+            timeout=30,
         )
         r.raise_for_status()
         return r.json()
@@ -129,7 +133,7 @@ class OGDClient(object):
         if work is not None:
             params["work"] = work
         url = self.build_url("/api/1/rate_game", **params)
-        r = requests.get(url, auth=self.auth())
+        r = requests.get(url, auth=self.auth(), timeout=30)
         r.raise_for_status()
         return r.json()
 
