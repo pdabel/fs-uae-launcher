@@ -53,7 +53,7 @@ Each one is a **separate branch** with **one commit**.
 | T3 | `fix/uae-sana2-explicit-value` | XS | Implemented and published |
 | T4 | `fix/variant-rating-off-ui-thread` | S | Implemented and published |
 | T5 | `fix/arm64-plugin-arch` | S | Implemented and published |
-| T6 | `fix/options-behavior-disconnect` | XS | Pending |
+| T6 | `fix/options-behavior-disconnect` | XS | Implemented and published |
 | T7 | `refactor/floppy-extensions` | S | Pending |
 | T8 | `fix/save-config-empty-name` | XS | Pending |
 | T9 | `fix/textarea-monospace-font` | XS | Pending |

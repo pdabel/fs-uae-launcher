@@ -2517,6 +2517,39 @@ class TestLaunchAndNetplay(WidgetTestCase):
 
 
 class TestDashboard(WidgetTestCase):
+    def test_options_behavior_disconnects_listener_on_destroy(self):
+        from fsui.qt import QWidget
+        from launcher.ui.behaviors import OptionsBehavior
+
+        class FakeOptions:
+            def __init__(self):
+                self.listeners = []
+
+            def add_listener(self, listener):
+                self.listeners.append(listener)
+
+            def remove_listener(self, listener):
+                self.listeners.remove(listener)
+
+            def get(self, name):
+                return "enabled"
+
+        class OptionsWidget(QWidget):
+            def on_x_option(self, value):
+                self.option_value = value
+
+        options = FakeOptions()
+        widget = OptionsWidget()
+        try:
+            behavior = OptionsBehavior(widget, options, ["x"])
+            self.assertEqual(options.listeners, [behavior])
+            self.assertEqual(widget.option_value, "enabled")
+        finally:
+            widget.deleteLater()
+            self.application.sendPostedEvents(None, QEvent.DeferredDelete)
+
+        self.assertEqual(options.listeners, [])
+
     def test_aligned_settings_preserve_values_and_defaults(self):
         from launcher.option import Option
         from launcher.settings.settings_page import SettingsPage
