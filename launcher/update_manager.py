@@ -43,7 +43,7 @@ class UpdateManager:
         else:
             platform = "other"
         url = f"https://fs-uae.net/{cls.series()}/latest-{platform}"
-        r = requests.get(url)
+        r = requests.get(url, timeout=10)
         r.raise_for_status()
         version_str = r.text.strip()
         print("latest version available: ", version_str)
@@ -53,8 +53,7 @@ class UpdateManager:
         if result > 0 and version_str != "9.9.9":
             web_url = f"https://fs-uae.net/{cls.series()}/download/"
             LauncherSignal.broadcast("update_available", version_str, web_url)
-            # FIXME: Thread safety...
-            # FIXME: Use above signal instead
+            # Safe from this worker thread: setting signals are queued for the UI.
             LauncherSettings.set("__update_available", version_str)
 
     @classmethod

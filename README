@@ -507,6 +507,9 @@ For an existing virtual environment, explicitly use its Python interpreter:
 
     $ venv/bin/python fs-uae-launcher
 
+The launcher checks for updates on a worker thread with a 10-second
+connect/read timeout. Request failures are reported in the launcher log.
+
 # About FS-UAE Launcher
 
 FS-UAE Launcher is Copyright (C) 2012-2019 Frode Solheim.

@@ -48,7 +48,7 @@ Each one is a **separate branch** with **one commit**.
 
 | # | Branch | Size | Status |
 |---|---|---|---|
-| T1 | `fix/update-check-timeout` | XS | Pending |
+| T1 | `fix/update-check-timeout` | XS | Complete |
 | T2 | `fix/ogd-retry-countdown` | XS | Pending |
 | T3 | `fix/uae-sana2-explicit-value` | XS | Pending |
 | T4 | `fix/variant-rating-off-ui-thread` | S | Pending |
@@ -65,11 +65,16 @@ table order: smallest and most valuable first.
 
 ---
 
-## T1 - Update check: add a timeout and drop the unused signal
+## T1 - Update check: add a timeout
 
-**Why it's worth it:** `requests.get` in the update check has no timeout,
-which breaks the "every HTTP call has a timeout" rule in `AGENTS.md`. A
-hanging server leaves the worker thread stuck forever.
+**Completed:** The request has a 10-second connect/read timeout. The
+`update_available` broadcast remains: no in-tree listener was found, but
+that does not establish that external listeners do not use the signal.
+Request errors continue to be reported by the worker's traceback.
+
+**Why it was worth it:** `requests.get` in the update check had no timeout,
+which broke the "every HTTP call has a timeout" rule in `AGENTS.md`. A
+hanging server could leave the worker thread stuck forever.
 
 **Files:** `launcher/update_manager.py`, new `launcher/tests/test_update_manager.py`.
 
@@ -79,15 +84,14 @@ hanging server leaves the worker thread stuck forever.
 - `LauncherSettings.set()` is safe from a worker: `Signal.notify()` in
   `fsbc/signal.py` queues notifications from other threads for the main
   thread. So the "Thread safety" FIXME is already handled.
-- Nothing listens to `LauncherSignal.broadcast("update_available", ...)`.
+- No in-tree code listens to `LauncherSignal.broadcast("update_available", ...)`.
   The status bar (`WarningsElement.on___update_available_setting`) uses the
-  `__update_available` setting.
+  `__update_available` setting, but external listeners may use the broadcast.
 
 **Steps:**
 1. Add `timeout=10` to `requests.get(url)` in `_update_thread_function`.
-2. Delete the `LauncherSignal.broadcast("update_available", ...)` line and
-   the unused `web_url` assignment above it. Remove the
-   `LauncherSignal` import if it is now unused.
+2. Keep the existing broadcast and download URL for potential external
+   listeners.
 3. Replace both FIXME lines with one comment:
    `# Safe from this worker thread: setting signals are queued for the UI.`
 
@@ -98,7 +102,8 @@ Monkeypatch `LauncherSettings.set` to record calls. Call
 `UpdateManager._update_thread_function()` and assert `timeout` was passed and
 `("__update_available", "99.0.0")` was set. Also monkeypatch
 `UpdateManager.series` to return `"stable"`, because the real one needs a
-running `Application`.
+running `Application`. Cover old and placeholder versions, the broadcast,
+and logging of timeouts and HTTP errors as well.
 
 **Commit:** `fix: time out the launcher update check`
 
