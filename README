@@ -106,6 +106,9 @@ data stores, see [docs/architecture.md](docs/architecture.md). Remaining
 code-marker work is planned task by task in
 [docs/fixme-implementation-plan.md](docs/fixme-implementation-plan.md).
 
+OpenRetro download failure messages show the retry attempt and the actual
+delay before the next retry.
+
 ## Game Monitor Selection
 
 Quick Settings selects a monitor for the loaded game. This per-game choice is

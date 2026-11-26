@@ -52,11 +52,10 @@ class SynchronizerBase(object):
             except Exception as e:
                 print(e)
                 sleep_time = 2.0 + i * 0.3
-                # FIXME: change second {0} to {1}
                 self.set_status(
                     gettext(
-                        "Download failed (attempt {0}) - retrying in {0} "
-                        "seconds"
+                        "Download failed (attempt {0}) - "
+                        "retrying in {1} seconds"
                     ).format(i + 1, int(sleep_time))
                 )
                 for _ in range(int(sleep_time) * 10):
@@ -77,11 +76,10 @@ class SynchronizerBase(object):
             except Exception as e:
                 print(e)
                 sleep_time = 2.0 + i * 0.3
-                # FIXME: change second {0} to {1}
                 self.set_status(
                     gettext(
-                        "Download failed (attempt {0}) - retrying in {0} "
-                        "seconds"
+                        "Download failed (attempt {0}) - "
+                        "retrying in {1} seconds"
                     ).format(i + 1, int(sleep_time))
                 )
                 for _ in range(int(sleep_time) * 10):

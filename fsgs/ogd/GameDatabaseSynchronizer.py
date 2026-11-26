@@ -300,7 +300,6 @@ class GameDatabaseSynchronizer(object):
             except Exception as e:
                 print(e)
                 sleep_time = 2.0 + i * 0.3
-                # FIXME: change second {0} to {1}
                 self.set_status(
                     gettext(
                         "Download failed (attempt {0}) - "
@@ -325,7 +324,6 @@ class GameDatabaseSynchronizer(object):
             except Exception as e:
                 print(e)
                 sleep_time = 2.0 + i * 0.3
-                # FIXME: change second {0} to {1}
                 self.set_status(
                     gettext(
                         "Download failed (attempt {0}) - "

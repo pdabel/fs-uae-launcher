@@ -49,7 +49,7 @@ Each one is a **separate branch** with **one commit**.
 | # | Branch | Size | Status |
 |---|---|---|---|
 | T1 | `fix/update-check-timeout` | XS | Complete |
-| T2 | `fix/ogd-retry-countdown` | XS | Pending |
+| T2 | `fix/ogd-retry-countdown` | XS | Complete |
 | T3 | `fix/uae-sana2-explicit-value` | XS | Pending |
 | T4 | `fix/variant-rating-off-ui-thread` | S | Pending |
 | T5 | `fix/arm64-plugin-arch` | S | Pending |
@@ -119,7 +119,8 @@ new `fsgs/tests/test_ogd_retry.py`.
 
 **Facts already checked:** every `po/*.po` already has the corrected msgid
 `"Download failed (attempt {0}) - retrying in {1} seconds"` (used by
-`GameDatabaseSynchronizer.py`). Don't edit any `.po` files.
+`GameDatabaseSynchronizer.py`). Serbian and Swedish entries are untranslated
+and fall back to the English msgid. Don't edit any `.po` files.
 
 **Steps:**
 1. In both `fetch_json` and `fetch_data` in `base.py`, change the msgid to
