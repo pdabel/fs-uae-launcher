@@ -48,10 +48,10 @@ Each one is a **separate branch** with **one commit**.
 
 | # | Branch | Size | Status |
 |---|---|---|---|
-| T1 | `fix/update-check-timeout` | XS | Complete |
-| T2 | `fix/ogd-retry-countdown` | XS | Complete |
-| T3 | `fix/uae-sana2-explicit-value` | XS | Complete |
-| T4 | `fix/variant-rating-off-ui-thread` | S | Complete |
+| T1 | `fix/update-check-timeout` | XS | Implemented and published |
+| T2 | `fix/ogd-retry-countdown` | XS | Implemented and published |
+| T3 | `fix/uae-sana2-explicit-value` | XS | Implemented and published |
+| T4 | `fix/variant-rating-off-ui-thread` | S | Implemented and published |
 | T5 | `fix/arm64-plugin-arch` | S | Pending |
 | T6 | `fix/options-behavior-disconnect` | XS | Pending |
 | T7 | `refactor/floppy-extensions` | S | Pending |
@@ -62,6 +62,10 @@ Each one is a **separate branch** with **one commit**.
 
 Tasks are independent and can land in any order. Suggested order is the
 table order: smallest and most valuable first.
+
+T1 through T4 are published as separate branches, not merged. Each task's
+Python suite, formatting, lint and type checks passed; the Qt suite retained
+19 failures also seen on the base branch.
 
 ---
 
