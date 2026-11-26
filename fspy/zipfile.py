@@ -63,7 +63,6 @@ def create_deterministic_archive(
     sz = ZipFile(src, "r")
     # Sort and remove duplicates
     names = sorted(set(sz.namelist()), key=str.lower)
-    # FIXME: Remove non-needed empty directories
     dz = ZipFile(dst, "w")
     for name in names:
         data = sz.read(name)
@@ -82,7 +81,6 @@ def create_deterministic_archive(
         else:
             zinfo.external_attr = (0o644 & 0xFFFF) << 16
             if name.endswith("/"):
-                # FIXME: Check if this is correct?
                 zinfo.external_attr |= 0x10
         try:
             if torrentzip:

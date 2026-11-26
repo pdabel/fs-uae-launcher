@@ -223,7 +223,6 @@ class GameScanner(object):
                 file_list = json.loads(file_list_json)
             except Exception:
                 # invalid JSON string
-                # FIXME: log error
                 all_files_found = False
                 file_list = []
 
@@ -337,7 +336,6 @@ class GameScanner(object):
             published = doc.get("publish", "")
             sort_key = doc.get("sort_key", "")
             if not sort_key:
-                # FIXME: handle the/a (etc)
                 sort_key = game_name.lower()
 
             game_id = existing_game[2]
@@ -542,7 +540,6 @@ class ScanHelper(object):
                 "NULL AND (have IS NULL OR have != (SELECT coalesce(max("
                 "have), 0) FROM game_variant WHERE game_uuid = game.uuid))"
             )
-        # FIXME: Remove this line?
         FileDatabase.get_instance().get_last_event_stamps()
         self.file_stamps["database_locker"] = LauncherSettings.get(
             Option.DATABASE_LOCKER

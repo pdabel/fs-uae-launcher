@@ -104,7 +104,6 @@ class Downloader(object):
     @classmethod
     def install_file_by_sha1(cls, sha1, name, path):
         print("[DOWNLOADER] install_file_by_sha1", sha1)
-        # FIXME: Also find files from file database / plugins
 
         print(repr(path))
         if not os.path.exists(os.path.dirname(path)):
@@ -131,7 +130,6 @@ class Downloader(object):
         cache_path = cls.get_cache_path(sha1)
         if os.path.exists(cache_path):
             print("[CACHE]", cache_path)
-            # FIXME: Atomic copy utility function?
             shutil.copy(cache_path, path)
             # so we later can delete least accessed files in cache...
             os.utime(cache_path, None)

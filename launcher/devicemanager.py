@@ -311,7 +311,6 @@ class DeviceManager:
                     option = Option.get(f"{platform}_port_{port}_type")
                     mode = option["default"]
                 except KeyError:
-                    # FIXME: How to handle?
                     mode = ""
 
             print("mode for", port, "is", mode)
@@ -377,7 +376,6 @@ class DeviceManager:
 
     @classmethod
     def is_mouse_device(cls, type_):
-        # FIXME: Should be put in platform-specific code, here for now.
         return type_ in [
             "mouse",  # Amiga, ...
             "zapper",  # NES

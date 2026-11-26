@@ -90,7 +90,6 @@ def fix_linux_binary(path: str):
     return changes
 
 
-# FIXME: Print warning if excluded libraries is not in this list?
 manylinux2014_whitelist = set(
     [
         "libgcc_s.so.1",

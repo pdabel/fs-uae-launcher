@@ -348,7 +348,6 @@ class ConfigurationsBrowser(fsui.VerticalItemView):
         return text
 
     def get_item_search_text(self, index):
-        # FIXME: lower-case search string?
         return self.items[index][str("sort_key")]
 
     def get_item_text_color(self, index):

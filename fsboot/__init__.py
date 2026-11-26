@@ -337,7 +337,7 @@ def base_dir() -> str:
 
 @lru_cache()
 def development() -> bool:
-    # FIXME: Document option
+    # --development-mode=0 forces release behaviour in a source checkout.
     if "--development-mode=0" in sys.argv:
         return False
     result = os.path.exists(os.path.join(executable_dir(), "pyproject.toml"))

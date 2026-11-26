@@ -89,7 +89,6 @@ class ConnectionTester:
                     self.set_host(result, error)
                 except Exception as e:
                     traceback.print_exc()
-                    # FIXME: handle problem...
                     self.set_host("", repr(e))
             time.sleep(1.0)
 

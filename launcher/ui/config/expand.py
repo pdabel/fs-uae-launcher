@@ -129,7 +129,6 @@ def _chip_memory(c, f):
     elif c.amiga_model == "A1200/PPC":
         value = "2048"
     elif c.amiga_model == "A3000":
-        # FIXME: did it usually have 1 MB?
         value = "2048"
     elif c.amiga_model == "A4000":
         value = "2048"
@@ -212,7 +211,6 @@ def _cpu(c, f):
 
 # noinspection PyUnusedLocal,SpellCheckingInspection,PyUnresolvedReferences
 def _dongle_type(c, f):
-    # FIXME: uae_dongle_type
     if c.dongle_type.explicit:
         c.dongle_type = c.dongle_type.explicit
     else:
@@ -333,7 +331,6 @@ def _fpu(c, f):
 def _freezer_cartridge(c, f):
     if c.freezer_cartridge.explicit:
         c.freezer_cartridge = c.freezer_cartridge.explicit
-        # FIXME: Check valid values
     else:
         c.freezer_cartridge = "0"
 
@@ -341,7 +338,6 @@ def _freezer_cartridge(c, f):
 # noinspection PyUnusedLocal,SpellCheckingInspection,PyUnresolvedReferences
 def _graphics_card(c, f):
     if c.graphics_card.explicit:
-        # FIXME: check supported
         value = c.graphics_card.explicit
     else:
         value = ""
@@ -904,8 +900,7 @@ def _int_uae_boot_rom(c, f):
         value = "true"
     else:
         value = "false"
-    # FIXME: chipmem size > 2 MB
-    # FIXME:
+    # WinUAE also enables the boot ROM in these cases, not ported:
     # if (nr_directory_units (NULL))
     #     return b;
     # if (nr_directory_units (&currprefs))
@@ -964,7 +959,6 @@ def _joystick_port_0_mode(c, f):
     elif c.amiga_model == "CD32":
         value = "cd32 gamepad"
     else:
-        # FIXME: depends on actual device in joystick_port_0...
         value = "mouse"
     c.joystick_port_0_mode = value
 
@@ -976,7 +970,6 @@ def _joystick_port_1_mode(c, f):
     elif c.amiga_model == "CD32":
         value = "cd32 gamepad"
     else:
-        # FIXME: depends on actual device in joystick_port_1...
         value = "joystick"
     c.joystick_port_1_mode = value
 
@@ -986,7 +979,6 @@ def _joystick_port_2_mode(c, f):
     if c.joystick_port_2_mode.explicit:
         value = c.joystick_port_2_mode.explicit
     else:
-        # FIXME: depends on actual device in joystick_port_2...?
         value = "nothing"
     c.joystick_port_2_mode = value
 
@@ -996,7 +988,6 @@ def _joystick_port_3_mode(c, f):
     if c.joystick_port_3_mode.explicit:
         value = c.joystick_port_3_mode.explicit
     else:
-        # FIXME: depends on actual device in joystick_port_3...?
         value = "nothing"
     c.joystick_port_3_mode = value
 
@@ -1026,7 +1017,6 @@ def _motherboard_ram(c, f):
     elif c.int_model == "A3000":
         value = "8192"
     elif c.int_model == "A4000":
-        # FIXME: should PPC / OS4 models be excluded?
         value = "8192"
     else:
         value = "0"
@@ -1036,7 +1026,6 @@ def _motherboard_ram(c, f):
 # noinspection PyUnusedLocal,SpellCheckingInspection,PyUnresolvedReferences
 def _network_card(c, f):
     if c.network_card.explicit:
-        # FIXME: check supported
         value = c.network_card.explicit
         if f.matches(value, "a2065"):
             value = "a2065"
@@ -1067,7 +1056,6 @@ def _slow_memory(c, f):
 # noinspection PyUnusedLocal,SpellCheckingInspection,PyUnresolvedReferences
 def _sound_card(c, f):
     if c.sound_card.explicit:
-        # FIXME: check supported
         value = c.sound_card.explicit
         if f.matches(value, "toccata"):
             value = "toccata"
@@ -1082,9 +1070,7 @@ def _sound_card(c, f):
 # noinspection PyUnusedLocal,SpellCheckingInspection,PyUnresolvedReferences
 def _uae_a2065(c, f):
     if c.uae_a2065.explicit:
-        # FIXME: ok? keep already specified value
         value = c.uae_a2065.explicit
-        # FIXME: check value
     elif c.network_card == "a2065":
         value = "slirp"
     else:
@@ -1112,7 +1098,6 @@ def _uae_bogomem_size(c, f):
 def _uae_bsdsocket_emu(c, f):
     if c.uae_bsdsocket_emu.explicit:
         value = c.uae_bsdsocket_emu.explicit
-        # FIXME: normalize to "true" or "false"
     elif c.bsdsocket_library == "1":
         value = "true"
     else:
@@ -1123,7 +1108,6 @@ def _uae_bsdsocket_emu(c, f):
 # noinspection PyUnusedLocal,SpellCheckingInspection,PyUnresolvedReferences
 def _uae_cd32cd(c, f):
     if c.uae_cd32cd.explicit:
-        # FIXME: boolean
         value = c.uae_cd32cd.explicit
     elif c.int_model == "CD32":
         value = "true"
@@ -1135,7 +1119,6 @@ def _uae_cd32cd(c, f):
 # noinspection PyUnusedLocal,SpellCheckingInspection,PyUnresolvedReferences
 def _uae_cd32fmv(c, f):
     if c.uae_cd32fmv.explicit:
-        # FIXME: boolean
         value = c.uae_cd32fmv.explicit
     elif c.amiga_model == "CD32/FMV":
         value = "true"
@@ -1529,7 +1512,6 @@ def _uae_gfxcard_type(c, f):
         value = "PicassoIV_Z2"
     elif t == "picasso-iv-z3":
         value = "PicassoIV_Z3"
-    # FIXME: cards are missing here
     else:
         f.warning("Unrecognized graphics card: " + t)
         value = ""
@@ -1616,7 +1598,6 @@ def _uae_ppc_model(c, f):
 
 # noinspection PyUnusedLocal,SpellCheckingInspection,PyUnresolvedReferences
 def _uae_rtc(c, f):
-    # FIXME: Blizzard expansions!
     if c.uae_chipset_compatible == "-":
         if c.uae_rtc.explicit:
             value = c.uae_rtc.explicit
@@ -1694,9 +1675,7 @@ def _uae_sana2(c, f):
 # noinspection PyUnusedLocal,SpellCheckingInspection,PyUnresolvedReferences
 def _uae_slirp_implementation(c, f):
     if c.uae_slirp_implementation.explicit:
-        # FIXME: ok? keep already specified value
         value = c.uae_slirp_implementation.explicit
-        # FIXME: check value
     else:
         value = "auto"
     c.uae_slirp_implementation = value
@@ -1743,7 +1722,6 @@ def _uae_z3mem_size(c, f):
 # noinspection PyUnusedLocal,SpellCheckingInspection,PyUnresolvedReferences
 def _uaegfx_card(c, f):
     if c.uaegfx_card.explicit:
-        # FIXME: check boolean
         value = c.uaegfx_card.explicit
     else:
         value = ""

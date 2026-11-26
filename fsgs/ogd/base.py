@@ -3,8 +3,6 @@ import requests
 from fsgs.network import openretro_url_prefix, is_http_url
 from fsgs.res import gettext
 
-# FIXME: Overlap in code/functionality with GameDatabaseSynchronizer
-
 
 class SynchronizerBase(object):
     def __init__(self, context, on_status=None, stop_check=None):

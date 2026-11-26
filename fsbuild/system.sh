@@ -23,7 +23,7 @@ SYSTEM_EXE=
 SYSTEM_DLL=.so
 fi
 
-# FIXME: Deprecated alias
+# Deprecated alias, kept for older scripts
 SYSTEM=$SYSTEM_OS
 
 if [ "$FSBUILD_ARCH" != "" ]; then

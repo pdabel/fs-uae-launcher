@@ -38,7 +38,6 @@ class GameNameUtil(object):
         name = name.replace('"', "'")
         name = name.replace(">>>", " ")
         name = name.replace("<<<", " ")
-        # FIXME: regular expression instead
         for i in range(3):
             name = name.replace("  ", " ")
         while name.endswith("."):
@@ -233,7 +232,6 @@ class GameNameUtil(object):
         name = re.sub("\\[[^\\]]*\\]", "", name)
         return name
 
-    # FIXME: Mark as deprecated
     @classmethod
     def extract_names(cls, path, info=None, style=TOSEC):
         return cls.extract_names_from_file_name(path, info=info, style=style)
@@ -245,7 +243,6 @@ class GameNameUtil(object):
         config_name = ""
 
         name = os.path.basename(path)
-        # FIXME: no longer allowed to send in paths!
         if "/" in path or "\\" in path:
             print(
                 "WARNING: slash (or backslash in extract_names arg:",

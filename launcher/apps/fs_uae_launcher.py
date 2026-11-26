@@ -74,8 +74,6 @@ Options for directly launching games:
   --no-gui                             Do not show launch progress dialog
   --no-auto-detect-game                Do not auto-detect game from archive
 
-TODO: Add more documentation
-
 Or you can execute fs-uae-launcher <command> - where command is one of:
   * arcade                             Launch FS-UAE Arcade
   * list-dirs                          List directories used by the Launcher

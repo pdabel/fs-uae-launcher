@@ -1,4 +1,3 @@
-import os
 import sys
 import time
 import weakref
@@ -89,9 +88,6 @@ class LauncherWindow(WindowWithTabs):
         title = f"{app_name} {Application.instance().version}"
 
         WindowWithTabs.__init__(self, None, title, border=border, menu=False)
-        icon = self.find_icon()
-        if icon:
-            self.set_icon_from_path(icon)
         self.main_layout = fsui.VerticalLayout()
 
         self.books = []
@@ -221,7 +217,6 @@ class LauncherWindow(WindowWithTabs):
             window_handle.setScreen(screens[target])
 
     def on_destroy(self):
-        # FIXME: Is this being run?
         print("LauncherWindow.on_destroy")
         LauncherSignal.remove_listener("scan_done", self)
         LauncherSignal.remove_listener("setting", self)
@@ -234,44 +229,6 @@ class LauncherWindow(WindowWithTabs):
             return
         UpdateManager.run_update_check()
         cls.checked_for_update = True
-
-    def find_icon(self):
-        icon = None
-
-        def check_icon(path):
-            path = os.path.join(path, "fs-uae-launcher.ico")
-            if os.path.exists(path):
-                return path
-            return None
-
-        if not icon:
-            icon = check_icon("share/fs-uae-launcher")
-        if not icon:
-            icon = check_icon("launcher/share/fs-uae-launcher")
-
-        # FIXME: should check data directories (XDG_DATA_DIRS) properly
-        # instead
-        if not icon:
-            # FIXME: this encoding / decoding is a bit ridiculous, but, this is
-            # for Python 2.x..
-            icon = check_icon(
-                os.path.expanduser(
-                    "~/.local/share/fs-uae-launcher".encode(
-                        sys.getfilesystemencoding()
-                    )
-                ).decode(sys.getfilesystemencoding())
-            )
-
-        # FIXME: Check relative to executable instead
-        if not icon:
-            icon = check_icon("/usr/local/share/fs-uae-launcher")
-        if not icon:
-            icon = check_icon("/usr/share/fs-uae-launcher")
-
-        if sys.platform == "darwin":
-            # Icons come from the app bundles
-            icon = None
-        return icon
 
     def on_scan_done_signal(self):
         print("LauncherWindow.on_scan_done_signal")

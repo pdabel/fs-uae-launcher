@@ -134,7 +134,6 @@ class InputDevice(object):
                     configs[parts[-2] + "_" + name] = "fsgs:res/input/" + path
                 configs[name] = "fsgs:res/input/" + path
 
-        # FIXME: fix dependency
         controllers_dir = fsgs.amiga.get_controllers_dir()
         print("read configs from controllers_dir at", controllers_dir)
         if os.path.exists(controllers_dir):

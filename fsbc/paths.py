@@ -41,7 +41,7 @@ class Paths(object):
                     )
             if cmp_path.startswith("$HOME/"):
                 return cls.join(cls.get_home_dir(), path[6:])
-            # FIXME: $base_dir is deprecated
+            # $BASE_DIR is deprecated but still accepted in older configs.
             if cmp_path.startswith("$BASE_DIR/"):
                 return cls.join(cls.get_base_dir(), path[10:])
         elif not os.path.isabs(path) and default_dir is not None:
@@ -152,9 +152,6 @@ class Paths(object):
                 else:
                     raise Exception("could not find case for path " + path)
             k += 1
-
-        # FIXME: could be an idea to always normalize to NFC on OS X too,
-        # to make the database even more portable
 
         # normalizing slashes to forward slash to make the database more
         # portable

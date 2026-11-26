@@ -138,8 +138,6 @@ class LockerUploaderTask(Task):
             try:
                 # this is done to properly handle encrypted ROMs
                 archive = Archive(path)
-                # FIXME: Use Archive.open to get support for filter functions
-                # FIXME: Also use stream api, do not buffer entire file
                 data = ROMManager.decrypt_archive_rom(archive, path)["data"]
             except Exception:
                 traceback.print_exc()
@@ -192,7 +190,6 @@ class LockerUploaderTask(Task):
         )
         file_database = FileDatabase.instance()
         cursor = file_database.cursor()
-        # FIXME: prefix
         p = "0123456789ABCDEF"[prefix]
         cursor.execute(
             "SELECT DISTINCT sha1 FROM file " "WHERE hex(sha1) LIKE ?",

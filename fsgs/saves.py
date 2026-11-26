@@ -7,11 +7,6 @@ from fsgs.FSGSDirectories import FSGSDirectories
 from fsgs.GameChangeHandler import GameChangeHandler
 from fsgs.util.gamenameutil import GameNameUtil
 
-"""
-TODO: Snapshots support. Create a Snapshots/TimeTDate/ directory with a 
-copy of the state dir!
-"""
-
 
 class SaveHandler(object):
     def __init__(
@@ -24,7 +19,6 @@ class SaveHandler(object):
         emulator="",
     ):
         self.fsgc = fsgc
-        # FIXME: SaveHandler(fsgc, options=options) is new usage?
         self._options = options
         self._emulator_specific = False
         self._emulator_name = emulator
@@ -124,7 +118,6 @@ class SaveHandler(object):
 
     def uuid_save_dir_path(self):
         saves_dir = FSGSDirectories.saves_dir()
-        # FIXME: Correct?
         variant_uuid = self.get("variant_uuid")
         if variant_uuid:
             save_dir = os.path.join(
@@ -164,7 +157,6 @@ class SaveHandler(object):
             return
         print("[SAVES] No save data found, erasing save dir!")
         shutil.rmtree(save_dir)
-        # FIXME: Remove UUID/XX dir if empty?
 
     def cleanup_sub_dir(self, sub_dir):
         """Check if there are any files in this directory sub tree. If not,

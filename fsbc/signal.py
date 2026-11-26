@@ -27,14 +27,13 @@ class Listener(object):
     def __init__(self, signal, listener):
         self.description = f"<Listener {listener}>"
 
+        # Legacy listeners implement on_config, on_setting or
+        # on_<signal>_signal instead of being callables.
         if signal == "config":
-            # FIXME: temporary hack for legacy code
             listener = listener.on_config
         elif signal == "setting":
-            # FIXME: temporary hack for legacy code
             listener = listener.on_setting
         try:
-            # FIXME: temporary hack for legacy code
             listener = getattr(listener, "on_" + signal + "_signal")
         except AttributeError:
             pass

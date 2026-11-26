@@ -50,7 +50,7 @@ class FileOutput(object):
         if isinstance(msg, str):
             self.write(msg.encode("UTF-8"))
             return
-        # FIXME: legacy hack, should be removed in the future
+        # Keep database passwords out of the log file.
         if b"database_password" in msg:
             return
 

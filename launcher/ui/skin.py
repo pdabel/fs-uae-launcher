@@ -53,7 +53,6 @@ class Skin(object):
     @classmethod
     @memoize
     def _get_background_color(cls):
-        # FIXME: Rename to launcher_bg/background_color and document.
         value = LauncherSettings.get("ui_background_color")
         if len(value) == 7 and value[0] == "#":
 
@@ -72,8 +71,6 @@ class Skin(object):
         ):
             return None
         elif fsbc.system.windows:
-            # FIXME: Should really just check for Windows XP here, or maybe
-            # just remove it altogether.
             return fsui.Color(LEVEL, LEVEL, LEVEL)
         elif fsbc.system.macosx:
             return fsui.Color(237, 237, 237)

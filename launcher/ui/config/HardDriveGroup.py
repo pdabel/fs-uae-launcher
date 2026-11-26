@@ -104,7 +104,6 @@ class HardDriveGroup(fsui.Panel):
                 print("not calculating HD checksums HD files > 64MB")
         full_path = path
 
-        # FIXME: use contract function
         dir_path, file = os.path.split(path)
         self.text_field.set_text(file)
         if os.path.normcase(os.path.normpath(dir_path)) == os.path.normcase(

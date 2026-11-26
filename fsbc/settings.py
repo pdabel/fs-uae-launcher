@@ -164,7 +164,6 @@ class SettingsProvider:
             traceback.print_exc()
 
     def rewrite_key(self, key):
-        # FIXME: Should be moved to subclass
         try:
             return key_replacement_table[key]
         except KeyError:
@@ -241,7 +240,6 @@ def set_path(path: str) -> None:
     Settings.instance().set_path(path)
 
 
-# FIXME: FS-UAE Launcher specific
 def fix_settings(settings, version_str):
     """Fix settings, based on the version used top save the newly loaded
     settings."""
@@ -252,7 +250,6 @@ def fix_settings(settings, version_str):
             settings.set("fullscreen_mode", "")
 
 
-# FIXME: FS-UAE Launcher specific
 key_replacement_table = {
     "database_arcade": "arcade_database",
     "database_atari": "atari_database",

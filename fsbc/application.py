@@ -131,7 +131,6 @@ class Application(object):
                 os.path.join(self.executable_dir(), "..", "Resources", "share")
             )
         else:
-            # FIXME: $XDG_DATA_DIRS, $XDG_DATA_HOME
             base_dirs.append(
                 os.path.normpath(
                     os.path.join(self.executable_dir(), "..", "share")

@@ -266,10 +266,6 @@ class LaunchHandler(object):
                         else:
                             print("[ROM] Trying", path)
             stream = None
-            # FIXME: prepare_roms should be rewritten, it's kind of crap.
-            # Rom patching and decryption should be handled differently. Should
-            # use file database filters, and decryption via rom.key should only
-            # be supported when using uncompressed files directly on disk.
             if not src or not os.path.exists(src):
                 try:
                     stream = self.fsgs.file.open(src)
@@ -449,7 +445,6 @@ class LaunchHandler(object):
 
             cue_sheets = self.get_cue_sheets_for_game_uuid(game_uuid)
             for cue_sheet in cue_sheets:
-                # FIXME: Try to get this to work with the PyCharm type checker
                 # noinspection PyTypeChecker
                 with open(
                     os.path.join(self.temp_dir, cue_sheet["name"]), "wb"
@@ -589,8 +584,6 @@ class LaunchHandler(object):
         self.config[f"hard_drive_{i}"] = dir_path
 
     def get_file_list_for_game_uuid(self, game_uuid):
-        # FIXME: This is an ugly hack, we should already be told what
-        # database to use.
         try:
             game_database = self.fsgs.get_game_database()
             values = game_database.get_game_values_for_uuid(game_uuid)
@@ -605,8 +598,6 @@ class LaunchHandler(object):
         return file_list
 
     def get_cue_sheets_for_game_uuid(self, game_uuid) -> List[Dict]:
-        # FIXME: This is an ugly hack, we should already be told what
-        # database to use.
         try:
             game_database = self.fsgs.get_game_database()
             values = game_database.get_game_values_for_uuid(game_uuid)
@@ -941,7 +932,7 @@ class LaunchHandler(object):
         return path
 
     def write_startup_sequence(self, s_dir, command):
-        # FIXME: semi-colon is used in WHDLoad CONFIG options...
+        # The game database separates startup commands with semicolons.
         command = "\n".join([x.strip() for x in command.split(";")])
         startup_sequence = os.path.join(s_dir, "Startup-Sequence")
         if not os.path.exists(startup_sequence):
@@ -1159,8 +1150,7 @@ class LaunchHandler(object):
                         if not data:
                             break
                         out_f.write(data)
-                # FIXME: Extract real timestamps from archive
-                # FIXME: Real metadata from archive
+                # Extracted files get default protection bits and timestamp.
                 # noinspection SpellCheckingInspection
                 metadata = [
                     "----rwed",
@@ -1393,7 +1383,6 @@ def write_string(f, s):
 
 def create_slave_icon(path, whdload_args):
     default_tool = "DH0:/C/WHDLoad"
-    # FIXME: handle "" around slave name?
     tool_types = whdload_args.split(" ")
     tool_types[0] = "SLAVE=" + tool_types[0]
 

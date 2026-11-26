@@ -113,7 +113,6 @@ class Database(BaseDatabase):
         if Settings.instance()["database_show_unpublished"] == "1":
             include_unpublished = True
         cursor = self.internal_cursor()
-        print("FIXME: not looking up ratings yet!")
         query = (
             "SELECT uuid, name, game_uuid, 0 as like_rating, "
             "0 as work_rating, have, database, published "

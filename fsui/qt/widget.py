@@ -202,7 +202,6 @@ class Widget(QObject):
     def popup_menu(self, menu, pos=(0, 0), blocking=True):
         # popup does not block, and if menu goes out of the scope of the
         # caller, it will disappear (unless we keep a reference here
-        # FIXME: using exec now
         widget = getattr(self, "_widget", self)
         global_pos = widget.mapToGlobal(QPoint(pos[0], pos[1]))
         menu.set_parent(self)

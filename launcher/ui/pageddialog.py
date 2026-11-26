@@ -53,7 +53,6 @@ class PagedDialog(fsui.Window):
 
         use_scrolling = False
         if use_scrolling:
-            # FIXME: Problems with page height
             scroll_area = fsui.VerticalScrollArea(self)
             self.page_container = fsui.Panel(scroll_area)
             self.page_container.layout = fsui.VerticalLayout()

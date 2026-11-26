@@ -196,7 +196,7 @@ class InputSelector(fsui.Group):
                             self.device_choice.enable(i != 0)
                     break
             else:
-                print("FIXME: could not set mode")
+                print("[INPUT] Unknown port mode", value)
         elif key == self.device_option_key or key == "amiga_model":
             value_lower = value.lower()
             for i, name in enumerate(self.joystick_values):

@@ -118,9 +118,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
         cls.load_settings()
         StartupScan.config_startup_scan()
         StartupScan.kickstart_startup_scan()
-        # FIXME: should now sanitize check some options -for instance,
-        # - check if configured joysticks are still connected
-        # - check if paths still exists, etc
         cls.load_plugins()
 
     @classmethod
@@ -143,9 +140,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
         floppy_extensions = (".adf", ".ipf", ".dms", ".adz")
         cdrom_extensions = (".cue", ".iso")
         archive_extensions = (".zip", ".lha")
-
-        # FIXME: replace argument "parsing" with use of argparse module
-        # at some point
 
         last_arg = sys.argv[-1]
         file_ext = os.path.splitext(last_arg)[-1].lower()
@@ -191,7 +185,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
                 floppy_image_paths = arc_files
             else:
                 if cls.auto_detect_game:
-                    # FIXME: Could also do this for floppy file archives.
                     archive_util = ArchiveUtil(archive_path)
                     archive_uuid = archive_util.create_variant_uuid()
                     print(
@@ -231,7 +224,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
                 {f"floppy_drive_{k}": v for k, v in enum_paths[:max_drives]}
             )
             values.update({f"floppy_image_{k}": v for k, v in enum_paths[:20]})
-            # FIXME: Generate a better config name for save dir?
             values["__config_name"] = "Default"
             return cls.run_config_directly_with_values(values)
 
@@ -244,7 +236,6 @@ class LauncherApp(ApplicationMixin, fsui.Application):
                 {f"cdrom_drive_{k}": v for k, v in enum_paths[:max_drives]}
             )
             values.update({f"cdrom_image_{k}": v for k, v in enum_paths[:20]})
-            # FIXME: Generate a better config name for save dir?
             values["__config_name"] = "Default"
             return cls.run_config_directly_with_values(values)
 
@@ -603,7 +594,7 @@ class LauncherApp(ApplicationMixin, fsui.Application):
         return config
 
 
-# FIXME: Files to clean up:
+# Files left behind by older versions, not cleaned up automatically:
 # Documents/FS-UAE/Cache/File Database.sqlite
 # Documents/FS-UAE/Data/Game Database.sqlite
 # Documents/FS-UAE/Data/Launcher.sqlite

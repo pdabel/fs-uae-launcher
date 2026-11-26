@@ -115,7 +115,7 @@ class GameDatabaseSynchronizer(object):
 
         version_node = ElementTree.Element("version")
         header_node.append(version_node)
-        version_node.text = "2000-01-01"  # FIXME
+        version_node.text = "2000-01-01"
         version_node.tail = "\n\t\t"
 
         author_node = ElementTree.Element("author")

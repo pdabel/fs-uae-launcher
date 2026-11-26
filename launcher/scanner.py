@@ -40,7 +40,6 @@ class Scanner:
             traceback.print_exc()
 
         def on_done():
-            # FIXME: these should be removed soon
             LauncherSettings.set("last_scan", str(time.time()))
             LauncherSettings.set("__config_refresh", str(time.time()))
 

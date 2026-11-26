@@ -365,7 +365,6 @@ class WarningsElement(StatusElement):
             self.warnings.append((ERROR_LEVEL, self.variant_error, ""))
 
     def add_config_warnings(self):
-        # FIXME: move such warnings to config model code instead
         if (
             self.chip_memory_calculated
             and self.chip_memory_calculated < 2048
@@ -390,7 +389,6 @@ class WarningsElement(StatusElement):
         from fsui.qt import QCursor
 
         # noinspection PyArgumentList
-        # FIXME: Remove direct Qt dependency
         p = self._widget.mapFromGlobal(QCursor.pos())
         for start, stop, handler in self.coordinates:
             if start <= p.x() < stop and handler:
@@ -401,8 +399,6 @@ class WarningsElement(StatusElement):
 
     def on_outdated_plugins(self):
         dialog = SettingsDialog.open(self.get_window())
-        # FIXME: Move code to settings dialog, so we can open the page with
-        # a method/constant or method instead of a name.
         dialog.set_page_by_title(gettext("Plugins"))
 
     # noinspection PyMethodMayBeStatic
@@ -437,8 +433,6 @@ class WarningsElement(StatusElement):
 
     def on_advanced_settings(self):
         dialog = SettingsDialog.open(self.get_window())
-        # FIXME: Move code to settings dialog, so we can open the page with
-        # a method/constant or method instead of a name.
         print("Config keys in settings:", self.settings_config_keys)
         dialog.set_page_by_title(gettext("Advanced Settings"))
 

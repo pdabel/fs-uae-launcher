@@ -42,14 +42,28 @@ This file is a review-only inventory of tracked `TODO` and `FIXME` markers in th
 - Non-actionable archive metadata API comments were removed without changing
   that API.
 
+## Priority 5 status
+
+- **Status:** Triage complete.
+- Every remaining marker was checked against the code. Stale, speculative,
+  already-handled and dead-code markers were removed or replaced with plain
+  notes; dead icon lookup code and an unused `ModelGroup` parameter went
+  with them.
+- 25 source markers remain, all worth fixing. They are split into 11
+  independent branches, each with steps and tests, in
+  [fixme-implementation-plan.md](fixme-implementation-plan.md). Its
+  "Not worth implementing" table records why the rest were dropped.
+- The older review sections below describe the tree before this triage;
+  the Entries list at the end is current.
+
 ## Scope
 
-- **Tracked matches:** 219
-- **Tracked files:** 93
-- **Source:** `git grep -n -I -E '\b(TODO|FIXME)\b'` across tracked files, excluding this generated inventory
+- **Tracked matches:** 35
+- **Tracked files:** 21
+- **Source:** `git grep -n -I -E '\b(TODO|FIXME)\b'` across tracked files, excluding this generated inventory and the implementation plan
 - **Generated:** 2026-11-23
-- **Updated:** 2026-11-25 for WP1 and WP2
-- **Intentionally excluded:** untracked files, binaries excluded by `git grep -I`, dependency/environment directories such as `venv-*`, and this inventory itself
+- **Updated:** 2026-11-25 for WP1 and WP2; 2026-11-26 for Priority 5 triage
+- **Intentionally excluded:** untracked files, binaries excluded by `git grep -I`, dependency/environment directories such as `venv-*`, this inventory and `fixme-implementation-plan.md`
 
 References in documentation are included as matches, but are not necessarily implementation markers. Inspect each entry before deciding whether it should be implemented, removed, or replanned.
 
@@ -205,10 +219,6 @@ The following markers should remain unimplemented unless requirements change:
 
 - [L102](../README#L102) — **TODO** — <code>See [the Python and dependency modernization TODO](docs/python-dependency-modernization.md)</code>
 
-### `docs/dead-code-cleanup.md`
-
-- [L106](./dead-code-cleanup.md#L106) — **FIXME** — <code>- the ROM and Workbench file name labels, and the &#96;FIXME: Files to clean up&#96; path list in &#96;launcherapp.py&#96;</code>
-
 ### `docs/netplay-go-server-design.md`
 
 - [L88](./netplay-go-server-design.md#L88) — **FIXME** — <code>This was found in the field, not by reading: the launcher&#x27;s Host Game button builds &#96;/hostgame &lt;host&gt;:&lt;port&gt; &lt;players&gt;&#96; with no password (&#96;netplay_panel.py&#96;), so every game hosted that way was rejected with &#96;ERROR_WRONG_PASSWORD&#96; — and because &#96;fs_emu_netplay_on_disconnect&#96; warns and then continues in offline mode (&#96;netplay.c:270&#96;, its own &#96;FIXME&#96;), both emulators ran *separate local games* that looked like netplay with no input ever relayed. Checked against &#96;game.py&#96; side by side afterwards, both started exactly as &#96;Server.start()&#96; does with no &#96;--password&#96; and both clients sending four zero bytes: Python joined both players and relayed both input events, and the Go server now does the same. The offline-mode fallback itself is unchanged pre-existing client behaviour, reachable against either server on any handshake rejection or mid-game disconnect; it only became visible because the server was rejecting everyone.</code>
@@ -220,174 +230,27 @@ The following markers should remain unimplemented unless requirements change:
 
 - [L1](./python-dependency-modernization.md#L1) — **TODO** — <code># Python and Dependency Modernization TODO</code>
 
-### `docs/whdload-support.md`
-
-- [L65](./whdload-support.md#L65) — **FIXME** — <code>FIXME: Write about launching games using game / variant UUIDs.</code>
-
-### `fsbc/application.py`
-
-- [L134](../fsbc/application.py#L134) — **FIXME** — <code># FIXME: $XDG_DATA_DIRS, $XDG_DATA_HOME</code>
-
-### `fsbc/logging.py`
-
-- [L53](../fsbc/logging.py#L53) — **FIXME** — <code># FIXME: legacy hack, should be removed in the future</code>
-
-### `fsbc/paths.py`
-
-- [L44](../fsbc/paths.py#L44) — **FIXME** — <code># FIXME: $base_dir is deprecated</code>
-- [L156](../fsbc/paths.py#L156) — **FIXME** — <code># FIXME: could be an idea to always normalize to NFC on OS X too,</code>
-
-### `fsbc/settings.py`
-
-- [L167](../fsbc/settings.py#L167) — **FIXME** — <code># FIXME: Should be moved to subclass</code>
-- [L244](../fsbc/settings.py#L244) — **FIXME** — <code># FIXME: FS-UAE Launcher specific</code>
-- [L255](../fsbc/settings.py#L255) — **FIXME** — <code># FIXME: FS-UAE Launcher specific</code>
-
-### `fsbc/signal.py`
-
-- [L31](../fsbc/signal.py#L31) — **FIXME** — <code># FIXME: temporary hack for legacy code</code>
-- [L34](../fsbc/signal.py#L34) — **FIXME** — <code># FIXME: temporary hack for legacy code</code>
-- [L37](../fsbc/signal.py#L37) — **FIXME** — <code># FIXME: temporary hack for legacy code</code>
-
-### `fsbc/util.py`
-
-- [L35](../fsbc/util.py#L35) — **FIXME** — <code># FIXME: Log warning here</code>
-- [L46](../fsbc/util.py#L46) — **FIXME** — <code># FIXME: Log warning here</code>
-- [L47](../fsbc/util.py#L47) — **FIXME** — <code># FIXME: will not happen here.. se above type error?</code>
-
-### `fsboot/__init__.py`
-
-- [L340](../fsboot/__init__.py#L340) — **FIXME** — <code># FIXME: Document option</code>
-
 ### `fsbuild/__init__.py`
 
 - [L112](../fsbuild/__init__.py#L112) — **FIXME** — <code>arch = &quot;x86-64&quot;  # FIXME</code>
 
-### `fsbuild/plugin.pre.sh`
-
-- [L18](../fsbuild/plugin.pre.sh#L18) — **FIXME** — <code># FIXME: Deprecate $EXE (Use $SYSTEM_EXE instead)</code>
-
-### `fsbuild/standalone.py`
-
-- [L93](../fsbuild/standalone.py#L93) — **FIXME** — <code># FIXME: Print warning if excluded libraries is not in this list?</code>
-
-### `fsbuild/system.sh`
-
-- [L26](../fsbuild/system.sh#L26) — **FIXME** — <code># FIXME: Deprecated alias</code>
-
-### `fsgs/Config.py`
-
-- [L73](../fsgs/Config.py#L73) — **FIXME** — <code># FIXME: re-introduce support for key priority if necessary</code>
-
-### `fsgs/Database.py`
-
-- [L116](../fsgs/Database.py#L116) — **FIXME** — <code>print(&quot;FIXME: not looking up ratings yet!&quot;)</code>
-
-### `fsgs/FSGameSystemContext.py`
-
-- [L36](../fsgs/FSGameSystemContext.py#L36) — **FIXME** — <code># FIXME: check_sha1 should check with PluginManager directly?</code>
-- [L88](../fsgs/FSGameSystemContext.py#L88) — **FIXME** — <code># FIXME: check_sha1 should check with PluginManager directly?</code>
-- [L99](../fsgs/FSGameSystemContext.py#L99) — **FIXME** — <code># FIXME: better name</code>
-- [L166](../fsgs/FSGameSystemContext.py#L166) — **FIXME** — <code># FIXME: custom exception here</code>
-- [L326](../fsgs/FSGameSystemContext.py#L326) — **FIXME** — <code># FIXME</code>
-- [L340](../fsgs/FSGameSystemContext.py#L340) — **FIXME** — <code># FIXME: remove dependency</code>
-- [L364](../fsgs/FSGameSystemContext.py#L364) — **FIXME** — <code># FIXME: Merge code with VariantsBrowser.py</code>
-- [L376](../fsgs/FSGameSystemContext.py#L376) — **FIXME** — <code># FIXME: name replacement needed any more?</code>
-- [L454](../fsgs/FSGameSystemContext.py#L454) — **FIXME** — <code># FIXME: REMOVE? use config[game_name] instead?</code>
-- [L456](../fsgs/FSGameSystemContext.py#L456) — **FIXME** — <code># FIXME: REMOVE? use config[game_uuid] instead?</code>
-
-### `fsgs/GameChangeHandler.py`
-
-- [L5](../fsgs/GameChangeHandler.py#L5) — **TODO** — <code># TODO: review the algorithm and add support for saving information about</code>
-
-### `fsgs/LockerDatabase.py`
-
-- [L5](../fsgs/LockerDatabase.py#L5) — **FIXME** — <code># FIXME: remove dependency on launcher, have the Launcher tell this class</code>
-- [L33](../fsgs/LockerDatabase.py#L33) — **FIXME** — <code># FIXME: Replace with EXISTS or something</code>
-
-### `fsgs/SignalContext.py`
-
-- [L37](../fsgs/SignalContext.py#L37) — **FIXME** — <code># FIXME: use fsgs-context-instance-specific signals</code>
-- [L49](../fsgs/SignalContext.py#L49) — **FIXME** — <code># FIXME: Deprecated</code>
-
-### `fsgs/amiga/amiga.py`
-
-- [L20](../fsgs/amiga/amiga.py#L20) — **FIXME** — <code># FIXME: setting fake checksum, for now</code>
-
 ### `fsgs/amiga/amigacontext.py`
 
-- [L75](../fsgs/amiga/amigacontext.py#L75) — **FIXME** — <code># FIXME: get list of floppy extensions from a central</code>
-- [L126](../fsgs/amiga/amigacontext.py#L126) — **FIXME** — <code># FIXME: dependency loop</code>
-- [L130](../fsgs/amiga/amigacontext.py#L130) — **FIXME** — <code># FIXME: dependency loop</code>
-- [L134](../fsgs/amiga/amigacontext.py#L134) — **FIXME** — <code># FIXME: dependency loop</code>
-- [L138](../fsgs/amiga/amigacontext.py#L138) — **FIXME** — <code># FIXME: dependency loop</code>
-- [L142](../fsgs/amiga/amigacontext.py#L142) — **FIXME** — <code># FIXME: dependency loop</code>
-- [L146](../fsgs/amiga/amigacontext.py#L146) — **FIXME** — <code># FIXME: dependency loop</code>
+- [L210](../fsgs/amiga/amigacontext.py#L210) — **FIXME** — <code># FIXME: get list of floppy extensions from a central</code>
 
 ### `fsgs/amiga/fsuaeamigadriver.py`
 
-- [L21](../fsgs/amiga/fsuaeamigadriver.py#L21) — **FIXME** — <code># FIXME: NO_DEVICE</code>
-- [L37](../fsgs/amiga/fsuaeamigadriver.py#L37) — **FIXME** — <code># FIXME: ADDITIONAL PORTS...</code>
-- [L131](../fsgs/amiga/fsuaeamigadriver.py#L131) — **FIXME** — <code># FIXME: Now assuming that all games are PAL / 50 Hz</code>
-
-### `fsgs/amiga/launchhandler.py`
-
-- [L269](../fsgs/amiga/launchhandler.py#L269) — **FIXME** — <code># FIXME: prepare_roms should be rewritten, it&#x27;s kind of crap.</code>
-- [L452](../fsgs/amiga/launchhandler.py#L452) — **FIXME** — <code># FIXME: Try to get this to work with the PyCharm type checker</code>
-- [L592](../fsgs/amiga/launchhandler.py#L592) — **FIXME** — <code># FIXME: This is an ugly hack, we should already be told what</code>
-- [L608](../fsgs/amiga/launchhandler.py#L608) — **FIXME** — <code># FIXME: This is an ugly hack, we should already be told what</code>
-- [L944](../fsgs/amiga/launchhandler.py#L944) — **FIXME** — <code># FIXME: semi-colon is used in WHDLoad CONFIG options...</code>
-- [L1162](../fsgs/amiga/launchhandler.py#L1162) — **FIXME** — <code># FIXME: Extract real timestamps from archive</code>
-- [L1163](../fsgs/amiga/launchhandler.py#L1163) — **FIXME** — <code># FIXME: Real metadata from archive</code>
-- [L1396](../fsgs/amiga/launchhandler.py#L1396) — **FIXME** — <code># FIXME: handle &quot;&quot; around slave name?</code>
-
-### `fsgs/amiga/valueconfigloader.py`
-
-- [L1](../fsgs/amiga/valueconfigloader.py#L1) — **FIXME** — <code># FIXME: send fsgs as parameter to ValueConfigLoader instead</code>
-- [L234](../fsgs/amiga/valueconfigloader.py#L234) — **FIXME** — <code># FIXME: print warning</code>
-- [L278](../fsgs/amiga/valueconfigloader.py#L278) — **FIXME** — <code># FIXME: handle</code>
-- [L382](../fsgs/amiga/valueconfigloader.py#L382) — **FIXME** — <code># FIXME: hack for now</code>
-- [L421](../fsgs/amiga/valueconfigloader.py#L421) — **FIXME** — <code>#  FIXME: handle it with a visible error message</code>
-
-### `fsgs/amiga/whdload.py`
-
-- [L129](../fsgs/amiga/whdload.py#L129) — **FIXME** — <code># FIXME: Should MAG be included?</code>
-
-### `fsgs/download.py`
-
-- [L107](../fsgs/download.py#L107) — **FIXME** — <code># FIXME: Also find files from file database / plugins</code>
-- [L134](../fsgs/download.py#L134) — **FIXME** — <code># FIXME: Atomic copy utility function?</code>
-
-### `fsgs/drivers/gamedriver.py`
-
-- [L31](../fsgs/drivers/gamedriver.py#L31) — **FIXME** — <code># FIXME: Store warning and show in some kind of launch log</code>
-- [L133](../fsgs/drivers/gamedriver.py#L133) — **FIXME** — <code># FIXME: MOVE TO Port CONSTRUCTOR</code>
-- [L139](../fsgs/drivers/gamedriver.py#L139) — **FIXME** — <code># FIXME: MOVE CODE TO port CLASS</code>
-- [L433](../fsgs/drivers/gamedriver.py#L433) — **FIXME** — <code># FIXME: create new API fsgc.file.path(file_uri), returns path</code>
-- [L584](../fsgs/drivers/gamedriver.py#L584) — **FIXME** — <code># FIXME: REMOVE</code>
-- [L588](../fsgs/drivers/gamedriver.py#L588) — **FIXME** — <code># FIXME: REMOVE</code>
-- [L804](../fsgs/drivers/gamedriver.py#L804) — **FIXME** — <code># FIXME: if development_mode ?</code>
-- [L869](../fsgs/drivers/gamedriver.py#L869) — **FIXME** — <code># FIXME: remove</code>
-
-### `fsgs/filedatabase.py`
-
-- [L134](../fsgs/filedatabase.py#L134) — **FIXME** — <code># FIXME: Is the count necessary? ref query below, or do we</code>
-
-### `fsgs/input/inputdevice.py`
-
-- [L137](../fsgs/input/inputdevice.py#L137) — **FIXME** — <code># FIXME: fix dependency</code>
+- [L129](../fsgs/amiga/fsuaeamigadriver.py#L129) — **FIXME** — <code># FIXME: Now assuming that all games are PAL / 50 Hz</code>
 
 ### `fsgs/ogd/GameDatabaseSynchronizer.py`
 
-- [L118](../fsgs/ogd/GameDatabaseSynchronizer.py#L118) — **FIXME** — <code>version_node.text = &quot;2000-01-01&quot;  # FIXME</code>
 - [L303](../fsgs/ogd/GameDatabaseSynchronizer.py#L303) — **FIXME** — <code># FIXME: change second {0} to {1}</code>
 - [L328](../fsgs/ogd/GameDatabaseSynchronizer.py#L328) — **FIXME** — <code># FIXME: change second {0} to {1}</code>
 
 ### `fsgs/ogd/base.py`
 
-- [L6](../fsgs/ogd/base.py#L6) — **FIXME** — <code># FIXME: Overlap in code/functionality with GameDatabaseSynchronizer</code>
-- [L57](../fsgs/ogd/base.py#L57) — **FIXME** — <code># FIXME: change second {0} to {1}</code>
-- [L82](../fsgs/ogd/base.py#L82) — **FIXME** — <code># FIXME: change second {0} to {1}</code>
+- [L55](../fsgs/ogd/base.py#L55) — **FIXME** — <code># FIXME: change second {0} to {1}</code>
+- [L80](../fsgs/ogd/base.py#L80) — **FIXME** — <code># FIXME: change second {0} to {1}</code>
 
 ### `fsgs/plugins/pluginexecutablefinder.py`
 
@@ -403,285 +266,36 @@ The following markers should remain unimplemented unless requirements change:
 - [L219](../fsgs/refreshratetool.py#L219) — **FIXME** — <code># FIXME:</code>
 - [L226](../fsgs/refreshratetool.py#L226) — **FIXME** — <code>print(&quot;FIXME: Currently disabled set_mode&quot;)</code>
 
-### `fsgs/saves.py`
-
-- [L11](../fsgs/saves.py#L11) — **TODO** — <code>TODO: Snapshots support. Create a Snapshots/TimeTDate/ directory with a</code>
-- [L27](../fsgs/saves.py#L27) — **FIXME** — <code># FIXME: SaveHandler(fsgc, options=options) is new usage?</code>
-- [L127](../fsgs/saves.py#L127) — **FIXME** — <code># FIXME: Correct?</code>
-- [L167](../fsgs/saves.py#L167) — **FIXME** — <code># FIXME: Remove UUID/XX dir if empty?</code>
-
-### `fsgs/util/archiveutil.py`
-
-- [L60](../fsgs/util/archiveutil.py#L60) — **FIXME** — <code># FIXME: Create a uaem metadata helper class</code>
-
-### `fsgs/util/gamenameutil.py`
-
-- [L41](../fsgs/util/gamenameutil.py#L41) — **FIXME** — <code># FIXME: regular expression instead</code>
-- [L236](../fsgs/util/gamenameutil.py#L236) — **FIXME** — <code># FIXME: Mark as deprecated</code>
-- [L248](../fsgs/util/gamenameutil.py#L248) — **FIXME** — <code># FIXME: no longer allowed to send in paths!</code>
-
-### `fspy/zipfile.py`
-
-- [L66](../fspy/zipfile.py#L66) — **FIXME** — <code># FIXME: Remove non-needed empty directories</code>
-- [L85](../fspy/zipfile.py#L85) — **FIXME** — <code># FIXME: Check if this is correct?</code>
-
-### `fsui/common/layout.py`
-
-- [L90](../fsui/common/layout.py#L90) — **FIXME** — <code># FIXME: Rename margin -&gt; margins (+ alias), margin_top -&gt; top, etc</code>
-- [L170](../fsui/common/layout.py#L170) — **FIXME** — <code># FIXME: avoid calling update after both set_position and set_size</code>
-
-### `fsui/qt/Button.py`
-
-- [L22](../fsui/qt/Button.py#L22) — **FIXME** — <code># FIXME: Remove</code>
-
 ### `fsui/qt/ComboBox.py`
 
 - [L10](../fsui/qt/ComboBox.py#L10) — **FIXME** — <code>&quot;FIXME: ComboBox not respecting read_only&quot;</code>
-
-### `fsui/qt/Icon.py`
-
-- [L8](../fsui/qt/Icon.py#L8) — **FIXME** — <code>FIXME: Add support for icon search path, so, during startup, a list</code>
-
-### `fsui/qt/ImageButton.py`
-
-- [L28](../fsui/qt/ImageButton.py#L28) — **FIXME** — <code># FIXME: Remove</code>
 
 ### `fsui/qt/TextArea.py`
 
 - [L18](../fsui/qt/TextArea.py#L18) — **FIXME** — <code>print(&quot;FIXME: not respecting font_family yet&quot;)</code>
 
-### `fsui/qt/dialogwindow.py`
-
-- [L8](../fsui/qt/dialogwindow.py#L8) — **FIXME** — <code># FIXME: Intercept escape key and make it close the dialog window</code>
-
-### `fsui/qt/label.py`
-
-- [L18](../fsui/qt/label.py#L18) — **FIXME** — <code># FIXME: make Label more plain, and rather make a InteractiveLabel</code>
-
-### `fsui/qt/widget.py`
-
-- [L205](../fsui/qt/widget.py#L205) — **FIXME** — <code># FIXME: using exec now</code>
-
-### `fsui/qt/widget_mixin.py`
-
-- [L202](../fsui/qt/widget_mixin.py#L202) — **FIXME** — <code># FIXME: using exec now</code>
-
-### `fsui/qt/window.py`
-
-- [L194](../fsui/qt/window.py#L194) — **FIXME** — <code># FIXME</code>
-- [L261](../fsui/qt/window.py#L261) — **FIXME** — <code># FIXME: Is this used?</code>
-- [L439](../fsui/qt/window.py#L439) — **FIXME** — <code>print(&quot;FIXME: Window.set_icon_from_path&quot;)</code>
-
-### `fsui/qt/windowbase.py`
-
-- [L71](../fsui/qt/windowbase.py#L71) — **FIXME** — <code>print(&quot;FIXME: Window.set_icon_from_path&quot;)</code>
-
-### `launcher/apps/fs_uae_launcher.py`
-
-- [L77](../launcher/apps/fs_uae_launcher.py#L77) — **TODO** — <code>TODO: Add more documentation</code>
-
-### `launcher/configuration_scanner.py`
-
-- [L58](../launcher/configuration_scanner.py#L58) — **FIXME** — <code># FIXME: try splitting name into name, variant pair, and</code>
-
-### `launcher/database_refresh.py`
-
-- [L54](../launcher/database_refresh.py#L54) — **FIXME** — <code># FIXME: review what signals should be sent when a scan is performed</code>
-- [L55](../launcher/database_refresh.py#L55) — **FIXME** — <code># FIXME: these should be removed soon</code>
-
-### `launcher/devicemanager.py`
-
-- [L314](../launcher/devicemanager.py#L314) — **FIXME** — <code># FIXME: How to handle?</code>
-- [L380](../launcher/devicemanager.py#L380) — **FIXME** — <code># FIXME: Should be put in platform-specific code, here for now.</code>
-
-### `launcher/filescanner.py`
-
-- [L209](../launcher/filescanner.py#L209) — **FIXME** — <code># FIXME: NES header hack. Would be better to add a proper notion of</code>
-- [L211](../launcher/filescanner.py#L211) — **FIXME** — <code># FIXME: This will confuse some functionality, such as the</code>
-- [L222](../launcher/filescanner.py#L222) — **FIXME** — <code># FIXME: Check if 128 is a fixed or variable number of bytes</code>
-- [L317](../launcher/filescanner.py#L317) — **FIXME** — <code># FIXME: Enable use of filter mechanism for Cloanto ROMs</code>
-- [L329](../launcher/filescanner.py#L329) — **FIXME** — <code># FIXME: size is incorrect here -- it&#x27;s the size of the parent</code>
-
 ### `launcher/floppy_manager.py`
 
 - [L55](../launcher/floppy_manager.py#L55) — **FIXME** — <code># FIXME: get list of floppy extensions from a central</code>
-
-### `launcher/gamescanner.py`
-
-- [L226](../launcher/gamescanner.py#L226) — **FIXME** — <code># FIXME: log error</code>
-- [L340](../launcher/gamescanner.py#L340) — **FIXME** — <code># FIXME: handle the/a (etc)</code>
-- [L545](../launcher/gamescanner.py#L545) — **FIXME** — <code># FIXME: Remove this line?</code>
-
-### `launcher/launcher_config.py`
-
-- [L68](../launcher/launcher_config.py#L68) — **FIXME** — <code>(&quot;__version&quot;, &quot;FIXME&quot;),</code>
-- [L577](../launcher/launcher_config.py#L577) — **FIXME** — <code># FIXME: errors should be logged / displayed</code>
-- [L588](../launcher/launcher_config.py#L588) — **FIXME** — <code># FIXME: errors should be logged / displayed</code>
-- [L839](../launcher/launcher_config.py#L839) — **FIXME** — <code># FIXME: parent</code>
-- [L930](../launcher/launcher_config.py#L930) — **FIXME** — <code># FIXME: Set changed!</code>
-
-### `launcher/launcherapp.py`
-
-- [L121](../launcher/launcherapp.py#L121) — **FIXME** — <code># FIXME: should now sanitize check some options -for instance,</code>
-- [L147](../launcher/launcherapp.py#L147) — **FIXME** — <code># FIXME: replace argument &quot;parsing&quot; with use of argparse module</code>
-- [L194](../launcher/launcherapp.py#L194) — **FIXME** — <code># FIXME: Could also do this for floppy file archives.</code>
-- [L234](../launcher/launcherapp.py#L234) — **FIXME** — <code># FIXME: Generate a better config name for save dir?</code>
-- [L247](../launcher/launcherapp.py#L247) — **FIXME** — <code># FIXME: Generate a better config name for save dir?</code>
-- [L606](../launcher/launcherapp.py#L606) — **FIXME** — <code># FIXME: Files to clean up:</code>
-
-### `launcher/netplay/connection_tester.py`
-
-- [L92](../launcher/netplay/connection_tester.py#L92) — **FIXME** — <code># FIXME: handle problem...</code>
-
-### `launcher/option.py`
-
-- [L1443](../launcher/option.py#L1443) — **FIXME** — <code>&quot;description&quot;: &quot;FIXME&quot;,</code>
-- [L1459](../launcher/option.py#L1459) — **FIXME** — <code>&quot;description&quot;: &quot;FIXME&quot;,</code>
-
-### `launcher/scanner.py`
-
-- [L43](../launcher/scanner.py#L43) — **FIXME** — <code># FIXME: these should be removed soon</code>
-
-### `launcher/settings/advanced_settings_page.py`
-
-- [L51](../launcher/settings/advanced_settings_page.py#L51) — **FIXME** — <code># FIXME: accessing values directly here, not very nice</code>
-- [L69](../launcher/settings/advanced_settings_page.py#L69) — **FIXME** — <code># FIXME: accessing values directly here, not very nice</code>
-
-### `launcher/settings/language_settings_page.py`
-
-- [L47](../launcher/settings/language_settings_page.py#L47) — **FIXME** — <code># FIXME: include in () what language is currently the automatic one</code>
-
-### `launcher/settings/video_settings_page.py`
-
-- [L38](../launcher/settings/video_settings_page.py#L38) — **FIXME** — <code># FIXME: Move 640 to constants</code>
-
-### `launcher/setup/wizardheader.py`
-
-- [L8](../launcher/setup/wizardheader.py#L8) — **FIXME** — <code># FIXME: From Theme</code>
-
-### `launcher/ui/ConfigurationsBrowser.py`
-
-- [L351](../launcher/ui/ConfigurationsBrowser.py#L351) — **FIXME** — <code># FIXME: lower-case search string?</code>
 
 ### `launcher/ui/ConfigurationsPanel.py`
 
 - [L195](../launcher/ui/ConfigurationsPanel.py#L195) — **FIXME** — <code># FIXME: Do asynchronously, add to queue</code>
 
-### `launcher/ui/LauncherFilePicker.py`
-
-- [L53](../launcher/ui/LauncherFilePicker.py#L53) — **FIXME** — <code># FIXME: Return new Media directory instead</code>
-
-### `launcher/ui/TabButton.py`
-
-- [L67](../launcher/ui/TabButton.py#L67) — **FIXME** — <code># FIXME: check if mouse is hovering, used for example after having</code>
-
-### `launcher/ui/VariantsBrowser.py`
-
-- [L128](../launcher/ui/VariantsBrowser.py#L128) — **FIXME** — <code># FIXME: Merge code with</code>
-- [L186](../launcher/ui/VariantsBrowser.py#L186) — **FIXME** — <code># FIXME: Add warning here that the favorite variant</code>
-
 ### `launcher/ui/behaviors/__init__.py`
 
 - [L18](../launcher/ui/behaviors/__init__.py#L18) — **FIXME** — <code># FIXME: We need to disconnect the listener</code>
 
-### `launcher/ui/behaviors/platformbehavior.py`
-
-- [L17](../launcher/ui/behaviors/platformbehavior.py#L17) — **FIXME** — <code># FIXME: We need to disconnect the listener</code>
-- [L64](../launcher/ui/behaviors/platformbehavior.py#L64) — **FIXME** — <code># FIXME: Temporarily disabled due to having to handle layout</code>
-
-### `launcher/ui/config/CustomOptionsPage.py`
-
-- [L78](../launcher/ui/config/CustomOptionsPage.py#L78) — **FIXME** — <code># FIXME: Move to LauncherConfig as a method, maybe use</code>
-
-### `launcher/ui/config/HardDriveGroup.py`
-
-- [L107](../launcher/ui/config/HardDriveGroup.py#L107) — **FIXME** — <code># FIXME: use contract function</code>
-
-### `launcher/ui/config/InputSelector.py`
-
-- [L199](../launcher/ui/config/InputSelector.py#L199) — **FIXME** — <code>print(&quot;FIXME: could not set mode&quot;)</code>
-
 ### `launcher/ui/config/expand.py`
 
-- [L132](../launcher/ui/config/expand.py#L132) — **FIXME** — <code># FIXME: did it usually have 1 MB?</code>
-- [L215](../launcher/ui/config/expand.py#L215) — **FIXME** — <code># FIXME: uae_dongle_type</code>
-- [L336](../launcher/ui/config/expand.py#L336) — **FIXME** — <code># FIXME: Check valid values</code>
-- [L344](../launcher/ui/config/expand.py#L344) — **FIXME** — <code># FIXME: check supported</code>
-- [L907](../launcher/ui/config/expand.py#L907) — **FIXME** — <code># FIXME: chipmem size &gt; 2 MB</code>
-- [L908](../launcher/ui/config/expand.py#L908) — **FIXME** — <code># FIXME:</code>
-- [L967](../launcher/ui/config/expand.py#L967) — **FIXME** — <code># FIXME: depends on actual device in joystick_port_0...</code>
-- [L979](../launcher/ui/config/expand.py#L979) — **FIXME** — <code># FIXME: depends on actual device in joystick_port_1...</code>
-- [L989](../launcher/ui/config/expand.py#L989) — **FIXME** — <code># FIXME: depends on actual device in joystick_port_2...?</code>
-- [L999](../launcher/ui/config/expand.py#L999) — **FIXME** — <code># FIXME: depends on actual device in joystick_port_3...?</code>
-- [L1029](../launcher/ui/config/expand.py#L1029) — **FIXME** — <code># FIXME: should PPC / OS4 models be excluded?</code>
-- [L1039](../launcher/ui/config/expand.py#L1039) — **FIXME** — <code># FIXME: check supported</code>
-- [L1070](../launcher/ui/config/expand.py#L1070) — **FIXME** — <code># FIXME: check supported</code>
-- [L1085](../launcher/ui/config/expand.py#L1085) — **FIXME** — <code># FIXME: ok? keep already specified value</code>
-- [L1087](../launcher/ui/config/expand.py#L1087) — **FIXME** — <code># FIXME: check value</code>
-- [L1115](../launcher/ui/config/expand.py#L1115) — **FIXME** — <code># FIXME: normalize to &quot;true&quot; or &quot;false&quot;</code>
-- [L1126](../launcher/ui/config/expand.py#L1126) — **FIXME** — <code># FIXME: boolean</code>
-- [L1138](../launcher/ui/config/expand.py#L1138) — **FIXME** — <code># FIXME: boolean</code>
-- [L1532](../launcher/ui/config/expand.py#L1532) — **FIXME** — <code># FIXME: cards are missing here</code>
-- [L1619](../launcher/ui/config/expand.py#L1619) — **FIXME** — <code># FIXME: Blizzard expansions!</code>
-- [L1686](../launcher/ui/config/expand.py#L1686) — **FIXME** — <code># FIXME: ok? keep already specified value</code>
-- [L1688](../launcher/ui/config/expand.py#L1688) — **FIXME** — <code># FIXME: match and normalize uae boolean</code>
-- [L1697](../launcher/ui/config/expand.py#L1697) — **FIXME** — <code># FIXME: ok? keep already specified value</code>
-- [L1699](../launcher/ui/config/expand.py#L1699) — **FIXME** — <code># FIXME: check value</code>
-- [L1746](../launcher/ui/config/expand.py#L1746) — **FIXME** — <code># FIXME: check boolean</code>
-
-### `launcher/ui/config/modelgroup.py`
-
-- [L27](../launcher/ui/config/modelgroup.py#L27) — **FIXME** — <code># FIXME: remove with_more_button=True</code>
-
-### `launcher/ui/download.py`
-
-- [L168](../launcher/ui/download.py#L168) — **FIXME** — <code># FIXME: review what signals should be sent when a scan is performed</code>
-- [L169](../launcher/ui/download.py#L169) — **FIXME** — <code># FIXME: these should be removed soon</code>
-
-### `launcher/ui/floppiesgroup.py`
-
-- [L61](../launcher/ui/floppiesgroup.py#L61) — **FIXME** — <code># FIXME: Drive count option does not work on the main page when</code>
-
-### `launcher/ui/launcherwindow.py`
-
-- [L224](../launcher/ui/launcherwindow.py#L224) — **FIXME** — <code># FIXME: Is this being run?</code>
-- [L252](../launcher/ui/launcherwindow.py#L252) — **FIXME** — <code># FIXME: should check data directories (XDG_DATA_DIRS) properly</code>
-- [L255](../launcher/ui/launcherwindow.py#L255) — **FIXME** — <code># FIXME: this encoding / decoding is a bit ridiculous, but, this is</code>
-- [L265](../launcher/ui/launcherwindow.py#L265) — **FIXME** — <code># FIXME: Check relative to executable instead</code>
-
-### `launcher/ui/options.py`
-
-- [L264](../launcher/ui/options.py#L264) — **FIXME** — <code># FIXME: This can be removed if/when implicit value always</code>
-- [L360](../launcher/ui/options.py#L360) — **FIXME** — <code># FIXME: Check range?</code>
-- [L368](../launcher/ui/options.py#L368) — **FIXME** — <code># FIXME: This can be removed if/when implicit value always</code>
-
-### `launcher/ui/pageddialog.py`
-
-- [L56](../launcher/ui/pageddialog.py#L56) — **FIXME** — <code># FIXME: Problems with page height</code>
+- [L1667](../launcher/ui/config/expand.py#L1667) — **FIXME** — <code># FIXME: ok? keep already specified value</code>
+- [L1669](../launcher/ui/config/expand.py#L1669) — **FIXME** — <code># FIXME: match and normalize uae boolean</code>
 
 ### `launcher/ui/savebutton.py`
 
 - [L43](../launcher/ui/savebutton.py#L43) — **FIXME** — <code># FIXME: notify user</code>
 
-### `launcher/ui/skin.py`
-
-- [L56](../launcher/ui/skin.py#L56) — **FIXME** — <code># FIXME: Rename to launcher_bg/background_color and document.</code>
-- [L75](../launcher/ui/skin.py#L75) — **FIXME** — <code># FIXME: Should really just check for Windows XP here, or maybe</code>
-
-### `launcher/ui/statusbar/WarningsElement.py`
-
-- [L368](../launcher/ui/statusbar/WarningsElement.py#L368) — **FIXME** — <code># FIXME: move such warnings to config model code instead</code>
-- [L393](../launcher/ui/statusbar/WarningsElement.py#L393) — **FIXME** — <code># FIXME: Remove direct Qt dependency</code>
-- [L404](../launcher/ui/statusbar/WarningsElement.py#L404) — **FIXME** — <code># FIXME: Move code to settings dialog, so we can open the page with</code>
-- [L440](../launcher/ui/statusbar/WarningsElement.py#L440) — **FIXME** — <code># FIXME: Move code to settings dialog, so we can open the page with</code>
-
 ### `launcher/update_manager.py`
 
 - [L56](../launcher/update_manager.py#L56) — **FIXME** — <code># FIXME: Thread safety...</code>
 - [L57](../launcher/update_manager.py#L57) — **FIXME** — <code># FIXME: Use above signal instead</code>
-
-### `workspace/apps/locker_uploader.py`
-
-- [L141](../workspace/apps/locker_uploader.py#L141) — **FIXME** — <code># FIXME: Use Archive.open to get support for filter functions</code>
-- [L142](../workspace/apps/locker_uploader.py#L142) — **FIXME** — <code># FIXME: Also use stream api, do not buffer entire file</code>
-- [L195](../workspace/apps/locker_uploader.py#L195) — **FIXME** — <code># FIXME: prefix</code>

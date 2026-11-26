@@ -34,7 +34,6 @@ class SignalContext(ContextAware):
         ContextAware.__init__(self, context)
 
     def signal_name(self, signal):
-        # FIXME: use fsgs-context-instance-specific signals
         return f"fsgs:{signal}"
 
     def connect(self, signal, listener):
@@ -46,7 +45,6 @@ class SignalContext(ContextAware):
     def emit(self, signal, args):
         Signal(self.signal_name(signal)).notify(*args)
 
-    # FIXME: Deprecated
     def notify(self, signal, args):
         return self.emit(signal, args)
 

@@ -50,7 +50,6 @@ class LauncherFilePicker(object):
             return FSGSDirectories.get_hard_drives_dir()
         elif media_type == "rom":
             return FSGSDirectories.get_kickstarts_dir()
-        # FIXME: Return new Media directory instead
         return FSGSDirectories.get_base_dir()
 
     def show_modal(self):

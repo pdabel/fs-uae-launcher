@@ -15,7 +15,7 @@ PLUGIN_LICENSESDIR=$PLUGIN_DIR/Licenses
 PLUGIN_DATADIR=$PLUGIN_BINDIR
 PLUGIN_REALDATADIR=$PLUGIN_DIR/Data
 
-# FIXME: Deprecate $EXE (Use $SYSTEM_EXE instead)
+# $EXE is kept for older plugin scripts; prefer $SYSTEM_EXE.
 if [ "$SYSTEM_OS" = "Windows" ]; then
 EXE=.exe
 else

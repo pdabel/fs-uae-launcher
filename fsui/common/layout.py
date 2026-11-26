@@ -87,7 +87,6 @@ class Layout(object):
             index=index,
         )
 
-    # FIXME: Rename margin -> margins (+ alias), margin_top -> top, etc
     def add(
         self,
         element,
@@ -167,7 +166,6 @@ class Layout(object):
 
     def set_position(self, position):
         self.position = position
-        # FIXME: avoid calling update after both set_position and set_size
         self.update()
 
     def set_size(self, size):

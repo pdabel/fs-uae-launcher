@@ -55,10 +55,6 @@ class ConfigurationScanner:
             except KeyError:
                 pass
 
-                # FIXME: try splitting name into name, variant pair, and
-                # actually add game_variant for config files as well, where
-                # possible
-
         for id in config_path_ids.values():
             database.delete_game(id=id)
 

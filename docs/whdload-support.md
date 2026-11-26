@@ -62,8 +62,6 @@ configuration from the database. If you want to prevent this, you can add the
 You can disable the progress dialog opened by FS-UAE Launcher by including
 the `--no-gui` parameter.
 
-FIXME: Write about launching games using game / variant UUIDs.
-
 ## Automatic hard drive creation
 
 The Launcher will when you launch a WHDLoad game automatically assemble a 

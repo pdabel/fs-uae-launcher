@@ -48,7 +48,6 @@ class AdvancedSettingsPage(SettingsPage):
 
     def update_settings(self):
         text = self.text_area.get_text()
-        # FIXME: accessing values directly here, not very nice
         keys = list(app.settings.values.keys())
         for key in keys:
             if key not in LauncherSettings.default_settings:
@@ -66,7 +65,6 @@ class AdvancedSettingsPage(SettingsPage):
     @staticmethod
     def get_initial_text():
         text = ""
-        # FIXME: accessing values directly here, not very nice
         keys = app.settings.values.keys()
         for key in sorted(keys):
             if key in LauncherSettings.default_settings:

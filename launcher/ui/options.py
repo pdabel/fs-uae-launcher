@@ -261,8 +261,6 @@ class ChoiceControl(fsui.Choice):
         if self.use_checkbox:
             if value == "":
                 value = self.implicit_value
-                # FIXME: This can be removed if/when implicit value always
-                # takes into account the default value.
                 if not value:
                     value = default_value(self.key)
         for i, v in enumerate(self.choice_values):
@@ -357,7 +355,6 @@ class SpinValueControl(fsui.SpinCtrl):
         except ValueError:
             traceback.print_exc()
             int_value = self.min
-        # FIXME: Check range?
         return int_value
 
     def set_from_value(self, value=None):
@@ -365,8 +362,6 @@ class SpinValueControl(fsui.SpinCtrl):
             value = self.options.get(self.key)
         if value == "":
             value = self.implicit_value
-            # FIXME: This can be removed if/when implicit value always
-            # takes into account the default value.
             if not value:
                 value = default_value(self.key)
         with self.changed.inhibit:

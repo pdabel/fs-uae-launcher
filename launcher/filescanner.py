@@ -206,12 +206,9 @@ class FileScanner(object):
         base_name, ext = os.path.splitext(name)
         ext = ext.lower()
         if ext == ".nes":
-            # FIXME: NES header hack. Would be better to add a proper notion of
-            # file filters to the file database.
-            # FIXME: This will confuse some functionality, such as the
-            # Locker uploader or other tools expecting on-disk data to match
-            # the database checksum (this also applies to the Cloanto ROM
-            # hack). Should be done properly.
+            # Hash without the iNES header so the SHA-1 matches the game
+            # database. It then differs from the file on disk, as it does
+            # for decrypted Cloanto ROMs.
             f = archive.open(path)
             data = f.read(16)
             if len(data) == 16 and data.startswith(b"NES\x1a"):
@@ -219,7 +216,6 @@ class FileScanner(object):
                 filter_name = "Skip(16)"
             raw_sha1_obj.update(data)
         elif ext == ".a78":
-            # FIXME: Check if 128 is a fixed or variable number of bytes
             f = archive.open(path)
             data = f.read(128)
             if len(data) == 128 and data[1:10] == b"ATARI7800":
@@ -314,7 +310,6 @@ class FileScanner(object):
                     # file itself, a bit ugly, since md5 and crc32 are still
                     # encrypted hashes, but it works well with the kickstart
                     # lookup mechanism
-                    # FIXME: Enable use of filter mechanism for Cloanto ROMs
                     sha1 = filter_sha1
             else:
                 # If the ROM was encrypted and could not be decrypted, we
@@ -326,9 +321,7 @@ class FileScanner(object):
         if parent:
             path = "#/" + path.rsplit("#/", 1)[1]
         if parent is not None:
-            # FIXME: size is incorrect here -- it's the size of the parent
-            # file currently (not a big problem), setting it to -1 instead
-            # for now.
+            # The member size is not known here (only the parent's is).
             size = -1
         file_id = database.add_file(
             path=path, sha1=sha1, mtime=mtime, size=size, parent=parent

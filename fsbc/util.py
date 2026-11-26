@@ -32,7 +32,6 @@ def memoize(func):
             key = (args, frozenset(kwargs.items()))
         except TypeError:
             # cannot create key -- for instance, passing a list as an argument.
-            # FIXME: Log warning here
             return func(*args, **kwargs)
         try:
             return memoize_dict[key]
@@ -43,8 +42,6 @@ def memoize(func):
             except TypeError:
                 # not cacheable -- for instance, passing a list as an
                 # argument.
-                # FIXME: Log warning here
-                # FIXME: will not happen here.. se above type error?
                 pass
             return value
 

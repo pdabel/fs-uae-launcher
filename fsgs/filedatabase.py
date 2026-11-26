@@ -131,9 +131,6 @@ class FileDatabase(BaseDatabase):
 
     def check_sha1(self, sha1):
         if sha1 in self.static_files:
-            # FIXME: Is the count necessary? ref query below, or do we
-            # only need a True/False result? If so, change query to
-            # check for existence only, and change return value to boolean.
             return True
         cursor = self.internal_cursor()
         cursor.execute(

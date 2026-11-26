@@ -75,8 +75,6 @@ def initial_text():
     values = LauncherConfig.copy_for_save()
     keys = values.keys()
     for key in sorted(keys):
-        # FIXME: Move to LauncherConfig as a method, maybe use
-        # is_custom_option.
         if key in LauncherConfig.no_custom_config:
             continue
         if key.startswith("__implicit_"):

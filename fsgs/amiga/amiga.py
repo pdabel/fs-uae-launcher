@@ -17,7 +17,7 @@ from fsgs.amiga.roms import (
 
 
 class Amiga(object):
-    # FIXME: setting fake checksum, for now
+    # Placeholder SHA-1 for the emulator's built-in (AROS) ROM.
     INTERNAL_ROM_SHA1 = "0000000000000000000000000000000000000000"
 
     MAX_FLOPPY_DRIVES = 4

@@ -191,7 +191,6 @@ class Window(QObject):
         init_qt()
         super().__init__()
 
-        # FIXME
         self._window = weakref.ref(self)
 
         self._real_window = RealWindow(
@@ -258,7 +257,6 @@ class Window(QObject):
     def get_container(self):
         return self.real_widget()
 
-    # FIXME: Is this used?
     def center_on_initial_show(self):
         if self._centered_on_initial_show:
             return
@@ -436,7 +434,7 @@ class Window(QObject):
 
     # DEPRECATED
     def set_icon_from_path(self, _):
-        print("FIXME: Window.set_icon_from_path")
+        pass
 
     # DEPRECATED
     def get_title(self):

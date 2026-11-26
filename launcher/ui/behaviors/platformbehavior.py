@@ -14,7 +14,6 @@ class PlatformBehavior:
         self.on_config("platform", LauncherConfig.get("platform"))
         LauncherConfig.add_listener(self)
 
-        # FIXME: We need to disconnect the listener
         parent.destroyed.connect(self.on_destroy)
 
     def on_destroy(self, *_):
@@ -61,8 +60,6 @@ class PlatformShowBehavior(PlatformBehavior):
         super().__init__(parent, platforms)
 
     def perform(self, match):
-        # FIXME: Temporarily disabled due to having to handle layout
-        # updates when widgets are shown/hidden
         widget = self._parent()
         if match:
             widget.show()

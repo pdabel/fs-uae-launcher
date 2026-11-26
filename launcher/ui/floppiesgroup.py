@@ -58,8 +58,8 @@ class FloppiesGroup(fsui.Group):
         hori_layout.add_spacer(0, expand=True)
 
         if drive_count_option and not removable_media:
-            # FIXME: Drive count option does not work on the main page when
-            # changing to CD mode. Workaround for now is to not include it.
+            # Left out for removable media: the drive count option does not
+            # update the main page when switching to CD mode.
             hori_layout.add(
                 ConfigWidgetFactory().create(
                     self,

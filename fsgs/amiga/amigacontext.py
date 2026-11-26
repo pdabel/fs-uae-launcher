@@ -258,25 +258,19 @@ class AmigaContext(BaseContext):
             )
 
     def get_base_dir(self):
-        # FIXME: dependency loop
         return FSGSDirectories.get_base_dir()
 
     def get_floppies_dir(self):
-        # FIXME: dependency loop
         return FSGSDirectories.get_floppies_dir()
 
     def get_cdroms_dir(self):
-        # FIXME: dependency loop
         return FSGSDirectories.get_cdroms_dir()
 
     def get_hard_drives_dir(self):
-        # FIXME: dependency loop
         return FSGSDirectories.get_hard_drives_dir()
 
     def get_kickstarts_dir(self):
-        # FIXME: dependency loop
         return FSGSDirectories.get_kickstarts_dir()
 
     def get_controllers_dir(self):
-        # FIXME: dependency loop
         return FSGSDirectories.get_controllers_dir()

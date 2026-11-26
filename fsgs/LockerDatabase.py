@@ -2,8 +2,6 @@ import os
 from binascii import unhexlify
 import sqlite3
 
-# FIXME: remove dependency on launcher, have the Launcher tell this class
-# the path instead
 from fsgs.FSGSDirectories import FSGSDirectories
 from .BaseDatabase import BaseDatabase
 
@@ -30,7 +28,6 @@ class LockerDatabase(BaseDatabase):
 
     def check_sha1(self, sha1):
         cursor = self.internal_cursor()
-        # FIXME: Replace with EXISTS or something
         cursor.execute(
             "SELECT count(*) FROM file WHERE sha1 = ?",
             (sqlite3.Binary(unhexlify(sha1.encode("ASCII"))),),

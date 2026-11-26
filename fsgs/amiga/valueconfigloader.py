@@ -1,4 +1,3 @@
-# FIXME: send fsgs as parameter to ValueConfigLoader instead
 from fsgs.context import fsgs
 import os
 import json
@@ -231,7 +230,6 @@ class ValueConfigLoader(object):
             elif value == "AROS":
                 self.options["kickstart_file"] = "internal"
             else:
-                # FIXME: print warning
                 pass
         elif key == "chipset":
             if value == "ECS":
@@ -275,7 +273,6 @@ class ValueConfigLoader(object):
             if value == "NTSC":
                 self.options["ntsc_mode"] = "1"
         elif key == "cracktro":
-            # FIXME: handle
             pass
         elif key in [
             "joystick_port_0_mode",
@@ -379,7 +376,6 @@ class ValueConfigLoader(object):
                         # already added
                         continue
                     added.add(p)
-                    # FIXME: hack for now
                     sha1 = self.values.get("dh0_sha1", "")
                     media_list.append((p, sha1))
                 else:
@@ -418,7 +414,6 @@ class ValueConfigLoader(object):
                 media_list.append((path, found_sha1))
             else:
                 pass
-                #  FIXME: handle it with a visible error message
         return media_list
 
     def load_floppies_from_floppy_list(self):

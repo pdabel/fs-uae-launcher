@@ -33,7 +33,6 @@ class FileContext(BaseContext):
         BaseContext.__init__(self, main_context)
 
     def find_by_sha1(self, sha1):
-        # FIXME: check_sha1 should check with PluginManager directly?
         database = FileDatabase.instance()
         result = database.find_file(sha1=sha1)["path"]
         # If the DB/cache returned a directory (e.g. an extracted temp
@@ -85,7 +84,6 @@ class FileContext(BaseContext):
         return result
 
     def check_sha1(self, sha1):
-        # FIXME: check_sha1 should check with PluginManager directly?
         database = FileDatabase.instance()
         result = database.check_sha1(sha1)
         if not result and is_locker_enabled():
@@ -96,7 +94,6 @@ class FileContext(BaseContext):
     def get_license_code_for_url(self, url):
         return self.context.get_game_database().get_license_code_for_url(url)
 
-    # FIXME: better name
     def convert_uri(self, uri, prefer_path=False):
         if uri.startswith("sha1://"):
             return self.open_sha1_uri(uri)
@@ -163,7 +160,6 @@ class FileContext(BaseContext):
                 while not license_status["done"]:
                     time.sleep(0.1)
                 if not license_status["accepted"]:
-                    # FIXME: custom exception here
                     raise Exception(
                         f'Usage terms "{license_code}" was not ' "accepted"
                     )
@@ -323,7 +319,6 @@ class FSGameSystemContext(object):
     def game_database(self, database_name):
         attr_name = "game_database_" + database_name.replace("/", "_")
         if not hasattr(self.thread_local, attr_name):
-            # FIXME
             from fsgs.FSGSDirectories import FSGSDirectories
 
             path = os.path.join(
@@ -337,7 +332,6 @@ class FSGameSystemContext(object):
 
     @property
     def cache_dir(self):
-        # FIXME: remove dependency
         from fsgs.FSGSDirectories import FSGSDirectories
 
         return FSGSDirectories.get_cache_dir()
@@ -361,7 +355,6 @@ class FSGameSystemContext(object):
         database = Database.instance()
         variants = database.find_game_variants_new(game_uuid=game_uuid)
         print(variants)
-        # FIXME: Merge code with VariantsBrowser.py
         sortable_items = []
         for i, variant in enumerate(variants):
             game_database = self.game_database(variant["database"])
@@ -373,7 +366,6 @@ class FSGameSystemContext(object):
             )
 
             name = variant["name"]
-            # FIXME: name replacement needed any more?
             name = name.replace("\n", " (")
             name = name.replace(" \u00b7 ", ", ")
             name += ")"
@@ -451,9 +443,7 @@ class FSGameSystemContext(object):
 class GameContext(object):
     def __init__(self, context):
         self._context = weakref.ref(context)
-        # FIXME: REMOVE? use config[game_name] instead?
         self.name = ""
-        # FIXME: REMOVE? use config[game_uuid] instead?
         self.uuid = ""
         self.variant = VariantContext()
         self.platform = GamePlatform()

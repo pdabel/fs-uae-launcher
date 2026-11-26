@@ -51,8 +51,6 @@ class DatabaseRefreshTask(Task):
         scanner.update_game_database()
         scanner.scan(database)
 
-        # FIXME: review what signals should be sent when a scan is performed
-        # FIXME: these should be removed soon
         app.settings["last_scan"] = str(time.time())
         app.settings["__config_refresh"] = str(time.time())
         # this must be called from main, since callbacks are broadcast

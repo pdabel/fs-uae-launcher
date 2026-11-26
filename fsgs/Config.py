@@ -70,7 +70,6 @@ class Config(ContextAware):
 
         def add_changed_key(added_key):
             added_priority = 0
-            # FIXME: re-introduce support for key priority if necessary
             changed_keys.add((added_priority, added_key))
 
         def change(changed_key, changed_value):

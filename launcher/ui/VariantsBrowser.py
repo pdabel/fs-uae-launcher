@@ -125,8 +125,6 @@ class VariantsBrowser(fsui.ItemChoice):
         database = Database.get_instance()
         items = database.find_game_variants_new(game_uuid, have=0)
 
-        # FIXME: Merge code with
-        # FSGameSystemContext.py:get_ordered_game_variants
         sortable_items = []
         for i, variant in enumerate(items):
             name = variant["name"]
@@ -183,8 +181,6 @@ class VariantsBrowser(fsui.ItemChoice):
                         select_index = i
                         break
                     else:
-                        # FIXME: Add warning here that the favorite variant
-                        # could not be selected.
                         pass
             else:
                 for i, variant in enumerate(self.items):

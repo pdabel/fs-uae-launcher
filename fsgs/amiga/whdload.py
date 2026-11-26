@@ -126,7 +126,6 @@ def fix_whdload_args(args: List[str]) -> str:
     elif args_str.startswith(
         "LittleComputerPeopleNTSC.Slave PRELOAD NTSC MAG\x00"
     ):
-        # FIXME: Should MAG be included?
         args_str = "LittleComputerPeopleNTSC.Slave PRELOAD NTSC"
     return args_str.strip()
 

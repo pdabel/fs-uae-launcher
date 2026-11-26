@@ -28,8 +28,6 @@ class GameDriverLogger:
         print("[INFO]", message)
 
     def warning(self, message):
-        # FIXME: Store warning and show in some kind of launch log
-        # (i.e. "warnings and error generated during game execution")
         print("[WARNING]", message)
 
     def error(self, message):
@@ -130,13 +128,11 @@ class GameDriver:
 
     def init_port(self, index, port_info):
         port = Port(port_info["description"])
-        # FIXME: MOVE TO Port CONSTRUCTOR
         port.number = index + 1
         port.types = port_info["types"]
         port.type_option = port_info.get("type_option", "")
         port.device_option = port_info.get("device_option", "")
         # Set correct (port type index) based on type option
-        # FIXME: MOVE CODE TO port CLASS
         if port.type_option:
             type_value = self.options[port.type_option]
             if type_value:
@@ -430,8 +426,6 @@ class GameDriver:
             return self.__game_temp_file.path
 
         file_uri = self.options[config_key]
-        # FIXME: create new API fsgc.file.path(file_uri), returns path
-        # (and creates temp file if necessary)
         input_stream = self.fsgc.file.open(file_uri)
 
         self.__game_temp_file = TemporaryNamedItem(
@@ -581,11 +575,10 @@ class GameDriver:
         x = screen_x + max(0, (screen_w - width) // 2)
         y = screen_y + max(0, (screen_h - height) // 2)
 
-        # FIXME: REMOVE
+        # Window position variables, kept for emulator compatibility.
         env["FSGS_WINDOW_X"] = str(x)
         env["FSGS_WINDOW_Y"] = str(y)
 
-        # FIXME: REMOVE
         env["SDL_VIDEO_WINDOW_POS"] = str(f"{x},{y}")
         env["FSGS_WINDOW_POS"] = str(f"{x},{y}")
 
@@ -801,7 +794,6 @@ class GameDriver:
 
     def cheats_file(self, name):
         dev_path = os.path.join("..", "cheats", name)
-        # FIXME: if development_mode ?
         if os.path.exists(dev_path):
             print("Found cheats file:", dev_path)
             return dev_path
@@ -866,7 +858,6 @@ class Port(object):
         # Name of config option for device
         self.device_option = ""
 
-        # FIXME: remove
         self.device_id = None
         self.device_config = None
 

@@ -65,7 +65,7 @@ def build_cfg():
         ("__netplay_host", ""),
         ("__netplay_ready", ""),
         ("__netplay_state_dir_name", "", "checksum", "sync"),
-        ("__version", "FIXME"),
+        ("__version", ""),
         ("__error", ""),
         ("x_game_uuid", ""),
         ("x_game_xml_path", ""),
@@ -575,7 +575,6 @@ class LauncherConfig(object):
         try:
             return cls._load_file(path, "")
         except Exception:
-            # FIXME: errors should be logged / displayed
             cls.load_default_config()
             traceback.print_exc()
         return False
@@ -586,7 +585,6 @@ class LauncherConfig(object):
         try:
             cls._load_file("", data)
         except Exception:
-            # FIXME: errors should be logged / displayed
             cls.load_default_config()
             traceback.print_exc()
 
@@ -837,7 +835,6 @@ class LauncherConfig(object):
     def fix_loaded_config(cls, config):
         print("[CONFIG] Fix loaded config")
 
-        # FIXME: parent
         checksum_tool = ChecksumTool(None)
 
         def fix_file_checksum(
@@ -936,5 +933,4 @@ class LauncherConfig(object):
                 if not config.get(Option.GRAPHICS_CARD, ""):
                     config[Option.GRAPHICS_CARD] = "uaegfx"
             del config[Option.UAEGFX_CARD]
-            # FIXME: Set changed!
             config["__changed"] = "1"

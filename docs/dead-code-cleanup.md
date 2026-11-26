@@ -103,7 +103,7 @@ Decided: if it isn't in use now, it's removed. Git history keeps it.
 - [x] Notes that only described the removed code went with it (for example "this holds a list of…" above a removed list, and ROM labels above removed SHA-1 entries).
 - [x] Kept, because they're notes or data rather than code:
   - FIXMEs that describe a problem that still exists
-  - the ROM and Workbench file name labels, and the `FIXME: Files to clean up` path list in `launcherapp.py`
+  - the ROM and Workbench file name labels, and the legacy file path list in `launcherapp.py`
   - the C reference list of unported WinUAE conditions in `launcher/ui/config/expand.py`
   - licence headers, and the format description in `quicksettingspanel.py`
 - [x] Blank lines left behind were tidied, only where the removal created them. Checked: `ruff check`, the CI pytest suites (158 passed, 10 skipped), `fsui/test/test_qt6.py` offscreen (48 passed, the same as `main`), and an import of every changed module. vulture and ruff find no new dead code as a result.

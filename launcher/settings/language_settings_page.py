@@ -44,8 +44,6 @@ class LanguageSettingsPage(SettingsPage):
 class LanguageSettingChoice(fsui.Choice):
     def __init__(self, parent):
         fsui.Choice.__init__(self, parent)
-        # FIXME: include in () what language is currently the automatic one
-
         selected_language = LauncherSettings.get("language")
         k = 0
         selected_index = 0

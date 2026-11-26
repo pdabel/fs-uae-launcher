@@ -5,7 +5,6 @@ class WizardHeader(fsui.Panel):
     def __init__(self, parent, icon, title):
         super().__init__(parent)
         self.layout = fsui.HorizontalLayout()
-        # FIXME: From Theme
         self.set_background_color(fsui.Color(0xFF, 0xFF, 0xFF))
 
         self.title_label = fsui.HeadingLabel(self, title)

@@ -57,7 +57,6 @@ class ArchiveUtil:
             except KeyError:
                 pass
             else:
-                # FIXME: Create a uaem metadata helper class
                 metadata = metadata.split("\n")[0].strip()
                 comment = metadata[32:]
                 comment = unquote(comment)

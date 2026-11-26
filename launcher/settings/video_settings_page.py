@@ -35,7 +35,6 @@ class VideoSettingsPage(SettingsPage):
         self.add_option("rtg_scanlines")
 
         self.add_section(gettext("Video Synchronization"))
-        # FIXME: Move 640 to constants
         label = fsui.MultiLineLabel(
             self,
             gettext(

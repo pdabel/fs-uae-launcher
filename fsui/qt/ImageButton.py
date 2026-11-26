@@ -25,7 +25,6 @@ class ImageButton(Widget):
 
     def on_activated(self):
         self.activated.emit()
-        # FIXME: Remove
         self.on_activate()
 
     def on_activate(self):

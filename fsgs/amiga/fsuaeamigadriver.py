@@ -18,7 +18,6 @@ CD32_CONTROLLER = {
     "type": "cd32 gamepad",
     "description": "CD32 Gamepad",
 }
-# FIXME: NO_DEVICE
 AMIGA_PORTS = [
     {
         "description": "Joystick Port",
@@ -34,7 +33,6 @@ AMIGA_PORTS = [
         "type_default": "mouse",
         "device_option": "joystick_port_0",
     },
-    # FIXME: ADDITIONAL PORTS...
 ]
 
 

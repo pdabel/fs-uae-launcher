@@ -1440,7 +1440,7 @@ options = {
     },
     Option.UAE_CPU_MULTIPLIER: {
         "default": "",
-        "description": "FIXME",
+        "description": "CPU clock multiplier",
         "type": "integer",
         "min": 0,
         "max": 256,
@@ -1456,7 +1456,7 @@ options = {
     },
     Option.UAE_CPU_THROTTLE: {
         "default": "",
-        "description": "FIXME",
+        "description": "CPU speed throttle",
         "type": "float",
         "min": -900.0,
         "max": 5000.0,

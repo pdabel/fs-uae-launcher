@@ -102,7 +102,9 @@ in docs/compiling.md. Packaging policy checks run with:
 See [the Python and dependency modernization TODO](docs/python-dependency-modernization.md)
 for the reviewed packaging, supported-Python, dependency, and code-quality
 work items. For a map of the packages, startup sequence, theme engine and
-data stores, see [docs/architecture.md](docs/architecture.md).
+data stores, see [docs/architecture.md](docs/architecture.md). Remaining
+code-marker work is planned task by task in
+[docs/fixme-implementation-plan.md](docs/fixme-implementation-plan.md).
 
 ## Game Monitor Selection
 

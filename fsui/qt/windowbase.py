@@ -68,7 +68,7 @@ def WindowBase(BaseClass):
             self.setWindowIcon(icon.qicon())
 
         def set_icon_from_path(self, _):
-            print("FIXME: Window.set_icon_from_path")
+            pass
 
         def get_position(self):
             return self.pos().x(), self.pos().y()

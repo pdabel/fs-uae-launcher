@@ -64,8 +64,6 @@ class TabButton(fsui.Panel):
         dc.draw_image(self.icon, x, y)
 
     def check_hover(self):
-        # FIXME: check if mouse is hovering, used for example after having
-        # dismissed a popup menu
         self.hover = False
         self.refresh()
 

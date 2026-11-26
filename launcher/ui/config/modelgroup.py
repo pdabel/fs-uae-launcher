@@ -1,5 +1,4 @@
 import fsui
-from fsbc.util import unused
 from fsgs.amiga.amiga import Amiga
 from fsui.qt import Qt
 from launcher.option import Option
@@ -24,9 +23,7 @@ from launcher.ui.config.model_labels import (
 
 class ModelGroup(fsui.Group):
 
-    # FIXME: remove with_more_button=True
-    def __init__(self, parent, with_more_button=True):
-        unused(with_more_button)
+    def __init__(self, parent):
         fsui.Group.__init__(self, parent)
         self.layout = fsui.VerticalLayout()
 
